@@ -650,6 +650,18 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			dialog_newdisk(hWnd);
 			winuileave();
 			break;
+			
+		case IDM_NEWDISKFD:
+			winuienter();
+			dialog_newdisk_ex(hWnd, NEWDISKMODE_FD);
+			winuileave();
+			break;
+
+		case IDM_NEWDISKHD:
+			winuienter();
+			dialog_newdisk_ex(hWnd, NEWDISKMODE_HD);
+			winuileave();
+			break;
 
 		case IDM_CHANGEFONT:
 			winuienter();

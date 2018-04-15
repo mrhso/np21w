@@ -436,6 +436,9 @@
 #define IDS_NEWDISKEXT                  31072
 #define IDS_NEWDISKFILTER               31073
 #define IDS_NEWDISKFILTER2              31074
+#define IDS_NEWDISKHDFILTER             31075
+#define IDS_NEWDISKHDFILTER2            31076
+#define IDS_NEWDISKFDFILTER             31077
 #define IDS_S98TITLE                    31081
 #define IDS_S98EXT                      31082
 #define IDS_S98FILTER                   31083
@@ -473,8 +476,11 @@
 #define IDS_CPU_MMXPENTIUM              32024
 #define IDS_CPU_PENTIUMPRO              32025
 #define IDS_CPU_PENTIUMII               32026
+#define IDS_CPU_PENTIUMIII              32027
 #define IDS_CPU_AMD_K6_2                32035
 #define IDS_CPU_AMD_K6_III              32036
+#define IDS_CPU_AMD_K7_ATHLON           32037
+#define IDS_CPU_AMD_K7_ATHLONXP         32038
 #define IDS_CPU_80286					32040
 #define IDS_CPU_NEKOPRO                 32049
 #define IDM_TOOLWIN                     40001
@@ -503,6 +509,8 @@
 #define IDM_EXIT                        40105
 #define IDM_SAVEVMCFG                   40106
 #define IDM_LOADVMCFG                   40107
+#define IDM_NEWDISKFD                   40108
+#define IDM_NEWDISKHD                   40109
 #define IDM_FLAGSAVE                    40201
 #define IDM_FLAGSAVE0                   40201
 #define IDM_FLAGSAVE1                   40202

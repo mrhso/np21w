@@ -362,9 +362,13 @@ MOV_CdRd(void)
 #if (CPU_FEATURES & CPU_FEATURE_FXSR) == CPU_FEATURE_FXSR
 			    | CPU_CR4_OSFXSR
 #endif
+#if (CPU_FEATURES & CPU_FEATURE_SSE) == CPU_FEATURE_SSE
+			    | CPU_CR4_OSXMMEXCPT
+#endif
 			;
 			if (src & ~reg) {
-				if (src & 0xfffffc00) {
+				//if (src & 0xfffffc00) {
+				if (src & 0xfffff800) {
 					EXCEPTION(GP_EXCEPTION, 0);
 				}
 				ia32_warning("MOV_CdRd: CR4 <- 0x%08x", src);
@@ -1073,6 +1077,10 @@ RDMSR(void)
 		CPU_EDX = 0x00000000;
 		CPU_EAX = 0xfee00800;
 		break;
+	//case 0x1b:
+	//	CPU_EDX = 0x00000000;
+	//	CPU_EAX = 0x00000010;
+	//	break;
 	default:
 		CPU_EDX = CPU_EAX = 0;
 		//EXCEPTION(GP_EXCEPTION, 0); // XXX: ‚Æ‚è‚ ‚¦‚¸’Ê‚·
@@ -1129,6 +1137,7 @@ RDPMC(void)
 
 	idx = CPU_ECX;
 	switch (idx) {
+		CPU_EDX = CPU_EAX = 0;
 	}
 }
 
