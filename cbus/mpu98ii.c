@@ -1085,9 +1085,19 @@ void mpu98ii_bind(void) {
 	port = mpu98.port;
 	iocore_attachout(port, mpu98ii_o0);
 	iocore_attachinp(port, mpu98ii_i0);
+	//iocore_attachout(port+1, mpu98ii_o2);
+	//iocore_attachinp(port+1, mpu98ii_i2);
 	port |= 2;
 	iocore_attachout(port, mpu98ii_o2);
 	iocore_attachinp(port, mpu98ii_i2);
+	
+	// PC/AT MPU-401
+	if(np2cfg.mpu_at){
+		iocore_attachout(0x330, mpu98ii_o0);
+		iocore_attachinp(0x330, mpu98ii_i0);
+		iocore_attachout(0x331, mpu98ii_o2);
+		iocore_attachinp(0x331, mpu98ii_i2);
+	}
 }
 
 void mpu98ii_callback(void) {

@@ -32,15 +32,8 @@ static const UINT8 FDCCMD_TABLE[32] = {
 #define FDC_FORCEREADY (1)
 #define	FDC_DELAYERROR7
 
-//typedef void (*pfnFDC_DelayFunc)(void);
-//pfnFDC_DelayFunc FDC_DelayFunc = NULL; 
-
 void fdc_intwait(NEVENTITEM item) {
-
-	//if(FDC_DelayFunc){
-	//	FDC_DelayFunc();
-	//	FDC_DelayFunc = NULL;
-	//}
+	
 	if (item->flag & NEVENT_SETEVENT) {
 		fdc.intreq = TRUE;
 		if (fdc.chgreg & 1) {
@@ -53,8 +46,8 @@ void fdc_intwait(NEVENTITEM item) {
 }
 
 void fdc_interrupt(void) {
-
-	nevent_set(NEVENT_FDCINT, 512, fdc_intwait, NEVENT_ABSOLUTE);
+	
+	nevent_setbyms(NEVENT_FDCINT, 512, fdc_intwait, NEVENT_ABSOLUTE);
 }
 
 static void fdc_interruptreset(void) {

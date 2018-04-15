@@ -131,6 +131,7 @@ struct tagNP2Config
 
 	UINT8	mpuenable;
 	UINT8	mpuopt;
+	UINT8	mpu_at;
 
 	UINT8	pc9861enable;
 	UINT8	pc9861sw[3];

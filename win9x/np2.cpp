@@ -904,6 +904,20 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winkbd_setf12(6);
 			update |= SYS_UPDATEOSCFG;
 			break;
+			
+		case IDM_F12NOWAIT:
+			np2oscfg.F12COPY = 7;
+			winkbd_resetf12();
+			winkbd_setf12(7);
+			update |= SYS_UPDATEOSCFG;
+			break;
+			
+		case IDM_F12NOWAIT2:
+			np2oscfg.F12COPY = 8;
+			winkbd_resetf12();
+			winkbd_setf12(8);
+			update |= SYS_UPDATEOSCFG;
+			break;
 
 		case IDM_BEEPOFF:
 			np2cfg.BEEP_VOL = 0;
@@ -1702,6 +1716,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
 				sysmng_update(SYS_UPDATECFG);
 			}
+			else if ((wParam == VK_F12) && (np2oscfg.F12COPY==7)) {
+				np2oscfg.NOWAIT = 1;
+				update |= SYS_UPDATECFG;
+			}
+			else if ((wParam == VK_F12) && (np2oscfg.F12COPY==8)) {
+				np2oscfg.NOWAIT = !np2oscfg.NOWAIT;
+				update |= SYS_UPDATECFG;
+			}
 			else {
 				winkbd_keydown(wParam, lParam);
 			}
@@ -1711,7 +1733,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (wParam == VK_F11) {
 				return(DefWindowProc(hWnd, WM_SYSKEYUP, VK_F10, lParam));
 			}
-			if ((wParam != VK_F12) || (np2oscfg.F12COPY)) {
+			if ((wParam == VK_F12) && (np2oscfg.F12COPY==7)) {
+				np2oscfg.NOWAIT = 0;
+				update |= SYS_UPDATECFG;
+			}
+			else if ((wParam != VK_F12) || (np2oscfg.F12COPY && np2oscfg.F12COPY!=7)) {
 				winkbd_keyup(wParam, lParam);
 			}
 			break;

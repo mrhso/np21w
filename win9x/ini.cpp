@@ -459,7 +459,7 @@ static const PFTBL s_IniItems[] =
 	PFSTR("biospath", PFRO_STR,			np2cfg.biospath),
 
 #if defined(SUPPORT_HOSTDRV)
-	PFVAL("use_hdrv", PFTYPE_UINT8,		&np2cfg.hdrvenable),
+	PFVAL("use_hdrv", PFTYPE_BOOL,		&np2cfg.hdrvenable),
 	PFSTR("hdrvroot", PFTYPE_STR,		np2cfg.hdrvroot),
 	PFVAL("hdrv_acc", PFTYPE_UINT8,		&np2cfg.hdrvacc),
 #endif
@@ -517,6 +517,7 @@ static const PFTBL s_IniItems[] =
 	PFMAX("optSPBVL", PFTYPE_UINT8,		&np2cfg.spb_vrl,		24),
 	PFVAL("optSPB_X", PFTYPE_BOOL,		&np2cfg.spb_x),
 	PFVAL("optMPU98", PFTYPE_HEX8,		&np2cfg.mpuopt),
+	PFVAL("optMPUAT", PFTYPE_BOOL,		&np2cfg.mpu_at),
 
 	PFMAX("volume_F", PFTYPE_UINT8,		&np2cfg.vol_fm,			128),
 	PFMAX("volume_S", PFTYPE_UINT8,		&np2cfg.vol_ssg,		128),

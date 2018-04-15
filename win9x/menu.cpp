@@ -342,6 +342,8 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_F12COMMA, MF_BYCOMMAND | MFCHECK(F12COPY == 4));
 	CheckMenuItem(hMenu, IDM_USERKEY1, MF_BYCOMMAND | MFCHECK(F12COPY == 5));
 	CheckMenuItem(hMenu, IDM_USERKEY2, MF_BYCOMMAND | MFCHECK(F12COPY == 6));
+	CheckMenuItem(hMenu, IDM_F12NOWAIT, MF_BYCOMMAND | MFCHECK(F12COPY == 7));
+	CheckMenuItem(hMenu, IDM_F12NOWAIT2, MF_BYCOMMAND | MFCHECK(F12COPY == 8));
 
 	// Device-Sound
 	const UINT8 BEEP_VOL = np2cfg.BEEP_VOL;

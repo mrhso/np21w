@@ -123,13 +123,13 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 #ifdef SUPPORT_IDEIO
 	if(np2cfg.idetype[drv]!=SXSIDEV_CDROM)
 	{
-		lpPath = np2cfg.idecd[drv];
-	}
-	else
-	{
 #endif
 		lpPath = diskdrv_getsxsi(drv);
 #ifdef SUPPORT_IDEIO
+	}
+	else
+	{
+		lpPath = np2cfg.idecd[drv];
 	}
 #endif
 	if ((lpPath == NULL) || (lpPath[0] == '\0'))

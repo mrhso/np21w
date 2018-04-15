@@ -625,7 +625,6 @@ void IOOUTCALL lgy98_ob200_8(UINT addr, REG8 dat) {
     if (s->rcnt == 0)
         return;
 	if(s->dcfg & 0x01){
-		//TRACEOUT(("LGY-98: Illigal 16 bit write!!!"));
         ne2000_mem_writew(s, s->rsar, val);
         ne2000_dma_update(s, 2);
         return;
@@ -650,7 +649,6 @@ REG8 IOINPCALL lgy98_ib200_8(UINT addr) {
 	
 	//pic_resetirq(s->irq);
 	if(s->dcfg & 0x01){
-		//TRACEOUT(("LGY-98: Illigal 16 bit read!!!"));
 		ret = ne2000_mem_readw(s, s->rsar);
 		ne2000_dma_update(s, 2);
         return (REG8)ret;
@@ -678,7 +676,6 @@ void IOOUTCALL lgy98_ob200_16(UINT addr, REG16 dat) {
 		ne2000_mem_writew(s, s->rsar, val);
 		ne2000_dma_update(s, 2);
 	}else{
-		//TRACEOUT(("LGY-98: Illigal 8 bit write!!!"));
         ne2000_mem_writeb(s, s->rsar, val);
         ne2000_dma_update(s, 1);
 	}
@@ -699,7 +696,6 @@ REG16 IOINPCALL lgy98_ib200_16(UINT addr) {
 		printf("NE2000: asic read val=0x%04x\n", ret);
 #endif
 	}else{
-		//TRACEOUT(("LGY-98: Illigal 8 bit read!!!"));
 		ret = ne2000_mem_readb(s, s->rsar);
 		ne2000_dma_update(s, 1);
 	}
