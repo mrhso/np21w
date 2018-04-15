@@ -1,6 +1,6 @@
 #include	"compiler.h"
 
-#if 1
+#if 0
 #undef	TRACEOUT
 #define	TRACEOUT(s)	(void)(s)
 #endif	/* 1 */
@@ -58,7 +58,7 @@ static void senddata(IDEDRV drv, UINT size, UINT limit) {
 	drv->sc = IDEINTR_IO;
 	drv->cy = size;
 	drv->status &= ~(IDESTAT_BSY|IDESTAT_DMRD|IDESTAT_SERV|IDESTAT_CHK);
-	drv->status |= IDESTAT_DRQ;
+	drv->status |= IDESTAT_DRQ|IDESTAT_DSC; // XXX: set Drive Seek Complete bit np21w ver0.86 rev29
 	drv->error = 0;
 	ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_NO_SENSE);
 	drv->asc = ATAPI_ASC_NO_ADDITIONAL_SENSE_INFORMATION;
@@ -168,6 +168,7 @@ static void atapi_cmd_playaudio(IDEDRV drv);
 static void atapi_cmd_playaudiomsf(IDEDRV drv);
 static void atapi_cmd_pauseresume(IDEDRV drv);
 static void atapi_cmd_seek(IDEDRV drv, UINT32 lba);
+static void atapi_cmd_mechanismstatus(IDEDRV drv);
 
 void atapicmd_a0(IDEDRV drv) {
 
@@ -280,6 +281,11 @@ void atapicmd_a0(IDEDRV drv) {
 	case 0x4b:
 		TRACEOUT(("atapicmd: pause resume"));
 		atapi_cmd_pauseresume(drv);
+		break;
+		
+	case 0xbd:		// mechanism status
+		TRACEOUT(("atapicmd: mechanism status"));
+		atapi_cmd_mechanismstatus(drv);
 		break;
 		
 	default:
@@ -447,15 +453,15 @@ static const UINT8 defval_pagecode_0e[PC_0E_SIZE] = {
 };
 
 static const UINT8 defval_pagecode_2a[PC_2A_SIZE] = {
-#ifdef YUIDEBUG
-	0x2a, 0x12, 0x00, 0x00, 0x71, 0x65, 0x89, 0x07,
+//#ifdef YUIDEBUG
+//	0x2a, 0x12, 0x00, 0x00, 0x71, 0x65, 0x89, 0x07,
+//	0x02, 0xc2, 0x00, 0xff, 0x00, 0x80, 0x02, 0xc2,
+//	0x00, 0x00, 0x00, 0x00,
+//#else
+	0x2a, 0x12, 0x00, 0x00, 0x71, 0x65, 0x29, 0x07,
 	0x02, 0xc2, 0x00, 0xff, 0x00, 0x80, 0x02, 0xc2,
 	0x00, 0x00, 0x00, 0x00,
-#else
-	0x2a, 0x12, 0x00, 0x00, 0x00, 0x00, 0x20, 0x03,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-#endif
+//#endif
 }; 
 
 #if defined(SUPPORT_NECCDD)
@@ -507,7 +513,7 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 	UINT8		pctrl, pcode;
 
 	leng = (drv->buf[7] << 8) + drv->buf[8];
-	pctrl = (drv->buf[2] >> 6) & 3;	// 0: current, 1: changeable, 2: default
+	pctrl = ((drv->buf[2] >> 6) & 3) & ~0x2;	// 0: current, 1: changeable, 2: default
 	pcode = drv->buf[2] & 0x3f;
 
 	if (pctrl == 3) {
@@ -989,6 +995,29 @@ static void atapi_cmd_seek(IDEDRV drv, UINT32 lba)
 		drv->dacurpos = lba;
 	}
 	cmddone(drv);
+}
+
+// 0xBD: MECHANISM STATUS
+static void atapi_cmd_mechanismstatus(IDEDRV drv) {
+
+	SXSIDEV	sxsi;
+
+	//sxsi = sxsi_getptr(drv->sxsidrv);
+	//ZeroMemory(drv->buf, 12);
+	//drv->buf[0] = 0x00;
+	//drv->buf[1] = 0x00;
+	//drv->buf[2] = drv->cy & 0xff; // LBA(MSB)
+	//drv->buf[3] = (drv->cy >> 8) & 0xff; // LBA
+	//drv->buf[4] = drv->sn; // LBA(LSB)
+	//drv->buf[5] = 0x01;
+	//drv->buf[6] = 0x00;
+	//drv->buf[7] = 0x04;
+	//drv->buf[8] = (sxsi->flag & SXSIFLAG_READY) ? 0x80 : 0x00; // XXX: CD‘}“üó‘Ô‚Æ‚©“ü‚ê‚Ä‚â‚é‚×‚«H
+	//drv->buf[9] = 0x00;
+	//drv->buf[10] = 0x00;
+	//drv->buf[11] = 0x00;
+	//senddata(drv, 12, 12);
+	sendabort(drv);
 }
 
 #endif	/* SUPPORT_IDEIO */

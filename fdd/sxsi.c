@@ -234,6 +234,7 @@ REG8 cdchange_drv;
 OEMCHAR cdchange_fname[MAX_PATH];
 void cdchange_timeoutproc(NEVENTITEM item) {
 
+	if(!cdchange_flag) return;
 	cdchange_flag = 0;
 	sxsi_devopen(cdchange_drv, cdchange_fname);
 #if defined(SUPPORT_IDEIO)
@@ -268,9 +269,9 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 #if defined(SUPPORT_IDEIO)
 			if (cdchange_flag) {
 				// CDŒğŠ·’†
-				if(GetTickCount()-cdchange_reqtime>15000){
-					// ‰ö‚µ‚¢‚Ì‚ÅÄ“xŒğŠ·—v‹
-					cdchange_timeoutset();
+				if(GetTickCount()-cdchange_reqtime>5000){
+					// ‹­§ŒğŠ·
+					cdchange_timeoutproc(NULL);
 				}
 				return(FAILURE);
 			}

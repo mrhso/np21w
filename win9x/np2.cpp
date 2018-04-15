@@ -2404,6 +2404,7 @@ void loadNP2INI(const OEMCHAR *fname){
 			if (lpDisk)
 			{
 				diskdrv_readyfdd((REG8)i, lpDisk, 0);
+				toolwin_setfdd((REG8)i, lpDisk);
 			}
 		}
 	}

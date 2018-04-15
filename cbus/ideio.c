@@ -114,7 +114,7 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[61] = (UINT16)(size >> 16);
 		tmp[63] = 0x0000;		// no support multiword DMA
 
-		tmp[80] = 0x0006;		// only support ATA-1/2
+		tmp[80] = 0x003e;		// support ATA-1 to 5
 		tmp[81] = 0;
 		tmp[82] = 0x0200;		// support DEVICE RESET
 	}
@@ -133,9 +133,16 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[49] = 0x0200;		// support LBA
 		tmp[53] = 0x0001;
 		tmp[63] = 0x0000;		// no support multiword DMA
-		tmp[80] = 0x000e;		// only support ATA-1/2
+		tmp[80] = 0x003e;		// support ATA-1 to 5
 		tmp[82] = 0x0210;		// support PACKET/DEVICE RESET
 		tmp[126] = 0x0000;		// ATAPI byte count
+	}
+	if (drv->sxsidrv & 0x1){
+		// master
+		tmp[93] = 0x407a;
+	}else{
+		// slave
+		tmp[93] = 0x4b00;
 	}
 
 	p = drv->buf;
@@ -308,8 +315,8 @@ static void readsec(IDEDRV drv) {
 		goto read_err;
 	}
 	sec = getcursec(drv);
-	TRACEOUT(("readsec->drv %d sec %x cnt %d thr %d",
-								drv->sxsidrv, sec, drv->mulcnt, drv->multhr));
+	//TRACEOUT(("readsec->drv %d sec %x cnt %d thr %d",
+	//							drv->sxsidrv, sec, drv->mulcnt, drv->multhr));
 	if (sxsi_read(drv->sxsidrv, sec, drv->buf, 512)) {
 		TRACEOUT(("read error!"));
 		goto read_err;
@@ -494,11 +501,14 @@ static void IOOUTCALL ideio_o64c(UINT port, REG8 dat) {
 	drvnum = (dat >> 4) & 1;
 	if(dev->drivesel != drvnum){
 		//dev->drv[drvnum].status = dev->drv[drvnum].status & ~(IDESTAT_DRQ|IDESTAT_BSY);
-		dev->drv[drvnum].error = 1;
+		//drvreset(&(dev->drv[drvnum]));
+		//dev->drv[drvnum].status = IDESTAT_DRDY | IDESTAT_DSC;
+		dev->drv[drvnum].error = IDEERR_AMNF;
+		//if(!drvnum) dev->drv[drvnum].error |= IDEERR_BBK;
 	}
-	dev->drivesel = drvnum;
 	dev->drv[drvnum].dr = dat & 0xf0;
 	dev->drv[drvnum].hd = dat & 0x0f;
+	dev->drivesel = drvnum;
 	TRACEOUT(("ideio set DRHD %.2x [%.4x:%.8x]", dat, CPU_CS, CPU_EIP));
 
 	(void)port;
@@ -1073,8 +1083,8 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 		p = drv->buf + drv->bufpos;
 		p[0] = (UINT8)value;
 		p[1] = (UINT8)(value >> 8);
-		TRACEOUT(("ide-data send %.4x (%.4x) [%.4x:%.8x]",
-										value, drv->bufpos, CPU_CS, CPU_EIP));
+		//TRACEOUT(("ide-data send %.4x (%.4x) [%.4x:%.8x]",
+		//								value, drv->bufpos, CPU_CS, CPU_EIP));
 		drv->bufpos += 2;
 		if (drv->bufpos >= drv->bufsize) {
 			drv->status &= ~IDESTAT_DRQ;
@@ -1088,8 +1098,8 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 				case 0x31:
 				case 0xc5:
 					sec = getcursec(drv);
-					TRACEOUT(("writesec->drv %d sec %x cnt %d thr %d",
-								drv->sxsidrv, sec, drv->mulcnt, drv->multhr));
+					//TRACEOUT(("writesec->drv %d sec %x cnt %d thr %d",
+					//			drv->sxsidrv, sec, drv->mulcnt, drv->multhr));
 					if (sxsi_write(drv->sxsidrv, sec, drv->buf, drv->bufsize)) {
 						TRACEOUT(("write error!"));
 						cmdabort(drv);
@@ -1155,8 +1165,8 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 	if ((drv->status & IDESTAT_DRQ) && (drv->bufdir == IDEDIR_IN)) {
 		p = drv->buf + drv->bufpos;
 		ret = p[0] + (p[1] << 8);
-		TRACEOUT(("ide-data recv %.4x (%.4x) [%.4x:%.8x]",
-										ret, drv->bufpos, CPU_CS, CPU_EIP));
+		//TRACEOUT(("ide-data recv %.4x (%.4x) [%.4x:%.8x]",
+		//								ret, drv->bufpos, CPU_CS, CPU_EIP));
 		drv->bufpos += 2;
 		if (drv->bufpos >= drv->bufsize) {
 			drv->status &= ~IDESTAT_DRQ;

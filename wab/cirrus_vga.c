@@ -2911,15 +2911,25 @@ void cirrus_linear_memwnd_addr_convert(void *opaque, target_phys_addr_t *addrval
 	if(np2clvga.gd54xxtype <= 0xff){
 		//addr &= s->cirrus_addr_mask;
 		addr -= np2clvga.VRAMWindowAddr2;
-		if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
-			offset = s->gr[0x09/* + bank_index*/];
-		else			/* single bank */
+		//addr &= 0x7fff;
+		if ((s->gr[0x0b] & 0x01) != 0){
+			/* dual bank */
+			if(addr < 0x4000){
+				offset = s->gr[0x09];
+			}else{
+				addr -= 0x4000;
+				offset = s->gr[0x0a];
+			}
+		}else{
+			/* single bank */
 			offset = s->gr[0x09];
-
+		}
 		if ((s->gr[0x0b] & 0x20) != 0)
-			addr += (offset) << 14L;
+			offset <<= 14;
 		else
-			addr += (offset) << 12L;
+			offset <<= 12;
+
+		addr += (offset);
 		addr &= s->cirrus_addr_mask;
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_GA98NB){
 		addr &= 0x7fff;

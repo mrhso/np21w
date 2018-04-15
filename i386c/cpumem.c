@@ -554,6 +554,7 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 	return(ret);
 }
 
+UINT8 wabmem_handled = 0; // ウィンドウアクセラレータVRAM窓 多重書き込み防止フラグ
 void MEMCALL memp_write8(UINT32 address, REG8 value) {
 	
 	//if(0x400 <= address && address < 0x600){
@@ -570,7 +571,7 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 	}
 	else {
 #if defined(SUPPORT_CL_GD5430)
-		if(np2clvga.enabled && cirrusvga_opaque){
+		if(!wabmem_handled && np2clvga.enabled && cirrusvga_opaque){
 			if(np2clvga.VRAMWindowAddr){
 				if(np2clvga.VRAMWindowAddr <= address){
 					if(address < np2clvga.VRAMWindowAddr + VRAMWINDOW_SIZE){
@@ -604,8 +605,8 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 				}
 				if((addr2 & CIRRUS_VRAMWINDOW2MASK) == np2clvga.VRAMWindowAddr2){
 					CIRRUS_VRAMWND2_FUNC_wb(cirrusvga_opaque, addr2, value);
-					if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
-						return;
+					//if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
+					//	return;
 				}
 			}
 		}
@@ -669,7 +670,7 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 	}
 	else{
 #if defined(SUPPORT_CL_GD5430)
-		if(np2clvga.enabled && cirrusvga_opaque){
+		if(!wabmem_handled && np2clvga.enabled && cirrusvga_opaque){
 			if(np2clvga.VRAMWindowAddr){
 				if(np2clvga.VRAMWindowAddr <= address){
 					if(address < np2clvga.VRAMWindowAddr + VRAMWINDOW_SIZE){
@@ -703,8 +704,8 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 				}
 				if((addr2 & CIRRUS_VRAMWINDOW2MASK) == np2clvga.VRAMWindowAddr2){
 					CIRRUS_VRAMWND2_FUNC_ww(cirrusvga_opaque, addr2, value);
-					if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
-						return;
+					//if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
+					//	return;
 				}
 			}
 		}
@@ -737,8 +738,10 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 			}
 		}
 		else {
+			wabmem_handled |= 16;
 			memp_write8(address + 0, (UINT8)value);
 			memp_write8(address + 1, (UINT8)(value >> 8));
+			wabmem_handled &= ~16;
 		}
 	}
 }
@@ -795,8 +798,8 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 				}
 				if((addr2 & CIRRUS_VRAMWINDOW2MASK) == np2clvga.VRAMWindowAddr2){
 					CIRRUS_VRAMWND2_FUNC_wl(cirrusvga_opaque, addr2, value);
-					if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
-						return;
+					//if((np2clvga.VRAMWindowAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E)))) && !(gdc.display & (1 << GDCDISP_31))) 
+					//	return;
 				}
 			}
 		}
@@ -809,6 +812,7 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 			}
 		}
 	}
+	wabmem_handled |= 32;
 	if (!(address & 1)) {
 		memp_write16(address + 0, (UINT16)value);
 		memp_write16(address + 2, (UINT16)(value >> 16));
@@ -818,6 +822,7 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 		memp_write16(address + 1, (UINT16)(value >> 8));
 		memp_write8(address + 3, (UINT8)(value >> 24));
 	}
+	wabmem_handled &= ~32;
 }
 
 
