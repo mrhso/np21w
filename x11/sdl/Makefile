@@ -6,7 +6,7 @@ CINCLUDES=	-I. -I.. -I../.. -I../../common -I../../generic -I../debug \
 		-I../../i286c \
 		-I../../bios -I../../cbus -I../../fdd -I../../font \
 		-I../../io -I../../lio \
-		-I../../sound -I../../sound/vermouth \
+		-I../../sound -I../../sound/vermouth -I../../sound/getsnd \
 		-I../../vram \
 		-I../../embed -I../../embed/menu -I../../embed/menubase \
 		`$(SDL_CONFIG) --cflags` \
@@ -48,7 +48,7 @@ CBUSOBJS=	../../cbus/cbuscore.o ../../cbus/pc9861k.o \
 		../../cbus/board26k.o ../../cbus/board86.o \
 		../../cbus/boardspb.o ../../cbus/boardx2.o \
 		../../cbus/cs4231io.o ../../cbus/pcm86io.o \
-		../../cbus/sasiio.o ../../cbus/scsicmd.o ../../cbus/scsiio.o \
+		../../cbus/sasiio.o ../../cbus/scsicmd.o ../../cbus/scsiio.o
 
 EMBEDOBJS=	../../embed/vramhdl.o ../../embed/vrammix.o
 
@@ -93,7 +93,7 @@ LIOOBJS=	../../lio/lio.o ../../lio/gscreen.o ../../lio/gview.o \
 		../../lio/gpset.o ../../lio/gline.o ../../lio/gput1.o
 
 NP2OBJS=	../../pccore.o ../../nevent.o ../../calendar.o ../../timing.o \
-		../../debugsub.o ../../statsave.o
+		../../debugsub.o ../../statsave.o ../../keystat.o
 
 SOUNDOBJS=	../../sound/sound.o ../../sound/soundrom.o ../../sound/s98.o \
 		../../sound/adpcmc.o ../../sound/adpcmg.o \
@@ -153,4 +153,4 @@ $(PROG): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) -c $<
 
 clean:
-	-/bin/rm -f $(PROG) $(OBJS)
+	-/bin/rm -f $(PROG) $(OBJS) *~ *.bak core.* *.core

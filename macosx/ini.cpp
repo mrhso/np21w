@@ -140,11 +140,6 @@ const INITBL	*p;
 				case INITYPE_HEX32:
 					*((UINT32 *)p->value) = (UINT32)milstr_solveHEX(data);
 					break;
-
-				case INITYPE_USERKEY:
-					((NKEYM)p->value)->keys = (UINT8)profile_setkeys(data,
-												((NKEYM)p->value)->key, 15);
-					break;
 			}
 		}
 		p++;
@@ -312,11 +307,6 @@ const INITBL	*pterm;
 				SPRINTF(work, "%x", *((UINT32 *)p->value));
 				break;
 
-			case INITYPE_USERKEY:
-				profile_getkeys(work, sizeof(work),
-							((NKEYM)p->value)->key, ((NKEYM)p->value)->keys);
-				break;
-
 			default:
 				set = FAILURE;
 				break;
@@ -423,10 +413,17 @@ static const INITBL iniitem[] = {
 	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0},
 	{"Mouse_sw", INITYPE_BOOL,		&np2oscfg.MOUSE_SW,		0},
 	{"comfirm_", INITYPE_BOOL,		&np2oscfg.comfirm,		0},
-	{"userkey1", INITYPE_USERKEY,	np2cfg.userkey+0,		0},
-	{"userkey2", INITYPE_USERKEY,	np2cfg.userkey+1,		0},
+	
+	{"mpu98map", INITYPE_STR,		np2oscfg.mpu.mout,		MAX_PATH},
+	{"mpu98min", INITYPE_STR,		np2oscfg.mpu.min,		MAX_PATH},
+	{"mpu98mdl", INITYPE_STR,		np2oscfg.mpu.mdl,		64},
+	{"mpu98def", INITYPE_STR,		np2oscfg.mpu.def,		MAX_PATH},
+
 	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},		// ver0.30
 	{"toolwind", INITYPE_BOOL,		&np2oscfg.toolwin,		0},		// ver0.38
+#ifdef SUPPORT_KEYDISP
+	{"keydispl", INITYPE_BOOL,		&np2oscfg.keydisp,		0},
+#endif
 	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
 	{"I286SAVE", INITYPE_BOOL,		&np2oscfg.I286SAVE,		0}};
 

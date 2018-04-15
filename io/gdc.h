@@ -31,11 +31,14 @@ typedef struct {
 	int			palnum;
 	UINT8		degpal[4];
 	RGB32		anapal[16];
-
 	UINT32		dispclock;
 	UINT32		vsyncclock;
 	UINT32		rasterclock;
 	UINT32		hsyncclock;
+
+#if defined(SUPPORT_PC9821)
+	UINT8		anareg[16*3 + 256*4];
+#endif
 } _GDC, *GDC;
 
 typedef struct {
@@ -62,7 +65,17 @@ enum {
 	GDCSCRN_MAKE		= (GDCSCRN_ALLDRAW | GDCSCRN_REDRAW),
 
 	GDCWORK_MASTER		= 0,
-	GDCWORK_SLAVE		= 1
+	GDCWORK_SLAVE		= 1,
+
+	GDCANALOG_16		= 0,
+	GDCANALOG_256		= 1,
+	GDCANALOG_256E		= 2,
+
+	GDCDISP_PLAZMA		= 0,
+	GDCDISP_ANALOG		= 1,
+	GDCDISP_PLAZMA2		= 2,
+	GDCDISP_15			= 6,
+	GDCDISP_31			= 7
 };
 
 
@@ -73,14 +86,20 @@ extern "C" {
 void gdc_reset(void);
 void gdc_bind(void);
 
+void gdc_vectreset(GDCDATA item);
 void gdc_work(int id);
-void gdc_forceready(GDCDATA item);
+void gdc_forceready(int id);
 void gdc_paletteinit(void);
 
 void gdc_setdegitalpal(int color, REG8 value);
 void gdc_setanalogpal(int color, int rgb, REG8 value);
 void gdc_setdegpalpack(int color, REG8 value);
 
+#if defined(SUPPORT_PC9821)
+void gdc_analogext(BOOL extend);
+#endif
+
+void gdc_biosreset(void);
 void gdc_updateclock(void);
 void gdc_restorekacmode(void);
 

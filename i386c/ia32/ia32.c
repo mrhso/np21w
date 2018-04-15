@@ -1,4 +1,4 @@
-/*	$Id: ia32.c,v 1.9 2004/02/09 16:12:54 monaka Exp $	*/
+/*	$Id: ia32.c,v 1.14 2004/03/12 14:33:06 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -34,12 +34,12 @@
 
 I386CORE	i386core;
 
-BYTE	*reg8_b20[0x100];
-BYTE	*reg8_b53[0x100];
-WORD	*reg16_b20[0x100];
-WORD	*reg16_b53[0x100];
-DWORD	*reg32_b20[0x100];
-DWORD	*reg32_b53[0x100];
+UINT8	*reg8_b20[0x100];
+UINT8	*reg8_b53[0x100];
+UINT16	*reg16_b20[0x100];
+UINT16	*reg16_b53[0x100];
+UINT32	*reg32_b20[0x100];
+UINT32	*reg32_b53[0x100];
 
 
 void
@@ -78,9 +78,6 @@ ia32_init(void)
 	}
 
 	resolve_init();
-#if defined(IA32_SUPPORT_TLB)
-	tlb_init();
-#endif
 #ifdef USE_FPU
 	fpu_init();
 #endif
@@ -130,6 +127,8 @@ change_pm(BOOL onoff)
 	CPU_STAT_SS32 = 0;
 	CPU_SET_CPL(0);
 	CPU_STAT_PM = onoff;
+
+	tlb_flush(TRUE);
 }
 
 void FASTCALL
@@ -142,6 +141,8 @@ change_pg(BOOL onoff)
 		VERBOSE(("Leaveing from Paging-Mode..."));
 	}
 	CPU_STAT_PAGING = onoff;
+
+	tlb_flush(TRUE);
 }
 
 void FASTCALL
@@ -152,6 +153,7 @@ change_vm(BOOL onoff)
 	CPU_STAT_VM86 = onoff;
 	if (onoff) {
 		for (i = 0; i < CPU_SEGREG_NUM; i++) {
+			CPU_STAT_SREGLIMIT(i) = 0xffff;
 			CPU_SET_SEGREG(i, CPU_REGS_SREG(i));
 		}
 		CPU_INST_OP32 = CPU_INST_AS32 =
@@ -165,40 +167,43 @@ change_vm(BOOL onoff)
 	}
 }
 
+#if !defined(IA32_DONT_USE_SET_EFLAGS_FUNCTION)
 /*
  * flags
  */
 static void
-modify_eflags(DWORD new_flags, DWORD mask)
+modify_eflags(UINT32 new_flags, UINT32 mask)
 {
-	DWORD orig = CPU_EFLAG;
+	UINT32 orig = CPU_EFLAG;
 
 	new_flags &= ALL_EFLAG;
 	mask &= ALL_EFLAG;
-	CPU_EFLAG = (REAL_EFLAGREG & ~mask) | (new_flags & mask) | 0x2;
+	CPU_EFLAG = (REAL_EFLAGREG & ~mask) | (new_flags & mask);
 
 	CPU_OV = CPU_FLAG & O_FLAG;
 	CPU_TRAP = (CPU_FLAG & (I_FLAG|T_FLAG)) == (I_FLAG|T_FLAG);
-	if ((orig ^ CPU_EFLAG) & VM_FLAG) {
-		if (CPU_EFLAG & VM_FLAG) {
-			change_vm(1);
-		} else {
-			change_vm(0);
+	if (CPU_STAT_PM) {
+		if ((orig ^ CPU_EFLAG) & VM_FLAG) {
+			if (CPU_EFLAG & VM_FLAG) {
+				change_vm(1);
+			} else {
+				change_vm(0);
+			}
 		}
 	}
 }
 
 void
-set_flags(WORD new_flags, WORD mask)
+set_flags(UINT16 new_flags, UINT16 mask)
 {
 
 	mask &= I_FLAG|IOPL_FLAG;
-	mask |= (SZAPC_FLAG|T_FLAG|D_FLAG|O_FLAG|NT_FLAG);
+	mask |= SZAPC_FLAG|T_FLAG|D_FLAG|O_FLAG|NT_FLAG;
 	modify_eflags(new_flags, mask);
 }
 
 void
-set_eflags(DWORD new_flags, DWORD mask)
+set_eflags(UINT32 new_flags, UINT32 mask)
 {
 
 	mask &= I_FLAG|IOPL_FLAG|RF_FLAG|VM_FLAG|VIF_FLAG|VIP_FLAG;
@@ -206,3 +211,4 @@ set_eflags(DWORD new_flags, DWORD mask)
 	mask |= AC_FLAG|ID_FLAG;
 	modify_eflags(new_flags, mask);
 }
+#endif	/* !IA32_DONT_USE_SET_EFLAGS_FUNCTION */

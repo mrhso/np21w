@@ -7,9 +7,11 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"gdc_sub.h"
 #include	"cbuscore.h"
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
+#include	"amd98.h"
 #include	"bios.h"
 #include	"biosmem.h"
 #include	"vram.h"
@@ -19,6 +21,7 @@
 #include	"maketext.h"
 #include	"maketgrp.h"
 #include	"makegrph.h"
+#include	"makegrex.h"
 #include	"sound.h"
 #include	"fmboard.h"
 #include	"beep.h"
@@ -34,6 +37,7 @@
 #include	"np2ver.h"
 #include	"calendar.h"
 #include	"timing.h"
+#include	"keystat.h"
 #include	"debugsub.h"
 
 
@@ -44,7 +48,6 @@
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
-				{{0, {0, }}, {0, {0, }}},
 
 				"VX", PCBASECLOCK25, 4,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
@@ -65,9 +68,6 @@
 						0, PCMODEL_VX, 0, 0, {0x3e, 0x73, 0x7b}, 0,
 						0, 0,
 						4 * PCBASECLOCK25};
-
-static const BYTE msw_default[8] =
-							{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e};
 
 	BYTE	screenupdate = 3;
 	int		screendispflag = 1;
@@ -119,7 +119,7 @@ static void pccore_set(void) {
 	}
 	else {
 		pccore.baseclock = PCBASECLOCK20;			// 2.0MHz
-		pccore.cpumode = CPUMODE_8MHz;
+		pccore.cpumode = CPUMODE_8MHZ;
 	}
 	multiple = np2cfg.multiple;
 	if (multiple == 0) {
@@ -130,13 +130,7 @@ static void pccore_set(void) {
 	}
 	pccore.multiple = multiple;
 	pccore.realclock = pccore.baseclock * multiple;
-#if 0
-	keybrd.xferclock = pccore.realclock / 1920;
-	gdc.rasterclock = pccore.realclock / 24816;
-	gdc.hsyncclock = (gdc.rasterclock * 4) / 5;
-	gdc.dispclock = pccore.realclock * 50 / 3102;
-	gdc.vsyncclock = pccore.realclock * 5 / 3102;
-#endif
+
 	// HDDの接続 (I/Oの使用状態が変わるので..
 	if (np2cfg.dipsw[1] & 0x20) {
 		pccore.hddif |= PCHDD_IDE;
@@ -175,9 +169,7 @@ static void sound_init(void) {
 		rate = 0;
 	}
 	sound_create(rate, np2cfg.delayms);
-#if defined(SUPPORT_WAVEMIX)
-	wavemix_initialize(rate);
-#endif
+	fddmtrsnd_initialize(rate);
 	beep_initialize(rate);
 	beep_setvol(np2cfg.BEEP_VOL);
 	tms3631_initialize(rate);
@@ -193,15 +185,15 @@ static void sound_init(void) {
 	pcm86gen_initialize(rate);
 	pcm86gen_setvol(np2cfg.vol_pcm);
 	cs4231_initialize(rate);
+	amd98_initialize(rate);
 }
 
 static void sound_term(void) {
 
 	soundmng_stop();
-#if defined(SUPPORT_WAVEMIX)
-	wavemix_deinitialize();
-#endif
+	amd98_deinitialize();
 	rhythm_deinitialize();
+	fddmtrsnd_deinitialize();
 	sound_destroy();
 }
 
@@ -212,15 +204,15 @@ void pccore_init(void) {
 	pal_initlcdtable();
 	pal_makelcdpal();
 	pal_makeskiptable();
-	dispsync_init();
+	dispsync_initialize();
 	sxsi_initialize();
 
-	font_init();
+	font_initialize();
 	font_load(np2cfg.fontfile, TRUE);
-	maketext_init();
-	makegrph_init();
-	gdcsub_init();
-	fddfile_init();
+	maketext_initialize();
+	makegrph_initialize();
+	gdcsub_initialize();
+	fddfile_initialize();
 
 	sound_init();
 
@@ -288,7 +280,7 @@ void pccore_reset(void) {
 		sound_init();
 	}
 
-	ZeroMemory(mem, 0x110000);									// ver0.28
+	ZeroMemory(mem, 0x110000);
 	ZeroMemory(mem + VRAM1_B, 0x18000);
 	ZeroMemory(mem + VRAM1_E, 0x08000);
 	ZeroMemory(mem + FONT_ADRS, 0x08000);
@@ -299,7 +291,7 @@ void pccore_reset(void) {
 	}
 
 	pccore_set();
-	nevent_init();
+	nevent_allreset();
 
 	CPU_RESET();
 	CPU_SETEXTSIZE((UINT32)pccore.extmem);
@@ -331,9 +323,7 @@ void pccore_reset(void) {
 	sound_changeclock();
 	beep_changeclock();
 	sound_reset();
-#if defined(SUPPORT_WAVEMIX)
-	wavemix_bind();
-#endif
+	fddmtrsnd_bind();
 
 	fddfile_reset2dmode();
 	bios0x18_16(0x20, 0xe1);
@@ -348,27 +338,18 @@ void pccore_reset(void) {
 	cbuscore_bind();
 	fmboard_bind();
 
-	fddmtr_init();
-	calendar_init();
-	vram_init();
+	fddmtr_initialize();
+	calendar_initialize();
+	vram_initialize();
 
 	pal_change(1);
 
-	bios_init();
+	bios_initialize();
 
-	if (np2cfg.ITF_WORK) {
-		CS_BASE = 0xf0000;
-		CPU_CS = 0xf000;
-		CPU_IP = 0xfff0;
-	}
-	else {
-		for (i=0; i<8; i++) {
-			mem[0xa3fe2 + i*4] = msw_default[i];
-		}
-		CS_BASE = 0xfd800;
-		CPU_CS = 0xfd80;
-		CPU_IP = 0x0002;
-	}
+	CS_BASE = 0xf0000;
+	CPU_CS = 0xf000;
+	CPU_IP = 0xfff0;
+
 	CPU_CLEARPREFETCH();
 	sysmng_cpureset();
 
@@ -382,7 +363,9 @@ void pccore_reset(void) {
 
 static void drawscreen(void) {
 
-	BYTE	timing;
+	UINT8	timing;
+	void	(VRAMCALL * grphfn)(int page, int alldraw);
+	UINT8	bit;
 
 	tramflag.timing++;
 	timing = ((LOADINTELWORD(gdc.m.para + GDC_CSRFORM + 1)) >> 5) & 0x3e;
@@ -400,111 +383,112 @@ static void drawscreen(void) {
 		gdc_updateclock();
 	}
 
-	if (drawframe) {
-		if ((gdcs.textdisp & GDCSCRN_EXT) ||
-			(gdcs.grphdisp & GDCSCRN_EXT)) {
-			if (dispsync_renewalvertical()) {
-				gdcs.textdisp |= GDCSCRN_ALLDRAW2;
-				gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
-			}
+	if (!drawframe) {
+		return;
+	}
+	if ((gdcs.textdisp & GDCSCRN_EXT) || (gdcs.grphdisp & GDCSCRN_EXT)) {
+		if (dispsync_renewalvertical()) {
+			gdcs.textdisp |= GDCSCRN_ALLDRAW2;
+			gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 		}
-																// ver0.28/pr4
-		if (gdcs.textdisp & GDCSCRN_EXT) {
-			gdcs.textdisp &= ~GDCSCRN_EXT;
-			dispsync_renewalhorizontal();
-			tramflag.renewal |= 1;
-			if (dispsync_renewalmode()) {
-				screenupdate |= 2;
-			}
+	}
+	if (gdcs.textdisp & GDCSCRN_EXT) {
+		gdcs.textdisp &= ~GDCSCRN_EXT;
+		dispsync_renewalhorizontal();
+		tramflag.renewal |= 1;
+		if (dispsync_renewalmode()) {
+			screenupdate |= 2;
 		}
-																// ver0.28/pr4
-		if (gdcs.palchange) {									// grphを先に
-			gdcs.palchange = 0;
-			pal_change(0);
-			screenupdate |= 1;
+	}
+	if (gdcs.palchange) {
+		gdcs.palchange = 0;
+		pal_change(0);
+		screenupdate |= 1;
+	}
+	if (gdcs.grphdisp & GDCSCRN_EXT) {
+		gdcs.grphdisp &= ~GDCSCRN_EXT;
+		if (((gdc.clock & 0x80) && (gdc.clock != 0x83)) ||
+			(gdc.clock == 0x03)) {
+			gdc.clock ^= 0x80;
+			gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 		}
-		if (gdcs.grphdisp & GDCSCRN_EXT) {
-			gdcs.grphdisp &= ~GDCSCRN_EXT;
-			if (((gdc.clock & 0x80) && (gdc.clock != 0x83)) ||
-				(gdc.clock == 0x03)) {
-				gdc.clock ^= 0x80;
-				gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
+	}
+	if (gdcs.grphdisp & GDCSCRN_ENABLE) {
+		if (!(gdc.mode1 & 2)) {
+			grphfn = makegrph;
+			bit = GDCSCRN_MAKE;
+			if (gdcs.disp) {
+				bit <<= 1;
 			}
-		}
-		if (gdcs.grphdisp & GDCSCRN_ENABLE) {
-			if (!(gdc.mode1 & 2)) {
-				if (!gdcs.disp) {
-					if (gdcs.grphdisp & GDCSCRN_MAKE) {
-						makegrph(0, gdcs.grphdisp & GDCSCRN_ALLDRAW);
-						gdcs.grphdisp &= ~GDCSCRN_MAKE;
-						screenupdate |= 1;
-					}
-				}
-				else {
-					if (gdcs.grphdisp & (GDCSCRN_MAKE << 1)) {
-						makegrph(1, gdcs.grphdisp & (GDCSCRN_ALLDRAW << 1));
-						gdcs.grphdisp &= ~(GDCSCRN_MAKE << 1);
-						screenupdate |= 1;
-					}
+#if defined(SUPPORT_PC9821)
+			if (gdc.analog & 2) {
+				grphfn = makegrphex;
+				if (gdc.analog & 4) {
+					bit = GDCSCRN_MAKE | (GDCSCRN_MAKE << 1);
 				}
 			}
-			else if (gdcs.textdisp & GDCSCRN_ENABLE) {
-				if (!gdcs.disp) {
-					if ((gdcs.grphdisp & GDCSCRN_MAKE) ||
-						(gdcs.textdisp & GDCSCRN_MAKE)) {
-						if (!(gdc.mode1 & 0x4)) {
-							maketextgrph(0, gdcs.textdisp & GDCSCRN_ALLDRAW,
-									gdcs.grphdisp & GDCSCRN_ALLDRAW);
-						}
-						else {
-							maketextgrph40(0, gdcs.textdisp & GDCSCRN_ALLDRAW,
-									gdcs.grphdisp & GDCSCRN_ALLDRAW);
-						}
-						gdcs.grphdisp &= ~GDCSCRN_MAKE;
-						screenupdate |= 1;
-					}
-				}
-				else {
-					if ((gdcs.grphdisp & (GDCSCRN_MAKE << 1)) ||
-						(gdcs.textdisp & GDCSCRN_MAKE)) {
-						if (!(gdc.mode1 & 0x4)) {
-							maketextgrph(1, gdcs.textdisp & GDCSCRN_ALLDRAW,
-									gdcs.grphdisp & (GDCSCRN_ALLDRAW << 1));
-						}
-						else {
-							maketextgrph40(1, gdcs.textdisp & GDCSCRN_ALLDRAW,
-									gdcs.grphdisp & (GDCSCRN_ALLDRAW << 1));
-						}
-						gdcs.grphdisp &= ~(GDCSCRN_MAKE << 1);
-						screenupdate |= 1;
-					}
-				}
-			}
-		}
-
-		if (gdcs.textdisp & GDCSCRN_ENABLE) {
-			if (tramflag.renewal) {
-				gdcs.textdisp |= maketext_curblink();
-			}
-			if ((cgwindow.writable & 0x80) && (tramflag.gaiji)) {
-				gdcs.textdisp |= GDCSCRN_ALLDRAW;
-			}
-			cgwindow.writable &= ~0x80;
-			if (gdcs.textdisp & GDCSCRN_MAKE) {
-				if (!(gdc.mode1 & 0x4)) {
-					maketext(gdcs.textdisp & GDCSCRN_ALLDRAW);
-				}
-				else {
-					maketext40(gdcs.textdisp & GDCSCRN_ALLDRAW);
-				}
-				gdcs.textdisp &= ~GDCSCRN_MAKE;
+#endif
+			if (gdcs.grphdisp & bit) {
+				(*grphfn)(gdcs.disp, gdcs.grphdisp & bit & GDCSCRN_ALLDRAW2);
+				gdcs.grphdisp &= ~bit;
 				screenupdate |= 1;
 			}
 		}
-		if (screenupdate) {
-			screenupdate = scrndraw_draw((BYTE)(screenupdate & 2));
-			drawcount++;
+		else if (gdcs.textdisp & GDCSCRN_ENABLE) {
+			if (!gdcs.disp) {
+				if ((gdcs.grphdisp & GDCSCRN_MAKE) ||
+					(gdcs.textdisp & GDCSCRN_MAKE)) {
+					if (!(gdc.mode1 & 0x4)) {
+						maketextgrph(0, gdcs.textdisp & GDCSCRN_ALLDRAW,
+								gdcs.grphdisp & GDCSCRN_ALLDRAW);
+					}
+					else {
+						maketextgrph40(0, gdcs.textdisp & GDCSCRN_ALLDRAW,
+								gdcs.grphdisp & GDCSCRN_ALLDRAW);
+					}
+					gdcs.grphdisp &= ~GDCSCRN_MAKE;
+					screenupdate |= 1;
+				}
+			}
+			else {
+				if ((gdcs.grphdisp & (GDCSCRN_MAKE << 1)) ||
+					(gdcs.textdisp & GDCSCRN_MAKE)) {
+					if (!(gdc.mode1 & 0x4)) {
+						maketextgrph(1, gdcs.textdisp & GDCSCRN_ALLDRAW,
+								gdcs.grphdisp & (GDCSCRN_ALLDRAW << 1));
+					}
+					else {
+						maketextgrph40(1, gdcs.textdisp & GDCSCRN_ALLDRAW,
+								gdcs.grphdisp & (GDCSCRN_ALLDRAW << 1));
+					}
+					gdcs.grphdisp &= ~(GDCSCRN_MAKE << 1);
+					screenupdate |= 1;
+				}
+			}
 		}
+	}
+	if (gdcs.textdisp & GDCSCRN_ENABLE) {
+		if (tramflag.renewal) {
+			gdcs.textdisp |= maketext_curblink();
+		}
+		if ((cgwindow.writable & 0x80) && (tramflag.gaiji)) {
+			gdcs.textdisp |= GDCSCRN_ALLDRAW;
+		}
+		cgwindow.writable &= ~0x80;
+		if (gdcs.textdisp & GDCSCRN_MAKE) {
+			if (!(gdc.mode1 & 0x4)) {
+				maketext(gdcs.textdisp & GDCSCRN_ALLDRAW);
+			}
+			else {
+				maketext40(gdcs.textdisp & GDCSCRN_ALLDRAW);
+			}
+			gdcs.textdisp &= ~GDCSCRN_MAKE;
+			screenupdate |= 1;
+		}
+	}
+	if (screenupdate) {
+		screenupdate = scrndraw_draw((BYTE)(screenupdate & 2));
+		drawcount++;
 	}
 }
 
@@ -515,7 +499,7 @@ void screendisp(NEVENTITEM item) {
 	gdc_work(GDCWORK_SLAVE);
 	gdc.vsync = 0;
 	screendispflag = 0;
-	if (!np2cfg.DISPSYNC) {											// ver0.29
+	if (!np2cfg.DISPSYNC) {
 		drawscreen();
 	}
 	pi = &pic.pi[0];
@@ -540,7 +524,7 @@ void screenvsync(NEVENTITEM item) {
 	nevent_set(NEVENT_FLAMES, gdc.vsyncclock, screendisp, NEVENT_RELATIVE);
 
 	// drawscreenで pccore.vsyncclockが変更される可能性があります
-	if (np2cfg.DISPSYNC) {											// ver0.29
+	if (np2cfg.DISPSYNC) {
 		drawscreen();
 	}
 	(void)item;
@@ -552,8 +536,8 @@ void screenvsync(NEVENTITEM item) {
 // #define	IPTRACE			(1 << 12)
 
 #if defined(TRACE) && IPTRACE
-static UINT		trpos = 0;
-static UINT32	treip[IPTRACE];
+static	UINT	trpos = 0;
+static	UINT32	treip[IPTRACE];
 
 void iptrace_out(void) {
 
@@ -593,7 +577,7 @@ UINT	cflg;
 void pccore_exec(BOOL draw) {
 
 	drawframe = draw;
-	keyext_flash();
+	keystat_sync();
 	soundmng_sync();
 	mouseif_sync();
 	pal_eventclear();
@@ -657,35 +641,13 @@ void pccore_exec(BOOL draw) {
 			}
 #endif
 #if 0
-			if ((tr & 2) && (mem[0x0471e] == '\\')) {
-				TRACEOUT(("DTA BREAK %.4x:%.4x", CPU_CS, CPU_IP));
-				TRACEOUT(("0471:000e %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x",
-	mem[0x0471e+0], mem[0x0471e+1], mem[0x0471e+2], mem[0x0471e+3],
-	mem[0x0471e+4], mem[0x0471e+5], mem[0x0471e+6], mem[0x0471e+7]));
-				tr -= 2;
-			}
-			// DOS6
-			if (CPU_CS == 0xffd0) {
-				if (CPU_IP == 0xc4c2) {
-					TRACEOUT(("DS:DX = %.4x:%.4x / CX = %.4x", CPU_DS, CPU_DX, CPU_CX));
-				}
-				else if (CPU_IP == 0xc21d) {
-					TRACEOUT(("-> DS:BX = %.4x:%.4x", CPU_DS, CPU_BX));
-				}
+			if (CPU_IP == 0x2E4F) {
+				TRACEOUT(("CS = %.4x - 0x2e4f", CPU_CS));
 			}
 #endif
-#if 0
-			if ((CPU_CS == 0x0620) || (CPU_CS == 0x08a0)) {
+			if (CPU_CS == 0x8b6) {
 				TRACEOUT(("%.4x:%.4x", CPU_CS, CPU_IP));
 			}
-#endif
-#if 0		// VX LIO
-			if (CPU_CS == 0xf990) {
-				if (CPU_IP == 0x07BE) {
-					TRACEOUT(("%d,%d - %d,%d", CPU_BP, CPU_DX, CPU_SI, CPU_DI));
-				}
-			}
-#endif
 //			i286x_step();
 			i286c_step();
 		}

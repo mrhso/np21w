@@ -18,6 +18,7 @@
 #include	"winkbd.h"
 #include	"ini.h"
 #include	"menu.h"
+#include	"debugwin.h"
 #include	"dialog.h"
 #include	"cpucore.h"
 #include	"pccore.h"
@@ -32,6 +33,7 @@
 #include	"diskdrv.h"
 #include	"fddfile.h"
 #include	"timing.h"
+#include	"keystat.h"
 #include	"debugsub.h"
 
 
@@ -39,7 +41,9 @@
 #define		OPENING_WAIT		1500
 #endif
 
-#if defined(CPUCORE_IA32)
+#if defined(SUPPORT_PC9821)
+		const char szAppCaption[] = "Neko Project-21";
+#elif defined(CPUCORE_IA32)
 		const char szAppCaption[] = "Neko Project II (IA-32)";
 #else
 		const char szAppCaption[] = "Neko Project II (C Version)";
@@ -730,6 +734,7 @@ static void framereset(void) {
 
 	framecnt = 0;
 	sysmng_updatecaption();
+	debugwin_process();
 }
 
 static void processwait(UINT cnt) {
@@ -805,6 +810,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			return(FALSE);
 		}
 	}
+	debugwin_initapp(hInstance);
 
 	mousemng_initialize();
 
@@ -887,6 +893,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	scrndraw_redraw();
 
 	pccore_reset();
+
+	debugwin_create();
 
 	np2opening = 0;
 
@@ -979,6 +987,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	S98_trash();
 
 	pccore_term();
+	debugwin_destroy();
 
 	soundmng_deinitialize();
 	scrnmng_destroy();

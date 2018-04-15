@@ -59,7 +59,6 @@ static const char file_i286cs[] = "i286_cs.%.3u";
 static const char file_i286ds[] = "i286_ds.%.3u";
 static const char file_i286es[] = "i286_es.%.3u";
 static const char file_i286ss[] = "i286_ss.%.3u";
-static const char file_i286txt[] = "i286txt.%.3u";
 static const char file_memorybin[] = "memory.bin";
 
 static const char str_register[] =										\
@@ -108,6 +107,28 @@ static char work[256];
 	return(work);
 }
 
+static void writeseg(const char *fname, UINT32 addr, UINT limit) {
+
+	FILEH	fh;
+	UINT	size;
+	BYTE	buf[0x1000];
+
+	fh = file_create_c(fname);
+	if (fh == FILEH_INVALID) {
+		return;
+	}
+	limit = min(limit, 0xffff);
+	limit++;
+	while(limit) {
+		size = min(limit, sizeof(buf));
+		MEML_READ(addr, buf, size);
+		file_write(fh, buf, size);
+		addr += size;
+		limit -= size;
+	}
+	file_close(fh);
+}
+
 void debugsub_status(void) {
 
 static int	filenum = 0;
@@ -129,35 +150,13 @@ const char	*p;
 	}
 
 	SPRINTF(work, file_i286cs, filenum);
-	fh = file_create_c(work);
-	if (fh != FILEH_INVALID) {
-		file_write(fh, &mem[CS_BASE], 0x10000);
-		file_close(fh);
-	}
+	writeseg(work, CS_BASE, 0xffff);
 	SPRINTF(work, file_i286ds, filenum);
-	fh = file_create_c(work);
-	if (fh != FILEH_INVALID) {
-		file_write(fh, &mem[DS_BASE], 0x10000);
-		file_close(fh);
-	}
+	writeseg(work, DS_BASE, 0xffff);
 	SPRINTF(work, file_i286es, filenum);
-	fh = file_create_c(work);
-	if (fh != FILEH_INVALID) {
-		file_write(fh, &mem[ES_BASE], 0x10000);
-		file_close(fh);
-	}
+	writeseg(work, ES_BASE, 0xffff);
 	SPRINTF(work, file_i286ss, filenum);
-	fh = file_create_c(work);
-	if (fh != FILEH_INVALID) {
-		file_write(fh, &mem[SS_BASE], 0x10000);
-		file_close(fh);
-	}
-	SPRINTF(work, file_i286txt, filenum);
-	fh = file_create_c(work);
-	if (fh != FILEH_INVALID) {
-		file_write(fh, &mem[0xa0000], 0x4000);
-		file_close(fh);
-	}
+	writeseg(work, SS_BASE, 0xffff);
 	filenum++;
 }
 

@@ -8,6 +8,8 @@ enum {
 };
 
 enum {
+	CPUMODE_8MHZ		= 0x20,
+
 	PCMODEL_VF			= 0,
 	PCMODEL_VM			= 1,
 	PCMODEL_VX			= 2,
@@ -25,13 +27,6 @@ enum {
 	PCCBUS_MPU98		= 0x0002
 };
 
-#define		CPUMODE_8MHz		0x20
-
-// これ ver0.75で別ファイルへ移動すること
-typedef struct {
-	UINT8	keys;
-	UINT8	key[15];
-} _NKEYM, *NKEYM;
 
 typedef struct {
 	// エミュレート中によく参照される奴
@@ -54,8 +49,6 @@ typedef struct {
 	UINT8	calendar;
 	UINT8	usefd144;
 	BYTE	wait[6];
-
-	_NKEYM	userkey[2];
 
 	// リセット時とかあんまり参照されない奴
 	char	model[8];

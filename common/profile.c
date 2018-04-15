@@ -106,14 +106,7 @@ gden_err0:
 
 // ----
 
-typedef struct {
-	UINT8	num;
-	char	str[7];
-} KEYNAME;
-
-#include	"pf_key.tbl"
-
-static const char *getarg(const char *str, char *buf, UINT leng) {
+const char *profile_getarg(const char *str, char *buf, UINT leng) {
 
 	UINT8	c;
 
@@ -148,88 +141,5 @@ static const char *getarg(const char *str, char *buf, UINT leng) {
 		buf[0] = '\0';
 	}
 	return(str);
-}
-
-static const KEYNAME *searchkeynum(const char *str) {
-
-const KEYNAME	*n;
-const KEYNAME	*nterm;
-
-	n = keyname;
-	nterm = keyname + (sizeof(keyname) / sizeof(KEYNAME));
-	while(n < nterm) {
-		if (!milstr_cmp(str, n->str)) {
-			return(n);
-		}
-		n++;
-	}
-	return(NULL);
-}
-
-static const KEYNAME *searchkeystr(UINT8 num) {
-
-const KEYNAME	*n;
-const KEYNAME	*nterm;
-
-	n = keyname;
-	nterm = keyname + (sizeof(keyname) / sizeof(KEYNAME));
-	while(n < nterm) {
-		if (n->num == num) {
-			return(n);
-		}
-		n++;
-	}
-	return(NULL);
-}
-
-UINT profile_setkeys(const char *str, UINT8 *key, UINT keymax) {
-
-	UINT		ret;
-	char		work[7];
-const KEYNAME	*k;
-
-	ret = 0;
-	while(ret < keymax) {
-		str = getarg(str, work, sizeof(work));
-		if (str == NULL) {
-			break;
-		}
-		k = searchkeynum(work);
-		if (k) {
-			key[ret] = k->num;
-			ret++;
-		}
-	}
-	return(ret);
-}
-
-void profile_getkeys(char *str, UINT strmax, const UINT8 *key, UINT keys) {
-
-	UINT		space;
-	UINT		i;
-const KEYNAME	*k;
-	UINT		len;
-
-	if ((str == NULL) || (strmax == 0)) {
-		return;
-	}
-	strmax--;
-	space = 0;
-	for (i=0; i<keys; i++) {
-		k = searchkeystr(key[i]);
-		if (k) {
-			len = strlen(k->str);
-			if ((len + space) > strmax) {
-				break;
-			}
-			if (space) {
-				*str++ = ' ';
-			}
-			CopyMemory(str, k->str, len);
-			str += len;
-			space = 1;
-		}
-	}
-	str[0] = '\0';
 }
 

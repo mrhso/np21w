@@ -3,6 +3,7 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"keystat.h"
 
 
 // É}ÉEÉX ver0.28
@@ -19,7 +20,7 @@ void mouseif_sync(void) {
 	// ç°âÒÇÃà⁄ìÆó ÇéÊìæ
 	mouseif.b = mousemng_getstat(&mouseif.sx, &mouseif.sy, 1);
 	if (np2cfg.KEY_MODE == 3) {
-		mouseif.b &= keyext_getmouse(&mouseif.sx, &mouseif.sy);
+		mouseif.b &= keystat_getmouse(&mouseif.sx, &mouseif.sy);
 	}
 	mouseif.rx = mouseif.sx;
 	mouseif.ry = mouseif.sy;
@@ -132,19 +133,20 @@ static void IOOUTCALL mouseif_o7fdd(UINT port, REG8 dat) {
 
 static void IOOUTCALL mouseif_o7fdf(UINT port, REG8 dat) {
 
-	if (dat & 0xf0) {
-		mouseif.mode = (UINT8)dat;
-		if (dat == 0x93) {
-			setportc(0);
-		}
-	}
-	else {
+	if (!(dat & 0xf0)) {
 		if (dat & 1) {
 			setportc((REG8)(mouseif.portc | (1 << (dat >> 1))));
 		}
 		else {
 			setportc((REG8)(mouseif.portc & (~(1 << (dat >> 1)))));
 		}
+	}
+	else if (dat & 0x80) {
+		mouseif.mode = (UINT8)dat;
+		pic_resetirq(0x0d);
+		nevent_set(NEVENT_MOUSE, mouseif.intrclock << mouseif.timing,
+												mouseint, NEVENT_ABSOLUTE);
+		setportc(0);
 	}
 	(void)port;
 }
@@ -181,7 +183,6 @@ static REG8 IOINPCALL mouseif_i7fd9(UINT port) {
 	else {
 		ret |= (x >> 4) & 0x0f;
 	}
-//	TRACEOUT(("%x %x mouse [%x] %d -> %x", CPU_CS, CPU_IP, portc & 0x20, y, ret));
 	(void)port;
 	return(ret);
 }

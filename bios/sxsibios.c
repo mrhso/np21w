@@ -47,28 +47,28 @@ static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, long *ppos) {
 static REG8 sxsibios_write(UINT type, SXSIDEV sxsi) {
 
 	REG8	ret;
-	UINT32	addr;
 	UINT	size;
 	long	pos;
+	UINT32	addr;
 	UINT	r;
 	BYTE	work[1024];
 
-	addr = (CPU_ES << 4) + CPU_BP;
 	size = CPU_BX;
 	if (!size) {
 		size = 0x10000;
 	}
 	ret = sxsi_pos(type, sxsi, &pos);
 	if (!ret) {
+		addr = (CPU_ES << 4) + CPU_BP;
 		while(size) {
 			r = min(size, sxsi->size);
-			i286_memx_read(addr, work, r);
+			MEML_READ(addr, work, r);
 			ret = sxsi_write(CPU_AL, pos, work, r);
 			if (ret >= 0x20) {
 				break;
 			}
-			size -= r;
 			addr += r;
+			size -= r;
 			pos++;
 		}
 	}
@@ -78,28 +78,28 @@ static REG8 sxsibios_write(UINT type, SXSIDEV sxsi) {
 static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 
 	REG8	ret;
-	UINT32	addr;
 	UINT	size;
 	long	pos;
+	UINT32	addr;
 	UINT	r;
 	BYTE	work[1024];
 
-	addr = (CPU_ES << 4) + CPU_BP;
 	size = CPU_BX;
 	if (!size) {
 		size = 0x10000;
 	}
 	ret = sxsi_pos(type, sxsi, &pos);
 	if (!ret) {
+		addr = (CPU_ES << 4) + CPU_BP;
 		while(size) {
 			r = min(size, sxsi->size);
 			ret = sxsi_read(CPU_AL, pos, work, r);
 			if (ret >= 0x20) {
 				break;
 			}
-			i286_memx_write(addr, work, r);
-			size -= r;
+			MEML_WRITE(addr, work, r);
 			addr += r;
+			size -= r;
 			pos++;
 		}
 	}
@@ -432,8 +432,8 @@ static void reg_load(UINT seg, UINT off) {
 
 	B1BREG	r;
 
-	i286_memstr_read(seg, off, &r, sizeof(r));
-	CPU_FLAGL = i286_membyte_read(seg, off + 0x16);
+	MEML_READSTR(seg, off, &r, sizeof(r));
+	CPU_FLAGL = MEML_READ8(seg, off + 0x16);
 	CPU_AX = LOADINTELWORD(r.r_ax);
 	CPU_BX = LOADINTELWORD(r.r_bx);
 	CPU_CX = LOADINTELWORD(r.r_cx);
@@ -458,8 +458,8 @@ static void reg_store(UINT seg, UINT off) {
 	STOREINTELWORD(r.r_di, CPU_DI);
 	STOREINTELWORD(r.r_si, CPU_SI);
 	STOREINTELWORD(r.r_ds, CPU_DS);
-	i286_memstr_write(seg, off, &r, sizeof(r));
-	i286_membyte_write(seg, off + 0x16, CPU_FLAGL);
+	MEML_WRITESTR(seg, off, &r, sizeof(r));
+	MEML_WRITE8(seg, off + 0x16, CPU_FLAGL);
 }
 #endif
 

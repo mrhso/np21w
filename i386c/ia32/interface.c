@@ -1,4 +1,4 @@
-/*	$Id: interface.c,v 1.11 2004/02/05 16:41:32 monaka Exp $	*/
+/*	$Id: interface.c,v 1.19 2004/03/10 23:01:08 yui Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -31,6 +31,8 @@
 #include "cpu.h"
 #include "ia32.mcr"
 
+#include "pccore.h"
+#include "iocore.h"
 #include "dmap.h"
 #include "bios.h"
 #if defined(IA32_REBOOT_ON_PANIC)
@@ -43,7 +45,7 @@ ia32_initreg(void)
 {
 	int i;
 
-	CPU_STATSAVE.cpu_inst_default.seg_base = (DWORD)-1;
+	CPU_STATSAVE.cpu_inst_default.seg_base = (UINT32)-1;
 
 	CPU_EDX = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
 	CPU_EFLAG = 2;
@@ -58,7 +60,7 @@ ia32_initreg(void)
 
 #if CPU_FAMILY == 4
 	CPU_STATSAVE.cpu_regs.dr[6] = 0xffff1ff0;
-#elif (CPU_FAMILY == 5) || (CPU_FAMILY == 6)
+#elif CPU_FAMILY >= 5
 	CPU_STATSAVE.cpu_regs.dr[6] = 0xffff0ff0;
 	CPU_STATSAVE.cpu_regs.dr[7] = 0x00000400;
 #endif
@@ -72,6 +74,8 @@ ia32_initreg(void)
 	CPU_SET_SEGREG(CPU_CS_INDEX, 0xf000);
 	CPU_EIP = 0xfff0;
 	CPU_ADRSMASK = 0x000fffff;
+
+	tlb_init();
 }
 
 void
@@ -113,69 +117,34 @@ ia32(void)
 		break;
 	}
 
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
 	do {
 		exec_1step();
-	} while (CPU_REMCLOCK > 0);
-}
-
-void
-ia32withtrap(void)
-{
-	int rv;
-
-	rv = sigsetjmp(exec_1step_jmpbuf, 1);
-	switch (rv) {
-	case 0:
-		break;
-
-	case 1:
-		VERBOSE(("ia32withtrap: return from exception"));
-		break;
-
-	case 2:
-		VERBOSE(("ia32withtrap: return from panic"));
-		return;
-
-	default:
-		VERBOSE(("ia32withtrap: return from unknown cause"));
-		break;
-	}
-
-	do {
-		exec_1step();
-		if (CPU_TRAP) {
-			ia32_interrupt(1);
+		if (dmac.working) {
+			dmap();
 		}
 	} while (CPU_REMCLOCK > 0);
-}
-
-void
-ia32withdma(void)
-{
-	int rv;
-
-	rv = sigsetjmp(exec_1step_jmpbuf, 1);
-	switch (rv) {
-	case 0:
-		break;
-
-	case 1:
-		VERBOSE(("ia32withdma: return from exception"));
-		break;
-
-	case 2:
-		VERBOSE(("ia32withdma: return from panic"));
-		return;
-
-	default:
-		VERBOSE(("ia32withdma: return from unknown cause"));
-		break;
+#else
+	if (CPU_TRAP) {
+		do {
+			exec_1step();
+			if (CPU_TRAP) {
+				CPU_DR6 |= CPU_DR6_BS;
+				INTERRUPT(1, TRUE, FALSE, 0);
+			}
+			dmap();
+		} while (CPU_REMCLOCK > 0);
+	} else if (dmac.working) {
+		do {
+			exec_1step();
+			dmap();
+		} while (CPU_REMCLOCK > 0);
+	} else {
+		do {
+			exec_1step();
+		} while (CPU_REMCLOCK > 0);
 	}
-
-	do {
-		exec_1step();
-		dmap_i286();
-	} while (CPU_REMCLOCK > 0);
+#endif
 }
 
 void
@@ -203,18 +172,32 @@ ia32_step(void)
 
 	do {
 		exec_1step();
+#if !defined(IA32_SUPPORT_DEBUG_REGISTER)
 		if (CPU_TRAP) {
-			ia32_interrupt(1);
+			CPU_DR6 |= CPU_DR6_BS;
+			INTERRUPT(1, TRUE, FALSE, 0);
 		}
-		dmap_i286();
+#endif
+		if (dmac.working) {
+			dmap();
+		}
 	} while (CPU_REMCLOCK > 0);
 }
 
 void CPUCALL
-ia32_interrupt(BYTE vect)
+ia32_interrupt(int vect, int soft)
 {
 
-	INTERRUPT(vect, 0, 0, 0);
+//	TRACEOUT(("int (%x, %x) PE=%d VM=%d",  vect, soft, CPU_STAT_PM, CPU_STAT_VM86));
+	if (!soft) {
+		INTERRUPT(vect, FALSE, FALSE, 0);
+	}
+	else {
+		if (CPU_STAT_VM86 && (CPU_STAT_IOPL < CPU_IOPL3) && (soft == -1)) {
+			TRACEOUT(("BIOS interrupt: VM86 && IOPL < 3 && INTn"));
+		}
+		INTERRUPT(vect, TRUE, FALSE, 0);
+	}
 }
 
 
@@ -238,7 +221,6 @@ ia32_panic(const char *str, ...)
 
 #if defined(IA32_REBOOT_ON_PANIC)
 	VERBOSE(("ia32_panic: reboot"));
-	pccore_cfgupdate();
 	pccore_reset();
 	siglongjmp(exec_1step_jmpbuf, 2);
 #else
@@ -280,10 +262,14 @@ ia32_printf(const char *str, ...)
 void
 ia32_bioscall(void)
 {
-	DWORD adrs;
+	UINT32 adrs;
 
 	if (!CPU_STAT_PM || CPU_STAT_VM86) {
-		adrs = (CPU_EIP - 1) + CPU_STAT_SREGBASE(CPU_CS_INDEX);
+#if 1
+		adrs = (CPU_EIP - 1) + ((CPU_REGS_SREG(CPU_CS_INDEX)) << 4);
+#else
+		adrs = (CPU_EIP - 1) + CPU_STAT_CS_BASE;
+#endif
 		if ((adrs >= 0xf8000) && (adrs < 0x100000)) {
 			biosfunc(adrs);
 			if (!CPU_STAT_PM || CPU_STAT_VM86) {

@@ -10,7 +10,7 @@
 	DSYNC	dsync;
 
 
-void dispsync_init(void) {
+void dispsync_initialize(void) {
 
 	ZeroMemory(&dsync, sizeof(dsync));
 	dsync.textymax = 400;
@@ -33,7 +33,7 @@ BOOL dispsync_renewalmode(void) {
 		return(FALSE);
 	}
 	disp = 0;
-	if ((!(np2cfg.LCD_MODE & 1)) && (gdc.display < 3)) {
+	if ((!(np2cfg.LCD_MODE & 1)) && ((gdc.display & 7) < 3)) {
 		disp = 1;
 	}
 	if (dsync.scrnxextend != disp) {
@@ -76,7 +76,7 @@ BOOL dispsync_renewalhorizontal(void) {
 	}
 }
 
-BOOL dispsync_renewalvertical(void) {			// slave‚Æ”äŠr‚µ‚Ä‚¢‚¢‚Ì‚©H
+BOOL dispsync_renewalvertical(void) {
 
 	UINT	text_vbp;
 	UINT	grph_vbp;
@@ -105,8 +105,6 @@ BOOL dispsync_renewalvertical(void) {			// slave‚Æ”äŠr‚µ‚Ä‚¢‚¢‚Ì‚©H
 
 #if defined(SUPPORT_CRT15KHZ)
 	if (gdc.crt15khz & 2) {
-		text_vbp *= 2;
-		grph_vbp *= 2;
 		textymax *= 2;
 		grphymax *= 2;
 	}
@@ -121,7 +119,6 @@ BOOL dispsync_renewalvertical(void) {			// slave‚Æ”äŠr‚µ‚Ä‚¢‚¢‚Ì‚©H
 		(dsync.textymax == textymax) && (dsync.grphymax == grphymax)) {
 		return(FALSE);
 	}
-
 	dsync.text_vbp = text_vbp;
 	dsync.grph_vbp = grph_vbp;
 	dsync.textymax = textymax;

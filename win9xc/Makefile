@@ -74,7 +74,7 @@ NP2OBJ	=	$(OBJ)/strres.o		$(OBJ)/milstr.o		$(OBJ)/_memory.o	\
 			$(OBJ)/cpu.o		$(OBJ)/cpu_io.o		$(OBJ)/cpu_mem.o	\
 			$(OBJ)/ctrlxfer.o	$(OBJ)/exception.o	$(OBJ)/groups.o		\
 			$(OBJ)/cpucore.o	$(OBJ)/memory.o		$(OBJ)/egcmem.o		\
-			$(OBJ)/dmap.o												\
+			$(OBJ)/mem9821.o	$(OBJ)/dmap.o							\
 			$(OBJ)/ia32.o		$(OBJ)/inst_table.o	$(OBJ)/interface.o	\
 			$(OBJ)/paging.o		$(OBJ)/resolve.o	$(OBJ)/segments.o	\
 			$(OBJ)/task.o		$(OBJ)/iadebug.o	$(OBJ)/iadisasm.o	\
@@ -106,17 +106,18 @@ NP2OBJ	=	$(OBJ)/strres.o		$(OBJ)/milstr.o		$(OBJ)/_memory.o	\
 			$(OBJ)/bios13.o		$(OBJ)/bios18.o		$(OBJ)/bios19.o		\
 			$(OBJ)/bios1a.o		$(OBJ)/bios1b.o		$(OBJ)/bios1c.o		\
 			$(OBJ)/sxsibios.o											\
-			$(OBJ)/sound.o		$(OBJ)/sndcsec.o	$(OBJ)/wavemix.o	\
-			$(OBJ)/fmboard.o	$(OBJ)/fmtimer.o	$(OBJ)/beepc.o		\
-			$(OBJ)/beepg.o		$(OBJ)/tms3631c.o	$(OBJ)/tms3631g.o	\
-			$(OBJ)/opngenc.o	$(OBJ)/opngeng.o	$(OBJ)/psggenc.o	\
-			$(OBJ)/psggeng.o	$(OBJ)/rhythmc.o	$(OBJ)/rhythmg.o	\
-			$(OBJ)/adpcmc.o		$(OBJ)/adpcmg.o		$(OBJ)/pcm86c.o		\
-			$(OBJ)/pcm86g.o		$(OBJ)/cs4231c.o	$(OBJ)/cs4231g.o	\
-			$(OBJ)/soundrom.o	$(OBJ)/s98.o							\
+			$(OBJ)/sound.o		$(OBJ)/sndcsec.o	$(OBJ)/fmboard.o	\
+			$(OBJ)/fmtimer.o	$(OBJ)/beepc.o		$(OBJ)/beepg.o		\
+			$(OBJ)/tms3631c.o	$(OBJ)/tms3631g.o	$(OBJ)/opngenc.o	\
+			$(OBJ)/opngeng.o	$(OBJ)/psggenc.o	$(OBJ)/psggeng.o	\
+			$(OBJ)/rhythmc.o	$(OBJ)/rhythmg.o	$(OBJ)/adpcmc.o		\
+			$(OBJ)/adpcmg.o		$(OBJ)/pcm86c.o		$(OBJ)/pcm86g.o		\
+			$(OBJ)/cs4231c.o	$(OBJ)/cs4231g.o	$(OBJ)/soundrom.o	\
+			$(OBJ)/s98.o												\
 			$(OBJ)/vram.o		$(OBJ)/scrndraw.o	$(OBJ)/sdraw.o		\
 			$(OBJ)/dispsync.o	$(OBJ)/palettes.o	$(OBJ)/maketext.o	\
-			$(OBJ)/maketgrp.o	$(OBJ)/makegrph.o	$(OBJ)/scrnbmp.o	\
+			$(OBJ)/maketgrp.o	$(OBJ)/makegrph.o	$(OBJ)/makegrex.o	\
+			$(OBJ)/scrnbmp.o											\
 			$(OBJ)/diskdrv.o	$(OBJ)/newdisk.o	$(OBJ)/fddfile.o	\
 			$(OBJ)/fdd_xdf.o	$(OBJ)/fdd_d88.o	$(OBJ)/fdd_mtr.o	\
 			$(OBJ)/sxsi.o												\
@@ -138,7 +139,8 @@ NP2OBJ	=	$(OBJ)/strres.o		$(OBJ)/milstr.o		$(OBJ)/_memory.o	\
 			$(OBJ)/d_screen.o	$(OBJ)/d_sound.o	$(OBJ)/d_clnd.o		\
 			$(OBJ)/d_disk.o		$(OBJ)/d_bmp.o		$(OBJ)/dialogs.o	\
 			$(OBJ)/pccore.o		$(OBJ)/nevent.o		$(OBJ)/calendar.o	\
-			$(OBJ)/timing.o		$(OBJ)/statsave.o	$(OBJ)/debugsub.o
+			$(OBJ)/timing.o		$(OBJ)/keystat.o	$(OBJ)/statsave.o	\
+			$(OBJ)/debugsub.o
 
 NP2LIB	= -lddraw -ldxguid -ldsound -lwinmm -lcomctl32 -mwindows
 NP2BIN	= $(BIN)/np2.exe
@@ -461,11 +463,6 @@ $(OBJ)/sndcsec.o	:	$(SOUND)/sndcsec.c $(HEADERS) $(SOUND)/sound.h \
 						$(SOUND)/sndcsec.h
 	$(CC) $(COPT) -o $@ $<
 
-$(OBJ)/wavemix.o	:	$(SOUND)/wavemix.c $(HEADERS) $(PCCORES) \
-						$(SOUND)/sound.h $(GETSND)/getsnd.h \
-						$(SOUND)/wavemix.res
-	$(CC) $(COPT) -o $@ $<
-
 $(OBJ)/fmboard.o	:	$(SOUND)/fmboard.c $(HEADERS) $(PCCORES) $(IOCORES) \
 						$(FMBOARDS) $(TARGET)/joymng.h $(TARGET)/soundmng.h \
 						$(CBUS)/cbuscore.h $(CBUS)/board14.h \
@@ -646,6 +643,11 @@ $(OBJ)/makegrph.o	:	$(VRAM)/makegrph.c $(HEADERS) $(CPUCORES) $(PCCORES) \
 $(OBJ)/makegrph.oa	:	$(X86ASM)/makegrph.x86
 	$(AS) $(AOPT) $< -o $@
 
+$(OBJ)/makegrex.o	:	$(VRAM)/makegrex.c $(HEADERS) $(CPUCORES) $(PCCORES) \
+						$(IOCORES) $(VRAM)/vram.h $(VRAM)/scrndraw.h \
+						$(VRAM)/dispsync.h $(VRAM)/makegrex.h
+	$(CC) $(COPT) -o $@ $<
+
 $(OBJ)/scrnbmp.o	:	$(VRAM)/scrnbmp.c $(HEADERS) $(PCCORES) $(IOCORES) \
 						$(COMMON)/bmpdata.h $(VRAM)/scrndraw.h \
 						$(VRAM)/dispsync.h $(VRAM)/palettes.h \
@@ -799,6 +801,15 @@ $(OBJ)/hostdrv.o	:	$(GENERIC)/hostdrv.c $(HEADERS) $(CPUCORES) \
 $(OBJ)/hostdrvs.o	:	$(GENERIC)/hostdrvs.c $(HEADERS) $(PCCORES) \
 						$(COMMON)/codecnv.h $(TARGET)/dosio.h \
 						$(GENERIC)/hostdrv.h $(GENERIC)/hostdrvs.h
+	$(CC) $(COPT) -o $@ $<
+
+$(OBJ)/unasm.o		:	$(GENERIC)/unasm.c $(HEADER) $(GENERIC)/unasm.h
+	$(CC) $(COPT) -o $@ $<
+
+$(OBJ)/np2info.o	:	$(GENERIC)/np2info.c $(HEADERS) $(CPUCORES) \
+						$(PCCORES) $(IOCORES) $(FMBOARDS) $(COMMON)/strres.h \
+						$(TARGET)/scrnmng.h $(BIOS)/bios.h \
+						$(GENERIC)/np2info.h
 	$(CC) $(COPT) -o $@ $<
 
 
@@ -981,6 +992,10 @@ $(OBJ)/timing.o		:	$(BASE)/timing.c $(HEADERS) $(PCCORES) \
 						$(FDD)/diskdrv.h $(FDD)/fdd_mtr.h $(BASE)/timing.h
 	$(CC) $(COPT) -o $@ $<
 
+$(OBJ)/keystat.o	:	$(BASE)/keystat.c $(HEADERS) $(PCCORES) $(IOCORES) \
+						$(BASE)/keystat.h
+	$(CC) $(COPT) -o $@ $<
+
 $(OBJ)/statsave.o	:	$(BASE)/statsave.c $(HEADERS) $(CPUCORES) $(PCCORES) \
 						$(IOCORES) $(FMBOARDS) $(COMMON)/strres.h \
 						$(TARGET)/dosio.h $(TARGET)/commng.h \
@@ -996,9 +1011,9 @@ $(OBJ)/statsave.o	:	$(BASE)/statsave.c $(HEADERS) $(CPUCORES) $(PCCORES) \
 						$(BASE)/statsave.tbl
 	$(CC) $(COPT) -o $@ $<
 
-$(OBJ)/debugsub.o	:	$(BASE)/debugsub.c $(HEADERS) $(CPUCORES) $(PCCORES) \
-						$(IOCORES) $(COMMON)/strres.h $(TARGET)/dosio.h \
-						$(BASE)/debugsub.h
+$(OBJ)/debugsub.o	:	$(BASE)/debugsub386.c $(HEADERS) $(CPUCORES) \
+						$(PCCORES) $(IOCORES) $(COMMON)/strres.h \
+						$(TARGET)/dosio.h $(BASE)/debugsub.h
 	$(CC) $(COPT) -o $@ $<
 
 
@@ -1010,6 +1025,9 @@ $(OBJ)/memory.o		:	$(I386C)/memory.c
 	$(CC) $(COPT) -o $@ $<
 
 $(OBJ)/egcmem.o		:	$(I386C)/egcmem.c
+	$(CC) $(COPT) -o $@ $<
+
+$(OBJ)/mem9821.o	:	$(I386C)/mem9821.c
 	$(CC) $(COPT) -o $@ $<
 
 $(OBJ)/dmap.o		:	$(I386C)/dmap.c

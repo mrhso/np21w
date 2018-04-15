@@ -1,4 +1,4 @@
-/*	$Id: cpu.h,v 1.16 2004/02/13 14:52:35 monaka Exp $	*/
+/*	$Id: cpu.h,v 1.25 2004/03/12 13:34:08 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -32,7 +32,7 @@
 
 				Copyright by Yui/Studio Milmake 1999-2000
 				Copyright by Norio HATTORI 2000,2001
-				Copyright by NONAKA Kimihiro 2002-2003
+				Copyright by NONAKA Kimihiro 2002-2004
 */
 
 #ifndef IA32_CPU_CPU_H__
@@ -47,28 +47,28 @@ extern "C" {
 typedef union {
 #if defined(BYTESEX_LITTLE)
 	struct {
-		BYTE	l;
-		BYTE	h;
-		BYTE	_hl;
-		BYTE	_hh;
+		UINT8	l;
+		UINT8	h;
+		UINT8	_hl;
+		UINT8	_hh;
 	} b;
 	struct {
-		WORD	w;
-		WORD	_hw;
+		UINT16	w;
+		UINT16	_hw;
 	} w;
 #elif defined(BYTESEX_BIG)
 	struct {
-		BYTE	_hh;
-		BYTE	_hl;
-		BYTE	h;
-		BYTE	l;
+		UINT8	_hh;
+		UINT8	_hl;
+		UINT8	h;
+		UINT8	l;
 	} b;
 	struct {
-		WORD	_hw;
-		WORD	w;
+		UINT16	_hw;
+		UINT16	w;
 	} w;
 #endif
-	DWORD	d;
+	UINT32	d;
 } REG32;
 
 #ifdef __cplusplus
@@ -109,16 +109,21 @@ enum {
 };
 
 enum {
-	CPU_DEBUG_REG_NUM = 8
+	CPU_DEBUG_REG_NUM = 8,
+	CPU_DEBUG_REG_INDEX_NUM = 4
 };
 
 enum {
 	MAX_PREFIX = 8
 };
 
+enum {
+	CPU_PREFETCH_QUEUE_LENGTH = 16
+};
+
 typedef struct {
 	REG32		reg[CPU_REG_NUM];
-	WORD		sreg[CPU_SEGREG_NUM];
+	UINT16		sreg[CPU_SEGREG_NUM];
 
 	REG32		eflags;
 	REG32		eip;
@@ -126,25 +131,25 @@ typedef struct {
 	REG32		prev_eip;
 	REG32		prev_esp;
 
-	DWORD		tr[CPU_TEST_REG_NUM];
-	DWORD		dr[CPU_DEBUG_REG_NUM];
+	UINT32		tr[CPU_TEST_REG_NUM];
+	UINT32		dr[CPU_DEBUG_REG_NUM];
 } CPU_REGS;
 
 typedef struct {
-	WORD		gdtr_limit;
-	DWORD		gdtr_base;
-	WORD		idtr_limit;
-	DWORD		idtr_base;
+	UINT16		gdtr_limit;
+	UINT32		gdtr_base;
+	UINT16		idtr_limit;
+	UINT32		idtr_base;
 
-	WORD		ldtr;
-	WORD		tr;
+	UINT16		ldtr;
+	UINT16		tr;
 
-	DWORD		cr0;
-	DWORD		cr1;
-	DWORD		cr2;
-	DWORD		cr3;
-	DWORD		cr4;
-	DWORD		mxcsr;
+	UINT32		cr0;
+	UINT32		cr1;
+	UINT32		cr2;
+	UINT32		cr3;
+	UINT32		cr4;
+	UINT32		mxcsr;
 } CPU_SYSREGS;
 
 typedef struct {
@@ -152,38 +157,44 @@ typedef struct {
 	descriptor_t	ldtr;
 	descriptor_t	tr;
 
+	BYTE		prefetch[CPU_PREFETCH_QUEUE_LENGTH];
+	SINT8		prefetch_remain;
+	UINT8		pad2[3];
+
 	UINT32		adrsmask;
-	DWORD		ovflag;
+	UINT32		ovflag;
 
-	BYTE		ss_32;
-	BYTE		resetreq;
-	BYTE		trap;
+	UINT8		ss_32;
+	UINT8		resetreq;
+	UINT8		trap;
 
-	BYTE		page_wp;
+	UINT8		page_wp;
 
-	BYTE		protected_mode;
-	BYTE		paging;
-	BYTE		vm86;
-	BYTE		user_mode;
+	UINT8		protected_mode;
+	UINT8		paging;
+	UINT8		vm86;
+	UINT8		user_mode;
 
-	BYTE		hlt;
-	BYTE		pad[3];
+	UINT8		hlt;
+	UINT8		bp;	/* break point bitmap */
+	UINT8		bp_ev;	/* break point event */
+	UINT8		pad;
 
-	DWORD		pde_base;
+	UINT32		pde_base;
 
-	DWORD		ioaddr;		/* I/O bitmap linear address */
-	WORD		iolimit;	/* I/O bitmap count */
+	UINT32		ioaddr;		/* I/O bitmap linear address */
+	UINT16		iolimit;	/* I/O bitmap count */
 
-	BYTE		nerror;		/* double fault/ triple fault */
-	BYTE		prev_exception;
+	UINT8		nerror;		/* double fault/ triple fault */
+	UINT8		prev_exception;
 } CPU_STAT;
 
 typedef struct {
-	BYTE		op_32;
-	BYTE		as_32;
-	BYTE		rep_used;
-	BYTE		seg_used;
-	DWORD		seg_base;
+	UINT8		op_32;
+	UINT8		as_32;
+	UINT8		rep_used;
+	UINT8		seg_used;
+	UINT32		seg_base;
 } CPU_INST;
 
 typedef struct {
@@ -356,21 +367,19 @@ do { \
 #define	CPU_FS		CPU_REGS_SREG(CPU_FS_INDEX)
 #define	CPU_GS		CPU_REGS_SREG(CPU_GS_INDEX)
 
-#define ES_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_ES_INDEX].u.seg.segbase
-#define CS_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_CS_INDEX].u.seg.segbase
-#define SS_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_SS_INDEX].u.seg.segbase
-#define DS_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_DS_INDEX].u.seg.segbase
-#define FS_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_FS_INDEX].u.seg.segbase
-#define GS_BASE		CPU_STATSAVE.cpu_stat.sreg[CPU_GS_INDEX].u.seg.segbase
+#define ES_BASE		CPU_STAT_SREGBASE(CPU_ES_INDEX)
+#define CS_BASE		CPU_STAT_SREGBASE(CPU_CS_INDEX)
+#define SS_BASE		CPU_STAT_SREGBASE(CPU_SS_INDEX)
+#define DS_BASE		CPU_STAT_SREGBASE(CPU_DS_INDEX)
+#define FS_BASE		CPU_STAT_SREGBASE(CPU_FS_INDEX)
+#define GS_BASE		CPU_STAT_SREGBASE(CPU_GS_INDEX)
 
 #define CPU_EFLAG	CPU_STATSAVE.cpu_regs.eflags.d
 #define CPU_FLAG	CPU_STATSAVE.cpu_regs.eflags.w.w
 #define CPU_FLAGL	CPU_STATSAVE.cpu_regs.eflags.b.l
 #define CPU_FLAGH	CPU_STATSAVE.cpu_regs.eflags.b.h
 #define CPU_TRAP	CPU_STATSAVE.cpu_stat.trap
-#if 0
 #define CPU_INPORT	CPU_STATSAVE.cpu_stat.inport
-#endif
 #define CPU_OV		CPU_STATSAVE.cpu_stat.ovflag
 
 #define C_FLAG		(1 << 0)
@@ -397,11 +406,13 @@ do { \
 #define	ALL_FLAG	(SZAPC_FLAG|T_FLAG|I_FLAG|D_FLAG|O_FLAG|IOPL_FLAG|NT_FLAG)
 #define	ALL_EFLAG	(ALL_FLAG|RF_FLAG|VM_FLAG|AC_FLAG|VIF_FLAG|VIP_FLAG|ID_FLAG)
 
-#define	REAL_FLAGREG	((CPU_FLAG & 0xf7ff) | (CPU_OV ? O_FLAG : 0))
-#define	REAL_EFLAGREG	((CPU_EFLAG & 0xfffff7ff) | (CPU_OV ? O_FLAG : 0))
+#define	REAL_FLAGREG	((CPU_FLAG & 0xf7ff) | (CPU_OV ? O_FLAG : 0) | 2)
+#define	REAL_EFLAGREG	((CPU_EFLAG & 0xfffff7ff) | (CPU_OV ? O_FLAG : 0) | 2)
 
-void set_flags(WORD new_flags, WORD mask);
-void set_eflags(DWORD new_flags, DWORD mask);
+#if !defined(IA32_DONT_USE_SET_EFLAGS_FUNCTION)
+void set_flags(UINT16 new_flags, UINT16 mask);
+void set_eflags(UINT32 new_flags, UINT32 mask);
+#endif
 
 
 #define	CPU_INST_OP32		CPU_STATSAVE.cpu_inst.op_32
@@ -412,9 +423,9 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define	DS_FIX	(!CPU_INST_SEGUSE ? CPU_DS_INDEX : CPU_INST_SEGREG_INDEX)
 #define	SS_FIX	(!CPU_INST_SEGUSE ? CPU_SS_INDEX : CPU_INST_SEGREG_INDEX)
 
-#define	CPU_STAT_CS_BASE	CPU_STATSAVE.cpu_stat.sreg[CPU_CS_INDEX].u.seg.limit
-#define	CPU_STAT_CS_LIMIT	CPU_STATSAVE.cpu_stat.sreg[CPU_CS_INDEX].u.seg.limit
-#define	CPU_STAT_CS_END		CPU_STATSAVE.cpu_stat.sreg[CPU_CS_INDEX].u.seg.segend
+#define	CPU_STAT_CS_BASE	CPU_STAT_SREGBASE(CPU_CS_INDEX)
+#define	CPU_STAT_CS_LIMIT	CPU_STAT_SREGLIMIT(CPU_CS_INDEX)
+#define	CPU_STAT_CS_END		CPU_STAT_SREGEND(CPU_CS_INDEX)
 
 #define	CPU_STAT_ADRSMASK	CPU_STATSAVE.cpu_stat.adrsmask
 #define	CPU_STAT_SS32		CPU_STATSAVE.cpu_stat.ss_32
@@ -443,19 +454,35 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define	CPU_STAT_EXCEPTION_COUNTER_INC()	CPU_STATSAVE.cpu_stat.nerror++
 #define	CPU_STAT_EXCEPTION_COUNTER_CLEAR()	CPU_STATSAVE.cpu_stat.nerror = 0
 
+#define	CPU_PREFETCHQ		CPU_STATSAVE.cpu_stat.prefetch
+#define	CPU_PREFETCHQ_REMAIN	CPU_STATSAVE.cpu_stat.prefetch_remain
+
+#if defined(IA32_SUPPORT_PREFETCH_QUEUE)
+#define	CPU_PREFETCH_CLEAR()	CPU_PREFETCHQ_REMAIN = 0
+#else	/* !IA32_SUPPORT_PREFETCH_QUEUE */
+#define	CPU_PREFETCH_CLEAR()
+#endif	/* IA32_SUPPORT_PREFETCH_QUEUE */
+
 #define	CPU_MODE_SUPERVISER	0
 #define	CPU_MODE_USER		1
 #define	CPU_SET_CPL(cpl) \
 do { \
-	BYTE __t = (cpl) & 3; \
+	UINT8 __t = (UINT8)((cpl) & 3); \
 	CPU_STAT_CPL = __t; \
 	CPU_STAT_USER_MODE = (__t == 3) ? CPU_MODE_USER : CPU_MODE_SUPERVISER; \
 } while (/*CONSTCOND*/ 0)
 
-#define CPU_CLI		do { CPU_FLAG &= ~I_FLAG;	\
-					CPU_TRAP = 0; } while (/*CONSTCOND*/ 0)
-#define CPU_STI		do { CPU_FLAG |= I_FLAG;	\
-					CPU_TRAP = (CPU_FLAG >> 8) & 1; } while (/*CONSTCOND*/0)
+#define CPU_CLI \
+do { \
+	CPU_FLAG &= ~I_FLAG; \
+	CPU_TRAP = 0; \
+} while (/*CONSTCOND*/0)
+
+#define CPU_STI \
+do { \
+	CPU_FLAG |= I_FLAG; \
+	CPU_TRAP = (CPU_FLAG & (I_FLAG|T_FLAG)) == (I_FLAG|T_FLAG) ; \
+} while (/*CONSTCOND*/0)
 
 #define CPU_GDTR_LIMIT	CPU_STATSAVE.cpu_sysregs.gdtr_limit
 #define CPU_GDTR_BASE	CPU_STATSAVE.cpu_sysregs.gdtr_base
@@ -513,6 +540,41 @@ do { \
 #define	CPU_CR4_OSFXSR		(1 << 9)
 #define	CPU_CR4_OSXMMEXCPT	(1 << 10)
 
+/*
+ * debug register
+ */
+#define	CPU_DR(r)		CPU_STATSAVE.cpu_regs.dr[(r)]
+#define	CPU_DR6			CPU_DR(6)
+#define	CPU_DR7			CPU_DR(7)
+
+#define	CPU_STAT_BP		CPU_STATSAVE.cpu_stat.bp
+#define	CPU_STAT_BP_EVENT	CPU_STATSAVE.cpu_stat.bp_ev
+#define	CPU_STAT_BP_EVENT_B(r)	(1 << (r))
+#define	CPU_STAT_BP_EVENT_DR	(1 << 4)	/* fault */
+#define	CPU_STAT_BP_EVENT_STEP	(1 << 5)	/* as CPU_TRAP */
+#define	CPU_STAT_BP_EVENT_TASK	(1 << 6)
+#define	CPU_STAT_BP_EVENT_RF	(1 << 7)	/* RF_FLAG */
+
+#define	CPU_DR6_B(r)		(1 << (r))
+#define	CPU_DR6_BD		(1 << 13)
+#define	CPU_DR6_BS		(1 << 14)
+#define	CPU_DR6_BT		(1 << 15)
+
+#define	CPU_DR7_L(r)		(1 << ((r) * 2))
+#define	CPU_DR7_G(r)		(1 << ((r) * 2 + 1))
+#define	CPU_DR7_LE		(1 << 8)
+#define	CPU_DR7_GE		(1 << 9)
+#define	CPU_DR7_GD		(1 << 13)
+#define	CPU_DR7_RW(r)		(3 << ((r) * 4 + 16))
+#define	CPU_DR7_LEN(r)		(3 << ((r) * 4 + 16 + 2))
+
+#define	CPU_DR7_GET_RW(r)	((CPU_DR7) >> (16 + (r) * 4))
+#define	CPU_DR7_RW_CODE		0
+#define	CPU_DR7_RW_RO		1
+#define	CPU_DR7_RW_IO		2
+#define	CPU_DR7_RW_RW		3
+
+#define	CPU_DR7_GET_LEN(r)	((CPU_DR7) >> (16 + 2 + (r) * 4))
 
 void ia32_init(void);
 void ia32_initreg(void);
@@ -521,19 +583,14 @@ void ia32_setextsize(UINT32 size);
 void ia32reset(void);
 void ia32shut(void);
 void ia32(void);
-void ia32withtrap(void);
-void ia32withdma(void);
-
 void ia32_step(void);
-void CPUCALL ia32_interrupt(BYTE vect);
-void CPUCALL ia32_exception(DWORD vect, DWORD p1, DWORD p2);
+void CPUCALL ia32_interrupt(int vect, int soft);
+void CPUCALL ia32_exception(int vect, int p1, int p2);
 
 void exec_1step(void);
 #define	INST_PREFIX	(1 << 0)
 #define	INST_STRING	(1 << 1)
 #define	REP_CHECKZF	(1 << 7)
-
-int disasm(DWORD *eip, char *buf, size_t size);
 
 void ia32_printf(const char *buf, ...);
 void ia32_warning(const char *buf, ...);
@@ -547,14 +604,14 @@ void FASTCALL change_pg(BOOL onoff);
 
 extern const UINT8 iflags[];
 #define	szpcflag	iflags
-extern BYTE szpflag_w[0x10000];
+extern UINT8 szpflag_w[0x10000];
 
-extern BYTE  *reg8_b20[0x100];
-extern BYTE  *reg8_b53[0x100];
-extern WORD  *reg16_b20[0x100];
-extern WORD  *reg16_b53[0x100];
-extern DWORD *reg32_b20[0x100];
-extern DWORD *reg32_b53[0x100];
+extern UINT8 *reg8_b20[0x100];
+extern UINT8 *reg8_b53[0x100];
+extern UINT16 *reg16_b20[0x100];
+extern UINT16 *reg16_b53[0x100];
+extern UINT32 *reg32_b20[0x100];
+extern UINT32 *reg32_b53[0x100];
 
 extern const char *reg8_str[8];
 extern const char *reg16_str[8];
@@ -564,16 +621,54 @@ char *cpu_reg2str(void);
 #if defined(USE_FPU)
 char *fpu_reg2str(void);
 #endif
+void put_cpuinfo(void);
 void dbg_printf(const char *str, ...);
 
 
 /*
  * Misc.
  */
-void gdtr_dump(DWORD base, DWORD limit);
-void idtr_dump(DWORD base, DWORD limit);
-void ldtr_dump(DWORD base, DWORD limit);
-void tr_dump(WORD selector, DWORD base, DWORD limit);
+void gdtr_dump(UINT32 base, UINT limit);
+void idtr_dump(UINT32 base, UINT limit);
+void ldtr_dump(UINT32 base, UINT limit);
+void tr_dump(UINT16 selector, UINT32 base, UINT limit);
+
+/*
+ * disasm
+ */
+/* context */
+typedef struct {
+	UINT32 val;
+
+	UINT32 eip;
+	BOOL op32;
+	BOOL as32;
+
+	UINT32 baseaddr;
+	UINT8 opcode[3];
+	UINT8 modrm;
+	UINT8 sib;
+
+	BOOL useseg;
+	int seg;
+
+	UINT8 opbyte[32];
+	int nopbytes;
+
+	char str[256];
+	size_t remain;
+
+	char *next;
+	char *prefix;
+	char *op;
+	char *arg[3];
+	int narg;
+
+	char pad;
+} disasm_context_t;
+
+int disasm(UINT32 *eip, disasm_context_t *ctx);
+
 
 #ifdef __cplusplus
 }

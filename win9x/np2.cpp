@@ -41,6 +41,7 @@
 #include	"diskdrv.h"
 #include	"fddfile.h"
 #include	"timing.h"
+#include	"keystat.h"
 #include	"debugsub.h"
 #include	"keydisp.h"
 #include	"kdispwin.h"
@@ -275,11 +276,11 @@ static int flagload(const char *ext, const char *title, BOOL force) {
 	winuienter();
 	id = IDYES;
 	ret = statsave_check(path, buf, sizeof(buf));
-	if (ret & (~NP2FLAG_DISKCHG)) {
+	if (ret & (~STATFLAG_DISKCHG)) {
 		MessageBox(hWndMain, "Couldn't restart", title, MB_OK | MB_ICONSTOP);
 		id = IDNO;
 	}
-	else if ((!force) && (ret & NP2FLAG_DISKCHG)) {
+	else if ((!force) && (ret & STATFLAG_DISKCHG)) {
 		char buf2[1024 + 256];
 		wsprintf(buf2, "Conflict!\n\n%s\nContinue?", buf);
 		id = MessageBox(hWndMain, buf2, title,
@@ -393,6 +394,28 @@ static void np2cmd(HWND hWnd, UINT16 cmd) {
 		case IDM_FDD2EJECT:
 			diskdrv_setfdd(1, NULL, 0);
 			toolwin_setfdd(1, NULL);
+			break;
+
+		case IDM_FDD3OPEN:
+			winuienter();
+			dialog_changefdd(hWnd, 2);
+			winuileave();
+			break;
+
+		case IDM_FDD3EJECT:
+			diskdrv_setfdd(2, NULL, 0);
+			toolwin_setfdd(2, NULL);
+			break;
+
+		case IDM_FDD4OPEN:
+			winuienter();
+			dialog_changefdd(hWnd, 3);
+			winuileave();
+			break;
+
+		case IDM_FDD4EJECT:
+			diskdrv_setfdd(3, NULL, 0);
+			toolwin_setfdd(3, NULL);
 			break;
 
 		case IDM_SASI1OPEN:
@@ -1348,7 +1371,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			np2oscfg.KEYBOARD = KEY_KEY106;
 		}
 	}
-	keystat_reset();
+	keystat_initialize();
 
 	np2class_initialize(hInstance);
 	if (!hPreInst) {

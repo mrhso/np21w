@@ -1,4 +1,4 @@
-/*	$Id: cpu.c,v 1.11 2004/02/13 14:52:35 monaka Exp $	*/
+/*	$Id: cpu.c,v 1.16 2004/03/08 12:56:22 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -28,6 +28,7 @@
  */
 
 #include "compiler.h"
+#include "dosio.h"
 #include "cpu.h"
 #include "ia32.mcr"
 
@@ -36,17 +37,136 @@
 
 sigjmp_buf exec_1step_jmpbuf;
 
+#if defined(IA32_INSTRUCTION_TRACE)
+typedef struct {
+	CPU_REGS		regs;
+	disasm_context_t	disasm;
+
+	BYTE			op[MAX_PREFIX + 2];
+	int			opbytes;
+} ia32_context_t;
+
+#define	NCTX	1024
+
+ia32_context_t ctx[NCTX];
+int ctx_index = 0;
+
+int cpu_inst_trace = 0;
+#endif
+
+
+// #define	IPTRACE			(1 << 14)
+
+#if defined(TRACE) && IPTRACE
+static	UINT	trpos = 0;
+static	UINT32	trcs[IPTRACE];
+static	UINT32	treip[IPTRACE];
+
+void iptrace_out(void) {
+
+	FILEH	fh;
+	UINT	s;
+	UINT32	cs;
+	UINT32	eip;
+	char	buf[32];
+
+	s = trpos;
+	if (s > IPTRACE) {
+		s -= IPTRACE;
+	}
+	else {
+		s = 0;
+	}
+	fh = file_create_c("his.txt");
+	while(s < trpos) {
+		cs = trcs[s & (IPTRACE - 1)];
+		eip = treip[s & (IPTRACE - 1)];
+		s++;
+		SPRINTF(buf, "%.4x:%.8x\r\n", cs, eip);
+		file_write(fh, buf, strlen(buf));
+	}
+	file_close(fh);
+}
+#endif
+
+
 void
 exec_1step(void)
 {
 	int prefix;
-	BYTE op;
+	UINT32 op;
 
 	CPU_PREV_EIP = CPU_EIP;
 	CPU_STATSAVE.cpu_inst = CPU_STATSAVE.cpu_inst_default;
 
+#if defined(TRACE) && IPTRACE
+	trcs[trpos & (IPTRACE - 1)] = CPU_CS;
+	treip[trpos & (IPTRACE - 1)] = CPU_EIP;
+	trpos++;
+#endif
+
+#if defined(IA32_INSTRUCTION_TRACE)
+	ctx[ctx_index].regs = CPU_STATSAVE.cpu_regs;
+	if (cpu_inst_trace) {
+		disasm_context_t *d = &ctx[ctx_index].disasm;
+		UINT32 eip = CPU_EIP;
+		int rv;
+
+		rv = disasm(&eip, d);
+		if (rv == 0) {
+			char buf[256];
+			char tmp[32];
+			int len = d->nopbytes > 8 ? 8 : d->nopbytes;
+			int i;
+
+			buf[0] = '\0';
+			for (i = 0; i < len; i++) {
+				snprintf(tmp, sizeof(tmp), "%02x ", d->opcode[i]);
+				milstr_ncat(buf, tmp, sizeof(buf));
+			}
+			for (; i < 8; i++) {
+				milstr_ncat(buf, "   ", sizeof(buf));
+			}
+			VERBOSE(("%04x:%08x: %s%s", CPU_CS, CPU_EIP, buf, d->str));
+
+			buf[0] = '\0';
+			for (; i < d->nopbytes; i++) {
+				snprintf(tmp, sizeof(tmp), "%02x ", d->opcode[i]);
+				milstr_ncat(buf, tmp, sizeof(buf));
+				if ((i % 8) == 7) {
+					VERBOSE(("             : %s", buf));
+					buf[0] = '\0';
+				}
+			}
+			if ((i % 8) != 0) {
+				VERBOSE(("             : %s", buf));
+			}
+		}
+	}
+	ctx[ctx_index].opbytes = 0;
+#endif
+
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
+	if (CPU_STAT_BP && !(CPU_EFLAG & RF_FLAG)) {
+		int i;
+		for (i = 0; i < CPU_DEBUG_REG_INDEX_NUM; i++) {
+			if ((CPU_STAT_BP & (1 << i))
+			 && (CPU_DR7_GET_RW(i) == CPU_DR7_RW_CODE)
+			 && (CPU_DR(i) == CPU_EIP)
+			 && (CPU_DR7_GET_LEN(i) == 0)) {
+				CPU_DR6 |= CPU_DR6_B(i);
+				EXCEPTION(DB_EXCEPTION, 0);
+			}
+		}
+	}
+#endif	/* IA32_SUPPORT_DEBUG_REGISTER */
+
 	for (prefix = 0; prefix < MAX_PREFIX; prefix++) {
 		GET_PCBYTE(op);
+#if defined(IA32_INSTRUCTION_TRACE)
+		ctx[ctx_index].op[prefix] = op;
+		ctx[ctx_index].opbytes++;
+#endif
 
 		/* prefix */
 		if (insttable_info[op] & INST_PREFIX) {
@@ -59,10 +179,24 @@ exec_1step(void)
 		EXCEPTION(UD_EXCEPTION, 0);
 	}
 
+#if defined(IA32_INSTRUCTION_TRACE)
+	if (op == 0x0f) {
+		BYTE op2;
+		op2 = cpu_codefetch(CPU_EIP);
+		ctx[ctx_index].op[prefix + 1] = op2;
+		ctx[ctx_index].opbytes++;
+	}
+	ctx_index = (ctx_index + 1) % NELEMENTS(ctx);
+#endif
+
 	/* normal / rep, but not use */
 	if (!(insttable_info[op] & INST_STRING) || !CPU_INST_REPUSE) {
 		(*insttable_1byte[CPU_INST_OP32][op])();
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
+		goto check_break_point;
+#else
 		return;
+#endif
 	}
 
 	/* rep */
@@ -106,4 +240,30 @@ exec_1step(void)
 			}
 		}
 	}
+
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
+check_break_point:
+	if (CPU_TRAP || (CPU_STAT_BP_EVENT & ~CPU_STAT_BP_EVENT_RF)) {
+		UINT8 orig = CPU_STAT_BP_EVENT & ~CPU_STAT_BP_EVENT_RF;
+
+		CPU_STAT_BP_EVENT &= CPU_STAT_BP_EVENT_RF;
+
+		CPU_DR6 |= (orig & 0xf);
+		if (orig & CPU_STAT_BP_EVENT_TASK) {
+			CPU_DR6 |= CPU_DR6_BT;
+		}
+		if (CPU_TRAP) {
+			CPU_DR6 |= CPU_DR6_BS;
+		}
+		INTERRUPT(DB_EXCEPTION, TRUE, FALSE, 0);
+	}
+	if (CPU_EFLAG & RF_FLAG) {
+		if (CPU_STAT_BP_EVENT & CPU_STAT_BP_EVENT_RF) {
+			/* after IRETD or task switch */
+			CPU_STAT_BP_EVENT &= ~CPU_STAT_BP_EVENT_RF;
+		} else {
+			CPU_EFLAG &= ~RF_FLAG;
+		}
+	}
+#endif	/* IA32_SUPPORT_DEBUG_REGISTER */
 }

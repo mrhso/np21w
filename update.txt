@@ -21,6 +21,130 @@
 
 // ----
 
+　ver0.74 → ver0.76 (branch...)
+　・DMA - バンク・アドレスマスクの修正
+　・PIC - スペシャルマスクモードの対応
+　・PIT - マルチプルラッチコマンドのサポート(uPD71054)
+　・MOUSE - uPD8255のコマンドレジスタの修正
+　・BIOS - ベクタ08/1A/1Fの修正
+
+
+
+　ver0.74 → ver0.75
+
+　・GDC - ベクタの初期化し忘れを修正
+　・GDC - パターンの修正
+　・ITF/BIOS - リセット時の挙動の修正
+　・BIOS - 1842h モノクロフラグを修正
+　・EGCの高速化(?)
+　・リズムの修正(PCM 44khz 16bit monoralの制限を外した)
+　・LIOの修正
+
+
+　(Windows)
+　　・(I286X) EGCバイトアクセス修正
+　　・(I286X) ストリング命令修正
+　　・フロッピードライブ接続状態指定
+
+　(MacOS9)
+　　・フロッピードライブ接続状態指定
+　　・MPU-PC98IIの設定ダイアログ
+
+　(WinCE)
+　　・(I286A) メモリの修正
+　　・GDC - GDCクロック 1.79MHzのサポート
+
+　(X11)
+　　・Configure Dialog にてアーキテクチャの指定を追加
+
+　(MacOSX)
+　　・フロッピードライブ接続状態指定（FDD1、FDD2のみ）
+　　・設定ダイアログのディップスイッチ画像表示
+　　・CoreMID経由のMIDI演奏に対応
+　　・MPU-PC98IIの設定ダイアログ拡充
+　　・Key Display対応（マウスクリックでFMとMIDIが切り替わります）
+
+
+　・200ラインモードについて (正式サポート / #define SUPPORT_CRT15KHZ)
+　　PC-9801シリーズ(FELLOW、PC-9821、ハイレゾ機を除く)に搭載されている
+　　200ラインモードは設定ファイルのDIPswtchにて設定可能となります。
+
+　　　400ラインモード
+　　　　DIPswtch=3e ?? ??
+
+　　　200ラインモード
+　　　　DIPswtch=3f ?? ??
+
+　　本機能は DIPSW1-1に相当する機能であり、PC-9801VM以降のマシンで
+　　一般に言われている200ラインモードとは異なる機能です。
+
+　　※PC-98シリーズの一般的な200ラインモードは、640x200を縦に２倍拡大し
+　　　400ラインモードで動作しています。
+
+　　本機能は DIPSW1-1の切り替え機能を削除した FELLOW、PC-9821、ハイレゾ機の
+　　BIOS.ROMを使用時には正常に動作致しません。
+　　これを理由に、本機能は NP2上で設定スイッチを設けません。
+
+　　また、レジューム動作時に DIPswtchの値を変更した場合、正常に
+　　スクリーンモードを変更できなくなります。
+　　(PC-98動作中にディップスイッチを変更した時と同じ状態になります。)
+　　必ずリセットして下さい。
+
+
+
+　・キー設定について
+　　bios.romとかと同じフォルダに key.txtというファイル名のテキストファイルを
+　　作成して、キー設定を記入して下さい。
+
+　　書式)
+　　　[keyname] = [key1] (key2) (key3)
+　　　[keyname] [TAB] [key1] (key2) (key3)
+　　　userkey[1-2] = [key1] (key2) (key3) ... (key15)
+　　　　フルキー 0～9 A～Z - ^ \ @ [ ] ; : , . / _
+　　　　         STOP COPY ESC TAB BS RET SPC XFER NFER
+                 INS DEL RLUP RLDN HMCL HELP
+　　　　ファンク F1～F10 VF1～VF5
+　　　　テンキー [0]～[9] [-] [/] [*] [+] [=] [,] [.]
+　　　　シフト   SHIFT CAPS KANA GRPH CTRL
+
+　　　通常キーは3個、userkeyは15個の同時押し設定が可能です。
+　　　[=] キーは = で区切られてしまうので TABで区切るか [EQU]として下さい。
+
+　　　例:
+　　　　W = UP                 (ダイアモンドキーをカーソルにしてみたり…)
+　　　　S = LEFT
+　　　　D = RIGHT
+　　　　X = DOWN
+　　　　[7] = [4] [8]          (テンキー斜め同時押しにしてみたり…)
+　　　　[9] = [6] [8]
+　　　　[1] = [4] [2]
+　　　　[3] = [6] [2]
+　　　　userkey1 = CTRL XFER   (CTRL+XFER FEP切り替え)
+　　　　userkey2 = D O A Z     (D+O+A+Z 同時押し)
+
+
+
+　・内部変更
+　　　win9x/unasmをgenericへ移動(+P6,FPU命令をサポート)
+
+　　　np2infoをgenericへ移動
+　　　　エスケープ文字を !KEY から %KEY%へ変更
+　　　　ex == NULLで OS指定の改行コードになる筈
+　　　　(MacOSXは np2info.cppがそのまんま移動になるかと思われ
+
+　　　io/serial.*に存在した keystat系を /keystat.* へ移動
+　　　　keystat.cをリンク、 keystat.hをインクルード
+
+　　　SUPPORT_WAVEMIX廃止
+　　　　→ SUPPORT_SWSEEKSNDに変更
+　　　　ハードウェアで対応してる場合には 一応 SUPPORT_HWSEEKSNDと定義して
+　　　　くれると嬉すぃ
+
+	　・keystat_initialize(keystat_reset)をコールして初期化すること…
+
+
+// ----
+
 　ver0.73 → ver0.74
 
 　・I/OレベルでのSASIに対応(INT3/DMA#0/BIOS:d0000-d0fff)

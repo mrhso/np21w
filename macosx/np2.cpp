@@ -38,14 +38,33 @@
 #include	"np2opening.h"
 #include	"toolwin.h"
 #include	"aboutdlg.h"
+#include	"keystat.h"
+#include	"kdispwin.h"
 
-#include	<QuickTime/QuickTime.h>
-#define	USE_RESUME
 #define	NP2OPENING
 // #define	OPENING_WAIT	1500
 
 
-		NP2OSCFG	np2oscfg = {"Neko Project IIx", -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 0};
+		NP2OSCFG	np2oscfg = {"Neko Project IIx",						//titles
+								-1,										//winx
+								-1,										//winy
+								0,										//NOWAIT
+								0,										//DRAW_SKIP
+								0,										//DISPCLK
+								0,										//F11KEY
+								0,										//F12KEY
+								0,										//MOUSE_SW
+								0,										//JOYPAD1
+								{5, 0, 0x3e, 19200, "", "", "GM", ""},  //mpu
+								0,										//confirm
+								0,										//resume
+								1,										//toolwin
+								0,										//jastsnd
+								0,										//I286SAVE
+#ifdef SUPPORT_KEYDISP
+								1,										//keydisp
+#endif
+								};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
@@ -122,23 +141,30 @@ static void InitToolBox(void) {
 static void MenuBarInit(void) {
 #if 1
 	Handle		hMenu;
-	MenuHandle	happlemenu;
 
 	hMenu = GetNewMBar(IDM_MAINMENU);
 	if (!hMenu) {
 		ExitToShell();
 	}
 	SetMenuBar(hMenu);
-	happlemenu = GetMenuHandle(IDM_APPLE);
-	if (happlemenu) {
-		AppendResMenu(happlemenu, 'DRVR');
+#if !defined(SUPPORT_SCSI)
+	hmenu = GetMenuHandle(IDM_HDD);
+	if (hmenu) {
+		DeleteMenuItem(hmenu, 7);
+		DeleteMenuItem(hmenu, 6);
+		DeleteMenuItem(hmenu, 5);
+		DeleteMenuItem(hmenu, 4);
+		DeleteMenuItem(hmenu, 3);
 	}
+#endif
 	InsertMenu(GetMenu(IDM_SASI1), -1);
 	InsertMenu(GetMenu(IDM_SASI2), -1);
+#if defined(SUPPORT_SCSI)
 	InsertMenu(GetMenu(IDM_SCSI0), -1);
 	InsertMenu(GetMenu(IDM_SCSI1), -1);
 	InsertMenu(GetMenu(IDM_SCSI2), -1);
 	InsertMenu(GetMenu(IDM_SCSI3), -1);
+#endif
 	InsertMenu(GetMenu(IDM_KEYBOARD), -1);
 	InsertMenu(GetMenu(IDM_SOUND), -1);
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
@@ -147,6 +173,29 @@ static void MenuBarInit(void) {
     SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2OPEN, kMenuShiftModifier);
     SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2EJECT, kMenuShiftModifier);
     SetMenuItemModifiers(GetMenuRef(IDM_SASI2), IDM_SASI2OPEN, kMenuShiftModifier);
+#ifndef SUPPORT_KEYDISP
+	DisableMenuItem(GetMenuRef(IDM_OTHER), IDM_KEYDISP);
+#endif
+    if (np2oscfg.I286SAVE) {
+        AppendMenuItemTextWithCFString(GetMenuRef(IDM_OTHER), CFCopyLocalizedString(CFSTR("i286 save"),"i286"), kMenuItemAttrIconDisabled, NULL,NULL);
+    }
+
+	if (!(np2cfg.fddequip & 1)) {
+		DisableAllMenuItems(GetMenuRef(IDM_FDD1));
+	}
+	if (!(np2cfg.fddequip & 2)) {
+		DisableAllMenuItems(GetMenuRef(IDM_FDD2));
+	}
+#if 0
+//Later...
+	if (!(np2cfg.fddequip & 4)) {
+		DisableAllMenuItems(GetMenuRef(IDM_FDD3));
+	}
+	if (!(np2cfg.fddequip & 8)) {
+		DisableAllMenuItems(GetMenuRef(IDM_FDD4));
+	}
+#endif
+
 	DrawMenuBar();
 #else
     OSStatus	err;
@@ -185,7 +234,7 @@ static void changescreen(BYTE mode) {
 	}
 }
 
-static void HandleMenuChoice(long wParam) {
+void HandleMenuChoice(long wParam) {
 
 	UINT	update;
 
@@ -253,6 +302,7 @@ static void HandleMenuChoice(long wParam) {
 			diskdrv_sethdd(1, NULL);
 			break;
 
+#if defined(SUPPORT_SCSI)
 		case IDM_SCSI0OPEN:
 			dialog_changehdd(0x20);
 			break;
@@ -284,6 +334,7 @@ static void HandleMenuChoice(long wParam) {
 		case IDM_SCSI3REMOVE:
 			diskdrv_sethdd(0x23, NULL);
 			break;
+#endif
 
 		case IDM_FULLSCREEN:
             toggleFullscreen();
@@ -608,10 +659,22 @@ static void HandleMenuChoice(long wParam) {
             menu_setmsrapid(np2cfg.MOUSERAPID ^ 1);
             update |= SYS_UPDATECFG;
             break;
+			
         case IDM_RECORDING:
             menu_setrecording(false);
             break;
 
+#if defined(SUPPORT_KEYDISP)
+		case IDM_KEYDISP:
+			menu_setkeydisp(np2oscfg.keydisp ^ 1);
+			if (np2oscfg.keydisp) {
+				kdispwin_create();
+			}
+			else {
+				kdispwin_destroy();
+			}
+			break;
+#endif
 
 		case IDM_I286SAVE:
 			debugsub_status();
@@ -659,6 +722,7 @@ static void HandleMouseDown(EventRecord *pevent) {
 static void framereset(UINT waitcnt) {
 
 	framecnt = 0;
+	kdispwin_draw((BYTE)waitcnt);
 	toolwin_draw((BYTE)waitcnt);
 	if (np2oscfg.DISPCLK & 3) {
 		if (sysmng_workclockrenewal()) {
@@ -673,6 +737,7 @@ static void processwait(UINT waitcnt) {
 		timing_setcount(0);
 		framereset(waitcnt);
 	}
+	soundmng_sync();
 }
 
 static void getstatfilename(char *path, const char *ext, int size) {
@@ -707,11 +772,11 @@ static void flagload(const char *ext) {
     ret = IDOK;
 	getstatfilename(path, ext, sizeof(path));
 	r = statsave_check(path, buf, sizeof(buf));
-	if (r & (~NP2FLAG_DISKCHG)) {
+	if (r & (~STATFLAG_DISKCHG)) {
 		ResumeErrorDialogProc();
 		ret = IDCANCEL;
 	}
-	else if (r & NP2FLAG_DISKCHG) {
+	else if (r & STATFLAG_DISKCHG) {
 		ret = ResumeWarningDialogProc(buf);
 	}
 	if (ret == IDOK) {
@@ -736,13 +801,17 @@ int main(int argc, char *argv[]) {
 
 	InitToolBox();
 	macossub_init();
-	MenuBarInit();
-
 	initload();
+
+	MenuBarInit();
 
 	TRACEINIT();
     
-    toolwin_readini();
+	keystat_initialize();
+	kdispwin_initialize();
+
+	toolwin_readini();
+	kdispwin_readini();
     if (!(setupMainWindow())) {
         return(0);
     }
@@ -770,9 +839,9 @@ int main(int argc, char *argv[]) {
 	menu_setdispclk(np2oscfg.DISPCLK);
 	menu_setbtnrapid(np2cfg.BTN_RAPID);
 	menu_setbtnmode(np2cfg.BTN_MODE);
-    if (np2oscfg.I286SAVE) {
-        AppendMenuItemTextWithCFString(GetMenuRef(IDM_OTHER), CFCopyLocalizedString(CFSTR("i286 save"),"i286"), kMenuItemAttrIconDisabled, NULL,NULL);
-    }
+#if defined(SUPPORT_KEYDISP)
+	menu_setkeydisp(np2oscfg.keydisp);
+#endif
 
 	scrnmng_initialize();
 	if (scrnmng_create(scrnmode) != SUCCESS) {
@@ -790,7 +859,7 @@ int main(int argc, char *argv[]) {
 	S98_init();
 
     hid_init();
-#ifndef SUPPORT_WAVEMIX
+#ifndef SUPPORT_SWSEEKSND
 	if (soundmng_initialize() == SUCCESS) {
 		soundmng_pcmvolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
 		soundmng_pcmvolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
@@ -803,6 +872,7 @@ int main(int argc, char *argv[]) {
 		mousemng_enable(MOUSEPROC_SYSTEM);
 	}
 #endif
+
 #ifdef OPENING_WAIT
 	while((GETTICK() - tick) < OPENING_WAIT);
 #endif
@@ -813,9 +883,14 @@ int main(int argc, char *argv[]) {
         flagload(np2resume);
     }
 #endif
+#if defined(SUPPORT_KEYDISP)
+	if (np2oscfg.keydisp) {
+		kdispwin_create();
+	}
+#endif
 
     theTarget = GetEventDispatcherTarget();
-    
+
 	np2running = TRUE;
 	while(np2running) {
         if (ReceiveNextEvent(0, NULL,kEventDurationNoWait,true, &theEvent)== noErr)
@@ -914,21 +989,23 @@ int main(int argc, char *argv[]) {
 #if defined(NP2GCC)
 	mousemng_disable(MOUSEPROC_SYSTEM);
 #endif
-#ifndef SUPPORT_WAVEMIX
+#ifndef SUPPORT_SWSEEKSND
 	soundmng_deinitialize();
 #endif
 	scrnmng_destroy();
 
+	kdispwin_destroy();
 	if (sys_updates & (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
 		initsave();						// np2.cfg create
 	    toolwin_writeini();				// np2.cfg append
+		kdispwin_writeini();
 	}
 	TRACETERM();
 	macossub_term();
 	dosio_term();
 
-	DisposeWindow(hWndMain);
     toolwin_close();
+	DisposeWindow(hWndMain);
 
 	(void)argc;
 	(void)argv;
@@ -1263,8 +1340,4 @@ static void toggleFullscreen(void) {
     }
     CheckMenuItem(GetMenuHandle(IDM_SCREEN), LoWord(IDM_FULLSCREEN), scrnmode & SCRNMODE_FULLSCREEN);
     soundmng_play();
-}
-
-void recieveCommand(long param) {
-    HandleMenuChoice(param);
 }

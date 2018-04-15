@@ -1,4 +1,4 @@
-/*	$Id: exception.c,v 1.10 2004/02/09 16:12:07 monaka Exp $	*/
+/*	$Id: exception.c,v 1.15 2004/03/12 13:34:08 monaka Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -85,12 +85,19 @@ exception(int num, int error_code)
 
 	switch (num) {
 	case DE_EXCEPTION:	/* (F) 除算エラー */
+	case DB_EXCEPTION:	/* (F/T) デバッグ */
 	case BR_EXCEPTION:	/* (F) BOUND の範囲外 */
 	case UD_EXCEPTION:	/* (F) 無効オペコード */
 	case NM_EXCEPTION:	/* (F) デバイス使用不可 (FPU が無い) */
+	case MF_EXCEPTION:	/* (F) 浮動小数点エラー */
+#if CPU_FAMILY >= 5
+	case MC_EXCEPTION:	/* (A) マシンチェック */
+#endif
+#if CPU_FAMILY >= 6
+	case XF_EXCEPTION:	/* (F) ストリーミング SIMD 拡張命令 */
+#endif
 		CPU_EIP = CPU_PREV_EIP;
 		/*FALLTHROUGH*/
-	case DB_EXCEPTION:	/* (F/T) デバッグ */
 	case NMI_EXCEPTION:	/* (I) NMI 割り込み */
 	case BP_EXCEPTION:	/* (T) ブレークポイント */
 	case OF_EXCEPTION:	/* (T) オーバーフロー */
@@ -116,25 +123,6 @@ exception(int num, int error_code)
 		errorp = 1;
 		break;
 
-	case MF_EXCEPTION:	/* (F) 浮動小数点エラー */
-		CPU_EIP = CPU_PREV_EIP;
-		errorp = 0;
-		break;
-
-#if CPU_FAMILY >= 5
-	case MC_EXCEPTION:	/* (A) マシンチェック */
-		CPU_EIP = CPU_PREV_EIP;
-		errorp = 0;
-		break;
-#endif
-
-#if CPU_FAMILY >= 6
-	case XF_EXCEPTION:	/* (F) ストリーミング SIMD 拡張命令 */
-		CPU_EIP = CPU_PREV_EIP;
-		errorp = 0;
-		break;
-#endif
-
 	default:
 		ia32_panic("exception: unknown exception (%d)", num);
 		break;
@@ -143,6 +131,8 @@ exception(int num, int error_code)
 	if (CPU_STAT_EXCEPTION_COUNTER >= 2) {
 		if (dftable[exctype[CPU_STAT_PREV_EXCEPTION]][exctype[num]]) {
 			num = DF_EXCEPTION;
+			errorp = 1;
+			error_code = 0;
 		}
 	}
 	CPU_STAT_PREV_EXCEPTION = num;
@@ -150,6 +140,13 @@ exception(int num, int error_code)
 	VERBOSE(("exception: ---------------------------------------------------------------- end"));
 
 	INTERRUPT(num, 0, errorp, error_code);
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
+	if (num != BP_EXCEPTION) {
+		if (CPU_INST_OP32) {
+			set_eflags(REAL_EFLAGREG|RF_FLAG, RF_FLAG);
+		}
+	}
+#endif
 	CPU_STAT_EXCEPTION_COUNTER_CLEAR();
 	siglongjmp(exec_1step_jmpbuf, 1);
 }
@@ -210,16 +207,16 @@ exception(int num, int error_code)
  * D          : ゲートのサイズ．0 = 16 bit, 1 = 32 bit
  */
 
-static void interrupt_task_gate(descriptor_t *gdp, int softintp, int errorp, int error_code);
-static void interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_code);
+static void interrupt_task_gate(descriptor_t *gd, int softintp, int errorp, int error_code);
+static void interrupt_intr_or_trap(descriptor_t *gd, int softintp, int errorp, int error_code);
 
 void
 interrupt(int num, int softintp, int errorp, int error_code)
 {
 	descriptor_t gd;
-	DWORD idt_idx;
-	DWORD new_ip;
-	WORD new_cs;
+	UINT idt_idx;
+	UINT32 new_ip;
+	UINT16 new_cs;
 
 	VERBOSE(("interrupt: num = 0x%02x, softintp = %s, errorp = %s, error_code = %08x", num, softintp ? "on" : "off", errorp ? "on" : "off", error_code));
 
@@ -327,7 +324,7 @@ interrupt(int num, int softintp, int errorp, int error_code)
 }
 
 static void
-interrupt_task_gate(descriptor_t *gdp, int softintp, int errorp, int error_code)
+interrupt_task_gate(descriptor_t *gd, int softintp, int errorp, int error_code)
 {
 	selector_t task_sel;
 	int rv;
@@ -336,9 +333,9 @@ interrupt_task_gate(descriptor_t *gdp, int softintp, int errorp, int error_code)
 
 	(void)softintp;
 
-	rv = parse_selector(&task_sel, gdp->u.gate.selector);
+	rv = parse_selector(&task_sel, gd->u.gate.selector);
 	if (rv < 0 || task_sel.ldt) {
-		VERBOSE(("interrupt: parse_selector (selector = %04x, rv = %d, %cDT)", gdp->u.gate.selector, rv, task_sel.ldt ? 'L' : 'G'));
+		VERBOSE(("interrupt: parse_selector (selector = %04x, rv = %d, %cDT)", gd->u.gate.selector, rv, task_sel.ldt ? 'L' : 'G'));
 		EXCEPTION(TS_EXCEPTION, task_sel.idx);
 	}
 
@@ -372,46 +369,49 @@ interrupt_task_gate(descriptor_t *gdp, int softintp, int errorp, int error_code)
 }
 
 static void
-interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_code)
+interrupt_intr_or_trap(descriptor_t *gd, int softintp, int errorp, int error_code)
 {
 	selector_t cs_sel, ss_sel;
-	DWORD old_flags;
-	DWORD new_flags;
-	DWORD mask;
-	DWORD stacksize;
-	DWORD sp;
-	DWORD new_ip, new_sp;
-	DWORD old_ip, old_sp;
-	WORD old_cs, old_ss, new_ss;
+	UINT stacksize;
+	UINT32 old_flags;
+	UINT32 new_flags;
+	UINT32 mask;
+	UINT32 sp;
+	UINT32 new_ip, new_sp;
+	UINT32 old_ip, old_sp;
+	UINT16 old_cs, old_ss, new_ss;
 	int rv; 
 
-	new_ip = gdp->u.gate.offset;
+	new_ip = gd->u.gate.offset;
 	old_ss = CPU_SS;
 	old_cs = CPU_CS;
 	old_ip = CPU_EIP;
 	old_sp = CPU_ESP;
-	new_flags = old_flags = REAL_EFLAGREG;
+	old_flags = REAL_EFLAGREG;
+	new_flags = REAL_EFLAGREG & ~(T_FLAG|RF_FLAG|NT_FLAG|VM_FLAG);
+	mask = T_FLAG|RF_FLAG|NT_FLAG|VM_FLAG;
 
-	switch (gdp->type) {
+	switch (gd->type) {
 	case CPU_SYSDESC_TYPE_INTR_16:
 	case CPU_SYSDESC_TYPE_INTR_32:
 		VERBOSE(("interrupt: INTERRUPT-GATE"));
 		new_flags &= ~I_FLAG;
-		mask = I_FLAG;
+		mask |= I_FLAG;
 		break;
 
 	case CPU_SYSDESC_TYPE_TRAP_16:
 	case CPU_SYSDESC_TYPE_TRAP_32:
 		VERBOSE(("interrupt: TRAP-GATE"));
-		mask = 0;
+		break;
+
+	default:
+		ia32_panic("interrupt: gate descriptor type is invalid (type = %d)", gd->type);
 		break;
 	}
-	new_flags &= ~(T_FLAG|RF_FLAG|NT_FLAG|VM_FLAG);
-	mask |= T_FLAG|RF_FLAG|NT_FLAG|VM_FLAG;
 
-	rv = parse_selector(&cs_sel, gdp->u.gate.selector);
+	rv = parse_selector(&cs_sel, gd->u.gate.selector);
 	if (rv < 0) {
-		VERBOSE(("interrupt: parse_selector (selector = %04x, rv = %d)", gdp->u.gate.selector, rv));
+		VERBOSE(("interrupt: parse_selector (selector = %04x, rv = %d)", gd->u.gate.selector, rv));
 		EXCEPTION(GP_EXCEPTION, cs_sel.idx + !softintp);
 	}
 
@@ -452,7 +452,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 			VERBOSE(("interrupt: INTERRUPT-FROM-VIRTUAL-8086-MODE"));
 			stacksize = errorp ? 20 : 18;
 		}
-		switch (gdp->type) {
+		switch (gd->type) {
 		case CPU_SYSDESC_TYPE_INTR_32:
 		case CPU_SYSDESC_TYPE_TRAP_32:
 			stacksize *= 2;
@@ -498,7 +498,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 		}
 
 		/* check stack room size */
-		CHECK_STACK_PUSH(&ss_sel.desc, new_sp, stacksize);
+		STACK_PUSH_CHECK(ss_sel.idx, &ss_sel.desc, new_sp, stacksize);
 
 		/* out of range */
 		if (new_ip > cs_sel.desc.u.seg.limit) {
@@ -512,7 +512,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 		load_cs(cs_sel.selector, &cs_sel.desc, cs_sel.desc.dpl);
 		SET_EIP(new_ip);
 
-		switch (gdp->type) {
+		switch (gd->type) {
 		case CPU_SYSDESC_TYPE_INTR_32:
 		case CPU_SYSDESC_TYPE_TRAP_32:
 			if (CPU_STAT_VM86) {
@@ -555,8 +555,6 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 			}
 			break;
 		}
-
-		set_eflags(new_flags, mask);
 	} else {
 		if (CPU_STAT_VM86) {
 			VERBOSE(("interrupt: VM86"));
@@ -569,7 +567,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 		VERBOSE(("interrupt: INTRA-PRIVILEGE-LEVEL-INTERRUPT"));
 
 		stacksize = errorp ? 8 : 6;
-		switch (gdp->type) {
+		switch (gd->type) {
 		case CPU_SYSDESC_TYPE_INTR_32:
 		case CPU_SYSDESC_TYPE_TRAP_32:
 			stacksize *= 2;
@@ -581,7 +579,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 		} else {
 			sp = CPU_SP;
 		}
-		CHECK_STACK_PUSH(&CPU_STAT_SREG(CPU_SS_INDEX), sp, stacksize);
+		STACK_PUSH_CHECK(CPU_REGS_SREG(CPU_SS_INDEX), &CPU_STAT_SREG(CPU_SS_INDEX), sp, stacksize);
 
 		/* out of range */
 		if (new_ip > cs_sel.desc.u.seg.limit) {
@@ -592,7 +590,7 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 		load_cs(cs_sel.selector, &cs_sel.desc, CPU_STAT_CPL);
 		SET_EIP(new_ip);
 
-		switch (gdp->type) {
+		switch (gd->type) {
 		case CPU_SYSDESC_TYPE_INTR_32:
 		case CPU_SYSDESC_TYPE_TRAP_32:
 			PUSH0_32(old_flags);
@@ -613,9 +611,21 @@ interrupt_intr_or_trap(descriptor_t *gdp, int softintp, int errorp, int error_co
 			}
 			break;
 		}
-
-		set_eflags(new_flags, mask);
 	}
+#if defined(IA32_DONT_USE_SET_EFLAGS_FUNCTION)
+	CPU_EFLAG = new_flags;
+	CPU_OV = CPU_FLAG & O_FLAG;
+	CPU_TRAP = (CPU_FLAG & (I_FLAG|T_FLAG)) == (I_FLAG|T_FLAG);
+	if ((old_flags ^ CPU_EFLAG) & VM_FLAG) {
+		if (CPU_EFLAG & VM_FLAG) {
+			change_vm(1);
+		} else {
+			change_vm(0);
+		}
+	}
+#else
+	set_eflags(new_flags, mask);
+#endif
 
-	VERBOSE(("interrupt: new EIP = %04x:%08x, new ESP = %04x:%08x", CPU_CS, CPU_EIP, CPU_SS, CPU_ESP));
+	VERBOSE(("interrupt: new EIP = %04x:%08x, ESP = %04x:%08x", CPU_CS, CPU_EIP, CPU_SS, CPU_ESP));
 }

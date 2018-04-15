@@ -20,6 +20,7 @@ typedef unsigned __int64	UINT64;
 #define	INLINE				__inline
 #define	QWORD_CONST(v)		((DWORDLONG)(v))
 #define	SQWORD_CONST(v)		((LONGLONG)(v))
+#define	snprintf			_snprintf
 #define	vsnprintf			_vsnprintf
 #else
 #include	<stdlib.h>
@@ -35,6 +36,13 @@ typedef signed __int64		SINT64;
 // for RISC test
 #define	REG8		UINT
 #define REG16		UINT
+
+
+// for x86
+#define	LOADINTELDWORD(a)		(*((UINT32 *)(a)))
+#define	LOADINTELWORD(a)		(*((UINT16 *)(a)))
+#define	STOREINTELDWORD(a, b)	*(UINT32 *)(a) = (b)
+#define	STOREINTELWORD(a, b)	*(UINT16 *)(a) = (b)
 
 
 #include	"common.h"
@@ -73,9 +81,12 @@ typedef signed __int64		SINT64;
 
 #define	SOUNDRESERVE	20
 
-#define	SUPPORT_WAVEMIX
-
+#if defined(CPUCORE_IA32)
+#define	SUPPORT_CRT31KHZ
+#define	SUPPORT_PC9821
+#endif
 #define	SUPPORT_HOSTDRV
+#define	SUPPORT_SWSEEKSND
 
 #define	FASTCALL	__fastcall
 
@@ -84,6 +95,8 @@ typedef signed __int64		SINT64;
 #define	sigjmp_buf				jmp_buf
 #define	sigsetjmp(env, mask)	setjmp(env)
 #define	siglongjmp(env, val)	longjmp(env, val)
-#define	msgbox(title, msg)		MessageBox(NULL, msg, title, MB_OK)
+#define	msgbox(title, msg)		TRACEOUT(("%s", title)); \
+								TRACEOUT(("%s", msg)); \
+								MessageBox(NULL, msg, title, MB_OK)
 #endif
 

@@ -1,5 +1,5 @@
 
-#define	NP2VER_CORE			"ver.0.74"
+#define	NP2VER_CORE			"ver.0.75"
 
 // #define	NP2VER_WIN9X
 // #define	NP2VER_MACOS9

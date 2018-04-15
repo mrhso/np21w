@@ -218,6 +218,7 @@
 				967C9204055778CB00000103,
 				967C93FE05577A1F00000103,
 				967C93FF05577A1F00000103,
+				966AF3F505ED13B6000E305F,
 				967C940005577A1F00000103,
 				967C940105577A1F00000103,
 				967C940205577A1F00000103,
@@ -248,6 +249,7 @@
 		};
 		20286C32FDCF999611CA2CEA = {
 			children = (
+				9668883E05EFDE2500C9A4EE,
 				967C947A05591C6800000103,
 				20286C33FDCF999611CA2CEA,
 				0249A669FF388E3911CA2CEA,
@@ -734,7 +736,6 @@
 				967C940705577A1F00000103,
 				967C940805577A1F00000103,
 				967C940905577A1F00000103,
-				961B7001056039CE00000103,
 				961B7005056048F500000103,
 				96EDBDB40577A00600000133,
 				96EDBDB60577A00600000133,
@@ -756,6 +757,10 @@
 				9645C2DC05BFA3B90090B4FD,
 				9645C2E005BFA3B90090B4FD,
 				9621596805C3C2630070042E,
+				966AF3F605ED13B6000E305F,
+				966AF3FF05ED13DD000E305F,
+				9668899705F0892600C9A4EE,
+				96497FA705FC4846003A4126,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -768,6 +773,7 @@
 				96A2026E0549B38300000102,
 				9608400D054ED1E900000103,
 				967C947B05591C6800000103,
+				9668883F05EFDE2500C9A4EE,
 			);
 			isa = PBXFrameworksBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -827,20 +833,6 @@
 		};
 		9608400D054ED1E900000103 = {
 			fileRef = 9608400C054ED1E900000103;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		961B7000056039CE00000103 = {
-			fileEncoding = "-2147483647";
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.cpp.cpp;
-			path = np2info.cpp;
-			refType = 2;
-			sourceTree = SOURCE_ROOT;
-		};
-		961B7001056039CE00000103 = {
-			fileRef = 961B7000056039CE00000103;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -1077,6 +1069,77 @@
 		};
 		9645C2E005BFA3B90090B4FD = {
 			fileRef = 9645C2D805BFA3B90090B4FD;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		96497FA505FC4846003A4126 = {
+			fileEncoding = "-2147483647";
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = kdispwin.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		96497FA705FC4846003A4126 = {
+			fileRef = 96497FA505FC4846003A4126;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		9668883E05EFDE2500C9A4EE = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = CoreMIDI.framework;
+			path = /System/Library/Frameworks/CoreMIDI.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		9668883F05EFDE2500C9A4EE = {
+			fileRef = 9668883E05EFDE2500C9A4EE;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		9668899505F0892600C9A4EE = {
+			fileEncoding = "-2147483647";
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = cmmidi.cpp;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		9668899705F0892600C9A4EE = {
+			fileRef = 9668899505F0892600C9A4EE;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		966AF3F505ED13B6000E305F = {
+			fileEncoding = "-2147483647";
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			name = keystat.c;
+			path = ../keystat.c;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		966AF3F605ED13B6000E305F = {
+			fileRef = 966AF3F505ED13B6000E305F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		966AF3FE05ED13DD000E305F = {
+			fileEncoding = "-2147483647";
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.c;
+			path = np2info.c;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		966AF3FF05ED13DD000E305F = {
+			fileRef = 966AF3FE05ED13DD000E305F;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -2100,12 +2163,14 @@
 			children = (
 				967C9221055778CB00000103,
 				967C921E055778CB00000103,
+				9668899505F0892600C9A4EE,
 				967C9233055778CB00000103,
 				967C923D055778CB00000103,
 				967C923F055778CB00000103,
 				967C9241055778CB00000103,
 				967C9244055778CB00000103,
 				967C9246055778CB00000103,
+				96497FA505FC4846003A4126,
 				967C924B055778CB00000103,
 				967C924D055778CB00000103,
 				967C924F055778CB00000103,
@@ -2146,7 +2211,6 @@
 				967C922F055778CB00000103,
 				967C9231055778CB00000103,
 				961B7003056048F500000103,
-				961B7000056039CE00000103,
 			);
 			isa = PBXGroup;
 			path = dialog;
@@ -3980,6 +4044,7 @@
 				96E2F92005AF0FFB00E73373,
 				96E2F92105AF0FFB00E73373,
 				96EDBDB00577A00600000133,
+				966AF3FE05ED13DD000E305F,
 			);
 			isa = PBXGroup;
 			name = generic;

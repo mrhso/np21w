@@ -3,13 +3,15 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"gdc_cmd.tbl"
+#include	"gdc_sub.h"
 #include	"vram.h"
 #include	"palettes.h"
-#include	"gdc_cmd.tbl"
 #include	"timing.h"
 
-
+#if !defined(CPUCORE_IA32)
 #define	SEARCH_SYNC
+#endif
 #define	TURE_SYNC
 
 typedef struct {
@@ -20,20 +22,31 @@ typedef struct {
 	UINT	maxy;
 } GDCCLK;
 
+// 31kHzの時の動作クロックが不明…
 static const GDCCLK gdcclk[] = {
 			{14318180 / 8, 112 - 8, 112 + 8, 200, 300},
 			{21052600 / 8, 106 - 6, 106 + 6, 400, 575},
-			{25056815 / 8, 106 - 6, 106 + 6, 400, 575},
-			{25175000 / 8, 100 - 4, 100 + 4, 400, 575}};
+			{25260000 / 8, 100 - 8, 100 + 8, 400, 575}};
 
 
-static const UINT8 defdegpal[4] = {0x04,0x15,0x26,0x37};
+typedef struct {
+	UINT8	master[8];
+	UINT8	slave[8];
+} GDCSYNC;
 
 static const UINT8 defsyncm15[8] = {0x10,0x4e,0x07,0x25,0x0d,0x0f,0xc8,0x94};
 static const UINT8 defsyncs15[8] = {0x06,0x26,0x03,0x11,0x86,0x0f,0xc8,0x94};
 
 static const UINT8 defsyncm24[8] = {0x10,0x4e,0x07,0x25,0x07,0x07,0x90,0x65};
 static const UINT8 defsyncs24[8] = {0x06,0x26,0x03,0x11,0x83,0x07,0x90,0x65};
+
+static const UINT8 defsyncm31[8] = {0x10,0x4e,0x47,0x0c,0x07,0x0d,0x90,0x89};
+static const UINT8 defsyncs31[8] = {0x06,0x26,0x41,0x0c,0x83,0x0d,0x90,0x89};
+
+
+static const UINT8 defdegpal[4] = {0x04,0x15,0x26,0x37};
+
+
 
 
 void gdc_setdegitalpal(int color, REG8 value) {
@@ -110,8 +123,39 @@ void gdc_paletteinit(void) {
 	gdcs.palchange = GDCSCRN_REDRAW;
 }
 
+#if defined(SUPPORT_PC9821)
+void gdc_analogext(BOOL extend) {
+
+	if (extend) {
+		gdc.analog |= (1 << GDCANALOG_256);
+		vramop.operate |= 0x20;
+	}
+	else {
+		gdc.analog &= ~(1 << (GDCANALOG_256));
+		vramop.operate &= ~0x20;
+	}
+	gdcs.palchange = GDCSCRN_REDRAW;
+	gdcs.grphdisp |= GDCSCRN_EXT | GDCSCRN_ALLDRAW2;
+	i286_vram_dispatch(vramop.operate);
+}
+#endif
+
 
 // --------------------------------------------------------------------------
+
+void gdc_vectreset(GDCDATA item) {
+
+	item->para[GDC_VECTW+1] = 0x00;
+	item->para[GDC_VECTW+2] = 0x00;
+	item->para[GDC_VECTW+3] = 0x08;
+	item->para[GDC_VECTW+4] = 0x00;
+	item->para[GDC_VECTW+5] = 0x08;
+	item->para[GDC_VECTW+6] = 0x00;
+	item->para[GDC_VECTW+7] = 0xff;
+	item->para[GDC_VECTW+8] = 0xff;
+	item->para[GDC_VECTW+9] = 0xff;
+	item->para[GDC_VECTW+10] = 0xff;
+}
 
 static void vectdraw(void) {
 
@@ -137,6 +181,7 @@ const GDCVECT	*vect;
 	if (vect->ope & 0x40) {
 		gdcsub_vectr(csrw, vect, textw, ope);
 	}
+	gdc_vectreset(&gdc.s);
 }
 
 static void textdraw(void) {
@@ -164,6 +209,7 @@ const GDCVECT	*vect;
 	if (vect->ope & 0x40) {		// undocumented
 		gdcsub_vectr(csrw, vect, textw, ope);
 	}
+	gdc_vectreset(&gdc.s);
 }
 
 void gdc_work(int id) {
@@ -171,15 +217,15 @@ void gdc_work(int id) {
 	GDCDATA		item;
 	UINT8		*dispflag;
 	UINT		i;
-	BYTE		data;
+	UINT8		data;
 
 	item = (id == GDCWORK_MASTER)?&gdc.m:&gdc.s;
 	dispflag = (id == GDCWORK_MASTER)?&gdcs.textdisp:&gdcs.grphdisp;
 
 	for (i=0; i<item->cnt; i++) {
-		data = (BYTE)item->fifo[i];
+		data = (UINT8)item->fifo[i];
 		if (item->fifo[i] & 0xff00) {
-			item->cmd = data;										// ver0.29
+			item->cmd = data;
 			item->paracb = 0;
 			if ((data & 0x60) == 0x20) {
 				item->para[GDC_WRITE] = data;
@@ -208,7 +254,7 @@ void gdc_work(int id) {
 				case CMD_START:
 				case CMD_SYNC_ON:
 					(*dispflag) |= GDCSCRN_ENABLE | GDCSCRN_ALLDRAW2;
-					screenupdate |= 2;								// ver0.28
+					screenupdate |= 2;
 					break;
 
 				case CMD_STOP_:
@@ -216,7 +262,7 @@ void gdc_work(int id) {
 				case CMD_SYNC_OFF:
 					(*dispflag) &= (~GDCSCRN_ENABLE);
 //					(*dispflag) |= GDCSCRN_ALLDRAW2;
-					screenupdate |= 2;								// ver0.28
+					screenupdate |= 2;
 					break;
 
 				case CMD_VECTE:
@@ -225,7 +271,7 @@ void gdc_work(int id) {
 					}
 					break;
 
-				case CMD_TEXTE:										// ver0.30
+				case CMD_TEXTE:
 					if (id != GDCWORK_MASTER) {
 						textdraw();
 					}
@@ -252,11 +298,11 @@ void gdc_work(int id) {
 				(*dispflag) |= gdc_dirtyflag[id][item->ptr];
 			}
 			(item->ptr)++;
-			(item->rcv)--;					// ver0.29
+			(item->rcv)--;
 			if ((!(item->rcv)) && (id == GDCWORK_SLAVE) &&
 				(((item->cmd) & 0xe4) == 0x20)) {
 				gdcsub_write();
-				item->paracb = 0;			// ver0.29
+				item->paracb = 0;
 			}
 		}
 	}
@@ -264,8 +310,13 @@ void gdc_work(int id) {
 }
 
 // BIOSとかで弄った時にリセット
-void gdc_forceready(GDCDATA item) {
+void gdc_forceready(int id) {
 
+	GDCDATA	item;
+	item = (id == GDCWORK_MASTER)?&gdc.m:&gdc.s;
+	if (item->cnt) {
+		gdc_work(id);
+	}
 	item->rcv = 0;
 	item->snd = 0;
 }
@@ -303,6 +354,12 @@ const GDCCLK	*clk;
 	y = lf + vfbs;
 //	TRACEOUT(("h %d:%d / v %d:%d", cr, x, lf, y));
 
+#if defined(SUPPORT_CRT31KHZ)
+	if (gdc.display & (1 << GDCDISP_31)) {
+		clk = gdcclk + 2;
+	}
+	else
+#endif
 	if (!(gdc.crt15khz & 2)) {							// 24.83±300Hz
 		clk = gdcclk + 1;
 	}
@@ -348,7 +405,7 @@ void gdc_restorekacmode(void) {
 }
 
 
-// ---- I/O
+// ---- I/O master
 
 static void IOOUTCALL gdc_o60(UINT port, REG8 dat) {
 
@@ -378,7 +435,7 @@ static void IOOUTCALL gdc_o68(UINT port, REG8 dat) {
 
 	REG8	bit;
 
-	if (!(dat & 0xf0)) {									// ver0.28
+	if (!(dat & 0xf0)) {
 		bit = 1 << ((dat >> 1) & 7);
 		if (dat & 1) {
 			gdc.mode1 |= bit;
@@ -389,7 +446,7 @@ static void IOOUTCALL gdc_o68(UINT port, REG8 dat) {
 		if (bit & (0x01 | 0x04 | 0x10)) {
 			gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 		}
-		else if (bit == 0x02) {								// ver0.28
+		else if (bit == 0x02) {
 			gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 			gdcs.palchange = GDCSCRN_REDRAW;
 		}
@@ -420,8 +477,9 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 		gdc.mode2 ^= (1 << bit);
 		switch(bit) {
 			case 0:
-				if (gdc.display & 2) {
-					gdc.analog = dat;
+				if (gdc.display & (1 << GDCDISP_ANALOG)) {
+					gdc.analog &= ~(1 << GDCANALOG_16);
+					gdc.analog |= (dat << GDCANALOG_16);
 					gdcs.palchange = GDCSCRN_REDRAW;
 					vramop.operate &= VOP_ANALOGMASK;
 					vramop.operate |= dat << 4;
@@ -441,15 +499,36 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 	}
 	else {
 		switch(dat) {
+#if defined(SUPPORT_PC9821)
+			case 0x20:
+				if (gdc.mode2 & 0x08) {
+					gdc_analogext(FALSE);
+				}
+				break;
+
+			case 0x21:
+				if (gdc.mode2 & 0x08) {
+					gdc_analogext(TRUE);
+				}
+				break;
+
+			case 0x68:
+				gdc.analog &= ~(1 << GDCANALOG_256E);
+				break;
+
+			case 0x69:
+				gdc.analog |= (1 << GDCANALOG_256E);
+				break;
+#endif
 			case 0x40:
 			case 0x80:					// EPSON?
-				gdc.display &= ~1;
+				gdc.display &= ~(1 << GDCDISP_PLAZMA);
 				gdcs.textdisp |= GDCSCRN_EXT;
 				break;
 
 			case 0x41:
 			case 0x81:					// EPSON?
-				gdc.display |= 1;
+				gdc.display |= (1 << GDCDISP_PLAZMA);
 				gdcs.textdisp |= GDCSCRN_EXT;
 				break;
 
@@ -517,18 +596,21 @@ static REG8 IOINPCALL gdc_i60(UINT port) {
 	else {
 		gdc_work(GDCWORK_MASTER);
 	}
-#ifdef SEARCH_SYNC
+#ifdef SEARCH_SYNC		// ToDo: フェッチキューを参照するように…
 	if ((CPU_INPADRS) && (CPU_REMCLOCK >= 5)) {
-		UINT16 jadr = 0xfa74;
+		UINT32 addr;
+		UINT16 jadr;
 		UINT16 memv;
-		memv = i286_memoryread_w(CPU_INPADRS);
+		addr = CPU_INPADRS;
+		jadr = 0xfa74;
+		memv = i286_memoryread_w(addr);
 		while((memv == 0x00eb) || (memv == 0x5fe6)) {
 			jadr -= 0x200;
-			CPU_INPADRS += 2;
-			memv = i286_memoryread_w(CPU_INPADRS);
+			addr += 2;
+			memv = i286_memoryread_w(addr);
 		}
 		if ((memv == 0x20a8) || (memv == 0x2024)) {
-			memv = i286_memoryread_w(CPU_INPADRS + 2);
+			memv = i286_memoryread_w(addr + 2);
 			if (memv == jadr) {					// je
 				if (!gdc.vsync) {
 					CPU_REMCLOCK = -1;
@@ -574,13 +656,15 @@ static REG8 IOINPCALL gdc_i6a(UINT port) {
 }
 
 
+// ---- I/O slave
+
 static void IOOUTCALL gdc_oa0(UINT port, REG8 dat) {
 
 	if (gdc.s.cnt < GDCCMD_MAX) {
 		gdc.s.fifo[gdc.s.cnt++] = dat;
 	}
-//	TRACEOUT(("GDC-B %.2x", dat));
-	if (gdc.s.paracb) {						// ver0.29
+//	TRACEOUT(("GDC-B %.2x [%.4x:%.4x]", dat, CPU_CS, CPU_IP));
+	if (gdc.s.paracb) {
 		gdc_work(GDCWORK_SLAVE);
 	}
 	(void)port;
@@ -616,50 +700,6 @@ static void IOOUTCALL gdc_oa6(UINT port, REG8 dat) {
 	(void)port;
 }
 
-static void IOOUTCALL gdc_oa8(UINT port, REG8 dat) {
-
-	if (gdc.analog) {
-		gdc.palnum = dat & 0x0f;
-	}
-	else {
-		gdc_setdegpalpack(3, dat);
-	}
-	(void)port;
-}
-
-static void IOOUTCALL gdc_oaa(UINT port, REG8 dat) {
-
-	if (gdc.analog) {
-		gdc_setanalogpal(gdc.palnum, offsetof(RGB32, p.g), dat);
-	}
-	else {
-		gdc_setdegpalpack(1, dat);
-	}
-	(void)port;
-}
-
-static void IOOUTCALL gdc_oac(UINT port, REG8 dat) {
-
-	if (gdc.analog) {
-		gdc_setanalogpal(gdc.palnum, offsetof(RGB32, p.r), dat);
-	}
-	else {
-		gdc_setdegpalpack(2, dat);
-	}
-	(void)port;
-}
-
-static void IOOUTCALL gdc_oae(UINT port, REG8 dat) {
-
-	if (gdc.analog) {
-		gdc_setanalogpal(gdc.palnum, offsetof(RGB32, p.b), dat);
-	}
-	else {
-		gdc_setdegpalpack(0, dat);
-	}
-	(void)port;
-}
-
 static REG8 IOINPCALL gdc_ia0(UINT port) {
 
 	REG8	ret;
@@ -683,20 +723,22 @@ static REG8 IOINPCALL gdc_ia0(UINT port) {
 	}
 	else {
 		gdc_work(GDCWORK_SLAVE);
-		TRACEOUT(("gdc.s.cnt=%d", gdc.s.cnt));
 	}
 #ifdef SEARCH_SYNC
 	if ((CPU_INPADRS) && (CPU_REMCLOCK >= 5)) {
-		UINT16 jadr = 0xfa74;
+		UINT32 addr;
+		UINT16 jadr;
 		UINT16 memv;
-		memv = i286_memoryread_w(CPU_INPADRS);
+		addr = CPU_INPADRS;
+		jadr = 0xfa74;
+		memv = i286_memoryread_w(addr);
 		while((memv == 0x00eb) || (memv == 0x5fe6)) {
 			jadr -= 0x200;
-			CPU_INPADRS += 2;
-			memv = i286_memoryread_w(CPU_INPADRS);
+			addr += 2;
+			memv = i286_memoryread_w(addr);
 		}
 		if ((memv == 0x20a8) || (memv == 0x2024)) {
-			memv = i286_memoryread_w(CPU_INPADRS + 2);
+			memv = i286_memoryread_w(addr + 2);
 			if (memv == jadr) {					// je
 				if (!gdc.vsync) {
 					CPU_REMCLOCK = -1;
@@ -742,6 +784,164 @@ static REG8 IOINPCALL gdc_ia6(UINT port) {
 }
 
 
+// ---- I/O palette
+
+static void IOOUTCALL gdc_oa8(UINT port, REG8 dat) {
+
+	if (gdc.analog & ((1 << GDCANALOG_256) + (1 << GDCANALOG_16))) {
+		gdc.palnum = dat;
+	}
+	else {
+		gdc_setdegpalpack(3, dat);
+	}
+	(void)port;
+}
+
+static void IOOUTCALL gdc_oaa(UINT port, REG8 dat) {
+
+#if defined(SUPPORT_PC9821)
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		gdcs.palchange = GDCSCRN_REDRAW;
+		gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 0] = dat;
+	}
+	else
+#endif
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+#if defined(SUPPORT_PC9821)
+		gdc.anareg[(gdc.palnum * 3) + 2] = dat;
+#endif
+		gdc_setanalogpal(gdc.palnum & 15, offsetof(RGB32, p.g), dat);
+	}
+	else {
+		gdc_setdegpalpack(1, dat);
+	}
+	(void)port;
+}
+
+static void IOOUTCALL gdc_oac(UINT port, REG8 dat) {
+
+#if defined(SUPPORT_PC9821)
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		gdcs.palchange = GDCSCRN_REDRAW;
+		gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 1] = dat;
+	}
+	else
+#endif
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+#if defined(SUPPORT_PC9821)
+		gdc.anareg[(gdc.palnum * 3) + 2] = dat;
+#endif
+		gdc_setanalogpal(gdc.palnum & 15, offsetof(RGB32, p.r), dat);
+	}
+	else {
+		gdc_setdegpalpack(2, dat);
+	}
+	(void)port;
+}
+
+static void IOOUTCALL gdc_oae(UINT port, REG8 dat) {
+
+#if defined(SUPPORT_PC9821)
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		gdcs.palchange = GDCSCRN_REDRAW;
+		gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 2] = dat;
+	}
+	else
+#endif
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+#if defined(SUPPORT_PC9821)
+		gdc.anareg[(gdc.palnum * 3) + 2] = dat;
+#endif
+		gdc_setanalogpal(gdc.palnum & 15, offsetof(RGB32, p.b), dat);
+	}
+	else {
+		gdc_setdegpalpack(0, dat);
+	}
+	(void)port;
+}
+
+#if defined(SUPPORT_PC9821)
+static REG8 IOINPCALL gdc_ia8(UINT port) {
+
+	if (gdc.analog & ((1 << GDCANALOG_256) + (1 << GDCANALOG_16))) {
+		return(gdc.palnum);
+	}
+	(void)port;
+	return(gdc.degpal[3]);
+}
+
+static REG8 IOINPCALL gdc_iaa(UINT port) {
+
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		return(gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 0]);
+	}
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+		return(gdc.anareg[(gdc.palnum * 3) + 2]);
+	}
+	(void)port;
+	return(gdc.degpal[1]);
+}
+
+static REG8 IOINPCALL gdc_iac(UINT port) {
+
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		return(gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 1]);
+	}
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+		return(gdc.anareg[(gdc.palnum * 3) + 2]);
+	}
+	(void)port;
+	return(gdc.degpal[2]);
+}
+
+static REG8 IOINPCALL gdc_iae(UINT port) {
+
+	if (gdc.analog & (1 << GDCANALOG_256)) {
+		return(gdc.anareg[(16 * 3) + (gdc.palnum * 4) + 2]);
+	}
+	if (gdc.analog & (1 << GDCANALOG_16)) {
+		return(gdc.anareg[(gdc.palnum * 3) + 2]);
+	}
+	(void)port;
+	return(gdc.degpal[0]);
+}
+#endif
+
+
+// ---- extend
+
+#if defined(SUPPORT_PC9821)
+static void IOOUTCALL gdc_o9a0(UINT port, REG8 dat) {
+
+	(void)port;
+	(void)dat;
+}
+
+static REG8 IOINPCALL gdc_i9a0(UINT port) {
+
+	(void)port;
+	return(0);
+}
+#endif
+
+#if defined(SUPPORT_CRT31KHZ)
+static void IOOUTCALL gdc_o9a8(UINT port, REG8 dat) {
+
+	if ((gdc.display ^ (dat << GDCDISP_31)) & (1 << GDCDISP_31)) {
+		gdc.display ^= (1 << GDCDISP_31);
+		gdcs.textdisp |= GDCSCRN_EXT;
+	}
+	(void)port;
+}
+
+static REG8 IOINPCALL gdc_i9a8(UINT port) {
+
+	(void)port;
+	return((gdc.display >> GDCDISP_31) & 1);
+}
+#endif
+
+
 // ---- I/F
 
 static const IOOUT gdco60[8] = {
@@ -756,14 +956,18 @@ static const IOINP gdci60[8] = {
 					gdc_i60,	gdc_i62,	NULL,		NULL,
 					gdc_i68,	gdc_i6a,	NULL,		NULL};
 
+#if defined(SUPPORT_PC9821)
+static const IOINP gdcia0[8] = {
+					gdc_ia0,	gdc_ia2,	gdc_ia4,	gdc_ia6,
+					gdc_ia8,	gdc_iaa,	gdc_iac,	gdc_iae};
+#else
 static const IOINP gdcia0[8] = {
 					gdc_ia0,	gdc_ia2,	gdc_ia4,	gdc_ia6,
 					NULL,		NULL,		NULL,		NULL};
+#endif
 
-void gdc_reset(void) {
 
-	ZeroMemory(&gdc, sizeof(gdc));
-	ZeroMemory(&gdcs, sizeof(gdcs));
+void gdc_biosreset(void) {
 
 	if (!(np2cfg.dipsw[0] & 0x01)) {
 		gdc.mode1 = 0x98;
@@ -783,32 +987,64 @@ void gdc_reset(void) {
 		CopyMemory(gdc.m.para + GDC_SYNC, defsyncm15, 8);
 		CopyMemory(gdc.s.para + GDC_SYNC, defsyncs15, 8);
 	}
+	if (np2cfg.dipsw[0] & 0x80) {
+		gdc.s.para[GDC_SYNC] = 0x16;
+	}
+	gdc_vectreset(&gdc.m);
+	gdc_vectreset(&gdc.s);
 
 	gdc.clock = 0;
 	gdc.m.para[GDC_PITCH] = 80;
 	gdc.s.para[GDC_PITCH] = 40;
 
-	gdc_paletteinit();
-
-	gdcs.textdisp = GDCSCRN_ENABLE | GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
-	gdcs.grphdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
-	if (np2cfg.color16 & 1) {
-		gdc.s.para[GDC_SYNC] = 0x16;
-		gdc.display = 2;
-	}
 	gdc.bitac = 0xff;
 
-#if 0	// bind で計算される筈
-	gdc.rasterclock = pccore.realclock / 24816;
-	gdc.hsyncclock = (gdc.rasterclock * 4) / 5;
-	gdc.dispclock = pccore.realclock * 50 / 3102;
-	gdc.vsyncclock = pccore.realclock * 5 / 3102;
+	// vram bank
+	gdcs.disp = 0;
+	gdcs.access = 0;
+	gdc.analog &= ~(1 << GDCANALOG_16);
+	gdcs.palchange = GDCSCRN_REDRAW;
+	vramop.operate &= VOP_ACCESSMASK;
+	vramop.operate &= VOP_EGCMASK;
+	vramop.operate &= VOP_ANALOGMASK;
+#if defined(SUPPORT_PC9821)
+	gdc.analog &= ~(1 << (GDCANALOG_256));
+	vramop.operate &= ~0x20;
 #endif
+	i286_vram_dispatch(vramop.operate);
+
+	gdcs.textdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
+	gdcs.grphdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
+	screenupdate |= 2;
+}
+
+void gdc_reset(void) {
+
+	ZeroMemory(&gdc, sizeof(gdc));
+	ZeroMemory(&gdcs, sizeof(gdcs));
+
+	if (np2cfg.color16 & 1) {
+		gdc.display = (1 << GDCDISP_ANALOG);
+	}
+	if (!(np2cfg.dipsw[0] & 0x04)) {			// dipsw1-3 on
+		gdc.display |= (1 << GDCDISP_PLAZMA2);
+	}
+
+	gdc_biosreset();
+	gdc_paletteinit();
 }
 
 void gdc_bind(void) {
 
 	gdc_updateclock();
+#if defined(SUPPORT_PC9821)				// とりあえずフックだけ
+	iocore_attachout(0x09a0, gdc_o9a0);
+	iocore_attachinp(0x09a0, gdc_i9a0);
+#endif
+#if defined(SUPPORT_CRT31KHZ)
+	iocore_attachout(0x09a8, gdc_o9a8);
+	iocore_attachinp(0x09a8, gdc_i9a8);
+#endif
 	iocore_attachsysoutex(0x0060, 0x0cf1, gdco60, 8);
 	iocore_attachsysinpex(0x0060, 0x0cf1, gdci60, 8);
 	iocore_attachsysoutex(0x00a0, 0x0cf1, gdcoa0, 8);

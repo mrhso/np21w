@@ -3,6 +3,9 @@ typedef struct {
 	UINT8	mode[4];
 	UINT8	flag[4];
 	UINT8	intr[4];
+#if 0
+	UINT8	stat[4];
+#endif
 	UINT16	value[4];
 	UINT16	latch[4];
 } _PIT, *PIT;

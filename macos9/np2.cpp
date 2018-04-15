@@ -20,6 +20,7 @@
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
 #include	"timing.h"
+#include	"keystat.h"
 #include	"debugsub.h"
 #include	"bios.h"
 #include	"scrndraw.h"
@@ -150,6 +151,20 @@ static void MenuBarInit(void) {
 	EnableItem(GetMenuHandle(IDM_DEVICE), LoWord(IDM_MOUSE));
 	EnableItem(GetMenuHandle(IDM_KEYBOARD), LoWord(IDM_F12MOUSE));
 #endif
+
+	if (!(np2cfg.fddequip & 1)) {
+		DeleteMenu(IDM_FDD1);
+	}
+	if (!(np2cfg.fddequip & 2)) {
+		DeleteMenu(IDM_FDD2);
+	}
+	if (!(np2cfg.fddequip & 4)) {
+		DeleteMenu(IDM_FDD3);
+	}
+	if (!(np2cfg.fddequip & 8)) {
+		DeleteMenu(IDM_FDD4);
+	}
+
 	DrawMenuBar();
 }
 
@@ -204,6 +219,22 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_FDD2EJECT:
 			diskdrv_setfdd(1, NULL, 0);
+			break;
+
+		case IDM_FDD3OPEN:
+			dialog_changefdd(2);
+			break;
+
+		case IDM_FDD3EJECT:
+			diskdrv_setfdd(2, NULL, 0);
+			break;
+
+		case IDM_FDD4OPEN:
+			dialog_changefdd(3);
+			break;
+
+		case IDM_FDD4EJECT:
+			diskdrv_setfdd(3, NULL, 0);
 			break;
 
 		case IDM_SASI1OPEN:
@@ -319,6 +350,10 @@ static void HandleMenuChoice(long wParam) {
 			mousemng_toggle(MOUSEPROC_SYSTEM);
 			menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
 			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_MIDIOPT:
+			MPU98DialogProc();
 			break;
 
 		case IDM_MIDIPANIC:
@@ -741,11 +776,11 @@ static int flagload(const char *ext) {
 	ret = IDOK;
 	getstatfilename(path, ext, sizeof(path));
 	r = statsave_check(path, buf, sizeof(buf));
-	if (r & (~NP2FLAG_DISKCHG)) {
+	if (r & (~STATFLAG_DISKCHG)) {
 		ResumeErrorDialogProc();
 		ret = IDCANCEL;
 	}
-	else if (r & NP2FLAG_DISKCHG) {
+	else if (r & STATFLAG_DISKCHG) {
 		ret = ResumeWarningDialogProc(buf);
 	}
 	if (ret == IDOK) {
@@ -767,11 +802,13 @@ int main(int argc, char *argv[]) {
 
 	InitToolBox();
 	macossub_init();
-	MenuBarInit();
-
 	initload();
 
+	MenuBarInit();
+
 	TRACEINIT();
+
+	keystat_initialize();
 
 	SetRect(&wRect, np2oscfg.posx, np2oscfg.posy, 100, 100);
 	hWndMain = NewWindow(0, &wRect, "\pNeko Project II", FALSE,

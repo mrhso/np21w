@@ -10,8 +10,10 @@
 #include	"beep.h"
 
 
-// #define	uPD71054					// NP2はuPD8253Cベース
 #define	BEEPCOUNTEREX					// BEEPアイドル時のカウンタをα倍に
+#if defined(CPUCORE_IA32)
+// #define	uPD71054			// だめぽ ＿|￣|○
+#endif
 
 
 // --- Interval timer
@@ -303,12 +305,38 @@ static void IOOUTCALL pit_o77(UINT port, REG8 dat) {
 			beep_modeset();
 		}
 	}
+#if defined(uPD71054)
+	else {
+		// これ現状じゃだめぽ＿|￣|○ ver0.76に回す…
+		TRACEOUT(("multiple latch commands - %x", dat));
+		for (ch=0; ch<3; ch++) {
+			if (dat & (2 << ch)) {
+				if (!(dat & 0x10)) {
+				}
+				if (!(dat & 0x20)) {
+				}
+			}
+		}
+	}
+#endif
 	(void)port;
 }
 
 static REG8 IOINPCALL pit_i71(UINT port) {
 
-	return(pit_getcount((port >> 1) & 3));
+	int		ch;
+
+	ch = (port >> 1) & 3;
+#if defined(uPD71054)
+	if (pit.stat[ch]) {
+		REG8 ret;
+		ret = pit.stat[ch];
+		pit.stat[ch] = 0;
+		TRACEOUT(("stat out -> %d-%x", ch, ret));
+		return(ret);
+	}
+#endif
+	return(pit_getcount(ch));
 }
 
 
@@ -323,7 +351,7 @@ static const IOINP piti71[4] = {
 void itimer_reset(void) {
 
 	ZeroMemory(&pit, sizeof(pit));
-	if (pccore.cpumode & CPUMODE_8MHz) {
+	if (pccore.cpumode & CPUMODE_8MHZ) {
 		pit.value[1] = 998;				// 4MHz
 	}
 	else {
@@ -342,8 +370,12 @@ void itimer_bind(void) {
 
 	iocore_attachsysoutex(0x0071, 0x0cf1, pito71, 4);
 	iocore_attachsysinpex(0x0071, 0x0cf1, piti71, 4);
+	iocore_attachout(0x3fd9, pit_o71);
 	iocore_attachout(0x3fdb, pit_o73);
+	iocore_attachout(0x3fdd, pit_o75);
 	iocore_attachout(0x3fdf, pit_o77);
+	iocore_attachinp(0x3fd9, pit_i71);
 	iocore_attachinp(0x3fdb, pit_i71);
+	iocore_attachinp(0x3fdd, pit_i71);
 }
 

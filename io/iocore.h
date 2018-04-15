@@ -25,7 +25,6 @@ typedef void (*IOCBFN)(void);
 #include	"fdd320.h"
 #include	"gdc.h"
 #include	"gdc_cmd.h"
-#include	"gdc_sub.h"
 #include	"mouseif.h"
 #include	"necio.h"
 #include	"nmiio.h"
@@ -56,6 +55,7 @@ extern	_GDCS		gdcs;
 extern	_GRCG		grcg;
 extern	_KEYBRD		keybrd;
 extern	_MOUSEIF	mouseif;
+extern	_NECIO		necio;
 extern	_NMIIO		nmiio;
 extern	_NP2SYSP	np2sysp;
 extern	_PIC		pic;

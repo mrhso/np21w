@@ -8,9 +8,12 @@ DESTDIR= .
 DEFINES+= SYSRESPATH=\"/usr/X11R6/lib/X11/xnp2\"
 
 DEFINES+= USE_SDLMIXER
-TMAKE_CFLAGS+= `sdl-config --cflags`
-TMAKE_CXXFLAGS+= `sdl-config --cflags`
-TMAKE_LIBS+= `sdl-config --libs` -lSDL_mixer
+
+SDL_CONFIG= sdl-config
+linux-sharp-g++:SDL_CONFIG= /opt/Qtopia/bin/sdl-config
+TMAKE_CFLAGS+= `$$SDL_CONFIG --cflags`
+TMAKE_CXXFLAGS+= `$$SDL_CONFIG --cflags`
+TMAKE_LIBS+= `$$SDL_CONFIG --libs` -lSDL_mixer
 
 
 #
@@ -22,7 +25,7 @@ DEFINES+= USE_QT=1
 INCLUDEPATH+= . .. ../.. ../../common ../../generic
 INCLUDEPATH+= ../../bios ../../cbus ../../fdd ../../font
 INCLUDEPATH+= ../../io ../../lio ../../vram
-INCLUDEPATH+= ../../sound ../../sound/vermouth
+INCLUDEPATH+= ../../sound ../../sound/vermouth ../../sound/getsnd
 INCLUDEPATH+= ../debug
 INCLUDEPATH+= ../../i286c
 
@@ -74,7 +77,7 @@ SOURCES+= ../../lio/lio.c ../../lio/gscreen.c ../../lio/gview.c \
           ../../lio/gpset.c ../../lio/gline.c ../../lio/gput1.c
 
 SOURCES+= ../../pccore.c ../../nevent.c ../../calendar.c ../../timing.c \
-          ../../debugsub.c ../../statsave.c
+          ../../debugsub.c ../../statsave.c ../../keystat.c
 
 SOURCES+= ../../sound/sound.c ../../sound/soundrom.c ../../sound/s98.c \
           ../../sound/adpcmc.c ../../sound/adpcmg.c \

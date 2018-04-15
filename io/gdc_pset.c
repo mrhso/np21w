@@ -3,6 +3,7 @@
 #include	"egcmem.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"gdc_sub.h"
 #include	"gdc_pset.h"
 #include	"vram.h"
 
@@ -114,7 +115,7 @@ void MEMCALL gdcpset_prepare(GDCPSET pset, UINT32 csrw, REG16 pat, REG8 op) {
 	if (vramop.operate & VOP_EGCBIT) {
 		pset->func[0] = _nop;
 		pset->func[1] = withegc;
-		pset->base.addr = vramplaneseg[(csrw >> 14) & 3];
+		pset->base.addr = gdcplaneseg[(csrw >> 14) & 3];
 	}
 	else {
 		base = mem;
@@ -129,7 +130,7 @@ void MEMCALL gdcpset_prepare(GDCPSET pset, UINT32 csrw, REG16 pat, REG8 op) {
 		if (!(grcg.gdcwithgrcg & 0x8)) {
 			pset->func[0] = psettbl[op][0];
 			pset->func[1] = psettbl[op][1];
-			pset->base.ptr = base + vramplaneseg[(csrw >> 14) & 3];
+			pset->base.ptr = base + gdcplaneseg[(csrw >> 14) & 3];
 		}
 		else {
 			pset->func[0] = _nop;

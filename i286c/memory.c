@@ -448,19 +448,7 @@ static void MEMCALL grcgw_tdw1(UINT32 address, REG16 value) GRCGW_TDW(1)
 static void MEMCALL egcw_wt(UINT32 address, REG16 value) {
 
 	CPU_REMCLOCK -= MEMWAIT_GRCG;
-	if (!(address & 1)) {
-		egc_write_w(address, value);
-	}
-	else {
-		if (!(egc.sft & 0x1000)) {
-			egc_write(address, (REG8)value);
-			egc_write(address + 1, (REG8)(value >> 8));
-		}
-		else {
-			egc_write(address + 1, (REG8)(value >> 8));
-			egc_write(address, (REG8)value);
-		}
-	}
+	egc_write_w(address, value);
 }
 
 static void MEMCALL emmcw_wt(UINT32 address, REG16 value) {
@@ -589,24 +577,8 @@ static REG16 MEMCALL grcgw_tcr1(UINT32 address) {
 
 static REG16 MEMCALL egcw_rd(UINT32 address) {
 
-	REG16	ret;
-
 	CPU_REMCLOCK -= MEMWAIT_GRCG;
-	if (!(address & 1)) {
-		return(egc_read_w(address));
-	}
-	else {
-		if (!(egc.sft & 0x1000)) {
-			ret = egc_read(address);
-			ret += egc_read(address + 1) << 8;
-			return(ret);
-		}
-		else {
-			ret = egc_read(address + 1) << 8;
-			ret += egc_read(address);
-			return(ret);
-		}
-	}
+	return(egc_read_w(address));
 }
 
 static REG16 MEMCALL emmcw_rd(UINT32 address) {
@@ -996,7 +968,7 @@ void MEMCALL i286_memorywrite_w(UINT32 address, REG16 value) {
 	}
 }
 
-REG8 MEMCALL i286_membyte_read(UINT seg, UINT off) {
+REG8 MEMCALL meml_read8(UINT seg, UINT off) {
 
 	UINT32	address;
 
@@ -1009,7 +981,7 @@ REG8 MEMCALL i286_membyte_read(UINT seg, UINT off) {
 	}
 }
 
-REG16 MEMCALL i286_memword_read(UINT seg, UINT off) {
+REG16 MEMCALL meml_read16(UINT seg, UINT off) {
 
 	UINT32	address;
 
@@ -1022,7 +994,7 @@ REG16 MEMCALL i286_memword_read(UINT seg, UINT off) {
 	}
 }
 
-void MEMCALL i286_membyte_write(UINT seg, UINT off, REG8 value) {
+void MEMCALL meml_write8(UINT seg, UINT off, REG8 value) {
 
 	UINT32	address;
 
@@ -1035,7 +1007,7 @@ void MEMCALL i286_membyte_write(UINT seg, UINT off, REG8 value) {
 	}
 }
 
-void MEMCALL i286_memword_write(UINT seg, UINT off, REG16 value) {
+void MEMCALL meml_write16(UINT seg, UINT off, REG16 value) {
 
 	UINT32	address;
 
@@ -1048,7 +1020,7 @@ void MEMCALL i286_memword_write(UINT seg, UINT off, REG16 value) {
 	}
 }
 
-void MEMCALL i286_memstr_read(UINT seg, UINT off, void *dat, UINT leng) {
+void MEMCALL meml_readstr(UINT seg, UINT off, void *dat, UINT leng) {
 
 	BYTE	*out;
 	UINT32	adrs;
@@ -1086,8 +1058,7 @@ void MEMCALL i286_memstr_read(UINT seg, UINT off, void *dat, UINT leng) {
 	}
 }
 
-void MEMCALL i286_memstr_write(UINT seg, UINT off,
-												const void *dat, UINT leng) {
+void MEMCALL meml_writestr(UINT seg, UINT off, const void *dat, UINT leng) {
 
 	BYTE	*out;
 	UINT32	adrs;
@@ -1125,7 +1096,7 @@ void MEMCALL i286_memstr_write(UINT seg, UINT off,
 	}
 }
 
-void MEMCALL i286_memx_read(UINT32 address, void *dat, UINT leng) {
+void MEMCALL meml_read(UINT32 address, void *dat, UINT leng) {
 
 	if ((address + leng) < I286_MEMREADMAX) {
 		CopyMemory(dat, mem + address, leng);
@@ -1144,7 +1115,7 @@ void MEMCALL i286_memx_read(UINT32 address, void *dat, UINT leng) {
 	}
 }
 
-void MEMCALL i286_memx_write(UINT32 address, const void *dat, UINT leng) {
+void MEMCALL meml_write(UINT32 address, const void *dat, UINT leng) {
 
 const BYTE	*out;
 

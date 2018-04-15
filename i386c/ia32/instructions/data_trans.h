@@ -1,4 +1,4 @@
-/*	$Id: data_trans.h,v 1.2 2004/01/14 16:14:50 monaka Exp $	*/
+/*	$Id: data_trans.h,v 1.4 2004/03/07 23:04:51 yui Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -44,6 +44,7 @@ void MOV_GbEb(void);
 void MOV_GwEw(void);
 void MOV_GdEd(void);
 void MOV_EwSw(void);
+void MOV_EdSw(void);
 void MOV_SwEw(void);
 void MOV_ALOb(void);
 void MOV_AXOw(void);
@@ -161,7 +162,7 @@ void XADD_EdGd(void);
 void CMPXCHG_EbGb(void);
 void CMPXCHG_EwGw(void);
 void CMPXCHG_EdGd(void);
-void CMPXCHG8B(DWORD op);
+void CMPXCHG8B(UINT32);
 
 /*
  * PUSH
@@ -198,8 +199,8 @@ void PUSH32_DS(void);
 void PUSH32_FS(void);
 void PUSH32_GS(void);
 
-void PUSH_Ew(DWORD);
-void PUSH_Ed(DWORD);
+void PUSH_Ew(UINT32);
+void PUSH_Ed(UINT32);
 
 /*
  * POP
@@ -233,8 +234,8 @@ void POP32_FS(void);
 void POP16_GS(void);
 void POP32_GS(void);
 
-void POP_Ew_G5(DWORD);
-void POP_Ed_G5(DWORD);
+void POP_Ew_G5(UINT32);
+void POP_Ed_G5(UINT32);
 
 /*
  * PUSHA/POPA

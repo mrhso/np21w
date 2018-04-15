@@ -13,6 +13,10 @@ static const _XDFINFO supportxdf[] = {
 			// 512
 			{0, 154, 15, 2, DISKTYPE_2HD, 0},
 #endif
+#if 1
+			// 512
+			{0, 160, 15, 2, DISKTYPE_2HD, 0},
+#endif
 			// 1024
 			{0, 154,  8, 3, DISKTYPE_2HD, 0},
 			// 1.44MB
@@ -212,12 +216,12 @@ BOOL fddxdf_read(FDDFILE fdd) {
 	long	seekp;
 	UINT	secsize;
 
-	fddlasterror = 0x00;										// ver0.28
+	fddlasterror = 0x00;
 	if (fddxdf_seeksector(fdd)) {
 		return(FAILURE);
 	}
 	if (fdc.N != fdd->inf.xdf.n) {
-		fddlasterror = 0xc0;									// ver0.28
+		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
 
@@ -230,18 +234,18 @@ BOOL fddxdf_read(FDDFILE fdd) {
 
 	hdl = file_open_rb(fdd->fname);
 	if (hdl == FILEH_INVALID) {
-		fddlasterror = 0xe0;									// ver0.28
+		fddlasterror = 0xe0;
 		return(FAILURE);
 	}
 	if ((file_seek(hdl, seekp, FSEEK_SET) != seekp) ||
 		(file_read(hdl, fdc.buf, secsize) != secsize)) {
 		file_close(hdl);
-		fddlasterror = 0xe0;									// ver0.28
+		fddlasterror = 0xe0;
 		return(FAILURE);
 	}
 	file_close(hdl);
 	fdc.bufcnt = secsize;
-	fddlasterror = 0x00;										// ver0.28
+	fddlasterror = 0x00;
 	return(SUCCESS);
 }
 
@@ -251,17 +255,17 @@ BOOL fddxdf_write(FDDFILE fdd) {
 	long	seekp;
 	UINT	secsize;
 
-	fddlasterror = 0x00;										// ver0.28
+	fddlasterror = 0x00;
 	if (fddxdf_seeksector(fdd)) {
-		fddlasterror = 0xe0;									// ver0.28
+		fddlasterror = 0xe0;
 		return(FAILURE);
 	}
 	if (fdd->protect) {
-		fddlasterror = 0x70;									// ver0.28
+		fddlasterror = 0x70;
 		return(FAILURE);
 	}
 	if (fdc.N != fdd->inf.xdf.n) {
-		fddlasterror = 0xc0;									// ver0.28
+		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
 
@@ -274,18 +278,18 @@ BOOL fddxdf_write(FDDFILE fdd) {
 
 	hdl = file_open(fdd->fname);
 	if (hdl == FILEH_INVALID) {
-		fddlasterror = 0xc0;									// ver0.28
+		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
 	if ((file_seek(hdl, seekp, FSEEK_SET) != seekp) ||
 		(file_write(hdl, fdc.buf, secsize) != secsize)) {
 		file_close(hdl);
-		fddlasterror = 0xc0;									// ver0.28
+		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
 	file_close(hdl);
 	fdc.bufcnt = secsize;
-	fddlasterror = 0x00;										// ver0.28
+	fddlasterror = 0x00;
 	return(SUCCESS);
 }
 
