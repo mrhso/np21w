@@ -188,7 +188,13 @@ void atapicmd_a0(IDEDRV drv) {
 		if (drv->media & IDEIO_MEDIA_CHANGED) {
 			drv->media &= ~IDEIO_MEDIA_CHANGED;
 			ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_NOT_READY);
-			drv->asc = 0x04; // LOGICAL DRIVE NOT READY - INITIALIZING COMMAND REQUIRED
+			if(drv->damsfbcd){
+				// NECCDD.SYS
+				drv->asc = ATAPI_ASC_NOT_READY_TO_READY_TRANSITION;
+			}else{
+				// for WinNT,2000 setup
+				drv->asc = 0x04; // LOGICAL DRIVE NOT READY - INITIALIZING COMMAND REQUIRED
+			}
 			senderror(drv);
 			break;
 		}

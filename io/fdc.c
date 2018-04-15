@@ -47,7 +47,7 @@ void fdc_intwait(NEVENTITEM item) {
 
 void fdc_interrupt(void) {
 	
-	nevent_setbyms(NEVENT_FDCINT, 512, fdc_intwait, NEVENT_ABSOLUTE);
+	nevent_set(NEVENT_FDCINT, 512, fdc_intwait, NEVENT_ABSOLUTE);
 }
 
 static void fdc_interruptreset(void) {
