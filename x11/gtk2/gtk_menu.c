@@ -36,13 +36,13 @@
 #include "debugsub.h"
 
 #include "beep.h"
-#include "diskdrv.h"
-#include "font.h"
+#include "fdd/diskdrv.h"
+#include "font/font.h"
 #include "mpu98ii.h"
 #include "pc9861k.h"
 #include "s98.h"
-#include "scrnbmp.h"
-#include "sxsi.h"
+#include "vram/scrnsave.h"
+#include "fdd/sxsi.h"
 
 #include "kdispwin.h"
 #include "toolwin.h"
@@ -576,12 +576,11 @@ cb_bmpsave(GtkAction *action, gpointer user_data)
 	GtkWidget *dialog = NULL;
 	GtkFileFilter *filter;
 	gchar *utf8, *path;
-	SCRNBMP bmp = NULL;
-	FILEH fh;
+	SCRNSAVE bmp = NULL;
 
 	uninstall_idle_process();
 
-	bmp = scrnbmp();
+	bmp = scrnsave_create();
 	if (bmp == NULL)
 		goto end;
 
@@ -637,19 +636,14 @@ cb_bmpsave(GtkAction *action, gpointer user_data)
 			}
 			file_cpyname(bmpfilefolder, path, sizeof(bmpfilefolder));
 			sysmng_update(SYS_UPDATEOSCFG);
-			fh = file_create(path);
-			if (fh != FILEH_INVALID) {
-				file_write(fh, bmp->ptr, bmp->size);
-				file_close(fh);
-			}
+			scrnsave_writebmp(bmp, path, SCRNSAVE_AUTO);
 			g_free(path);
 		}
 		g_free(utf8);
 	}
 
 end:
-	if (bmp)
-		_MFREE(bmp);
+	scrnsave_destroy(bmp);
 	if (dialog)
 		gtk_widget_destroy(dialog);
 	install_idle_process();
@@ -1990,9 +1984,9 @@ create_menu(void)
 	menubar = gtk_ui_manager_get_widget(menu_hdl.ui_manager, "/MainMenu");
 
 	gtk_widget_add_events(menubar, EVENT_MASK);
-	g_signal_connect(GTK_OBJECT(menubar), "enter_notify_event",
+	g_signal_connect(G_OBJECT(menubar), "enter_notify_event",
 	            G_CALLBACK(enter_notify_evhandler), NULL);
-	g_signal_connect(GTK_OBJECT(menubar), "leave_notify_event",
+	g_signal_connect(G_OBJECT(menubar), "leave_notify_event",
 	            G_CALLBACK(leave_notify_evhandler), NULL);
 
 	return menubar;

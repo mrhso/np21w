@@ -57,7 +57,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;.\x86;.\dialog;.\debuguty;..\;..\common;..\codecnv;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\bios;..\lio;..\vram;..\sound;..\sound\vermouth;..\sound\getsnd;..\fdd;..\font;..\generic;..\trap;..\zlib"
+				AdditionalIncludeDirectories=".\;.\x86;.\dialog;..\;..\common;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -138,7 +138,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;.\x64;.\dialog;.\debuguty;..\;..\common;..\codecnv;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\bios;..\lio;..\vram;..\sound;..\sound\vermouth;..\sound\getsnd;..\fdd;..\font;..\generic;..\trap;..\zlib"
+				AdditionalIncludeDirectories=".\;.\x64;.\dialog;..\;..\common;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -221,7 +221,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=".\;.\x86;.\dialog;.\debuguty;..\;..\common;..\codecnv;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\bios;..\lio;..\vram;..\sound;..\sound\vermouth;..\sound\getsnd;..\fdd;..\font;..\generic;..\trap;..\zlib"
+				AdditionalIncludeDirectories=".\;.\x86;.\dialog;..\;..\common;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -305,7 +305,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=".\;.\x64;.\dialog;.\debuguty;..\;..\common;..\codecnv;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\bios;..\lio;..\vram;..\sound;..\sound\vermouth;..\sound\getsnd;..\fdd;..\font;..\generic;..\trap;..\zlib"
+				AdditionalIncludeDirectories=".\;.\x64;.\dialog;..\;..\common;..\i386c;..\i386c\ia32;..\i386c\ia32\instructions;..\i386c\ia32\instructions\fpu;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -456,7 +456,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\board118.cpp"
+					RelativePath="..\cbus\board118.c"
 					>
 				</File>
 				<File
@@ -473,6 +473,10 @@
 				</File>
 				<File
 					RelativePath="..\cbus\boardpx.c"
+					>
+				</File>
+				<File
+					RelativePath="..\cbus\boardso.c"
 					>
 				</File>
 				<File
@@ -760,7 +764,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\i386c\memory.c"
+					RelativePath="..\i386c\cpumem.c"
 					>
 				</File>
 				<Filter
@@ -1092,7 +1096,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\sound\fmtimer.c"
+					RelativePath=".\ext\opl3.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\oplgenc.c"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\oplgeng.c"
+					>
+				</File>
+				<File
+					RelativePath=".\ext\opna.cpp"
 					>
 				</File>
 				<File
@@ -1120,11 +1136,19 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\sound\opntimer.c"
+					>
+				</File>
+				<File
 					RelativePath="..\sound\pcm86c.c"
 					>
 				</File>
 				<File
 					RelativePath="..\sound\pcm86g.c"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\pcmmix.c"
 					>
 				</File>
 				<File
@@ -1276,10 +1300,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\vram\scrnbmp.c"
-					>
-				</File>
-				<File
 					RelativePath="..\vram\scrndraw.c"
 					>
 				</File>
@@ -1356,10 +1376,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\mt32snd.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\np2.cpp"
 					>
 				</File>
@@ -1377,14 +1393,6 @@
 				</File>
 				<File
 					RelativePath=".\soundmng.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\sstp.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\sstpmsg.cpp"
 					>
 				</File>
 				<File
@@ -1408,14 +1416,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\trace.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\win32sub.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\winkbd.cpp"
 					>
 				</File>
@@ -1435,19 +1435,15 @@
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewcmn.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\debuguty\viewer.cpp"
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewmem.cpp"
+						RelativePath=".\debuguty\viewitem.cpp"
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewmenu.cpp"
+						RelativePath=".\debuguty\viewmem.cpp"
 						>
 					</File>
 					<File
@@ -1579,26 +1575,6 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath=".\dclockd.x86"
-						>
-						<FileConfiguration
-							Name="Debug|x64"
-							ExcludedFromBuild="true"
-							>
-							<Tool
-								Name="NASM"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|x64"
-							ExcludedFromBuild="true"
-							>
-							<Tool
-								Name="NASM"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
 						RelativePath=".\x86\makegrph.x86"
 						>
 						<FileConfiguration
@@ -1663,7 +1639,27 @@
 					Name="ext"
 					>
 					<File
+						RelativePath=".\ext\externalchipmanager.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalopl3.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalopm.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\ext\externalopna.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalpsg.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\mt32snd.cpp"
 						>
 					</File>
 					<Filter
@@ -1683,10 +1679,10 @@
 						</File>
 					</Filter>
 					<Filter
-						Name="rebirth"
+						Name="scci"
 						>
 						<File
-							RelativePath=".\ext\rebirth\rebirth.cpp"
+							RelativePath=".\ext\scci\scciif.cpp"
 							>
 						</File>
 					</Filter>
@@ -1699,7 +1695,23 @@
 						>
 					</File>
 					<File
+						RelativePath=".\misc\threadbase.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\misc\tickcounter.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\trace.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\tstring.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\WndProc.cpp"
 						>
 					</File>
 				</Filter>
@@ -1827,6 +1839,10 @@
 				</File>
 				<File
 					RelativePath="..\cbus\boardpx.h"
+					>
+				</File>
+				<File
+					RelativePath="..\cbus\boardso.h"
 					>
 				</File>
 				<File
@@ -2054,7 +2070,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\i386c\memory.h"
+					RelativePath="..\i386c\cpumem.h"
 					>
 				</File>
 				<Filter
@@ -2346,7 +2362,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\sound\fmtimer.h"
+					RelativePath="..\sound\opl3.h"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\oplgen.h"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\oplgencfg.h"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\opna.h"
 					>
 				</File>
 				<File
@@ -2354,7 +2382,19 @@
 					>
 				</File>
 				<File
+					RelativePath="..\sound\opngencfg.h"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\opntimer.h"
+					>
+				</File>
+				<File
 					RelativePath="..\sound\pcm86.h"
+					>
+				</File>
+				<File
+					RelativePath="..\sound\pcmmix.h"
 					>
 				</File>
 				<File
@@ -2462,10 +2502,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\vram\scrnbmp.h"
-					>
-				</File>
-				<File
 					RelativePath="..\vram\scrndraw.h"
 					>
 				</File>
@@ -2538,10 +2574,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\mt32snd.h"
-					>
-				</File>
-				<File
 					RelativePath=".\np2.h"
 					>
 				</File>
@@ -2566,18 +2598,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\sstp.h"
-					>
-				</File>
-				<File
-					RelativePath=".\sstpmsg.h"
-					>
-				</File>
-				<File
-					RelativePath=".\sstpres.h"
-					>
-				</File>
-				<File
 					RelativePath=".\subwind.h"
 					>
 				</File>
@@ -2595,14 +2615,6 @@
 				</File>
 				<File
 					RelativePath=".\toolwin.h"
-					>
-				</File>
-				<File
-					RelativePath=".\trace.h"
-					>
-				</File>
-				<File
-					RelativePath=".\win32sub.h"
 					>
 				</File>
 				<File
@@ -2641,19 +2653,15 @@
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewcmn.h"
-						>
-					</File>
-					<File
 						RelativePath=".\debuguty\viewer.h"
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewmem.h"
+						RelativePath=".\debuguty\viewitem.h"
 						>
 					</File>
 					<File
-						RelativePath=".\debuguty\viewmenu.h"
+						RelativePath=".\debuguty\viewmem.h"
 						>
 					</File>
 					<File
@@ -2681,11 +2689,31 @@
 					Name="ext"
 					>
 					<File
-						RelativePath=".\ext\extendmodule.h"
+						RelativePath=".\ext\externalchip.h"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalchipmanager.h"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalopl3.h"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalopm.h"
 						>
 					</File>
 					<File
 						RelativePath=".\ext\externalopna.h"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\externalpsg.h"
+						>
+					</File>
+					<File
+						RelativePath=".\ext\mt32snd.h"
 						>
 					</File>
 					<Filter
@@ -2697,6 +2725,10 @@
 						</File>
 						<File
 							RelativePath=".\ext\c86ctl\c86ctlif.h"
+							>
+						</File>
+						<File
+							RelativePath=".\ext\c86ctl\cbus_boardtype.h"
 							>
 						</File>
 					</Filter>
@@ -2713,18 +2745,18 @@
 						</File>
 					</Filter>
 					<Filter
-						Name="rebirth"
+						Name="scci"
 						>
 						<File
-							RelativePath=".\ext\rebirth\rebirth.h"
+							RelativePath=".\ext\scci\scci.h"
 							>
 						</File>
 						<File
-							RelativePath=".\ext\rebirth\scci.h"
+							RelativePath=".\ext\scci\SCCIDefines.h"
 							>
 						</File>
 						<File
-							RelativePath=".\ext\rebirth\SCCIDefines.h"
+							RelativePath=".\ext\scci\scciif.h"
 							>
 						</File>
 					</Filter>
@@ -2737,11 +2769,35 @@
 						>
 					</File>
 					<File
+						RelativePath=".\misc\guard.h"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\threadbase.h"
+						>
+					</File>
+					<File
 						RelativePath=".\misc\tickcounter.h"
 						>
 					</File>
 					<File
+						RelativePath=".\misc\trace.h"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\tstring.h"
+						>
+					</File>
+					<File
 						RelativePath=".\misc\vc6macros.h"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\WndBase.h"
+						>
+					</File>
+					<File
+						RelativePath=".\misc\WndProc.h"
 						>
 					</File>
 				</Filter>

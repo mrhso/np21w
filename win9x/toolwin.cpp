@@ -2,6 +2,7 @@
 #include	"strres.h"
 #include	"resource.h"
 #include	"np2.h"
+#include "misc\tstring.h"
 #include	"winloc.h"
 #include	"dosio.h"
 #include	"soundmng.h"
@@ -13,8 +14,7 @@
 #include	"dialog.h"
 #include	"dialogs.h"
 #include	"pccore.h"
-#include	"diskdrv.h"
-
+#include	"fdd/diskdrv.h"
 
 extern WINLOCEX np2_winlocexallwin(HWND base);
 
@@ -80,7 +80,7 @@ typedef struct {
 	HDC				hdcfont;
 	HBRUSH			access[2];
 	HWND			sub[IDC_MAXITEMS];
-	SUBCLASSPROC	subproc[IDC_MAXITEMS];
+	WNDPROC			subproc[IDC_MAXITEMS];
 } TOOLWIN;
 
 #define	GTWLP_FOCUS		(NP2GWLP_SIZE + (0 * sizeof(LONG_PTR)))
@@ -432,7 +432,7 @@ static void toolwincreate(HWND hWnd) {
 		toolwin.sub[i] = sub;
 		toolwin.subproc[i] = NULL;
 		if (sub) {
-			toolwin.subproc[i] = (SUBCLASSPROC)GetWindowLongPtr(sub,
+			toolwin.subproc[i] = (WNDPROC)GetWindowLongPtr(sub,
 															GWLP_WNDPROC);
 			SetWindowLongPtr(sub, GWLP_WNDPROC, (LONG_PTR)twsub);
 			SendMessage(sub, WM_SETFONT, (WPARAM)toolwin.hfont,
@@ -699,6 +699,7 @@ static void openpopup(HWND hWnd, LPARAM lp)
 	menu_addmenures(hMenu, -1, IDR_TOOLWIN, FALSE);
 	menu_addmenures(hMenu, -1, IDR_CLOSE, TRUE);
 	setSkinMruMenu(hMenu);
+	xmenu_update(hMenu);
 	pt.x = LOWORD(lp);
 	pt.y = HIWORD(lp);
 	ClientToScreen(hWnd, &pt);
@@ -898,7 +899,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
 			break;
 
 		case WM_CLOSE:
-			sysmenu_settoolwin(0);
+			np2oscfg.toolwin = 0;
 			sysmng_update(SYS_UPDATEOSCFG);
 			DestroyWindow(hWnd);
 			break;
@@ -956,8 +957,8 @@ void toolwin_create(HINSTANCE hInstance) {
 
 	HBITMAP	hbmp;
 	BITMAP	bmp;
-	TCHAR	szCaption[128];
 	HWND	hWnd;
+	std::tstring rCaption;
 
 	if (toolwin.hwnd) {
 		return;
@@ -970,9 +971,8 @@ void toolwin_create(HINSTANCE hInstance) {
 	GetObject(hbmp, sizeof(BITMAP), &bmp);
 	toolwin.hbmp = hbmp;
 
-	loadstringresource(LOWORD(IDS_CAPTION_TOOL),
-										szCaption, NELEMENTS(szCaption));
-	hWnd = CreateWindow(np2toolclass, szCaption,
+	rCaption = LoadTString(IDS_CAPTION_TOOL);
+	hWnd = CreateWindow(np2toolclass, rCaption.c_str(),
 							WS_SYSMENU | WS_MINIMIZEBOX,
 							np2tool.posx, np2tool.posy,
 							bmp.bmWidth, bmp.bmHeight,
@@ -991,7 +991,7 @@ twope_err2:
 	DeleteObject(hbmp);
 
 twope_err1:
-	sysmenu_settoolwin(0);
+	np2oscfg.toolwin = 0;
 	sysmng_update(SYS_UPDATEOSCFG);
 	return;
 }

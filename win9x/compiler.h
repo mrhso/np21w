@@ -9,6 +9,7 @@
  */
 
 #include "targetver.h"
+#define _USE_MATH_DEFINES
 #include <windows.h>
 #if !defined(__GNUC__)
 #include <tchar.h>
@@ -71,9 +72,11 @@ typedef	signed __int64		SINT64;
 #define	sigsetjmp(env, mask)	setjmp(env)
 #define	siglongjmp(env, val)	longjmp(env, val)
 #endif	// !defined(__GNUC__)
-#define	msgbox(title, msg)		__msgbox(title, msg)
+#define	msgbox(title, msg)		MessageBox(NULL, msg, title, MB_OK)
 
 #define	STRCALL		__stdcall
+
+#define INTPTR				INT_PTR
 
 #define	BRESULT				UINT8
 #define	OEMCHAR				TCHAR
@@ -82,18 +85,13 @@ typedef	signed __int64		SINT64;
 #define	OEMSTRLEN			lstrlen
 
 #include "common.h"
-#include "win32sub.h"
 #include "milstr.h"
 #include "_memory.h"
 #include "rect.h"
 #include "lstarray.h"
 #include "misc\tickcounter.h"
-#include "trace.h"
-
-#ifdef __cplusplus
+#include "misc\trace.h"
 #include "misc\vc6macros.h"
-#endif	// __cplusplus
-
 
 #define	GETTICK()			GetTickCounter()
 #if defined(TRACE)

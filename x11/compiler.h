@@ -98,9 +98,6 @@ typedef	guint16		UINT16;
 typedef	guint32		UINT32;
 typedef	guint64		UINT64;
 
-typedef	guint8		BYTE;
-typedef	gchar		TCHAR;
-
 typedef	gboolean	BOOL;
 
 #define PTR_TO_UINT32(p)	((UINT32)GPOINTER_TO_UINT(p))
@@ -163,7 +160,9 @@ typedef	gboolean	BOOL;
 #endif
 #endif /* __GNUC__ */
 
+G_BEGIN_DECLS
 UINT32 gettick(void);
+G_END_DECLS
 #define	GETTICK()	gettick()
 #define	GETRAND()	random()
 #define	SPRINTF		sprintf
@@ -171,7 +170,6 @@ UINT32 gettick(void);
 
 #define	OEMCHAR		gchar
 #define OEMTEXT(s)	s
-#define OEMNULLSTR	OEMTEXT("")
 #define	OEMSPRINTF	sprintf
 #define	OEMSTRLEN	strlen
 
@@ -240,6 +238,7 @@ UINT32 gettick(void);
 
 #undef	SOUND_CRITICAL
 #undef	SOUNDRESERVE
+#define	SUPPORT_EXTERNALCHIP
 
 #define	SUPPORT_PC9861K
 #define	SUPPORT_HOSTDRV

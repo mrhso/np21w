@@ -60,9 +60,6 @@ typedef struct {
 	UINT8	comfirm;
 	UINT8	shortcut;												// ver0.30
 
-	UINT8	sstp;
-	UINT16	sstpport;												// ver0.30
-
 	UINT8	resume;													// ver0.30
 	UINT8	statsave;
 #if !defined(_WIN64)
@@ -93,8 +90,7 @@ enum {
 };
 
 enum {
-	WM_NP2CMD			= (WM_USER + 200),
-	WM_SSTP				= (WM_USER + 201)
+	WM_NP2CMD			= (WM_USER + 200)
 };
 
 enum {
@@ -116,6 +112,7 @@ extern	HINSTANCE	g_hInstance;
 extern	HINSTANCE	g_hPrevInst;
 extern	UINT8		np2break;
 extern	BOOL		winui_en;
+extern	UINT8		g_scrnmode;
 #if !defined(_WIN64)
 extern	int			mmxflag;
 #endif

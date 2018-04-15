@@ -13,9 +13,9 @@
 #include "resource.h"
 #include "np2.h"
 #include "dosio.h"
+#include "misc\tstring.h"
 #include "joymng.h"
 #include "sysmng.h"
-#include "menu.h"
 #include "np2class.h"
 #include "dialog.h"
 #include "dialogs.h"
@@ -24,6 +24,7 @@
 #include "sound.h"
 #include "fmboard.h"
 #include "s98.h"
+#include "tms3631.h"
 #include "dipswbmp.h"
 #include "recvideo.h"
 
@@ -201,11 +202,14 @@ static LRESULT CALLBACK SndmixDlgProc(HWND hWnd, UINT msg,
 				opngen_setvol(np2cfg.vol_fm);
 				psggen_setvol(np2cfg.vol_ssg);
 				rhythm_setvol(np2cfg.vol_rhythm);
-				rhythm_update(&rhythm);
 				adpcm_setvol(np2cfg.vol_adpcm);
-				adpcm_update(&adpcm);
 				pcm86gen_setvol(np2cfg.vol_pcm);
 				pcm86gen_update();
+				for (i = 0; i < NELEMENTS(g_opna); i++)
+				{
+					rhythm_update(&g_opna[i].rhythm);
+					adpcm_update(&g_opna[i].adpcm);
+				}
 				return(TRUE);
 			}
 			break;
@@ -931,7 +935,6 @@ void dialog_sndopt(HWND hWnd)
 	PROPSHEETPAGE	psp;
 	PROPSHEETHEADER	psh;
 	HPROPSHEETPAGE	hpsp[6];
-	TCHAR			szTitle[128];
 
 	hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
@@ -964,7 +967,7 @@ void dialog_sndopt(HWND hWnd)
 	psp.pfnDlgProc = (DLGPROC)PAD1optDlgProc;
 	hpsp[5] = CreatePropertySheetPage(&psp);
 
-	loadstringresource(IDS_SOUNDOPTION, szTitle, NELEMENTS(szTitle));
+	std::tstring rTitle(LoadTString(IDS_SOUNDOPTION));
 
 	ZeroMemory(&psh, sizeof(psh));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
@@ -974,7 +977,7 @@ void dialog_sndopt(HWND hWnd)
 	psh.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	psh.nPages = 6;
 	psh.phpage = hpsp;
-	psh.pszCaption = szTitle;
+	psh.pszCaption = rTitle.c_str();
 	psh.pfnCallback = np2class_propetysheet;
 	PropertySheet(&psh);
 	InvalidateRect(hWnd, NULL, TRUE);
@@ -996,11 +999,9 @@ static const TCHAR szS98File[] = TEXT("NP2_####.S98");
 
 void dialog_s98(HWND hWnd)
 {
-	BOOL	bCheck;
 	TCHAR	szPath[MAX_PATH];
 
 	S98_close();
-	bCheck = FALSE;
 	file_cpyname(szPath, bmpfilefolder, NELEMENTS(szPath));
 	file_cutname(szPath);
 	file_catname(szPath, szS98File, NELEMENTS(szPath));
@@ -1009,9 +1010,7 @@ void dialog_s98(HWND hWnd)
 	{
 		file_cpyname(bmpfilefolder, szPath, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
-		bCheck = TRUE;
 	}
-	xmenu_sets98logging(bCheck);
 }
 #endif	// defined(SUPPORT_S98)
 
@@ -1043,13 +1042,11 @@ void dialog_waverec(HWND hWnd)
 	file_cutname(szPath);
 	file_catname(szPath, szWaveFile, NELEMENTS(szPath));
 
-	UINT8 bCheck = FALSE;
 	if ((dlgs_createfilenum(hWnd, &fpWave, szPath, NELEMENTS(szPath))) &&
 		(sound_recstart(szPath) == SUCCESS))
 	{
 		file_cpyname(bmpfilefolder, szPath, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
-		bCheck = TRUE;
 	}
 
 #if defined(SUPPORT_RECVIDEO)
@@ -1060,8 +1057,6 @@ void dialog_waverec(HWND hWnd)
 		recvideo_open(hWnd, szPath);
 	}
 #endif	// defined(SUPPORT_RECVIDEO)
-
-	xmenu_setwaverec(bCheck);
 }
 #endif	// defined(SUPPORT_WAVEREC)
 

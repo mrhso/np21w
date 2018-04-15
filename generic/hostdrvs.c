@@ -216,7 +216,7 @@ static char *dospath2fcb(char *fcbname, char *dospath) {
 	return(dospath);
 }
 
-BOOL hostdrvs_getrealpath(HDRVPATH *hdp, char *dospath) {
+BRESULT hostdrvs_getrealpath(HDRVPATH *hdp, char *dospath) {
 
 	OEMCHAR		path[MAX_PATH];
 	LISTARRAY	lst;
@@ -259,7 +259,7 @@ hdsgrp_err:
 	return(FAILURE);
 }
 
-BOOL hostdrvs_getrealdir(OEMCHAR *path, int size, char *fcb, char *dospath) {
+BRESULT hostdrvs_getrealdir(OEMCHAR *path, int size, char *fcb, char *dospath) {
 
 	LISTARRAY	lst;
 	HDRVLST		hdl;
@@ -298,7 +298,7 @@ hdsgrd_err:
 	return(FAILURE);
 }
 
-BOOL hostdrvs_newrealpath(HDRVPATH *hdp, char *dospath) {
+BRESULT hostdrvs_newrealpath(HDRVPATH *hdp, char *dospath) {
 
 	OEMCHAR		path[MAX_PATH];
 	char		fcb[11];
@@ -359,11 +359,11 @@ BOOL hostdrvs_newrealpath(HDRVPATH *hdp, char *dospath) {
 
 static BOOL fhdlallclose(void *vpItem, void *vpArg) {
 
-	long	fh;
+	INTPTR	fh;
 
 	fh = ((HDRVFILE)vpItem)->hdl;
-	if (fh != (long)FILEH_INVALID) {
-		((HDRVFILE)vpItem)->hdl = (long)FILEH_INVALID;
+	if (fh != (INTPTR)FILEH_INVALID) {
+		((HDRVFILE)vpItem)->hdl = (INTPTR)FILEH_INVALID;
 		file_close((FILEH)fh);
 	}
 	(void)vpArg;
@@ -377,7 +377,7 @@ void hostdrvs_fhdlallclose(LISTARRAY fhdl) {
 
 static BOOL fhdlsea(void *vpItem, void *vpArg) {
 
-	if (((HDRVFILE)vpItem)->hdl == (long)FILEH_INVALID) {
+	if (((HDRVFILE)vpItem)->hdl == (INTPTR)FILEH_INVALID) {
 		return(TRUE);
 	}
 	(void)vpArg;
@@ -395,7 +395,7 @@ HDRVFILE hostdrvs_fhdlsea(LISTARRAY fhdl) {
 	if (ret == NULL) {
 		ret = (HDRVFILE)listarray_append(fhdl, NULL);
 		if (ret != NULL) {
-			ret->hdl = (long)FILEH_INVALID;
+			ret->hdl = (INTPTR)FILEH_INVALID;
 		}
 	}
 	return(ret);

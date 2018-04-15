@@ -12,7 +12,7 @@
 #include	"mpu98ii.h"
 #include	"sound.h"
 #include	"beep.h"
-#include	"diskdrv.h"
+#include	"fdd/diskdrv.h"
 #include	"keystat.h"
 #include	"vramhdl.h"
 #include	"menubase.h"
@@ -292,6 +292,16 @@ static void sys_cmd(MENUID id) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case MID_SOUNDORCHESTRA:
+			np2cfg.SOUND_SW = 0x32;
+			update |= SYS_UPDATECFG;
+			break;
+
+		case MID_SOUNDORCHESTRAV:
+			np2cfg.SOUND_SW = 0x82;
+			update |= SYS_UPDATECFG;
+			break;
+
 		case MID_AMD98:
 			np2cfg.SOUND_SW = 0x80;
 			update |= SYS_UPDATECFG;
@@ -433,7 +443,7 @@ static void sys_cmd(MENUID id) {
 
 // ----
 
-BOOL sysmenu_create(void) {
+BRESULT sysmenu_create(void) {
 
 	if (menubase_create() != SUCCESS) {
 		goto smcre_err;
@@ -455,9 +465,9 @@ void sysmenu_destroy(void) {
 	menusys_destroy();
 }
 
-BOOL sysmenu_menuopen(UINT menutype, int x, int y) {
+BRESULT sysmenu_menuopen(UINT menutype, int x, int y) {
 
-	BYTE	b;
+	UINT8	b;
 
 	menusys_setcheck(MID_DISPSYNC, (np2cfg.DISPSYNC & 1));
 	menusys_setcheck(MID_RASTER, (np2cfg.RASTER & 1));
@@ -498,6 +508,8 @@ BOOL sysmenu_menuopen(UINT menutype, int x, int y) {
 	menusys_setcheck(MID_PC9801_118, (b == 0x08));
 	menusys_setcheck(MID_SPEAKBOARD, (b == 0x20));
 	menusys_setcheck(MID_SPARKBOARD, (b == 0x40));
+	menusys_setcheck(MID_SOUNDORCHESTRA, (b == 0x32));
+	menusys_setcheck(MID_SOUNDORCHESTRAV, (b == 0x82));
 	menusys_setcheck(MID_AMD98, (b == 0x80));
 	menusys_setcheck(MID_JASTSND, (np2oscfg.jastsnd & 1));
 	menusys_setcheck(MID_SEEKSND, (np2cfg.MOTOR & 1));

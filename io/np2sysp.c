@@ -7,7 +7,7 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
-#include	"sxsibios.h"
+#include	"bios/sxsibios.h"
 #if defined(SUPPORT_HOSTDRV)
 #include	"hostdrv.h"
 #endif
@@ -43,7 +43,9 @@ const void	*arg1;
 
 static const OEMCHAR str_80286[] = OEMTEXT("80286");
 static const OEMCHAR str_v30[] = OEMTEXT("V30");
+#if 0
 static const OEMCHAR str_pentium[] = OEMTEXT("PENTIUM");
+#endif	/* 0 */
 static const OEMCHAR str_mhz[] = OEMTEXT("%uMHz");
 
 

@@ -322,7 +322,7 @@ static void setup_ptrs(INTRST is, SDACDS sc) {
 }
 
 
-static BOOL pathishostdrv(INTRST is, SDACDS sc) {
+static BRESULT pathishostdrv(INTRST is, SDACDS sc) {
 
 	fetch_sda_currcds(sc);
 	setup_ptrs(is, sc);
@@ -339,7 +339,7 @@ static BOOL pathishostdrv(INTRST is, SDACDS sc) {
 }
 
 
-static BOOL read_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
+static BRESULT read_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 
 	HDRVFILE	hdf;
 	FILEH		fh;
@@ -366,7 +366,7 @@ static BOOL read_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 	return(SUCCESS);
 }
 
-static BOOL write_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
+static BRESULT write_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 
 	HDRVFILE	hdf;
 	FILEH		fh;
@@ -399,7 +399,7 @@ static BOOL write_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 }
 
 
-static BOOL find_file1(INTRST is, const HDRVDIR *di) {
+static BRESULT find_file1(INTRST is, const HDRVDIR *di) {
 
 	UINT8	attrmask;
 	UINT	attr;
@@ -416,9 +416,9 @@ static BOOL find_file1(INTRST is, const HDRVDIR *di) {
 	return(SUCCESS);
 }
 
-static BOOL find_file(INTRST is) {
+static BRESULT find_file(INTRST is) {
 
-	BOOL		ret;
+	BRESULT		ret;
 	UINT		pos;
 	HDRVLST		hdl;
 const HDRVDIR	*di;
@@ -520,7 +520,7 @@ static void close_file(INTRST intrst) {
 		hdf = (HDRVFILE)listarray_getitem(hostdrv.fhdl, start_sector);
 		if (hdf) {
 			file_close((FILEH)hdf->hdl);
-			hdf->hdl = (long)FILEH_INVALID;
+			hdf->hdl = (INTPTR)FILEH_INVALID;
 			hdf->path[0] = '\0';
 		}
 	}
@@ -831,7 +831,7 @@ static void open_file(INTRST intrst) {
 		return;
 	}
 
-	hdf->hdl = (long)fh;
+	hdf->hdl = (INTPTR)fh;
 	hdf->mode = mode;
 	file_cpyname(hdf->path, hdp.path, sizeof(hdf->path));
 
@@ -882,7 +882,7 @@ static void create_file(INTRST intrst) {
 		fail(intrst, ERR_ACCESSDENIED);
 		return;
 	}
-	hdf->hdl = (long)fh;
+	hdf->hdl = (INTPTR)fh;
 	hdf->mode = HDFMODE_READ | HDFMODE_WRITE;
 	file_cpyname(hdf->path, hdp.path, sizeof(hdf->path));
 
@@ -1158,7 +1158,7 @@ static void ext_openfile(INTRST intrst) {
 		return;
 	}
 
-	hdf->hdl = (long)fh;
+	hdf->hdl = (INTPTR)fh;
 	hdf->mode = mode;
 	file_cpyname(hdf->path, hdp.path, sizeof(hdf->path));
 
@@ -1323,7 +1323,7 @@ static BOOL fhdl_wr(void *vpItem, void *vpArg) {
 	UINT	len;
 
 	p = ((HDRVFILE)vpItem)->path;
-	len = OEMSTRLEN(p);
+	len = (UINT)OEMSTRLEN(p);
 	statflag_write((STFLAGH)vpArg, &len, sizeof(len));
 	if (len) {
 		if (len < MAX_PATH) {
@@ -1337,10 +1337,10 @@ static BOOL fhdl_wr(void *vpItem, void *vpArg) {
 static BOOL flist_wr(void *vpItem, void *vpArg) {
 
 	OEMCHAR	*p;
-	int		len;
+	UINT	len;
 
 	p = ((HDRVLST)vpItem)->realname;
-	len = OEMSTRLEN(p);
+	len = (UINT)OEMSTRLEN(p);
 	if (len < MAX_PATH) {
 		ZeroMemory(p + len, (MAX_PATH - len) * sizeof(OEMCHAR));
 	}
@@ -1399,7 +1399,7 @@ int hostdrv_sfload(STFLAGH sfh, const SFENTRY *tbl) {
 			else {
 				fh = file_open_rb(hdf->path);
 			}
-			hdf->hdl = (long)fh;
+			hdf->hdl = (INTPTR)fh;
 		}
 	}
 	for (i=0; i<sfhdrv.flists; i++) {
