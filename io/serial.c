@@ -1,4 +1,5 @@
 #include	"compiler.h"
+#include	"cpucore.h"
 #include	"commng.h"
 #include	"pccore.h"
 #include	"iocore.h"
@@ -7,36 +8,46 @@
 
 // ---- Keyboard
 
-static void keyboard_int(BOOL absolute) {
-
-	if (keybrd.buffers) {
-		if (!(keybrd.status & 2)) {
-			keybrd.status |= 2;
-			keybrd.data = keybrd.buf[keybrd.pos];
-			keybrd.pos = (keybrd.pos + 1) & KB_BUFMASK;
-			keybrd.buffers--;
-		}
-		pic_setirq(1);
-		nevent_set(NEVENT_KEYBOARD, keybrd.xferclock,
-											keyboard_callback, absolute);
-	}
-}
-
 void keyboard_callback(NEVENTITEM item) {
 
 	if (item->flag & NEVENT_SETEVENT) {
-		keyboard_int(NEVENT_RELATIVE);
+		if ((keybrd.ctrls) || (keybrd.buffers)) {
+			if (!(keybrd.status & 2)) {
+				keybrd.status |= 2;
+				if (keybrd.ctrls) {
+					keybrd.ctrls--;
+					keybrd.data = keybrd.ctr[keybrd.ctrpos];
+					keybrd.ctrpos = (keybrd.ctrpos + 1) & KB_CTRMASK;
+				}
+				else if (keybrd.buffers) {
+					keybrd.buffers--;
+					keybrd.data = keybrd.buf[keybrd.bufpos];
+					keybrd.bufpos = (keybrd.bufpos + 1) & KB_BUFMASK;
+				}
+				TRACEOUT(("recv -> %02x", keybrd.data));
+			}
+			pic_setirq(1);
+			nevent_set(NEVENT_KEYBOARD, keybrd.xferclock,
+										keyboard_callback, NEVENT_RELATIVE);
+		}
 	}
 }
 
 static void IOOUTCALL keyboard_o41(UINT port, REG8 dat) {
 
-	keybrd.mode = dat;
+	if (keybrd.cmd & 1) {
+		TRACEOUT(("send -> %02x", dat));
+		keystat_ctrlsend(dat);
+	}
+	else {
+		keybrd.mode = dat;
+	}
 	(void)port;
 }
 
 static void IOOUTCALL keyboard_o43(UINT port, REG8 dat) {
 
+//	TRACEOUT(("out43 -> %02x %.4x:%.8x", dat, CPU_CS, CPU_EIP));
 	if ((!(dat & 0x08)) && (keybrd.cmd & 0x08)) {
 		keyboard_resetsignal();
 	}
@@ -51,13 +62,16 @@ static REG8 IOINPCALL keyboard_i41(UINT port) {
 
 	(void)port;
 	keybrd.status &= ~2;
+	pic_resetirq(1);
+//	TRACEOUT(("in41 -> %02x %.4x:%.8x", keybrd.data, CPU_CS, CPU_EIP));
 	return(keybrd.data);
 }
 
 static REG8 IOINPCALL keyboard_i43(UINT port) {
 
 	(void)port;
-	return(keybrd.status);
+//	TRACEOUT(("in43 -> %02x %.4x:%.8x", keybrd.status, CPU_CS, CPU_EIP));
+	return(keybrd.status | 0x85);
 }
 
 
@@ -79,6 +93,7 @@ void keyboard_reset(void) {
 
 void keyboard_bind(void) {
 
+	keystat_ctrlreset();
 	keybrd.xferclock = pccore.realclock / 1920;
 	iocore_attachsysoutex(0x0041, 0x0cf1, keybrdo41, 2);
 	iocore_attachsysinpex(0x0041, 0x0cf1, keybrdi41, 2);
@@ -86,21 +101,38 @@ void keyboard_bind(void) {
 
 void keyboard_resetsignal(void) {
 
-	keybrd.mode = 0x5e;
+	nevent_reset(NEVENT_KEYBOARD);
 	keybrd.cmd = 0;
 	keybrd.status = 0;
+	keybrd.ctrls = 0;
 	keybrd.buffers = 0;
-	keybrd.pos = 0;
+	keystat_ctrlreset();
 	keystat_resendstat();
+}
+
+void keyboard_ctrl(REG8 data) {
+
+	if ((data == 0xfa) || (data == 0xfc)) {
+		keybrd.ctrls = 0;
+	}
+	if (keybrd.ctrls < KB_CTR) {
+		keybrd.ctr[(keybrd.ctrpos + keybrd.ctrls) & KB_CTRMASK] = data;
+		keybrd.ctrls++;
+		if (!nevent_iswork(NEVENT_KEYBOARD)) {
+			nevent_set(NEVENT_KEYBOARD, keybrd.xferclock,
+										keyboard_callback, NEVENT_ABSOLUTE);
+		}
+	}
 }
 
 void keyboard_send(REG8 data) {
 
 	if (keybrd.buffers < KB_BUF) {
-		keybrd.buf[(keybrd.pos + keybrd.buffers) & KB_BUFMASK] = data;
+		keybrd.buf[(keybrd.bufpos + keybrd.buffers) & KB_BUFMASK] = data;
 		keybrd.buffers++;
 		if (!nevent_iswork(NEVENT_KEYBOARD)) {
-			keyboard_int(NEVENT_ABSOLUTE);
+			nevent_set(NEVENT_KEYBOARD, keybrd.xferclock,
+										keyboard_callback, NEVENT_ABSOLUTE);
 		}
 	}
 	else {

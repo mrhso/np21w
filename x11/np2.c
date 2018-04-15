@@ -37,6 +37,7 @@
 #include "kdispwin.h"
 #include "toolwin.h"
 #include "viewer.h"
+#include "debugwin.h"
 
 #include "commng.h"
 #include "joymng.h"
@@ -72,6 +73,11 @@ NP2OSCFG np2oscfg = {
 	{ 0, 0, 0, 0 },		/* JOY1BTN */
 
 	{ COMPORT_MIDI, 0, 0x3e, 19200, "", "", "", "" },	/* mpu */
+	{
+		{ COMPORT_NONE, 0, 0x3e, 19200, "", "", "", "" },/* com1 */
+		{ COMPORT_NONE, 0, 0x3e, 19200, "", "", "", "" },/* com2 */
+		{ COMPORT_NONE, 0, 0x3e, 19200, "", "", "", "" },/* com3 */
+	},
 
 	0,			/* confirm */
 
@@ -275,6 +281,7 @@ framereset(UINT cnt)
 	kdispwin_draw((BYTE)cnt);
 	toolwin_draw((BYTE)cnt);
 	viewer_allreload(FALSE);
+	debugwin_process();
 	if (np2oscfg.DISPCLK & 3) {
 		if (sysmng_workclockrenewal()) {
 			sysmng_updatecaption(3);

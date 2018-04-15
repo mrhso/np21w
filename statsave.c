@@ -10,6 +10,7 @@
 #include	"iocore.h"
 #include	"gdc_sub.h"
 #include	"cbuscore.h"
+#include	"ideio.h"
 #include	"sasiio.h"
 #include	"scsiio.h"
 #include	"pc9861k.h"
@@ -30,6 +31,7 @@
 #include	"keydisp.h"
 #include	"hostdrv.h"
 #include	"calendar.h"
+#include	"keystat.h"
 
 #if defined(MACOS)
 #define	CRCONST		str_cr
@@ -904,7 +906,6 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *t) {
 	}
 	if (saveflg & FLAG_CS4231) {
 		ret |= statflag_read(sfh, &cs4231, sizeof(cs4231));
-		cs4231.proc = cs4231dec[cs4231.reg.datafmt >> 4];
 	}
 
 	// •œŒ³B ‚±‚êˆÚ“®‚·‚é‚±‚ÆI

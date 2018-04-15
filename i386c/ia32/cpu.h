@@ -1,4 +1,4 @@
-/*	$Id: cpu.h,v 1.25 2004/03/12 13:34:08 monaka Exp $	*/
+/*	$Id: cpu.h,v 1.29 2004/03/29 05:50:29 yui Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -213,10 +213,11 @@ typedef struct {
 	UINT32		clock;
 } I386STAT;
 
-typedef struct {					/* for ver0.73 */
+typedef struct {
 	BYTE		*ext;
 	UINT32		extsize;
 	UINT32		inport;
+	BYTE		*ems[4];
 } I386EXT;
 
 typedef struct {
@@ -243,6 +244,7 @@ extern I386CORE		i386core;
 #define	CPU_EXTMEM	i386core.e.ext
 #define	CPU_EXTMEMSIZE	i386core.e.extsize
 #define	CPU_INPADRS	i386core.e.inport
+#define	CPU_EMSPTR	i386core.e.ems
 
 extern sigjmp_buf	exec_1step_jmpbuf;
 
@@ -464,7 +466,7 @@ void set_eflags(UINT32 new_flags, UINT32 mask);
 #endif	/* IA32_SUPPORT_PREFETCH_QUEUE */
 
 #define	CPU_MODE_SUPERVISER	0
-#define	CPU_MODE_USER		1
+#define	CPU_MODE_USER		(1 << 3)
 #define	CPU_SET_CPL(cpl) \
 do { \
 	UINT8 __t = (UINT8)((cpl) & 3); \
@@ -522,6 +524,7 @@ do { \
 #define	CPU_CR0_NW		(1 << 29)
 #define	CPU_CR0_CD		(1 << 30)
 #define	CPU_CR0_PG		(1 << 31)
+#define	CPU_CR0_ALL		(CPU_CR0_PE|CPU_CR0_MP|CPU_CR0_EM|CPU_CR0_TS|CPU_CR0_ET|CPU_CR0_NE|CPU_CR0_WP|CPU_CR0_AM|CPU_CR0_NW|CPU_CR0_CD|CPU_CR0_PG)
 
 #define	CPU_CR3_PD_MASK		0xfffff000
 #define	CPU_CR3_PWT		(1 << 3)
@@ -579,9 +582,11 @@ do { \
 void ia32_init(void);
 void ia32_initreg(void);
 void ia32_setextsize(UINT32 size);
+void ia32_setemm(UINT frame, UINT32 addr);
 
 void ia32reset(void);
 void ia32shut(void);
+void ia32a20enable(BOOL enable);
 void ia32(void);
 void ia32_step(void);
 void CPUCALL ia32_interrupt(int vect, int soft);

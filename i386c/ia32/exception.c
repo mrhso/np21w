@@ -1,4 +1,4 @@
-/*	$Id: exception.c,v 1.15 2004/03/12 13:34:08 monaka Exp $	*/
+/*	$Id: exception.c,v 1.17 2004/03/23 22:39:40 yui Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -143,7 +143,11 @@ exception(int num, int error_code)
 #if defined(IA32_SUPPORT_DEBUG_REGISTER)
 	if (num != BP_EXCEPTION) {
 		if (CPU_INST_OP32) {
+#if defined(IA32_DONT_USE_SET_EFLAGS_FUNCTION)
+			CPU_EFLAG |= RF_FLAG;
+#else
 			set_eflags(REAL_EFLAGREG|RF_FLAG, RF_FLAG);
+#endif
 		}
 	}
 #endif
@@ -207,8 +211,8 @@ exception(int num, int error_code)
  * D          : ゲートのサイズ．0 = 16 bit, 1 = 32 bit
  */
 
-static void interrupt_task_gate(descriptor_t *gd, int softintp, int errorp, int error_code);
-static void interrupt_intr_or_trap(descriptor_t *gd, int softintp, int errorp, int error_code);
+static void interrupt_task_gate(const descriptor_t *gd, int softintp, int errorp, int error_code);
+static void interrupt_intr_or_trap(const descriptor_t *gd, int softintp, int errorp, int error_code);
 
 void
 interrupt(int num, int softintp, int errorp, int error_code)
@@ -324,7 +328,7 @@ interrupt(int num, int softintp, int errorp, int error_code)
 }
 
 static void
-interrupt_task_gate(descriptor_t *gd, int softintp, int errorp, int error_code)
+interrupt_task_gate(const descriptor_t *gd, int softintp, int errorp, int error_code)
 {
 	selector_t task_sel;
 	int rv;
@@ -369,7 +373,7 @@ interrupt_task_gate(descriptor_t *gd, int softintp, int errorp, int error_code)
 }
 
 static void
-interrupt_intr_or_trap(descriptor_t *gd, int softintp, int errorp, int error_code)
+interrupt_intr_or_trap(const descriptor_t *gd, int softintp, int errorp, int error_code)
 {
 	selector_t cs_sel, ss_sel;
 	UINT stacksize;

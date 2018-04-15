@@ -7,7 +7,7 @@
 
 #ifdef TRACE
 
-#define	FILEBUFSIZE			(1 << 20)
+// #define FILEBUFSIZE			(1 << 20)
 // #define FILELASTBUFONLY
 
 #ifdef STRICT
@@ -116,18 +116,20 @@ static void View_AddString(const char *lpszString) {
 
 // ----
 
+#if defined(FILEBUFSIZE)
 static	char	filebuf[FILEBUFSIZE];
 static	UINT32	filebufpos;
+#endif
 
 static void trfh_close(void) {
 
 	FILEH	fh;
-	UINT	size;
 
 	fh = tracewin.fh;
 	tracewin.fh = FILEH_INVALID;
 	if (fh != FILEH_INVALID) {
-		size = filebufpos & (FILEBUFSIZE - 1);
+#if defined(FILEBUFSIZE)
+		UINT size = filebufpos & (FILEBUFSIZE - 1);
 #if defined(FILELASTBUFONLY)
 		if (filebufpos >= FILEBUFSIZE) {
 			file_write(fh, filebuf + size, FILEBUFSIZE - size);
@@ -136,6 +138,7 @@ static void trfh_close(void) {
 		if (size) {
 			file_write(fh, filebuf, size);
 		}
+#endif
 		file_close(fh);
 	}
 }
@@ -144,26 +147,27 @@ static void trfh_open(const char *fname) {
 
 	trfh_close();
 	tracewin.fh = file_create(fname);
+#if defined(FILEBUFSIZE)
 	filebufpos = 0;
+#endif
 }
 
 static void trfh_add(const char *buf) {
 
 	UINT	size;
-	UINT	pos;
-	UINT	rem;
 
 	size = strlen(buf);
+#if defined(FILEBUFSIZE)
 	while(size) {
-		pos = filebufpos & (FILEBUFSIZE - 1);
-		rem = FILEBUFSIZE - pos;
+		UINT pos = filebufpos & (FILEBUFSIZE - 1);
+		UINT rem = FILEBUFSIZE - pos;
 		if (size >= rem) {
 			CopyMemory(filebuf + pos, buf, rem);
 			filebufpos += rem;
 			buf += rem;
 			size -= rem;
 #if !defined(FILELASTBUFONLY)
-			file_write(tracewin.fh, buf, strlen(buf));
+			file_write(tracewin.fh, filebuf, FILEBUFSIZE);
 #endif
 		}
 		else {
@@ -172,6 +176,9 @@ static void trfh_add(const char *buf) {
 			break;
 		}
 	}
+#else
+	file_write(tracewin.fh, buf, size);
+#endif
 }
 
 
@@ -198,8 +205,12 @@ static LRESULT CALLBACK traceproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 														IDM_TRACECL, tracecl);
 			InsertMenu(hmenu, 6, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
 
-			CheckMenuItem(hmenu, IDM_TRACEEN,
+			CheckMenuItem(hmenu, IDM_TRACE1,
 								(tracewin.en & 1)?MF_CHECKED:MF_UNCHECKED);
+			CheckMenuItem(hmenu, IDM_TRACE2,
+								(tracewin.en & 2)?MF_CHECKED:MF_UNCHECKED);
+			CheckMenuItem(hmenu, IDM_TRACEEN,
+								(tracewin.en & 4)?MF_CHECKED:MF_UNCHECKED);
 
 			GetClientRect(hWnd, &rc);
 			hView = CreateWindowEx(WS_EX_CLIENTEDGE,
@@ -358,7 +369,8 @@ void trace_init(void) {
 	tracewin.fh = FILEH_INVALID;
 #else
 	tracewin.en = 0;
-	tracewin.fh = trfh_open("traces.txt");
+	tracewin.fh = FILEH_INVALID;
+	trfh_open("traces.txt");
 #endif
 
 	tracecfg.posx = CW_USEDEFAULT;
@@ -436,19 +448,6 @@ void trace_fmt2(const char *fmt, ...) {
 		}
 	}
 }
-
-#if 0
-void trace_fileout(const char *fname) {
-
-	if (tracewin.fh != FILEH_INVALID) {
-		file_close(tracewin.fh);
-		tracewin.fh = FILEH_INVALID;
-	}
-	if (fname) {
-		tracewin.fh = file_create_c(fname);
-	}
-}
-#endif
 
 #endif
 

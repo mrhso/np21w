@@ -73,6 +73,7 @@ typedef unsigned char	BYTE;
 #define	SUPPORT_SASI
 #define	SUPPORT_SCSI
 #define SUPPORT_KEYDISP
+//#define SUPPORT_SOFTKBD
 
 #define	USE_RESUME
 #define	SOUNDRESERVE	80
@@ -85,5 +86,7 @@ typedef UInt64			UINT64;
 #define CPUCALL
 #define MEMCALL
 #define	SUPPORT_PC9821
+#define	SUPPORT_CRT31KHZ
+#define IA32_PAGING_EACHSIZE
 static inline void msgbox(char* title, char* msg) { }
 #endif

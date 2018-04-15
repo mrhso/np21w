@@ -31,7 +31,7 @@
 
 #define	VERMOUTH_LIB
 #undef	SOUND_CRITICAL
-#define	SOUNDRESERVE	100
+#undef	SOUNDRESERVE
 
 #endif  /* NOSOUND */
 
@@ -134,6 +134,10 @@ typedef	int			BOOL;
 #endif
 #endif
 
+#if defined(__GNUC__)
+#define	GCC_ATTR_PACKED	__attribute__((packed))
+#endif
+
 #ifndef	NELEMENTS
 #define	NELEMENTS(a)	((int)(sizeof(a) / sizeof(a[0])))
 #endif
@@ -149,6 +153,8 @@ void toolkit_msgbox(const char *title, const char *msg);
 
 #define	SUPPORT_PC9821
 #define	SUPPORT_CRT31KHZ
+#else
+#define	SUPPORT_CRT15KHZ
 #endif
 
 #if defined(i386) || defined(__i386__)
@@ -157,6 +163,9 @@ void toolkit_msgbox(const char *title, const char *msg);
 #define LOADINTELWORD(a)	(*((UINT16 *)(a)))
 #define STOREINTELDWORD(a, b)	*(UINT32 *)(a) = (b)
 #define STOREINTELWORD(a, b)	*(UINT16 *)(a) = (b)
+#if defined(__GNUC__) && defined(IA32_USE_GCC_ATTR_REGPARM)
+#define	GCC_ATTR_REGPARM	__attribute__((regparm(2)))
+#endif
 #elif defined(arm) || defined (__arm__)
 #define	MEMOPTIMIZE	2
 #define	REG8		UINT
@@ -174,10 +183,12 @@ void toolkit_msgbox(const char *title, const char *msg);
 #define	SUPPORT_32BPP
 #define	SUPPORT_NORMALDISP
 
+#define	SUPPORT_PC9861K
 #define	SUPPORT_HOSTDRV
 
 #undef	SUPPORT_SASI
 #undef	SUPPORT_SCSI
+#undef	SUPPORT_IDE
 
 #if USE_GTK > 0
 #define	SUPPORT_S98

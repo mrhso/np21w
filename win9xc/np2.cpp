@@ -18,7 +18,7 @@
 #include	"winkbd.h"
 #include	"ini.h"
 #include	"menu.h"
-#include	"debugwin.h"
+#include	"subwind.h"
 #include	"dialog.h"
 #include	"cpucore.h"
 #include	"pccore.h"
@@ -57,7 +57,7 @@ static	const char	szClassName[] = "NP2-MainWindow";
 						CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
 						KEY_UNKNOWN, 0,
 						0, 0, 0, {1, 2, 2, 1},
-						0, 0};
+						0, 0, 0};
 
 		char		modulefile[MAX_PATH];
 		char		fddfolder[MAX_PATH];
@@ -122,6 +122,74 @@ static void changescreen(BYTE newmode) {
 		scrnmode = newmode;
 	}
 }
+
+
+// ---- resume and statsave
+
+#define	SUPPORT_RESUME
+
+#if defined(SUPPORT_RESUME) || defined(SUPPORT_STATSAVE)
+static void getstatfilename(char *path, const char *ext, int size) {
+
+	file_cpyname(path, modulefile, size);
+	file_cutext(path);
+	file_catname(path, str_dot, size);
+	file_catname(path, ext, size);
+}
+
+static int flagsave(const char *ext) {
+
+	int		ret;
+	char	path[MAX_PATH];
+
+	getstatfilename(path, ext, sizeof(path));
+	soundmng_stop();
+	ret = statsave_save(path);
+	if (ret) {
+		file_delete(path);
+	}
+	soundmng_play();
+	return(ret);
+}
+
+static void flagdelete(const char *ext) {
+
+	char	path[MAX_PATH];
+
+	getstatfilename(path, ext, sizeof(path));
+	file_delete(path);
+}
+
+static int flagload(const char *ext, const char *title, BOOL force) {
+
+	int		ret;
+	int		id;
+	char	path[MAX_PATH];
+	char	buf[1024];
+
+	getstatfilename(path, ext, sizeof(path));
+	winuienter();
+	id = IDYES;
+	ret = statsave_check(path, buf, sizeof(buf));
+	if (ret & (~STATFLAG_DISKCHG)) {
+		MessageBox(hWndMain, "Couldn't restart", title, MB_OK | MB_ICONSTOP);
+		id = IDNO;
+	}
+	else if ((!force) && (ret & STATFLAG_DISKCHG)) {
+		char buf2[1024 + 256];
+		wsprintf(buf2, "Conflict!\n\n%s\nContinue?", buf);
+		id = MessageBox(hWndMain, buf2, title,
+										MB_YESNOCANCEL | MB_ICONQUESTION);
+	}
+	if (id == IDYES) {
+		statsave_load(path);
+	}
+	sysmng_workclockreset();
+	sysmng_updatecaption();
+	winuileave();
+	return(id);
+}
+#endif
 
 
 // ---- proc
@@ -444,6 +512,16 @@ static void np2cmd(HWND hWnd, UINT16 cmd) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case IDM_MEM116:
+			xmenu_setextmem(11);
+			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_MEM136:
+			xmenu_setextmem(13);
+			update |= SYS_UPDATECFG;
+			break;
+
 		case IDM_MOUSE:
 			mousemng_toggle(MOUSEPROC_SYSTEM);
 			xmenu_setmouse(np2oscfg.MOUSE_SW ^ 1);
@@ -474,13 +552,20 @@ static void np2cmd(HWND hWnd, UINT16 cmd) {
 			dialog_writebmp(hWnd);
 			winuileave();
 			break;
-
+#if defined(SUPPPORT_S98)
 		case IDM_S98LOGGING:
 			winuienter();
 			dialog_s98(hWnd);
 			winuileave();
 			break;
-
+#endif
+#if defined(SUPPORT_WAVEREC)
+		case IDM_WAVEREC:
+			winuienter();
+			dialog_waverec(hWnd);
+			winuileave();
+			break;
+#endif
 		case IDM_CALENDAR:
 			winuienter();
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_CALENDAR),
@@ -615,6 +700,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			break;
 
+		case WM_SIZE:
+			if (wParam == SIZE_RESTORED) {
+				scrnmng_restoresize();
+			}
+			break;
+
 		case WM_ENTERMENULOOP:
 			winuienter();
 			if (scrnmng_isfullscreen()) {
@@ -734,7 +825,8 @@ static void framereset(void) {
 
 	framecnt = 0;
 	sysmng_updatecaption();
-	debugwin_process();
+	memdbg_process();
+	skbdwin_process();
 }
 
 static void processwait(UINT cnt) {
@@ -767,6 +859,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	file_setcd(modulefile);
 	np2arg_analize(lpszCmdLine);
 	initload();
+	memdbg_readini();
+	skbdwin_readini();
 
 	rand_setseed((unsigned)time(NULL));
 
@@ -793,7 +887,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			np2oscfg.KEYBOARD = KEY_KEY106;
 		}
 	}
-	keystat_reset();
+	keystat_initialize();
 
 	if (!hPreInst) {
 		wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW;
@@ -810,7 +904,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			return(FALSE);
 		}
 	}
-	debugwin_initapp(hInstance);
+	memdbg_initialize(hInstance);
+	skbdwin_initialize(hInstance);
 
 	mousemng_initialize();
 
@@ -894,9 +989,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 
 	pccore_reset();
 
-	debugwin_create();
-
 	np2opening = 0;
+
+	// れじうむ
+#if defined(SUPPORT_RESUME)
+	if (np2oscfg.resume) {
+		int		id;
+
+		id = flagload(str_sav, str_resume, FALSE);
+		if (id == IDYES) {
+			for (i=0; i<4; i++) np2arg.disk[i] = NULL;
+		}
+		else if (id == IDCANCEL) {
+			DestroyWindow(hWnd);
+			mousemng_disable(MOUSEPROC_WINUI);
+			S98_trash();
+			pccore_term();
+			soundmng_deinitialize();
+			scrnmng_destroy();
+			TRACETERM();
+			dosio_term();
+			return(0);
+		}
+	}
+#endif
 
 //	リセットしてから… コマンドラインのディスク挿入。				// ver0.29
 	for (i=0; i<4; i++) {
@@ -905,6 +1021,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			diskdrv_delay[i] = 1;
 		}
 	}
+
+	memdbg_create();
+	skbdwin_create();
 
 	while(1) {
 		if (PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE)) {
@@ -986,15 +1105,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	mousemng_disable(MOUSEPROC_WINUI);
 	S98_trash();
 
+#if defined(SUPPORT_RESUME)
+	if (np2oscfg.resume) {
+		flagsave(str_sav);
+	}
+	else {
+		flagdelete(str_sav);
+	}
+#endif
+
 	pccore_term();
-	debugwin_destroy();
+	memdbg_destroy();
+	skbdwin_destroy();
 
 	soundmng_deinitialize();
 	scrnmng_destroy();
 
 	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
 		initsave();
+		memdbg_writeini();
+		skbdwin_writeini();
 	}
+
+	skbdwin_deinitialize();
 
 	TRACETERM();
 	_MEM_USED("report.txt");

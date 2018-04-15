@@ -52,7 +52,7 @@
 				"VX", PCBASECLOCK25, 4,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
 				1, 1, 2, 1, 0x000000, 0xffffff,
-				22050, 800, 4, 0,
+				22050, 500, 4, 0,
 				{0, 0, 0}, 0xd1, 0x7f, 0xd1, 0, 0, 1,
 				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 64, 64, 64, 64, 64,
 				1, 0x82,
@@ -574,10 +574,15 @@ UINT	cflg;
 #endif
 
 
+void pccore_postevent(UINT32 event) {	// yet!
+
+	(void)event;
+}
+
 void pccore_exec(BOOL draw) {
 
 	drawframe = draw;
-	keystat_sync();
+//	keystat_sync();
 	soundmng_sync();
 	mouseif_sync();
 	pal_eventclear();
@@ -648,8 +653,8 @@ void pccore_exec(BOOL draw) {
 			if (CPU_CS == 0x8b6) {
 				TRACEOUT(("%.4x:%.4x", CPU_CS, CPU_IP));
 			}
-//			i286x_step();
-			i286c_step();
+			i286x_step();
+//			i286c_step();
 		}
 #endif
 		nevent_progress();

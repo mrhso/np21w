@@ -1,4 +1,4 @@
-/*	$Id: cpu.c,v 1.16 2004/03/08 12:56:22 monaka Exp $	*/
+/*	$Id: cpu.c,v 1.18 2004/03/30 08:48:46 yui Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro

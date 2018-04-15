@@ -269,6 +269,7 @@ void v30c_step(void);
 #define	CPU_EXTMEM		i286core.e.ext
 #define	CPU_EXTMEMSIZE	i286core.e.extsize
 #define	CPU_INPADRS		i286core.e.inport
+#define	CPU_EMSPTR		i286core.e.ems
 
 #define	CPU_TYPE		i286core.s.cpu_type
 
@@ -285,6 +286,7 @@ void v30c_step(void);
 						i286core.s.trap = 0;
 #define	CPU_STI			i286core.s.r.w.flag |= I_FLAG;						\
 						i286core.s.trap = (i286core.s.r.w.flag >> 8) & 1;
+#define	CPU_A20EN(en)	CPU_ADRSMASK = (en)?0xfffffff:0x000fffff;
 
 #define	CPU_INITIALIZE				i286c_initialize
 #define	CPU_DEINITIALIZE			i286c_deinitialize

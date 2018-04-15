@@ -122,11 +122,12 @@ enum {
 #endif
 
 enum {
-	NKEY_USER1			= 0x76,
-	NKEY_USER2			= 0x77
-};
+	NKEY_SYSTEM			= 0x90,
 
-enum {
+	NKEY_USER			= 0x90,
+	NKEY_USERKEYS		= 2,
+
+	NKEYREF_uPD8255		= 0xf7,
 	NKEYREF_USER		= 0xf8,
 	NKEYREF_SOFTKBD		= 0xf9,
 	NKEYREF_NC			= 0xff
@@ -149,9 +150,18 @@ typedef struct {
 } NKEYM15;
 
 typedef struct {
-	NKEYM3	key[0x80];
-	NKEYM15	user[2];
+	NKEYM3	key[NKEY_SYSTEM];
+	NKEYM15	user[NKEY_USERKEYS];
 } NKEYTBL;
+
+typedef struct {
+	UINT8	reqparam;
+	UINT8	mode;
+	UINT8	kbdtype;
+	UINT8	keyrep;
+	UINT8	capsref;
+	UINT8	kanaref;
+} KEYCTRL;
 
 
 #ifdef __cplusplus
@@ -159,6 +169,7 @@ extern "C" {
 #endif
 
 extern	NKEYTBL		nkeytbl;
+extern	KEYCTRL		keyctrl;
 
 
 void keystat_initialize(void);
@@ -166,6 +177,9 @@ void keystat_initialize(void);
 void keystat_tblreset(void);
 void keystat_tblset(REG8 ref, const UINT8 *key, UINT cnt);
 void keystat_tblload(const char *filename);
+
+void keystat_ctrlreset(void);
+void keystat_ctrlsend(REG8 dat);
 
 void keystat_keydown(REG8 ref);
 void keystat_keyup(REG8 ref);
@@ -188,10 +202,8 @@ REG8 keystat_getmouse(SINT16 *x, SINT16 *y);
 
 // ---- îpé~ä÷êî
 
-#define	keystat_reset				keystat_initialize
-#define	keystat_sync()
-#define	keystat_forcerelease(k)		keystat_releasekey(k)
 void keystat_senddata(REG8 data);
+void keystat_forcerelease(REG8 data);
 
 #ifdef __cplusplus
 }

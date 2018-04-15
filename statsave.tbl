@@ -82,6 +82,9 @@ static const SFENTRY np2tbl[] = {
 	{"CPU286",		0,	STATFLAG_BIN,	&CPU_STATSAVE,	sizeof(CPU_STATSAVE)},
 	{"MEMORY",		0,	STATFLAG_MEM,	NULL,			0x130000},
 	{"EXTMEM",		0,	STATFLAG_EXT,	NULL,			0},
+#if defined(SUPPORT_PC9821)
+	{"VRAMEX",		0,	STATFLAG_BIN,	vramex,			sizeof(vramex)},
+#endif
 
 	{"ARTIC",		0,	STATFLAG_BIN,	&artic,			sizeof(artic)},
 	{"CGROM",		0,	STATFLAG_BIN,	&cgrom,			sizeof(cgrom)},
@@ -96,9 +99,7 @@ static const SFENTRY np2tbl[] = {
 	{"EGC",			0,	STATFLAG_EGC,	NULL,			0},
 	{"EPSON",		0,	STATFLAG_EPSON,	NULL,			0},
 	{"FDC",			0,	STATFLAG_BIN,	&fdc,			sizeof(fdc)},
-#if !defined(CPUCORE_IA32)
 	{"EMSIO",		0,	STATFLAG_BIN,	&emsio,			sizeof(emsio)},
-#endif
 	{"GDC1",		0,	STATFLAG_BIN,	&gdc,			sizeof(gdc)},
 	{"GDC2",		0,	STATFLAG_BIN,	&gdcs,			sizeof(gdcs)},
 	{"PIT",			0,	STATFLAG_BIN,	&pit,			sizeof(pit)},
@@ -116,6 +117,7 @@ static const SFENTRY np2tbl[] = {
 	{"GAIJI",		0,	STATFLAG_GIJ,	NULL,			0},
 	{"EVENT",		0,	STATFLAG_EVT,	&nevent,		sizeof(nevent)},
 	{"CALENDAR",	0,	STATFLAG_BIN,	&cal,			sizeof(cal)},
+	{"KEYSTAT",		0,	STATFLAG_BIN,	&keyctrl,		sizeof(keyctrl)},
 	{"PALEVENT",	0,	STATFLAG_BIN,	&palevent,		sizeof(palevent)},
 	{"FMBOARD",		0,	STATFLAG_FM,	NULL,			0},
 	{"AMD98",		0,	STATFLAG_BIN,	&amd98,			sizeof(amd98)},
@@ -124,6 +126,9 @@ static const SFENTRY np2tbl[] = {
 	{"CMMPU98",		0,	STATFLAG_COM,	(void *)0,		0},
 	{"CMRS232C",	0,	STATFLAG_COM,	(void *)1,		0},
 	{"DISK",		0,	STATFLAG_DISK,	NULL,			0},
+#if defined(SUPPORT_IDEIO)
+	{"IDE",			0,	STATFLAG_BIN,	&ideio,			sizeof(ideio)},
+#endif
 #if defined(SUPPORT_SASI)
 	{"SASI",		0,	STATFLAG_BIN,	&sasiio,		sizeof(sasiio)},
 #endif

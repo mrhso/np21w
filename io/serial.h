@@ -1,19 +1,24 @@
 
 enum {
-	KB_BUFBIT		= 7,
-	KB_BUF			= (1 << KB_BUFBIT),
+	KB_CTR			= (1 << 3),
+	KB_CTRMASK		= (KB_CTR - 1),
+
+	KB_BUF			= (1 << 7),
 	KB_BUFMASK		= (KB_BUF - 1)
 };
 
 typedef struct {
 	UINT32	xferclock;
 	UINT8	data;
-	UINT8	mode;
 	UINT8	cmd;
+	UINT8	mode;
 	UINT8	status;
-	int		buffers;
-	int		pos;
-	BYTE	buf[KB_BUF];
+	UINT	ctrls;
+	UINT	ctrpos;
+	UINT	buffers;
+	UINT	bufpos;
+	UINT8	ctr[KB_CTR];
+	UINT8	buf[KB_BUF];
 } _KEYBRD, *KEYBRD;
 
 typedef struct {
@@ -37,6 +42,7 @@ void keyboard_callback(NEVENTITEM item);
 void keyboard_reset(void);
 void keyboard_bind(void);
 void keyboard_resetsignal(void);
+void keyboard_ctrl(REG8 data);
 void keyboard_send(REG8 data);
 
 

@@ -1,4 +1,4 @@
-/*	$Id: system_inst.c,v 1.25 2004/03/12 15:10:38 monaka Exp $	*/
+/*	$Id: system_inst.c,v 1.27 2004/03/23 15:29:34 monaka Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -142,7 +142,8 @@ SLDT_Ew(UINT32 op)
 void
 LTR_Ew(UINT32 op)
 {
-	UINT32 src, madr;
+	UINT32 madr;
+	UINT16 src;
 
 	if (CPU_STAT_PM && !CPU_STAT_VM86) {
 		if (CPU_STAT_CPL == 0) {
@@ -154,7 +155,7 @@ LTR_Ew(UINT32 op)
 				madr = calc_ea_dst(op);
 				src = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr);
 			}
-			load_tr((UINT16)src);
+			load_tr(src);
 			return;
 		}
 		VERBOSE(("LTR: CPL(%d) != 0", CPU_STAT_CPL));
@@ -286,7 +287,7 @@ MOV_CdRd(void)
 			}
 
 			reg = CPU_CR0;
-			src &= 0xe005003f;
+			src &= CPU_CR0_ALL;
 #ifndef USE_FPU
 			src |= CPU_CR0_EM | CPU_CR0_NE;
 			src &= ~(CPU_CR0_MP | CPU_CR0_ET);
@@ -486,8 +487,8 @@ CLTS(void)
 void
 ARPL_EwGw(void)
 {
-	UINT32 op, src, madr;
-	UINT16 dst;
+	UINT32 op, madr;
+	UINT src, dst;
 
 	if (CPU_STAT_PM && !CPU_STAT_VM86) {
 		PREPART_EA_REG16(op, src);
@@ -498,7 +499,7 @@ ARPL_EwGw(void)
 				CPU_FLAGL |= Z_FLAG;
 				dst &= ~3;
 				dst |= (src & 3);
-				*(reg16_b20[op]) = dst;
+				*(reg16_b20[op]) = (UINT16)dst;
 			} else {
 				CPU_FLAGL &= ~Z_FLAG;
 			}
@@ -510,7 +511,7 @@ ARPL_EwGw(void)
 				CPU_FLAGL |= Z_FLAG;
 				dst &= ~3;
 				dst |= (src & 3);
-				cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, dst);
+				cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, (UINT16)dst);
 			} else {
 				CPU_FLAGL &= ~Z_FLAG;
 			}
@@ -846,7 +847,9 @@ MOV_DdRd(void)
 	UINT32 src;
 	UINT op;
 	int idx;
+#if defined(IA32_SUPPORT_DEBUG_REGISTER)
 	int i;
+#endif
 
 	CPU_WORKCLOCK(11);
 	GET_PCBYTE(op);

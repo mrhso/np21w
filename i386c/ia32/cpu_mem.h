@@ -1,7 +1,7 @@
-/*	$Id: cpu_mem.h,v 1.5 2004/03/12 13:34:08 monaka Exp $	*/
+/*	$Id: cpu_mem.h,v 1.7 2004/03/25 15:08:32 monaka Exp $	*/
 
 /*
- * Copyright (c) 2002-2003 NONAKA Kimihiro
+ * Copyright (c) 2002-2004 NONAKA Kimihiro
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,19 +50,25 @@ void cpu_stack_pop_check(UINT16 s, descriptor_t *sd, UINT32 madr, UINT length);
 /*
  * virtual address function
  */
-void MEMCALL cpu_vmemorywrite(int idx, UINT32 address, UINT8 value);
-void MEMCALL cpu_vmemorywrite_w(int idx, UINT32 address, UINT16 value);
-void MEMCALL cpu_vmemorywrite_d(int idx, UINT32 address, UINT32 value);
-UINT8 MEMCALL cpu_vmemoryread(int idx, UINT32 address);
-UINT16 MEMCALL cpu_vmemoryread_w(int idx, UINT32 address);
-UINT32 MEMCALL cpu_vmemoryread_d(int idx, UINT32 address);
+void MEMCALL cpu_vmemorywrite_b(int idx, UINT32 offset, UINT8 value) GCC_ATTR_REGPARM;
+void MEMCALL cpu_vmemorywrite_w(int idx, UINT32 offset, UINT16 value) GCC_ATTR_REGPARM;
+void MEMCALL cpu_vmemorywrite_d(int idx, UINT32 offset, UINT32 value) GCC_ATTR_REGPARM;
+UINT8 MEMCALL cpu_vmemoryread_b(int idx, UINT32 offset) GCC_ATTR_REGPARM;
+UINT16 MEMCALL cpu_vmemoryread_w(int idx, UINT32 offset) GCC_ATTR_REGPARM;
+UINT32 MEMCALL cpu_vmemoryread_d(int idx, UINT32 offset) GCC_ATTR_REGPARM;
+UINT32 MEMCALL cpu_memory_access_va_RMW_b(int idx, UINT32 offset, UINT32 (*func)(UINT32, void *), void *arg) GCC_ATTR_REGPARM;
+UINT32 MEMCALL cpu_memory_access_va_RMW_w(int idx, UINT32 offset, UINT32 (*func)(UINT32, void *), void *arg) GCC_ATTR_REGPARM;
+UINT32 MEMCALL cpu_memory_access_va_RMW_d(int idx, UINT32 offset, UINT32 (*func)(UINT32, void *), void *arg) GCC_ATTR_REGPARM;
+#define	cpu_vmemorywrite(i,o,v)			cpu_vmemorywrite_b(i,o,v)
+#define	cpu_vmemoryread(i,o)			cpu_vmemoryread_b(i,o)
+#define	cpu_memory_access_va_RMW(i,o,f,a)	cpu_memory_access_va_RMW_b(i,o,f,a)
 
 /*
  * code fetch
  */
-UINT8 MEMCALL cpu_codefetch(UINT32 madr);
-UINT16 MEMCALL cpu_codefetch_w(UINT32 madr);
-UINT32 MEMCALL cpu_codefetch_d(UINT32 madr);
+UINT8 MEMCALL cpu_codefetch(UINT32 madr) GCC_ATTR_REGPARM;
+UINT16 MEMCALL cpu_codefetch_w(UINT32 madr) GCC_ATTR_REGPARM;
+UINT32 MEMCALL cpu_codefetch_d(UINT32 madr) GCC_ATTR_REGPARM;
 
 #ifdef __cplusplus
 }

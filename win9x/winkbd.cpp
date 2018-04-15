@@ -6,7 +6,7 @@
 
 #define		NC		0xff
 
-static const BYTE key106[256] = {
+static UINT8 key106[256] = {
 			//	    ,    ,    ,STOP,    ,    ,    ,    		; 0x00
 				  NC,  NC,  NC,0x60,  NC,  NC,  NC,  NC,
 			//	  BS, TAB,    ,    , CLR, ENT,    ,    		; 0x08
@@ -72,7 +72,7 @@ static const BYTE key106[256] = {
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0xf8
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC};
 
-static const BYTE key106ext[256] = {
+static const UINT8 key106ext[256] = {
 			//	    ,    ,    ,STOP,    ,    ,    ,    		; 0x00
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	  BS, TAB,    ,    , CLR, ENT,    ,    		; 0x08
@@ -142,29 +142,11 @@ static const UINT8 f12keys[] = {
 			0x61, 0x60, 0x4d, 0x4f, 0x76, 0x77};
 
 
-static BYTE getf12key(void) {
-
-	UINT	key;
-
-	key = np2oscfg.F12COPY - 1;
-	if (key < (sizeof(f12keys)/sizeof(UINT8))) {
-		return(f12keys[key]);
-	}
-	else {
-		return(NC);
-	}
-}
-
 void winkbd_keydown(WPARAM wParam, LPARAM lParam) {
 
 	BYTE	data;
 
-	if (wParam != VK_F12) {
-		data = key106[wParam & 0xff];
-	}
-	else {
-		data = getf12key();
-	}
+	data = key106[wParam & 0xff];
 	if (data != NC) {
 		if ((data == 0x73) &&
 				(np2oscfg.KEYBOARD == KEY_KEY101) &&
@@ -191,12 +173,7 @@ void winkbd_keyup(WPARAM wParam, LPARAM lParam) {
 
 	BYTE	data;
 
-	if (wParam != VK_F12) {
-		data = key106[wParam & 0xff];
-	}
-	else {
-		data = getf12key();
-	}
+	data = key106[wParam & 0xff];
 	if (data != NC) {
 		if ((data == 0x73) &&
 				(np2oscfg.KEYBOARD == KEY_KEY101) &&
@@ -217,6 +194,32 @@ void winkbd_keyup(WPARAM wParam, LPARAM lParam) {
 			keystat_senddata(0x47 | 0x80);
 		}
 	}
+}
+
+void winkbd_roll(BOOL pcat) {
+
+	if (pcat) {
+		key106[0x21] = 0x36;
+		key106[0x22] = 0x37;
+	}
+	else {
+		key106[0x21] = 0x37;
+		key106[0x22] = 0x36;
+	}
+}
+
+void winkbd_setf12(UINT f12key) {
+
+	UINT8	key;
+
+	f12key--;
+	if (f12key < (sizeof(f12keys)/sizeof(UINT8))) {
+		key = f12keys[f12key];
+	}
+	else {
+		key = NC;
+	}
+	key106[0x7b] = key;
 }
 
 void winkbd_resetf12(void) {

@@ -136,6 +136,8 @@
 #define IDC_SETNOW                      1113
 #define IDC_NP2ICON                     1114
 #define IDC_NP2VER                      1115
+#define IDC_MORE                        1116
+#define IDC_NP2INFO                     1117
 #define IDM_RESET                       40001
 #define IDM_CONFIG                      40002
 #define IDM_NEWDISK                     40003
@@ -210,20 +212,23 @@
 #define IDM_MEM16                       40072
 #define IDM_MEM36                       40073
 #define IDM_MEM76                       40074
-#define IDM_MOUSE                       40075
-#define IDM_SERIAL1                     40076
-#define IDM_MPUPC98                     40077
-#define IDM_MIDIPANIC                   40078
-#define IDM_SNDOPT                      40079
-#define IDM_BMPSAVE                     40080
-#define IDM_S98LOGGING                  40081
-#define IDM_CALENDAR                    40082
-#define IDM_JOYX                        40083
-#define IDM_RAPID                       40084
-#define IDM_MSRAPID                     40085
-#define IDM_I286SAVE                    40086
-#define IDM_HELP                        40087
-#define IDM_ABOUT                       40088
+#define IDM_MEM116                      40075
+#define IDM_MEM136                      40076
+#define IDM_MOUSE                       40077
+#define IDM_SERIAL1                     40078
+#define IDM_MPUPC98                     40079
+#define IDM_MIDIPANIC                   40080
+#define IDM_SNDOPT                      40081
+#define IDM_BMPSAVE                     40082
+#define IDM_S98LOGGING                  40083
+#define IDM_WAVEREC                     40084
+#define IDM_CALENDAR                    40085
+#define IDM_JOYX                        40086
+#define IDM_RAPID                       40087
+#define IDM_MSRAPID                     40088
+#define IDM_I286SAVE                    40089
+#define IDM_HELP                        40090
+#define IDM_ABOUT                       40091
 
 // Next default values for new objects
 // 
@@ -231,8 +236,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40089
-#define _APS_NEXT_CONTROL_VALUE         1116
+#define _APS_NEXT_COMMAND_VALUE         40092
+#define _APS_NEXT_CONTROL_VALUE         1118
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

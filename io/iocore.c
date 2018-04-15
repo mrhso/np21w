@@ -5,6 +5,7 @@
 #include	"cbuscore.h"
 #include	"sound.h"
 #include	"fmboard.h"
+#include	"ideio.h"
 #include	"cs4231io.h"
 #include	"iocore16.tbl"
 
@@ -31,6 +32,10 @@
 	_RS232C		rs232c;
 	_SYSPORT	sysport;
 	_UPD4990	uPD4990;
+
+#if defined(SUPPORT_PC9821)
+	_PCIDEV		pcidev;
+#endif
 
 
 // ----
@@ -430,9 +435,9 @@ static const IOCBFN resetfn[] = {
 
 			// extend
 			artic_reset,		egc_reset,			np2sysp_reset,
-			necio_reset,		epsonio_reset,
-#if !defined(CPUCORE_IA32)
-			emsio_reset,
+			necio_reset,		epsonio_reset,		emsio_reset,
+#if defined(SUPPORT_PC9821)
+			pcidev_reset,
 #endif
 		};
 
@@ -449,9 +454,9 @@ static const IOCBFN bindfn[] = {
 
 			// extend
 			artic_bind,			egc_bind,			np2sysp_bind,
-			necio_bind,			epsonio_bind,
-#if !defined(CPUCORE_IA32)
-			emsio_bind,
+			necio_bind,			epsonio_bind,		emsio_bind,
+#if defined(SUPPORT_PC9821)
+			pcidev_bind,
 #endif
 		};
 
@@ -479,7 +484,7 @@ void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
 
 	IOFUNC	iof;
 
-//	VERBOSE(("iocore_out8(%x, %x)", port, dat));
+//	TRACEOUT(("iocore_out8(%.2x, %.2x)", port, dat));
 	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
 	iof->ioout[port & 0xff](port, dat);
@@ -488,18 +493,27 @@ void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
 REG8 IOINPCALL iocore_inp8(UINT port) {
 
 	IOFUNC	iof;
+	REG8	ret;
 
-//	VERBOSE(("iocore_inp8(%x)", port));
 	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
-	return(iof->ioinp[port & 0xff](port));
+	ret = iof->ioinp[port & 0xff](port);
+//	TRACEOUT(("iocore_inp8(%.2x) -> %.2x", port, ret));
+	return(ret);
 }
 
 void IOOUTCALL iocore_out16(UINT port, REG16 dat) {
 
 	IOFUNC	iof;
 
+//	TRACEOUT(("iocore_out16(%.4x, %.4x)", port, dat));
 	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_IDEIO)
+	if (port == 0x0640) {
+		ideio_w16(port, dat);
+		return;
+	}
+#endif
 	if ((port & 0xfff1) == 0x04a0) {
 		egc_w16(port, dat);
 		return;
@@ -531,6 +545,11 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 	REG8	ret;
 
 	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_IDEIO)
+	if (port == 0x0640) {
+		return(ideio_r16(port));
+	}
+#endif
 	if ((port & 0xfffc) == 0x005c) {
 		return(artic_r16(port));
 	}
@@ -564,14 +583,27 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 
 void IOOUTCALL iocore_out32(UINT port, UINT32 dat) {
 
+	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_PC9821)
+	if ((port & 0xfffb) == 0x0cf8) {
+		pcidev_w32(port, dat);
+		return;
+	}
+#endif
 	iocore_out16(port, (UINT16)dat);
 	iocore_out16(port+2, (UINT16)(dat >> 16));
 }
 
 UINT32 IOINPCALL iocore_inp32(UINT port) {
 
-	REG16	ret;
+	UINT32	ret;
 
+	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_PC9821)
+	if ((port & 0xfffb) == 0x0cf8) {
+		return(pcidev_r32(port));
+	}
+#endif
 	ret = iocore_inp16(port);
 	return(ret + (iocore_inp16(port+2) << 16));
 }

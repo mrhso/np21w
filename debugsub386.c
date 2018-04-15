@@ -6,6 +6,10 @@
 #include	"iocore.h"
 #include	"debugsub.h"
 
+void debugwriteseg(const char *fname, const descriptor_t *sd,
+												UINT32 addr, UINT32 size);
+void debugpageptr(UINT32 addr);
+
 
 #if defined(MACOS)
 #define	CRLITERAL	"\r"
@@ -149,7 +153,7 @@ const char			*p;
 		SPRINTF(work, str_picstat,
 								pic.pi[0].imr, pic.pi[0].irr, pic.pi[0].isr,
 								pic.pi[1].imr, pic.pi[1].irr, pic.pi[1].isr,
-								mouseif.portc, sysport.c);
+								mouseif.upd8255.portc, sysport.c);
 		file_write(fh, work, strlen(work));
 		file_close(fh);
 	}
@@ -172,10 +176,22 @@ void debugsub_memorydump(void) {
 
 	fh = file_create_c(file_memorybin);
 	if (fh != FILEH_INVALID) {
-		for (i=0; i<34; i++)
-//		for (i=0; i<64; i++)
-		{
+		for (i=0; i<34; i++) {
 			file_write(fh, mem + i*0x8000, 0x8000);
+		}
+		file_close(fh);
+	}
+}
+
+void debugsub_memorydumpall(void) {
+
+	FILEH	fh;
+
+	fh = file_create_c(file_memorybin);
+	if (fh != FILEH_INVALID) {
+		file_write(fh, mem, 0x110000);
+		if (CPU_EXTMEMSIZE > 0x10000) {
+			file_write(fh, CPU_EXTMEM + 0x10000, CPU_EXTMEMSIZE - 0x10000);
 		}
 		file_close(fh);
 	}

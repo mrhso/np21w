@@ -19,6 +19,7 @@ CFG=np2 - Win32 Trace
 !MESSAGE 
 !MESSAGE "np2 - Win32 Release" ("Win32 (x86) Application" 用)
 !MESSAGE "np2 - Win32 Trace" ("Win32 (x86) Application" 用)
+!MESSAGE "np2 - Win32 WaveRec" ("Win32 (x86) Application" 用)
 !MESSAGE "np2 - Win32 Debug" ("Win32 (x86) Application" 用)
 !MESSAGE 
 
@@ -70,8 +71,8 @@ LINK32=link.exe
 # PROP Intermediate_Dir "..\obj\trc"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /I ".\\" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\dialog" /I "..\keydisp" /I "..\debuguty" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "TRACE" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\keydisp" /I ".\\" /I ".\x86" /I ".\dialog" /I ".\debuguty" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "TRACE" /D "MEMTRACE" /FAcs /YX /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\x86" /I ".\dialog" /I ".\debuguty" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "TRACE" /D "MEMTRACE" /FAcs /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -80,8 +81,35 @@ BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
-# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib ddraw.lib dxguid.lib DSOUND.LIB winmm.lib comdlg32.lib comctl32.lib wsock32.lib shell32.lib /nologo /subsystem:windows /machine:I386
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
 # ADD LINK32 kernel32.lib user32.lib gdi32.lib ddraw.lib dxguid.lib DSOUND.LIB winmm.lib comdlg32.lib comctl32.lib wsock32.lib shell32.lib /nologo /subsystem:windows /map /machine:I386 /out:"..\bin/np2t.exe"
+
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "WaveRec"
+# PROP BASE Intermediate_Dir "WaveRec"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\bin"
+# PROP Intermediate_Dir "..\obj\wr"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\x86" /I ".\dialog" /I ".\debuguty" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "SUPPORT_WAVEREC" /FAcs /YX /FD /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x411 /d "NDEBUG"
+# ADD RSC /l 0x411 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib ddraw.lib dxguid.lib DSOUND.LIB winmm.lib comdlg32.lib comctl32.lib wsock32.lib shell32.lib /nologo /subsystem:windows /map /machine:I386 /out:"..\bin/np2wr.exe"
 
 !ELSEIF  "$(CFG)" == "np2 - Win32 Debug"
 
@@ -97,7 +125,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".\keydisp" /I ".\\" /I ".\x86" /I ".\dialog" /I ".\debuguty" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /D "_DEBUG" /D "TRACE" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".\\" /I ".\x86" /I ".\dialog" /I ".\debuguty" /I "..\\" /I "..\common" /I "..\i286x" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /D "_DEBUG" /D "TRACE" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "_DEBUG"
@@ -115,6 +143,7 @@ LINK32=link.exe
 
 # Name "np2 - Win32 Release"
 # Name "np2 - Win32 Trace"
+# Name "np2 - Win32 WaveRec"
 # Name "np2 - Win32 Debug"
 # Begin Group "Source Files"
 
@@ -170,6 +199,18 @@ InputName=PARTS
 
 # End Custom Build
 
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
+InputPath=.\x86\PARTS.X86
+InputName=PARTS
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "np2 - Win32 Debug"
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
@@ -197,6 +238,10 @@ SOURCE=..\COMMON\STRRES.C
 
 SOURCE=..\COMMON\TEXTFILE.C
 # End Source File
+# Begin Source File
+
+SOURCE=..\COMMON\WAVEFILE.C
+# End Source File
 # End Group
 # Begin Group "cpu"
 
@@ -221,6 +266,18 @@ InputName=DMAP
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
 IntDir=.\..\obj\trc
+InputPath=..\I286X\DMAP.X86
+InputName=DMAP
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
 InputPath=..\I286X\DMAP.X86
 InputName=DMAP
 
@@ -264,6 +321,18 @@ InputName=EGCMEM
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
 IntDir=.\..\obj\trc
+InputPath=..\I286X\EGCMEM.X86
+InputName=EGCMEM
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
 InputPath=..\I286X\EGCMEM.X86
 InputName=EGCMEM
 
@@ -335,6 +404,18 @@ InputName=MEMORY
 
 # End Custom Build
 
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
+InputPath=..\I286X\MEMORY.X86
+InputName=MEMORY
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "np2 - Win32 Debug"
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
@@ -361,14 +442,6 @@ SOURCE=..\I286X\V30PATCH.CPP
 # Begin Source File
 
 SOURCE=..\BIOS\BIOS.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\BIOS\BIOS02.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\BIOS\BIOS08.C
 # End Source File
 # Begin Source File
 
@@ -405,6 +478,10 @@ SOURCE=..\BIOS\BIOS1B.C
 # Begin Source File
 
 SOURCE=..\BIOS\BIOS1C.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\BIOS\BIOS1F.C
 # End Source File
 # Begin Source File
 
@@ -518,6 +595,18 @@ InputName=OPNGENG
 
 # End Custom Build
 
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
+InputPath=.\x86\OPNGENG.X86
+InputName=OPNGENG
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj -l $(IntDir)\$(InputName).cod
+
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "np2 - Win32 Debug"
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
@@ -552,10 +641,6 @@ SOURCE=..\SOUND\PSGGENG.C
 # Begin Source File
 
 SOURCE=..\SOUND\RHYTHMC.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\SOUND\RHYTHMG.C
 # End Source File
 # Begin Source File
 
@@ -615,18 +700,6 @@ SOURCE=..\FDD\SXSI.C
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\LIO\GCLS.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GCOLOR1.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GCOLOR2.C
-# End Source File
-# Begin Source File
-
 SOURCE=..\LIO\GLINE.C
 # End Source File
 # Begin Source File
@@ -640,10 +713,6 @@ SOURCE=..\LIO\GPUT1.C
 # Begin Source File
 
 SOURCE=..\LIO\GSCREEN.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GVIEW.C
 # End Source File
 # Begin Source File
 
@@ -825,6 +894,18 @@ InputName=CPUTYPE
 
 # End Custom Build
 
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
+InputPath=.\x86\CPUTYPE.X86
+InputName=CPUTYPE
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "np2 - Win32 Debug"
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
@@ -864,6 +945,18 @@ InputName=DCLOCKD
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
 IntDir=.\..\obj\trc
+InputPath=.\DCLOCKD.X86
+InputName=DCLOCKD
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
 InputPath=.\DCLOCKD.X86
 InputName=DCLOCKD
 
@@ -917,10 +1010,6 @@ SOURCE=.\JULIET.CPP
 # End Source File
 # Begin Source File
 
-SOURCE=.\KDISPWIN.CPP
-# End Source File
-# Begin Source File
-
 SOURCE=.\MENU.CPP
 # End Source File
 # Begin Source File
@@ -954,6 +1043,10 @@ SOURCE=.\SSTP.CPP
 # Begin Source File
 
 SOURCE=.\SSTPMSG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\SUBWIND.CPP
 # End Source File
 # Begin Source File
 
@@ -1129,6 +1222,10 @@ SOURCE=..\CBUS\CS4231IO.C
 # End Source File
 # Begin Source File
 
+SOURCE=..\CBUS\IDEIO.C
+# End Source File
+# Begin Source File
+
 SOURCE=..\CBUS\MPU98II.C
 # End Source File
 # Begin Source File
@@ -1179,6 +1276,18 @@ InputName=MAKEGRPH
 
 # Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
 IntDir=.\..\obj\trc
+InputPath=.\x86\MAKEGRPH.X86
+InputName=MAKEGRPH
+
+"$(IntDir)\$(InputName).obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 $(InputPath) -o $(IntDir)\$(InputName).obj
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "np2 - Win32 WaveRec"
+
+# Begin Custom Build - ｱｾﾝﾌﾞﾙ中... $(InputPath)
+IntDir=.\..\obj\wr
 InputPath=.\x86\MAKEGRPH.X86
 InputName=MAKEGRPH
 
@@ -1261,6 +1370,10 @@ SOURCE=..\GENERIC\KEYDISP.C
 # Begin Source File
 
 SOURCE=..\GENERIC\NP2INFO.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\GENERIC\SOFTKBD.C
 # End Source File
 # Begin Source File
 

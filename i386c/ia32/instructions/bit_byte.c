@@ -1,4 +1,4 @@
-/*	$Id: bit_byte.c,v 1.7 2004/03/12 18:19:57 yui Exp $	*/
+/*	$Id: bit_byte.c,v 1.10 2004/03/25 15:07:39 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -33,7 +33,6 @@
 
 #include "bit_byte.h"
 
-#if 1
 #define	BIT_OFFSET16(v)		(2 * (((SINT16)(v)) >> 4))
 #define	BIT_INDEX16(v)		((v) & 0xf)
 #define	BIT_MAKEBIT16(v)	(1 << BIT_INDEX16(v))
@@ -41,15 +40,6 @@
 #define	BIT_OFFSET32(v)		(4 * (((SINT32)(v)) >> 5))
 #define	BIT_INDEX32(v)		((v) & 0x1f)
 #define	BIT_MAKEBIT32(v)	(1 << BIT_INDEX32(v))
-#else
-#define	BIT_OFFSET16(v)		(2 * (((SINT16)(v)) / 16))
-#define	BIT_INDEX16(v)		((v) & 0xf)
-#define	BIT_MAKEBIT16(v)	(1 << BIT_INDEX16(v))
-
-#define	BIT_OFFSET32(v)		(4 * (((SINT32)(v)) / 32))
-#define	BIT_INDEX32(v)		((v) & 0x1f)
-#define	BIT_MAKEBIT32(v)	(1 << BIT_INDEX32(v))
-#endif
 
 
 /*
@@ -663,7 +653,7 @@ void
 SETO_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = CPU_OV ? 1 : 0;
+	UINT8 v = CC_O?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -680,7 +670,7 @@ void
 SETNO_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = CPU_OV ? 0 : 1;
+	UINT8 v = CC_NO?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -697,7 +687,7 @@ void
 SETC_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (UINT8)(CPU_FLAGL & C_FLAG);
+	UINT8 v = CC_C?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -714,7 +704,7 @@ void
 SETNC_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & C_FLAG) ? 0 : 1;
+	UINT8 v = CC_NC?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -731,7 +721,7 @@ void
 SETZ_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & Z_FLAG) ? 1 : 0;
+	UINT8 v = CC_Z?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -748,7 +738,7 @@ void
 SETNZ_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & Z_FLAG) ? 0 : 1;
+	UINT8 v = CC_NZ?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -765,7 +755,7 @@ void
 SETA_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & (Z_FLAG|C_FLAG)) ? 0 : 1;
+	UINT8 v = CC_A?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -782,7 +772,7 @@ void
 SETNA_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & (Z_FLAG|C_FLAG)) ? 1 : 0;
+	UINT8 v = CC_NA?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -799,7 +789,7 @@ void
 SETS_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & S_FLAG) ? 1 : 0;
+	UINT8 v = CC_S?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -816,7 +806,7 @@ void
 SETNS_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & S_FLAG) ? 0 : 1;
+	UINT8 v = CC_NS?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -833,7 +823,7 @@ void
 SETP_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & P_FLAG) ? 1 : 0;
+	UINT8 v = CC_P?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -850,7 +840,7 @@ void
 SETNP_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (CPU_FLAGL & P_FLAG) ? 0 : 1;
+	UINT8 v = CC_NP?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -867,7 +857,7 @@ void
 SETL_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (!CPU_OV == !(CPU_FLAGL & S_FLAG)) ? 1 : 0;
+	UINT8 v = CC_L?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -884,7 +874,7 @@ void
 SETNL_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = (!CPU_OV == !(CPU_FLAGL & S_FLAG)) ? 0 : 1;
+	UINT8 v = CC_NL?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -901,7 +891,7 @@ void
 SETLE_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = ((CPU_FLAGL & Z_FLAG) || (!CPU_OV == !(CPU_FLAGL & S_FLAG))) ? 1 : 0;
+	UINT8 v = CC_LE?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -918,7 +908,7 @@ void
 SETNLE_Eb(void)
 {
 	UINT32 op, madr;
-	UINT8 v = ((CPU_FLAGL & Z_FLAG) || (!CPU_OV == !(CPU_FLAGL & S_FLAG))) ? 0 : 1;
+	UINT8 v = CC_NLE?1:0;
 
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
@@ -948,7 +938,7 @@ TEST_EbGb(void)
 		madr = calc_ea_dst(op);
 		tmp = cpu_vmemoryread(CPU_INST_SEGREG_INDEX, madr);
 	}
-	AND_BYTE(tmp, src);
+	BYTE_AND(tmp, src);
 }
 
 void
@@ -965,7 +955,7 @@ TEST_EwGw(void)
 		madr = calc_ea_dst(op);
 		tmp = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr);
 	}
-	AND_WORD(tmp, src);
+	WORD_AND(tmp, src);
 }
 
 void
@@ -982,7 +972,7 @@ TEST_EdGd(void)
 		madr = calc_ea_dst(op);
 		tmp = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, madr);
 	}
-	AND_DWORD(tmp, src);
+	DWORD_AND(tmp, src);
 }
 
 void
@@ -993,7 +983,7 @@ TEST_ALIb(void)
 	CPU_WORKCLOCK(3);
 	tmp = CPU_AL;
 	GET_PCBYTE(src);
-	AND_BYTE(tmp, src);
+	BYTE_AND(tmp, src);
 }
 
 void
@@ -1004,7 +994,7 @@ TEST_AXIw(void)
 	CPU_WORKCLOCK(3);
 	tmp = CPU_AX;
 	GET_PCWORD(src);
-	AND_WORD(tmp, src);
+	WORD_AND(tmp, src);
 }
 
 void
@@ -1015,7 +1005,7 @@ TEST_EAXId(void)
 	CPU_WORKCLOCK(3);
 	tmp = CPU_EAX;
 	GET_PCDWORD(src);
-	AND_DWORD(tmp, src);
+	DWORD_AND(tmp, src);
 }
 
 void
@@ -1032,7 +1022,7 @@ TEST_EbIb(UINT32 op)
 		tmp = cpu_vmemoryread(CPU_INST_SEGREG_INDEX, madr);
 	}
 	GET_PCBYTE(src);
-	AND_BYTE(tmp, src);
+	BYTE_AND(tmp, src);
 }
 
 void
@@ -1049,7 +1039,7 @@ TEST_EwIw(UINT32 op)
 		tmp = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr);
 	}
 	GET_PCWORD(src);
-	AND_WORD(tmp, src);
+	WORD_AND(tmp, src);
 }
 
 void
@@ -1066,5 +1056,5 @@ TEST_EdId(UINT32 op)
 		tmp = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, madr);
 	}
 	GET_PCDWORD(src);
-	AND_DWORD(tmp, src);
+	DWORD_AND(tmp, src);
 }

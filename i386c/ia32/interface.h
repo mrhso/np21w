@@ -1,4 +1,4 @@
-/*	$Id: interface.h,v 1.11 2004/03/12 13:34:08 monaka Exp $	*/
+/*	$Id: interface.h,v 1.16 2004/03/29 05:50:29 yui Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -30,6 +30,10 @@
 #ifndef	IA32_CPU_INTERFACE_H__
 #define	IA32_CPU_INTERFACE_H__
 
+#ifndef CPUCALL
+#define	CPUCALL
+#endif
+
 #if !defined(QWORD_CONST)
 #define	QWORD_CONST(v)	v ## ULL
 #define	SQWORD_CONST(v)	v ## LL
@@ -37,6 +41,7 @@
 
 #define CPU_isEI		(CPU_FLAG & I_FLAG)
 #define CPU_isDI		(!CPU_isEI)
+#define	CPU_A20EN(en)		CPU_ADRSMASK = (en)?0xffffffff:0x000fffff;
 
 #define CPU_INITIALIZE()		i386c_initialize()
 #define	CPU_DEINITIALIZE()
@@ -47,12 +52,14 @@
 #define	CPU_EXECV30()			ia32()
 #define	CPU_SHUT()			ia32shut()
 #define	CPU_SETEXTSIZE(size)		ia32_setextsize((UINT32)(size) << 20)
-#define CPU_SETEMM(frame, addr)
+#define CPU_SETEMM(frame, addr)		ia32_setemm(frame, addr)
 
 #define	cpu_memorywrite(a,v)	i286_memorywrite(a,v)
+#define	cpu_memorywrite_b(a,v)	i286_memorywrite(a,v)
 #define	cpu_memorywrite_w(a,v)	i286_memorywrite_w(a,v)
 #define	cpu_memorywrite_d(a,v)	i286_memorywrite_d(a,v)
 #define	cpu_memoryread(a)	i286_memoryread(a)
+#define	cpu_memoryread_b(a)	i286_memoryread(a)
 #define	cpu_memoryread_w(a)	i286_memoryread_w(a)
 #define	cpu_memoryread_d(a)	i286_memoryread_d(a)
 

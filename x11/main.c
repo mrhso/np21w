@@ -47,6 +47,7 @@
 #include "sysmenu.h"
 #include "toolwin.h"
 #include "viewer.h"
+#include "debugwin.h"
 
 #include "commng.h"
 #include "fontmng.h"
@@ -269,7 +270,7 @@ main(int argc, char *argv[])
 	scrnmng_initialize();
 	kbdmng_init();
 	inputmng_init();
-	keystat_reset();
+	keystat_initialize();
 
 	scrnmode = 0;
 	if (np2cfg.RASTER) {
@@ -357,6 +358,7 @@ main(int argc, char *argv[])
 	}
 
 	pccore_term();
+	debugwin_destroy();
 
 	soundmng_deinitialize();
 	scrnmng_destroy();
