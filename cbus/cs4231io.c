@@ -374,6 +374,21 @@ void IOOUTCALL cs4231io5_w8(UINT port, REG8 value) {
 		case 0x00:
 			cs4231.extindex = value;
 			break;
+
+		case 0x01:
+			switch(cs4231.extindex){
+			case 0x02:
+			case 0x03:
+			case 0x30:
+			case 0x31:
+			case 0x32:
+			case 0x33:
+			case 0x34:
+			case 0x35:
+			case 0x36:
+				cs4231.devvolume[cs4231.extindex] = value;
+			}
+			break;
 	}
 }
 
@@ -384,8 +399,19 @@ REG8 IOINPCALL cs4231io5_r8(UINT port) {
 			return(cs4231.extindex);
 
 		case 0x01:
-			if (cs4231.extindex == 1) {
+			switch(cs4231.extindex){
+			case 1:
 				return(0);				// means opna int5 ???
+			case 0x02:
+			case 0x03:
+			case 0x30:
+			case 0x31:
+			case 0x32:
+			case 0x33:
+			case 0x34:
+			case 0x35:
+			case 0x36:
+				return cs4231.devvolume[cs4231.extindex];
 			}
 			break;
 	}

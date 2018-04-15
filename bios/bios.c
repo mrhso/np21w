@@ -98,8 +98,8 @@ static void bios_reinitbyswitch(void) {
 	UINT8	biosflag;
 	UINT8	extmem; // LARGE_MEM //UINT16	extmem;
 	UINT8	boot;
-	FILEH	fh;
-	OEMCHAR	path[MAX_PATH];
+	//FILEH	fh;
+	//OEMCHAR	path[MAX_PATH];
 
 	if (!(pccore.dipsw[2] & 0x80)) {
 #if defined(CPUCORE_IA32)

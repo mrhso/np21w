@@ -158,8 +158,8 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 	INT16 *buf[4];
 	INT16 s1l,s1r,s2l,s2r;
 	SINT32 *outbuf = pcm;
-	float oplfm_volume;
-	oplfm_volume = 2 * np2cfg.vol_fm / 64.0;
+	SINT32 oplfm_volume;
+	oplfm_volume = np2cfg.vol_fm;
 	buf[0] = &s1l;
 	buf[1] = &s1r;
 	buf[2] = &s2l;
@@ -169,8 +169,8 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 #ifdef USE_MAME
 		YMF262UpdateOne(opl3, buf, 1);
 #endif
-		outbuf[0] += (SINT32)((s1l << 1) * oplfm_volume);
-		outbuf[1] += (SINT32)((s1r << 1) * oplfm_volume);
+		outbuf[0] += (SINT32)(((s1l << 1) * oplfm_volume) >> 5);
+		outbuf[1] += (SINT32)(((s1r << 1) * oplfm_volume) >> 5);
 		outbuf += 2;
 	}
 }
@@ -200,6 +200,8 @@ void boardsb16_reset(const NP2CFG *pConfig) {
 }
 
 void boardsb16_bind(void) {
+	opl3_reset(&g_opl3, OPL3_HAS_OPL3L|OPL3_HAS_OPL3);
+
 	ct1745io_bind();
 	ct1741io_bind();
 

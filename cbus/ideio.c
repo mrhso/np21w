@@ -19,6 +19,8 @@
 #include	"sound.h"
 #include	"idebios.res"
 #include	"bios/biosmem.h"
+#include	"fmboard.h"
+#include	"cs4231io.h"
 
 
 	IDEIO	ideio;
@@ -1205,6 +1207,10 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 // ----
 
 #if 1
+static SINT32 cdda_softvolume_L = 0;
+static SINT32 cdda_softvolume_R = 0;
+static SINT32 cdda_softvolumereg_L = 0xff;
+static SINT32 cdda_softvolumereg_R = 0xff;
 static BRESULT SOUNDCALL playdevaudio(IDEDRV drv, SINT32 *pcm, UINT count) {
 
 	SXSIDEV	sxsi;
@@ -1227,6 +1233,29 @@ static SINT32	sampcount2_n = 0;
 	//	samplen_n /= 100;
 	//	samplen_d /= 100;
 	//}
+	if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_MATE_X_PCM || g_nSoundID == SOUNDID_PC_9801_86_WSS){
+		if(cdda_softvolumereg_L != cs4231.devvolume[0x32]){
+			cdda_softvolumereg_L = cs4231.devvolume[0x32];
+			if(cdda_softvolumereg_L & 0x80){ // FM L Mute
+				cdda_softvolume_L = 0;
+			}else{
+				cdda_softvolume_L = ((~cdda_softvolumereg_L) & 0x1f); // FM L Volume
+			}
+		}
+		if(cdda_softvolumereg_R != cs4231.devvolume[0x33]){
+			cdda_softvolumereg_R = cs4231.devvolume[0x33];
+			if(cdda_softvolumereg_R & 0x80){ // FM R Mute
+				cdda_softvolume_R = 0;
+			}else{
+				cdda_softvolume_R = ((~cdda_softvolumereg_R) & 0x1f); // FM R Volume
+			}
+		}
+	}else{
+		cdda_softvolume_L = 0xff;
+		cdda_softvolume_R = 0xff;
+		cdda_softvolumereg_L = 0xff;
+		cdda_softvolumereg_R = 0xff;
+	}
 
 	sxsi = sxsi_getptr(drv->sxsidrv);
 	if ((sxsi == NULL) || (sxsi->devtype != SXSIDEV_CDROM) ||
@@ -1249,8 +1278,8 @@ static SINT32	sampcount2_n = 0;
 					sampr = ((SINT8)ptr[3] << 8) + ptr[2];
 					ptr += 4;
 					sampcount2_n += samplen_n;
-					buf_l += (SINT)((int)(sampl)*np2cfg.davolume/255);
-					buf_r += (SINT)((int)(sampr)*np2cfg.davolume/255);
+					buf_l += (SINT)((int)(sampl)*np2cfg.davolume*cdda_softvolume_L/255/31);
+					buf_r += (SINT)((int)(sampr)*np2cfg.davolume*cdda_softvolume_R/255/31);
 					buf_count++;
 					if(sampcount2_n > sampcount2_d){
 						pcm[0] += buf_l / buf_count;
@@ -1269,8 +1298,8 @@ static SINT32	sampcount2_n = 0;
 				do {
 					sampl = ((SINT8)ptr[1] << 8) + ptr[0];
 					sampr = ((SINT8)ptr[3] << 8) + ptr[2];
-					pcm[0] += (SINT)((int)(sampl)*np2cfg.davolume/255);
-					pcm[1] += (SINT)((int)(sampr)*np2cfg.davolume/255);
+					pcm[0] += (SINT)((int)(sampl)*np2cfg.davolume*cdda_softvolume_L/255/31);
+					pcm[1] += (SINT)((int)(sampr)*np2cfg.davolume*cdda_softvolume_L/255/31);
 					sampcount2_n -= sampcount2_d;
 					if(sampcount2_n <= 0){
 						sampcount2_n += samplen_n;

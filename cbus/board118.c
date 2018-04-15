@@ -22,7 +22,6 @@ static int opna_idx = 0;
 #ifdef USE_MAME
 static void *opl3;
 static int samplerate;
-static double oplfm_volume;
 void *YMF262Init(INT clock, INT rate);
 void YMF262ResetChip(void *chip);
 void YMF262Shutdown(void *chip);
@@ -381,26 +380,45 @@ static REG8 IOINPCALL sb98_i81d2(UINT port) {
 
 // ----
 #ifdef USE_MAME
-#ifdef SUPPORT_SOUND_SB16
+static SINT32 oplfm_softvolume_L = 0;
+static SINT32 oplfm_softvolume_R = 0;
+static SINT32 oplfm_softvolumereg_L = 0xff;
+static SINT32 oplfm_softvolumereg_R = 0xff;
 void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 	UINT i;
 	INT16 *buf[4];
 	INT16 s1l,s1r,s2l,s2r;
+	SINT32 oplfm_volume;
 	SINT32 *outbuf = pcm;
 	buf[0] = &s1l;
 	buf[1] = &s1r;
 	buf[2] = &s2l;
 	buf[3] = &s2r;
-	oplfm_volume = np2cfg.vol_fm / 64.0;
+	oplfm_volume = np2cfg.vol_fm;
+	if(oplfm_softvolumereg_L != cs4231.devvolume[0x30]){
+		oplfm_softvolumereg_L = cs4231.devvolume[0x30];
+		if(oplfm_softvolumereg_L & 0x80){ // FM L Mute
+			oplfm_softvolume_L = 0;
+		}else{
+			oplfm_softvolume_L = ((~oplfm_softvolumereg_L) & 0x1f); // FM L Volume
+		}
+	}
+	if(oplfm_softvolumereg_R != cs4231.devvolume[0x31]){
+		oplfm_softvolumereg_R = cs4231.devvolume[0x31];
+		if(oplfm_softvolumereg_R & 0x80){ // FM R Mute
+			oplfm_softvolume_R = 0;
+		}else{
+			oplfm_softvolume_R = ((~oplfm_softvolumereg_R) & 0x1f); // FM R Volume
+		}
+	}
 	for (i=0; i < count; i++) {
 		s1l = s1r = s2l = s2r = 0;
 		YMF262UpdateOne(opl3, buf, 1);
-		outbuf[0] += (SINT32)(s1l * 8 * oplfm_volume);
-		outbuf[1] += (SINT32)(s1r * 8 * oplfm_volume);
+		outbuf[0] += (SINT32)(((s1l << 1) * oplfm_volume * oplfm_softvolume_L) >> 10);
+		outbuf[1] += (SINT32)(((s1r << 1) * oplfm_volume * oplfm_softvolume_R) >> 10);
 		outbuf += 2;
 	}
 }
-#endif
 #endif
 static const IOOUT ymf_o[4] = {
 			ymf_o188,	ymf_o18a,	ymf_o18c,	ymf_o18e};
