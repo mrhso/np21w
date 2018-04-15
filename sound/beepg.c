@@ -4,59 +4,29 @@
 
 
 extern	BEEPCFG		beepcfg;
+extern  UINT16 beep_data[BEEPDATACOUNT];
+int beep_mode_freq = 28;	// 28:normal 21:TOKIO
+int beep_mode_temp = 0;
 
 static void oneshot(BEEP bp, SINT32 *pcm, UINT count) {
 
-	SINT32		vol;
-const BPEVENT	*bev;
-	SINT32		clk;
-	int			event;
-	SINT32		remain;
 	SINT32		samp;
+	double		sampbias = soundcfg.rate / 44100.0;
 
-	vol = beepcfg.vol;
-	bev = bp->event;
-	if (bp->events) {
-		bp->events--;
-		clk = bev->clock;
-		event = bev->enable;
-		bev++;
-	}
-	else {
-		clk = 0x40000000;
-		event = bp->lastenable;
-	}
-	do {
-		remain = (1 << 16);
-		samp = 0;
-		while(remain >= clk) {
-			remain -= clk;
-			if (bp->lastenable) {
-				samp += clk;
-			}
-			bp->lastenable = event;
-			if (bp->events) {
-				bp->events--;
-				clk = bev->clock;
-				event = bev->enable;
-				bev++;
-			}
-			else {
-				clk = 0x40000000;
-			}
-		}
-		clk -= remain;
-		if (bp->lastenable) {
-			samp += remain;
-		}
-		samp *= vol;
-		samp >>= (16 - 10);
+	while(count--) {
+		samp = (double)beep_data[bp->beep_data_curr_loc] / 0x100 * (0x1000 * beepcfg.vol) - (0x800 * beepcfg.vol);
 		pcm[0] += samp;
 		pcm[1] += samp;
 		pcm += 2;
-	} while(--count);
-	bp->lastenable = event;
-	bp->events = 0;
+		bp->beep_cnt += 20 * (1.0 / sampbias);
+		if((bp->beep_data_curr_loc < bp->beep_cnt / beep_mode_freq) && (bp->beep_data_curr_loc != bp->beep_data_load_loc)) {
+			bp->beep_data_curr_loc = bp->beep_cnt / beep_mode_freq;
+			if(bp->beep_data_curr_loc >= BEEPDATACOUNT) {
+				bp->beep_data_curr_loc = 0;
+				bp->beep_cnt %= beep_mode_freq;
+			}
+		}
+	}
 }
 
 static void rategenerator(BEEP bp, SINT32 *pcm, UINT count) {
@@ -157,4 +127,3 @@ void SOUNDCALL beep_getpcm(BEEP bp, SINT32 *pcm, UINT count) {
 		}
 	}
 }
-

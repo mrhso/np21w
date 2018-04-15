@@ -338,6 +338,14 @@ static void IOOUTCALL pit_o73(UINT port, REG8 dat) {
 
 	PITCH	pitch;
 
+	if(port == 0x3FDB) {
+		beep_data[g_beep.beep_data_load_loc] = dat;
+		g_beep.beep_data_load_loc++;
+		if(g_beep.beep_data_load_loc >= BEEPDATACOUNT)
+			g_beep.beep_data_load_loc = 0;
+		g_beep.beep_laskclk = CPU_CLOCK;
+	}
+
 	pitch = pit.ch + 1;
 	if (pit_setcount(pitch, dat)) {
 		return;
@@ -347,7 +355,6 @@ static void IOOUTCALL pit_o73(UINT port, REG8 dat) {
 	if (pitch->ctrl & 0x0c) {
 		beep_hzset(pitch->value);
 	}
-	(void)port;
 }
 
 // rs-232c
@@ -370,6 +377,20 @@ static void IOOUTCALL pit_o77(UINT port, REG8 dat) {
 
 	UINT	chnum;
 	PITCH	pitch;
+
+	if(port == 0x77 && dat == 0x50) {
+		if(beep_mode_temp == 0x70)
+			beep_mode_freq = 21;
+		else
+			beep_mode_freq = 28;
+	} else {
+		beep_mode_temp = dat;
+	}
+	if(CPU_CLOCK - g_beep.beep_laskclk >= 20000000) {
+		g_beep.beep_data_load_loc = 0;
+		g_beep.beep_data_curr_loc = 0;
+		g_beep.beep_cnt = 0;
+	}
 
 	chnum = (dat >> 6) & 3;
 	if (chnum != 3) {

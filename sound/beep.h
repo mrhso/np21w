@@ -7,7 +7,7 @@ enum {
 };
 
 typedef struct {
-	SINT32	clock;
+	UINT32	clock;
 	int		enable;
 } BPEVENT;
 
@@ -22,7 +22,14 @@ typedef struct {
 	int		low;
 	int		enable;
 	int		lastenable;
-	SINT32	clock;
+	int		lastremain;
+	int		lastonevt;
+	int		lastclk;
+	UINT32	clock;
+	UINT32  beep_data_curr_loc;
+	UINT32  beep_data_load_loc;
+	UINT32  beep_laskclk;
+	UINT32  beep_cnt;
 	UINT	events;
 	BPEVENT	event[BEEPEVENT_MAX];
 } _BEEP, *BEEP;
@@ -40,6 +47,10 @@ extern "C" {
 #endif
 
 extern	_BEEP		g_beep;
+#define BEEPDATACOUNT 0x10000
+extern UINT16 beep_data[BEEPDATACOUNT];
+extern int beep_mode_freq;
+extern int beep_mode_temp;
 
 void beep_initialize(UINT rate);
 void beep_deinitialize(void);
