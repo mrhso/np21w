@@ -422,7 +422,7 @@ void np2wab_init(HINSTANCE hInstance, HWND hWndMain)
 	// HWNDとかHDCとかバッファ用ビットマップとかを先に作っておく
 	np2wab.hDCWAB = GetDC(np2wab.hWndWAB);
 	hdc = np2wab.multiwindow ? GetDC(NULL) : np2wab.hDCWAB;
-	np2wab.hBmpBuf = CreateCompatibleBitmap(hdc, 1024, 768); // XXX: 1024x768以上にならないのでこれで十分
+	np2wab.hBmpBuf = CreateCompatibleBitmap(hdc, 1280, 1024); // XXX: 1280x1024以上にならないのでこれで十分
 	np2wab.hDCBuf = CreateCompatibleDC(hdc);
 	SelectObject(np2wab.hDCBuf, np2wab.hBmpBuf);
 

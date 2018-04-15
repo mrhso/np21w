@@ -122,7 +122,49 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_HRTIMER)
 	LARGE_INTEGER hrtimer = {0}; 
 	LARGE_INTEGER hrtimerfreq = {0}; 
-	SINT64 hrtimerdiv = 32; 
+	//UINT32 hrtimerclockcounter = 0;
+	UINT32 hrtimerdiv = 32; 
+	UINT32 hrtimerint = 0;
+
+static HANDLE pccore_hrtimerThread = 0; 
+static int pccore_hrtimerThreadExit = 0; 
+
+static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
+	LARGE_INTEGER hrtmp = {0}; 
+	while (!pccore_hrtimerThreadExit) {
+		SINT64 times;
+		QueryPerformanceFrequency(&hrtimerfreq);
+		QueryPerformanceCounter(&hrtmp);
+		times = (hrtmp.QuadPart - hrtimer.QuadPart) * hrtimerdiv;
+		//if(hrtmp.QuadPart - hrtimer.QuadPart >= hrtimerfreq.QuadPart/hrtimerdiv){
+		if(times >= hrtimerfreq.QuadPart){
+			hrtimerint = 1;
+			do{
+				hrtimer.QuadPart += hrtimerfreq.QuadPart/hrtimerdiv;
+				times -= hrtimerfreq.QuadPart;
+			} while(times >= hrtimerfreq.QuadPart);
+		}
+		Sleep(8);
+	}
+	return 0;
+}
+static void pccore_hrtimer_start() {
+	DWORD dwID;
+	if(!pccore_hrtimerThread){
+		pccore_hrtimerThread = CreateThread(NULL , 0 , _pccore_hrtimerthread  , NULL , 0 , &dwID);
+	}
+	hrtimerint = 0;
+}
+static void pccore_hrtimer_stop() {
+	if(pccore_hrtimerThread){
+		pccore_hrtimerThreadExit = 1;
+		WaitForSingleObject(pccore_hrtimerThread,  INFINITE);
+		pccore_hrtimerThreadExit = 0;
+		pccore_hrtimerThread = NULL;
+		hrtimerint = 0;
+	}
+}
+
 #endif
 
 // ---------------------------------------------------------------------------
@@ -305,9 +347,17 @@ void pccore_init(void) {
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_initialize();
 #endif
+
+#if defined(SUPPORT_HRTIMER)
+	pccore_hrtimer_start();
+#endif
 }
 
 void pccore_term(void) {
+
+#if defined(SUPPORT_HRTIMER)
+	pccore_hrtimer_stop();
+#endif
 
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_deinitialize();
@@ -466,6 +516,7 @@ void pccore_reset(void) {
 	
 #if defined(SUPPORT_HRTIMER)
 	hrtimerdiv = 32;
+	//hrtimerclockcounter = 0;
 	QueryPerformanceCounter(&hrtimer);
 #endif
 }
@@ -658,16 +709,12 @@ static int execcnt = 0;
 int piccnt = 0;
 #endif
 
-
 void pccore_postevent(UINT32 event) {	// yet!
 
 	(void)event;
 }
 
 void pccore_exec(BOOL draw) {
-#if defined(SUPPORT_HRTIMER)
-	static LARGE_INTEGER hrtmp = {0}; 
-#endif
 
 	pcstat.drawframe = (UINT8)draw;
 //	keystat_sync();
@@ -693,6 +740,7 @@ void pccore_exec(BOOL draw) {
 		if (CPU_RESETREQ) {
 			CPU_RESETREQ = 0;
 #if defined(SUPPORT_WAB)
+			ga_relaystateint = ga_relaystateext = 0;
 			np2wab_setRelayState(0); // XXX:
 #endif
 #if defined(SUPPORT_IDEIO)
@@ -701,6 +749,8 @@ void pccore_exec(BOOL draw) {
 			CPU_SHUT();
 		}
 #if !defined(SINGLESTEPONLY)
+#if defined(SUPPORT_HRTIMER)
+#endif
 		if (CPU_REMCLOCK > 0) {
 			if (!(CPU_TYPE & CPUTYPE_V30)) {
 				CPU_EXEC();
@@ -715,13 +765,9 @@ void pccore_exec(BOOL draw) {
 		}
 #endif
 #if defined(SUPPORT_HRTIMER)
-		if(hrtimerdiv){
-			QueryPerformanceFrequency(&hrtimerfreq);
-			QueryPerformanceCounter(&hrtmp);
-			if(hrtmp.QuadPart - hrtimer.QuadPart >= hrtimerfreq.QuadPart/hrtimerdiv){
-				pic_setirq(15);
-				hrtimer.QuadPart += hrtimerfreq.QuadPart/hrtimerdiv;
-			}
+		if(hrtimerint){ // XXX: ˆÊ’u‚Ä‚«‚Æ[
+			pic_setirq(15);
+			hrtimerint = 0;
 		}
 #endif
 		nevent_progress();

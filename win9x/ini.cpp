@@ -559,7 +559,7 @@ static const PFTBL s_IniItems[] =
 #endif
 #if defined(SUPPORT_CL_GD5430)
 	PFVAL("USEGD5430", PFTYPE_BOOL,		&np2cfg.usegd5430),
-	PFVAL("GD5430TYPE",PFTYPE_UINT8,	&np2cfg.gd5430type),
+	PFVAL("GD5430TYPE",PFTYPE_UINT16,	&np2cfg.gd5430type),
 #endif
 	
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),

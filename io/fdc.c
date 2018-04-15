@@ -626,7 +626,11 @@ static const FDCOPE FDC_Ope[0x20] = {
 				FDC_Invalid,
 				FDC_Seek,
 				FDC_Invalid,					// 10
+#ifdef SUPPORT_KAI_IMAGES
+				FDC_ScanEqual,
+#else
 				FDC_Invalid,			// FDC_ScanEqual,
+#endif
 				FDC_Invalid,
 				FDC_Invalid,
 				FDC_Invalid,
@@ -634,11 +638,19 @@ static const FDCOPE FDC_Ope[0x20] = {
 				FDC_Invalid,
 				FDC_Invalid,
 				FDC_Invalid,
+#ifdef SUPPORT_KAI_IMAGES
+				FDC_ScanEqual,
+#else
 				FDC_Invalid,			// FDC_ScanEqual,
+#endif
 				FDC_Invalid,
 				FDC_Invalid,
 				FDC_Invalid,
+#ifdef SUPPORT_KAI_IMAGES
+				FDC_ScanEqual,
+#else
 				FDC_Invalid,			// FDC_ScanEqual,
+#endif
 				FDC_Invalid,
 				FDC_Invalid};
 

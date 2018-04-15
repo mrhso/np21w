@@ -550,8 +550,10 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 #ifdef SUPPORT_WAB
 		if(np2oscfg.fscrnmod & FSCRNMOD_SAMERES){
-			ddsd.dwWidth = 1024;
-			ddsd.dwHeight = 768;
+			int maxx = GetSystemMetrics(SM_CXSCREEN);
+			int maxy = GetSystemMetrics(SM_CYSCREEN);
+			ddsd.dwWidth = (1280 > maxx ? maxx : 1280);
+			ddsd.dwHeight = (1024 > maxy ? maxy : 1024);
 		}else{
 			if((np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
 				// ŽÀƒTƒCƒY‚É
@@ -1171,6 +1173,8 @@ void scrnmng_blthdc(HDC hdc) {
 	RECT	*dst;
 	HRESULT	r;
 	HDC hDCDD;
+#if defined(SUPPORT_WAB)
+	if(np2wab.multiwindow) return;
 	if (ddraw.backsurf != NULL) {
 		if (ddraw.scrnmode & SCRNMODE_FULLSCREEN) {
 			if (GetWindowLongPtr(g_hWndMain, NP2GWLP_HMENU)) {
@@ -1190,4 +1194,5 @@ void scrnmng_blthdc(HDC hdc) {
 			ddraw.backsurf->ReleaseDC(hDCDD);
 		}
 	}
+#endif
 }

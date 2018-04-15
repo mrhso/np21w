@@ -670,14 +670,33 @@ static void storemsf(UINT8 *ptr, UINT32 pos, int isBCD) {
 	pos = pos / 60;
 	ptr[0] = 0;
 	if(isBCD){
+		if (pos > 99) {
+			ptr[1] = 0xff;
+			ptr[2] = 0x59;
+			ptr[3] = 0x74;
+			return;
+		}
 		ptr[1] = (UINT8)HEX2BCD(pos);
 		ptr[2] = (UINT8)HEX2BCD(m);
 		ptr[3] = (UINT8)HEX2BCD(f);
 	}else{
+		if (pos > 0xff) {
+			pos = 0xff;
+			m = 59;
+			f = 74;
+		}
 		ptr[1] = (UINT8)pos;
 		ptr[2] = (UINT8)m;
 		ptr[3] = (UINT8)f;
 	}
+}
+
+static void storelba(UINT8 *ptr, UINT32 pos) {
+
+	ptr[0] = (UINT8)(pos >> 24);
+	ptr[1] = (UINT8)(pos >> 16);
+	ptr[2] = (UINT8)(pos >> 8);
+	ptr[3] = (UINT8)(pos);
 }
 
 // 0x42: READ SUB CHANNEL
@@ -763,6 +782,7 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 #ifdef SUPPORT_KAI_IMAGES
 	UINT8	time;	//	’Ç‰Á(kaiD)
 #endif
+	UINT8	strack;
 
 	sxsi = sxsi_getptr(drv->sxsidrv);
 	if ((sxsi == NULL) || (sxsi->devtype != SXSIDEV_CDROM) ||
@@ -786,6 +806,8 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 	leng = (drv->buf[6] << 8) + drv->buf[7];
 #else
 	time = (drv->buf[1] & 0x02) >> 0x01;
+	// format = (drv->buf[2] & 0x0f);
+	// if (format == 0)		// "When Format in Byte 2 is zero, then Byte 9 is used" (SFF8020)
 	format = (drv->buf[9] >> 6);
 	leng = (drv->buf[7] << 8) + drv->buf[8];
 #endif
@@ -801,19 +823,23 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 	format = (drv->buf[9] >> 6);
 	//TRACEOUT(("atapi_cmd_readtoc fmt=%d leng=%d", format, leng));
 #endif /* SUPPORT_KAI_IMAGES */
+	strack = drv->buf[6];
 
 	switch (format) {
 	case 0: // track info
-		datasize = (tracks * 8) + 10;
+		//datasize = (tracks * 8) + 10;
+		strack = min(max(1U, strack), (tracks+1));		// special case: 0 = 1sttrack, 0xaa = leadout
+		datasize = ((tracks - strack + 1U) * 8U) + 10;
 		drv->buf[0] = (UINT8)(datasize >> 8);
 		drv->buf[1] = (UINT8)(datasize >> 0);
 		drv->buf[2] = 1;
 		drv->buf[3] = (UINT8)tracks;
 		ptr = drv->buf + 4;
-		//for (i=0; i<=tracks; i++) {
-		i = drv->buf[6];
-		if (i > 0) --i;
-		for (/* i=0 */; i<=tracks; i++) {
+		////for (i=0; i<=tracks; i++) {
+		//i = drv->buf[6];
+		//if (i > 0) --i;
+		//for (/* i=0 */; i<=tracks; i++) {
+		for (i=strack-1; i<=tracks; i++) {
 			ptr[0] = 0;
 #ifdef SUPPORT_KAI_IMAGES
 			ptr[1] = trk[i].adr_ctl;
@@ -823,10 +849,15 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 			ptr[2] = trk[i].track;
 #endif
 			ptr[3] = 0;
-			storemsf(ptr + 4, (UINT32)(trk[i].pos + 150), drv->damsfbcd);
+			//storemsf(ptr + 4, (UINT32)(trk[i].pos + 150), drv->damsfbcd);
+			if (time)
+				storemsf(ptr + 4, (UINT32)(trk[i].pos + 150), drv->damsfbcd);
+			else
+				storelba(ptr + 4, (UINT32)(trk[i].pos));
 			ptr += 8;
 		}
-		senddata(drv, (tracks * 8) + 12, leng);
+		//senddata(drv, (tracks * 8) + 12, leng);
+		senddata(drv, 2 + datasize, leng);
 		break;
 
 	case 1:	// multi session
@@ -836,11 +867,13 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 		drv->buf[3] = 0x01;
 		drv->buf[5] = 0x14;
 		drv->buf[6] = 0x01;
-		drv->buf[10] = 0x02;
+		//drv->buf[10] = 0x02;
+		drv->buf[10] = time ? 0x02 : 0;
 		senddata(drv, 12, leng);
 		break;
 
 	default:
+		// time = 1;		// 0010b~0101b: MSF(TIME) Field "Ignored by Drive" (SCSI MMC)
 		senderror(drv);
 		break;
 	}

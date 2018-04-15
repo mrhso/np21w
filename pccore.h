@@ -163,12 +163,12 @@ struct tagNP2Config
 	UINT16	lgy98io;
 	UINT8	lgy98irq;
 #endif
-#ifdef SUPPORT_NET
+#ifdef SUPPORT_WAB
 	UINT8	wabasw;
 #endif
 #ifdef SUPPORT_CL_GD5430
 	UINT8	usegd5430;
-	UINT8	gd5430type;
+	UINT16	gd5430type;
 #endif
 
 };
@@ -233,7 +233,7 @@ void pccore_exec(BOOL draw);
 void pccore_postevent(UINT32 event);
 
 #ifdef SUPPORT_HRTIMER
-extern SINT64 hrtimerdiv;
+extern UINT32 hrtimerdiv;
 #endif
 
 #ifdef __cplusplus

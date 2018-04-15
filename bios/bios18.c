@@ -557,6 +557,88 @@ static void setbiosgdc(UINT32 csrw, const GDCVECT *vect, UINT8 ope) {
 	mem[MEMB_PRXDUPD] |= ope;
 }
 
+/*	↓ここから	何処か(2ch?)で公開されたソース	*/
+static void bios0x18_45(void) {
+
+	UCWTBL		ucw;
+	UINT		i;
+	UINT8		pat[2];
+	UINT16		tmp;
+	GDCVECT		vect;
+	UINT16		GBSX1;
+	UINT16		GBSY1;
+	UINT16		GBLNG1;
+	UINT16		GBWDPA;
+	UINT32		csrw;
+	UINT8		ope;
+
+	//スレーブの初期化
+	gdc_forceready(GDCWORK_SLAVE);
+
+	//BX読み込み
+	MEMR_READS(CPU_DS, CPU_BX, &ucw, sizeof(ucw));
+
+	//代入
+	GBSX1  = LOADINTELWORD(ucw.GBSX1);
+	GBSY1  = LOADINTELWORD(ucw.GBSY1);
+	GBWDPA = LOADINTELWORD(ucw.GBWDPA);
+	GBLNG1 = LOADINTELWORD(ucw.GBLNG1);
+
+	//200ラインでずらす
+	if ((CPU_CH & 0xc0) == 0x40) {
+		GBSY1 += 200;
+	}
+
+	//描画方向を右下に設定
+	vect.ope =0x02 ;
+
+	i = 0;
+	for(;;){
+		//パターン読み込み
+		MEMR_READS(CPU_DS, GBWDPA+i, pat, 1);
+
+		//端数処理(gdcsub_setvectの必要な値だけを使って後は適当)
+		if((GBLNG1 - i*8) < 8){
+			gdcsub_setvectl(&vect, 1, 1, (GBLNG1 - i*8), 1);
+			tmp = 0xFF << (8- (GBLNG1 - i*8));
+			tmp &= 0xFF;
+			tmp &= pat[0];
+			tmp = GDCPATREVERSE(tmp) & 0xFF;
+		}else{
+			gdcsub_setvectl(&vect, 1, 1, 8, 1);
+			tmp = GDCPATREVERSE(pat[0]) & 0xFF;
+		}
+
+
+		//描画開始(0x49の真似)
+		csrw = (GBSY1 * 40) + ((GBSX1 + i*8) >> 4);
+		csrw += ((GBSX1 + i*8) & 0xf) << 20;
+
+		if ((CPU_CH & 0x30) == 0x30) {
+			ope = (ucw.GBON_PTN & 1)?GDCOPE_SET:GDCOPE_CLEAR;
+			gdcsub_vectl(csrw + 0x4000, &vect, tmp, ope);
+			ope = (ucw.GBON_PTN & 2)?GDCOPE_SET:GDCOPE_CLEAR;
+			gdcsub_vectl(csrw + 0x8000, &vect, tmp, ope);
+			ope = (ucw.GBON_PTN & 4)?GDCOPE_SET:GDCOPE_CLEAR;
+			csrw += 0xc000;
+			gdcsub_vectl(csrw, &vect, tmp, ope);
+		}
+		else {
+			ope = ucw.GBDOTU & 3;
+			csrw += 0x4000 + ((CPU_CH & 0x30) << 10);
+			gdcsub_vectl(csrw, &vect, tmp, ope);
+		}
+
+		//次のデータが無ければ抜ける
+		i++;
+		if(i*8 >= GBLNG1) break;
+	}
+
+	// 最後に使った奴を記憶
+	setbiosgdc(csrw, &vect, ope);
+}
+/*	↑ここまで	何処か(2ch?)で公開されたソース	*/
+
 static void bios0x18_47(void) {
 
 	UCWTBL		ucw;
@@ -981,8 +1063,9 @@ void bios0x18(void) {
 //				color = MEMR_READ8(CPU_DS, CPU_BX + 1);
 //			}
 			break;
-
-		case 0x45:
+		case 0x45:	/*	int18,45hを追加(from Kai2, np21w ver0.86 rev16)	*/
+			bios0x18_45();
+			break;
 		case 0x46:
 			TRACEOUT(("unsupport bios 18-%.2x", CPU_AH));
 			break;

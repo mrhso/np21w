@@ -30,6 +30,8 @@ extern "C"
 }
 #endif
 
+#if defined(SUPPORT_WAB)
+
 /**
  * @brief ウィンドウアクセラレータ基本設定ページ
  * @param[in] hwndParent 親ウィンドウ
@@ -159,6 +161,8 @@ LRESULT CWABPage::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
+#if defined(SUPPORT_CL_GD5430)
+
 /**
  * @brief CL-GD5430 設定ページ
  * @param[in] hwndParent 親ウィンドウ
@@ -177,7 +181,7 @@ protected:
 
 private:
 	UINT8 m_enabled;			//!< 有効フラグ
-	UINT8 m_type;				//!< 機種設定
+	UINT16 m_type;				//!< 機種設定
 	CWndProc m_chkenabled;		//!< ENABLED
 	CComboData m_cmbtype;		//!< 機種
 	CWndProc m_btnreset;		//!< RESET
@@ -313,6 +317,8 @@ UINT8 CGD5430Page::GetWABType() const
 	return m_cmbtype.GetCurItemData(0x5B);
 }
 
+#endif
+
 
 /**
  * コンフィグ ダイアログ
@@ -337,3 +343,5 @@ void dialog_wabopt(HWND hwndParent)
 
 	InvalidateRect(hwndParent, NULL, TRUE);
 }
+
+#endif

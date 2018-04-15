@@ -40,11 +40,11 @@ const OEMCHAR	*ext;
 long issec2048(FILEH fh) {
 
 #ifdef	CHECK_ISO9660
-	long	fpos;
+	FILEPOS	fpos;
 	UINT8	buf[2048];
 	UINT	secsize;
 #endif
-	UINT	fsize;
+	FILELEN	fsize;
 
 #ifdef	CHECK_ISO9660
 	fpos = 16 * 2048;
@@ -75,11 +75,11 @@ sec2048_err:
 long issec2352(FILEH fh) {
 
 #ifdef	CHECK_ISO9660
-	long	fpos;
+	FILEPOS	fpos;
 	UINT8	buf[2048];
 	UINT	secsize;
 #endif
-	UINT	fsize;
+	FILELEN	fsize;
 
 #ifdef	CHECK_ISO9660
 	fpos = (16 * 2352) + 16;
@@ -110,11 +110,11 @@ sec2352_err:
 long issec2448(FILEH fh) {
 
 #ifdef	CHECK_ISO9660
-	long	fpos;
+	FILEPOS	fpos;
 	UINT8	buf[2048];
 	UINT	secsize;
 #endif
-	UINT	fsize;
+	FILELEN	fsize;
 
 #ifdef	CHECK_ISO9660
 	fpos = (16 * 2448) + 16;
@@ -145,7 +145,7 @@ sec2448_err:
 long issec(FILEH fh, _CDTRK *trk, UINT trks) {
 
 #ifdef	CHECK_ISO9660
-	long	fpos;
+	FILEPOS	fpos;
 	UINT8	buf[2048];
 	UINT	secsize;
 #endif

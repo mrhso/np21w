@@ -320,12 +320,12 @@ DisplayState *graphic_console_init(vga_hw_update_ptr update,
         ( /* check dst is within bounds */ \
             (s)->cirrus_blt_height * ABS((s)->cirrus_blt_dstpitch) \
                 + ((s)->cirrus_blt_dstaddr & (s)->cirrus_addr_mask) > \
-                    (s)->vram_size \
+                    (s)->vram_size*2 /* マージン部分への転送も許す VRAM 4MB用 */ \
         ) || \
         ( /* check src is within bounds */ \
             (s)->cirrus_blt_height * ABS((s)->cirrus_blt_srcpitch) \
                 + ((s)->cirrus_blt_srcaddr & (s)->cirrus_addr_mask) > \
-                    (s)->vram_size \
+                    (s)->vram_size*2 /* マージン部分への転送も許す VRAM 4MB用 */ \
         ) \
     )
 
@@ -592,7 +592,7 @@ static void cirrus_bitblt_fill_nop(CirrusVGAState *s,
 }
 
 #define ROP_NAME 0
-#define ROP_OP(d, s) d = s
+#define ROP_OP(d, s) d = 0
 #include "cirrus_vga_rop.h"
 
 #define ROP_NAME src_and_dst
@@ -1338,8 +1338,8 @@ static void cirrus_write_bitblt(CirrusVGAState * s, unsigned reg_value)
 
     if (((old_value & CIRRUS_BLT_RESET) != 0) &&
 		((reg_value & CIRRUS_BLT_RESET) == 0)) {
-		cirrus_bitblt_reset(s);
 		cirrus_bitblt_start(s);// XXX: Win2000のハードウェアアクセラレーションを正常に動かすのに必要。根拠無し。
+		cirrus_bitblt_reset(s);
     } else if (((old_value & CIRRUS_BLT_START) == 0) &&
 			   ((reg_value & CIRRUS_BLT_START) != 0)) {
 		cirrus_bitblt_start(s);
@@ -3138,29 +3138,57 @@ static uint32_t_ vga_ioport_read(void *opaque, uint32_t_ addr)
     int val, index;
 	
 	//　ポート決め打ちなので無理矢理変換
-	if(addr==0x904) addr = 0x094;
-	if(addr==0xCA0) addr = 0x3C0;
-	if(addr==0xCA1) addr = 0x3C1;
-	if(addr==0xCA2) addr = 0x3C2;
-	if(addr==0xCA3) addr = 0x3C3;
-	if(addr==0xCA4) addr = 0x3C4;
-	if(addr==0xCA5) addr = 0x3C5;
-	if(addr==0xCA6) addr = 0x3C6;
-	if(addr==0xCA7) addr = 0x3C7;
-	if(addr==0xCA8) addr = 0x3C8;
-	if(addr==0xCA9) addr = 0x3C9;
-	if(addr==0xCAA) addr = 0x3CA;
-	if(addr==0xCAB) addr = 0x3CB;
-	if(addr==0xCAC) addr = 0x3CC;
-	if(addr==0xCAD) addr = 0x3CD;
-	if(addr==0xCAE) addr = 0x3CE;
-	if(addr==0xCAF) addr = 0x3CF;
-	if(addr==0xBA4) addr = 0x3B4;
-	if(addr==0xBA5) addr = 0x3B5;
-	if(addr==0xDA4) addr = 0x3D4;
-	if(addr==0xDA5) addr = 0x3D5;
-	if(addr==0xBAA) addr = 0x3BA;
-	if(addr==0xDAA) addr = 0x3DA;
+	if(np2cfg.gd5430type & 0xff){
+		if(addr==0x904) addr = 0x094;
+		if(addr==0xCA0) addr = 0x3C0;
+		if(addr==0xCA1) addr = 0x3C1;
+		if(addr==0xCA2) addr = 0x3C2;
+		if(addr==0xCA3) addr = 0x3C3;
+		if(addr==0xCA4) addr = 0x3C4;
+		if(addr==0xCA5) addr = 0x3C5;
+		if(addr==0xCA6) addr = 0x3C6;
+		if(addr==0xCA7) addr = 0x3C7;
+		if(addr==0xCA8) addr = 0x3C8;
+		if(addr==0xCA9) addr = 0x3C9;
+		if(addr==0xCAA) addr = 0x3CA;
+		if(addr==0xCAB) addr = 0x3CB;
+		if(addr==0xCAC) addr = 0x3CC;
+		if(addr==0xCAD) addr = 0x3CD;
+		if(addr==0xCAE) addr = 0x3CE;
+		if(addr==0xCAF) addr = 0x3CF;
+		if(addr==0xBA4) addr = 0x3B4;
+		if(addr==0xBA5) addr = 0x3B5;
+		if(addr==0xDA4) addr = 0x3D4;
+		if(addr==0xDA5) addr = 0x3D5;
+		if(addr==0xBAA) addr = 0x3BA;
+		if(addr==0xDAA) addr = 0x3DA;
+	}else{
+		if(addr==0x40E2) addr = 0x3C0;
+		if(addr==0x41E2) addr = 0x3C1;
+		if(addr==0x42E2) addr = 0x3C2;
+		if(addr==0x43E2) addr = 0x3C3;
+		if(addr==0x44E2) addr = 0x3C4;
+		if(addr==0x45E2) addr = 0x3C5;
+		if(addr==0x46E2) addr = 0x3C6;
+		if(addr==0x47E2) addr = 0x3C7;
+		if(addr==0x48E2) addr = 0x3C8;
+		if(addr==0x49E2) addr = 0x3C9;
+		if(addr==0x4AE2) addr = 0x3CA;
+		if(addr==0x4BE2) addr = 0x3CB;
+		if(addr==0x4CE2) addr = 0x3CC;
+		if(addr==0x4DE2) addr = 0x3CD;
+		if(addr==0x4EE2) addr = 0x3CE;
+		if(addr==0x4FE2) addr = 0x3CF;
+		if(addr==0xBA4) addr = 0x3B4; // ???
+		if(addr==0xBA5) addr = 0x3B5; // ???
+		if(addr==0x54E2) addr = 0x3D4;
+		if(addr==0x55E2) addr = 0x3D5;
+		if(addr==0x5BE3) addr = 0x3BA; // ???
+		if(addr==0x5AE2) addr = 0x3DA;
+		//if(addr==0x3D5){
+		//	return 0x98;
+		//}
+	}
 
     /* check port range access depending on color/monochrome mode */
     if ((addr >= 0x3b0 && addr <= 0x3bf && (s->msr & MSR_COLOR_EMULATION))
@@ -3273,29 +3301,54 @@ static void vga_ioport_write(void *opaque, uint32_t_ addr, uint32_t_ val)
     int index;
 	
 	//　ポート決め打ちなので無理矢理変換
-	if(addr==0x904) addr = 0x094;
-	if(addr==0xCA0) addr = 0x3C0;
-	if(addr==0xCA1) addr = 0x3C1;
-	if(addr==0xCA2) addr = 0x3C2;
-	if(addr==0xCA3) addr = 0x3C3;
-	if(addr==0xCA4) addr = 0x3C4;
-	if(addr==0xCA5) addr = 0x3C5;
-	if(addr==0xCA6) addr = 0x3C6;
-	if(addr==0xCA7) addr = 0x3C7;
-	if(addr==0xCA8) addr = 0x3C8;
-	if(addr==0xCA9) addr = 0x3C9;
-	if(addr==0xCAA) addr = 0x3CA;
-	if(addr==0xCAB) addr = 0x3CB;
-	if(addr==0xCAC) addr = 0x3CC;
-	if(addr==0xCAD) addr = 0x3CD;
-	if(addr==0xCAE) addr = 0x3CE;
-	if(addr==0xCAF) addr = 0x3CF;
-	if(addr==0xBA4) addr = 0x3B4;
-	if(addr==0xBA5) addr = 0x3B5;
-	if(addr==0xDA4) addr = 0x3D4;
-	if(addr==0xDA5) addr = 0x3D5;
-	if(addr==0xBAA) addr = 0x3BA;
-	if(addr==0xDAA) addr = 0x3DA;
+	if(np2cfg.gd5430type & 0xff){
+		if(addr==0x904) addr = 0x094;
+		if(addr==0xCA0) addr = 0x3C0;
+		if(addr==0xCA1) addr = 0x3C1;
+		if(addr==0xCA2) addr = 0x3C2;
+		if(addr==0xCA3) addr = 0x3C3;
+		if(addr==0xCA4) addr = 0x3C4;
+		if(addr==0xCA5) addr = 0x3C5;
+		if(addr==0xCA6) addr = 0x3C6;
+		if(addr==0xCA7) addr = 0x3C7;
+		if(addr==0xCA8) addr = 0x3C8;
+		if(addr==0xCA9) addr = 0x3C9;
+		if(addr==0xCAA) addr = 0x3CA;
+		if(addr==0xCAB) addr = 0x3CB;
+		if(addr==0xCAC) addr = 0x3CC;
+		if(addr==0xCAD) addr = 0x3CD;
+		if(addr==0xCAE) addr = 0x3CE;
+		if(addr==0xCAF) addr = 0x3CF;
+		if(addr==0xBA4) addr = 0x3B4;
+		if(addr==0xBA5) addr = 0x3B5;
+		if(addr==0xDA4) addr = 0x3D4;
+		if(addr==0xDA5) addr = 0x3D5;
+		if(addr==0xBAA) addr = 0x3BA;
+		if(addr==0xDAA) addr = 0x3DA;
+	}else{
+		if(addr==0x40E2) addr = 0x3C0;
+		if(addr==0x41E2) addr = 0x3C1;
+		if(addr==0x42E2) addr = 0x3C2;
+		if(addr==0x43E2) addr = 0x3C3;
+		if(addr==0x44E2) addr = 0x3C4;
+		if(addr==0x45E2) addr = 0x3C5;
+		if(addr==0x46E2) addr = 0x3C6;
+		if(addr==0x47E2) addr = 0x3C7;
+		if(addr==0x48E2) addr = 0x3C8;
+		if(addr==0x49E2) addr = 0x3C9;
+		if(addr==0x4AE2) addr = 0x3CA;
+		if(addr==0x4BE2) addr = 0x3CB;
+		if(addr==0x4CE2) addr = 0x3CC;
+		if(addr==0x4DE2) addr = 0x3CD;
+		if(addr==0x4EE2) addr = 0x3CE;
+		if(addr==0x4FE2) addr = 0x3CF;
+		if(addr==0x51E3) addr = 0x3B4; // ???
+		if(addr==0x57E3) addr = 0x3B5; // ???
+		if(addr==0x54E2) addr = 0x3D4;
+		if(addr==0x55E2) addr = 0x3D5;
+		if(addr==0x5BE3) addr = 0x3BA; // ???
+		if(addr==0x5AE2) addr = 0x3DA;
+	}
 
     /* check port range access depending on color/monochrome mode */
     if ((addr >= 0x3b0 && addr <= 0x3bf && (s->msr & MSR_COLOR_EMULATION))
@@ -4237,9 +4290,11 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 	TRACEOUT(("CIRRUS VGA: inp %04X", port));
 	switch(cirrusvga_regindexA2){
 	case 0x00:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff;
 		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff;
 		switch(ga_VRAMWindowAddr2){
 		case 0x0b0000:
 			ret = 0x10;
@@ -4259,6 +4314,7 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 		}
 		break;
 	case 0x02:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff;
 		ret = (ga_VRAMWindowAddr>>24)&0xff;
 		break;
 	case 0x03:
@@ -4309,6 +4365,7 @@ static void IOOUTCALL cirrusvga_ofab(UINT port, REG8 dat) {
 	case 0x03:
 		if((!!ga_relaystateint) != (!!(dat&0x2))){
 			ga_relaystateint = dat & 0x2;
+			ga_relaystateext = dat & 0x2; // （￣∀￣;）
 			np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
 		}
 		cirrusvga_mmioenable = (dat&0x1);
@@ -4322,9 +4379,11 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 	TRACEOUT(("CIRRUS VGA: inp %04X", port));
 	switch(cirrusvga_regindex){
 	case 0x00:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff; 
 		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff; 
 		switch(ga_VRAMWindowAddr2){
 		case 0x0b0000:
 			ret = 0x10;
@@ -4344,6 +4403,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 		}
 		break;
 	case 0x02:
+		if(!(np2cfg.gd5430type & 0xff)) return 0xff; 
 		ret = (ga_VRAMWindowAddr>>24)&0xff;
 		break;
 	case 0x03:
@@ -4365,6 +4425,65 @@ static REG8 IOINPCALL cirrusvga_iff82(UINT port) {
 	return cirrusvga_videoenable;
 }
 
+// WAB, WSN用
+int cirrusvga_wab_51e1 = 0xC2;
+int cirrusvga_wab_40e1 = 0x7a;
+//int cirrusvga_wab_0fe1 = 0xC2;
+int cirrusvga_wab_46e8 = 0x18;
+static REG8 IOINPCALL cirrusvga_i51e1(UINT port) {
+	REG8 ret = cirrusvga_wab_51e1;
+	return ret;
+}
+static REG8 IOINPCALL cirrusvga_i40e1(UINT port) {
+	REG8 ret = cirrusvga_wab_40e1;
+	return ret;
+}
+//static REG8 IOINPCALL cirrusvga_i0fe1(UINT port) {
+//	REG8 ret = 0xff;
+//	return ret;
+//}
+static REG8 IOINPCALL cirrusvga_i46e8(UINT port) {
+	REG8 ret = cirrusvga_wab_46e8;
+	ga_relaystateint = (ga_relaystateint & ~0x1) | (cirrusvga_wab_40e1 & 0x1);
+	np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
+	//if(ga_relaystateint){
+	//	ga_VRAMWindowAddr = 0x00f00000;
+	//	ga_VRAMWindowAddr2 = 0xE0000;
+	//}
+	return ret;
+}
+static void IOOUTCALL cirrusvga_o51e1(UINT port, REG8 dat) {
+	cirrusvga_wab_51e1 = dat;
+	(void)port;
+	(void)dat;
+}
+static void IOOUTCALL cirrusvga_o40e1(UINT port, REG8 dat) {
+	cirrusvga_wab_40e1 = dat;
+	ga_relaystateint = (ga_relaystateint & ~0x1) | (cirrusvga_wab_40e1 & 0x1);
+	np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
+	//if(ga_relaystateint){
+	//	ga_VRAMWindowAddr = 0x00f00000;
+	//	ga_VRAMWindowAddr2 = 0xE0000;
+	//}
+	(void)port;
+	(void)dat;
+}
+//static void IOOUTCALL cirrusvga_o0fe1(UINT port, REG8 dat) {
+//	(void)port;
+//	(void)dat;
+//}
+static void IOOUTCALL cirrusvga_o46e8(UINT port, REG8 dat) {
+	cirrusvga_wab_46e8 = dat;
+	if(cirrusvga_wab_46e8 & 0x10){
+		ga_VRAMWindowAddr = 0;
+		ga_VRAMWindowAddr2 = 0;
+	}else{
+		ga_VRAMWindowAddr = 0x00f00000;
+		ga_VRAMWindowAddr2 = 0xE0000;
+	}
+	(void)port;
+	(void)dat;
+}
 
 
 static void vga_dumb_update_retrace_info(VGAState *s)
@@ -4401,59 +4520,120 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
         s->bustype = CIRRUS_BUSTYPE_ISA;
     //}
 	
-	iocore_attachout(0xfa2, cirrusvga_ofa2);
-	iocore_attachinp(0xfa2, cirrusvga_ifa2);
 	
-	iocore_attachout(0xfa3, cirrusvga_ofa3);
-	iocore_attachinp(0xfa3, cirrusvga_ifa3);
+	if(np2cfg.gd5430type & 0xff){
+		
+		iocore_attachout(0xfa2, cirrusvga_ofa2);
+		iocore_attachinp(0xfa2, cirrusvga_ifa2);
 	
-	iocore_attachout(0xfaa, cirrusvga_ofaa);
-	iocore_attachinp(0xfaa, cirrusvga_ifaa);
+		iocore_attachout(0xfa3, cirrusvga_ofa3);
+		iocore_attachinp(0xfa3, cirrusvga_ifa3);
 	
-	iocore_attachout(0xfab, cirrusvga_ofab);
-	iocore_attachinp(0xfab, cirrusvga_ifab);
+		iocore_attachout(0xfaa, cirrusvga_ofaa);
+		iocore_attachinp(0xfaa, cirrusvga_ifaa);
 	
-	iocore_attachout(0xff82, cirrusvga_off82);
-	iocore_attachinp(0xff82, cirrusvga_iff82);
+		iocore_attachout(0xfab, cirrusvga_ofab);
+		iocore_attachinp(0xfab, cirrusvga_ifab);
 	
-	for(i=0;i<16;i++){
-		iocore_attachout(0xca0 + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF
-		iocore_attachinp(0xca0 + i, vga_ioport_read_wrap);	// 0x3C0 to 0x3CF
+		iocore_attachout(0xff82, cirrusvga_off82);
+		iocore_attachinp(0xff82, cirrusvga_iff82);
+	
+		for(i=0;i<16;i++){
+			iocore_attachout(0xca0 + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF
+			iocore_attachinp(0xca0 + i, vga_ioport_read_wrap);	// 0x3C0 to 0x3CF
+		}
+	
+		//iocore_attachout(0x904, vga_ioport_write_wrap);	// 0x094
+		//iocore_attachinp(0x904, vga_ioport_read_wrap);	// 0x094
+	
+		//　この辺のマッピング本当にあってる？
+		iocore_attachout(0xba4, vga_ioport_write_wrap);	// 0x3B4
+		iocore_attachinp(0xba4, vga_ioport_read_wrap);	// 0x3B4
+		iocore_attachout(0xba5, vga_ioport_write_wrap);	// 0x3B5
+		iocore_attachinp(0xba5, vga_ioport_read_wrap);	// 0x3B5
+
+		iocore_attachout(0xda4, vga_ioport_write_wrap);	// 0x3D4
+		iocore_attachinp(0xda4, vga_ioport_read_wrap);	// 0x3D4
+		iocore_attachout(0xda5, vga_ioport_write_wrap);	// 0x3D5
+		iocore_attachinp(0xda5, vga_ioport_read_wrap);	// 0x3D5
+	
+		iocore_attachout(0xbaa, vga_ioport_write_wrap);	// 0x3BA
+		iocore_attachinp(0xbaa, vga_ioport_read_wrap);	// 0x3BA
+
+		iocore_attachout(0xdaa, vga_ioport_write_wrap);	// 0x3DA
+		iocore_attachinp(0xdaa, vga_ioport_read_wrap);	// 0x3DA
+		
+		//register_ioport_write(0x3c0, 16, 1, vga_ioport_write, s);
+
+		//register_ioport_write(0x3b4, 2, 1, vga_ioport_write, s);
+		//register_ioport_write(0x3d4, 2, 1, vga_ioport_write, s);
+		//register_ioport_write(0x3ba, 1, 1, vga_ioport_write, s);
+		//register_ioport_write(0x3da, 1, 1, vga_ioport_write, s);
+
+		//register_ioport_read(0x3c0, 16, 1, vga_ioport_read, s);
+
+		//register_ioport_read(0x3b4, 2, 1, vga_ioport_read, s);
+		//register_ioport_read(0x3d4, 2, 1, vga_ioport_read, s);
+		//register_ioport_read(0x3ba, 1, 1, vga_ioport_read, s);
+		//register_ioport_read(0x3da, 1, 1, vga_ioport_read, s);
+
+		ga_VRAMWindowAddr = 0;//(0x0F<<24);
+		ga_VRAMWindowAddr2 = 0;//(0xf20000);
+		
+	}else{
+		//
+		//iocore_attachout(0xfa2, cirrusvga_ofa2);
+		//iocore_attachinp(0xfa2, cirrusvga_ifa2);
+	
+		//iocore_attachout(0xfa3, cirrusvga_ofa3);
+		//iocore_attachinp(0xfa3, cirrusvga_ifa3);
+	
+		//iocore_attachout(0xfaa, cirrusvga_ofaa);
+		//iocore_attachinp(0xfaa, cirrusvga_ifaa);
+	
+		//iocore_attachout(0xfab, cirrusvga_ofab);
+		//iocore_attachinp(0xfab, cirrusvga_ifab);
+	
+		//iocore_attachout(0xff82, cirrusvga_off82);
+		//iocore_attachinp(0xff82, cirrusvga_iff82);
+	
+		for(i=0;i<0x1000;i+=0x100){
+			iocore_attachout(0x40E2 + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF
+			iocore_attachinp(0x40E2 + i, vga_ioport_read_wrap);	// 0x3C0 to 0x3CF
+		}
+	
+		//iocore_attachout(0x904, vga_ioport_write_wrap);	// 0x094
+		//iocore_attachinp(0x904, vga_ioport_read_wrap);	// 0x094
+	
+		//　この辺のマッピング本当にあってる？
+		iocore_attachout(0x51E3, vga_ioport_write_wrap);	// 0x3B4
+		iocore_attachinp(0x51E3, vga_ioport_read_wrap);		// 0x3B4
+		iocore_attachout(0x57E3, vga_ioport_write_wrap);	// 0x3B5
+		iocore_attachinp(0x57E3, vga_ioport_read_wrap);		// 0x3B5
+
+		iocore_attachout(0x54E2, vga_ioport_write_wrap);	// 0x3D4
+		iocore_attachinp(0x54E2, vga_ioport_read_wrap);		// 0x3D4
+		iocore_attachout(0x55E2, vga_ioport_write_wrap);	// 0x3D5
+		iocore_attachinp(0x55E2, vga_ioport_read_wrap);		// 0x3D5
+	
+		iocore_attachout(0x5BE3, vga_ioport_write_wrap);	// 0x3BA
+		iocore_attachinp(0x5BE3, vga_ioport_read_wrap);		// 0x3BA
+
+		iocore_attachout(0x5AE2, vga_ioport_write_wrap);	// 0x3DA
+		iocore_attachinp(0x5AE2, vga_ioport_read_wrap);		// 0x3DA
+
+		iocore_attachout(0x51E3, cirrusvga_o51e1);
+		iocore_attachinp(0x51E3, cirrusvga_i51e1);
+	
+		iocore_attachout(0x40E3, cirrusvga_o40e1);
+		iocore_attachinp(0x40E3, cirrusvga_i40e1);
+	
+		iocore_attachout(0x46E8, cirrusvga_o46e8);
+		iocore_attachinp(0x46E8, cirrusvga_i46e8);
+		
+		ga_VRAMWindowAddr = 0;//(0x0F<<24);
+		ga_VRAMWindowAddr2 = 0;//(0xf20000);
 	}
-	
-	//iocore_attachout(0x904, vga_ioport_write_wrap);	// 0x094
-	//iocore_attachinp(0x904, vga_ioport_read_wrap);	// 0x094
-	
-	//　この辺のマッピング本当にあってる？
-	iocore_attachout(0xba4, vga_ioport_write_wrap);	// 0x3B4
-	iocore_attachinp(0xba4, vga_ioport_read_wrap);	// 0x3B4
-	iocore_attachout(0xba5, vga_ioport_write_wrap);	// 0x3B5
-	iocore_attachinp(0xba5, vga_ioport_read_wrap);	// 0x3B5
-
-	iocore_attachout(0xda4, vga_ioport_write_wrap);	// 0x3D4
-	iocore_attachinp(0xda4, vga_ioport_read_wrap);	// 0x3D4
-	iocore_attachout(0xda5, vga_ioport_write_wrap);	// 0x3D5
-	iocore_attachinp(0xda5, vga_ioport_read_wrap);	// 0x3D5
-	
-	iocore_attachout(0xbaa, vga_ioport_write_wrap);	// 0x3BA
-	iocore_attachinp(0xbaa, vga_ioport_read_wrap);	// 0x3BA
-
-	iocore_attachout(0xdaa, vga_ioport_write_wrap);	// 0x3DA
-	iocore_attachinp(0xdaa, vga_ioport_read_wrap);	// 0x3DA
-	
-    //register_ioport_write(0x3c0, 16, 1, vga_ioport_write, s);
-
-    //register_ioport_write(0x3b4, 2, 1, vga_ioport_write, s);
-    //register_ioport_write(0x3d4, 2, 1, vga_ioport_write, s);
-    //register_ioport_write(0x3ba, 1, 1, vga_ioport_write, s);
-    //register_ioport_write(0x3da, 1, 1, vga_ioport_write, s);
-
-    //register_ioport_read(0x3c0, 16, 1, vga_ioport_read, s);
-
-    //register_ioport_read(0x3b4, 2, 1, vga_ioport_read, s);
-    //register_ioport_read(0x3d4, 2, 1, vga_ioport_read, s);
-    //register_ioport_read(0x3ba, 1, 1, vga_ioport_read, s);
-    //register_ioport_read(0x3da, 1, 1, vga_ioport_read, s);
 //#define ADDR_SH2	0x0
 	
 	// これらのメモリはどこにマッピングすれば良いのか･･･
