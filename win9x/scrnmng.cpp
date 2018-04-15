@@ -31,6 +31,8 @@
 #include "wab/wab.h"
 #endif
 
+#include <shlwapi.h>
+
 #if !defined(__GNUC__)
 #pragma comment(lib, "ddraw.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -518,13 +520,29 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		winstyle &= ~WS_POPUP;
 		winstyleex &= ~WS_EX_TOPMOST;
 		if(lastscrnmode & SCRNMODE_FULLSCREEN){
-			ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境でフルスクリーン→ウィンドウの時にシステムアイコンが消える対策のためのおまじない（その1）
-			SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
-			SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
-			ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その2）
-			ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境で(ry（その3）
-			ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その4）
-			SetWindowPlacement(g_hWndMain, &wp); // Aeroな環境で(ry（その5）
+			char *strtmp;
+			char szModulePath[MAX_PATH];
+			GetModuleFileNameA(NULL, szModulePath, sizeof(szModulePath)/sizeof(szModulePath[0]));
+			strtmp = strrchr(szModulePath, '\\');
+			if(strtmp){
+				*strtmp = 0;
+			}else{
+				szModulePath[0] = 0;
+			}
+			strcat(szModulePath, "\\ddraw.dll");
+			if(PathFileExistsA(szModulePath) && !PathIsDirectoryA(szModulePath)){
+				// DXGLが使われていそうなので素直なコードに変更
+				SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
+				SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
+			}else{
+				ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境でフルスクリーン→ウィンドウの時にシステムアイコンが消える対策のためのおまじない（その1）
+				SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
+				SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
+				ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その2）
+				ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境で(ry（その3）
+				ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その4）
+			}
+			SetWindowPlacement(g_hWndMain, &wp);
 		}else{
 			SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
 			SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
@@ -770,6 +788,9 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	renewalclientsize(TRUE); // XXX: スナップ解除等が起こるので暫定TRUE
 	lastscrnmode = scrnmode;
 //	screenupdate = 3;					// update!
+#if defined(SUPPORT_WAB)
+	mt_wabpausedrawing = 0; // MultiThread対策
+#endif
 	return(SUCCESS);
 
 scre_err:
@@ -795,7 +816,6 @@ void scrnmng_destroy(void) {
 			Sleep(10);
 		ddraw.wabsurf->Release();
 		ddraw.wabsurf = NULL;
-		mt_wabpausedrawing = 0;
 	}
 #endif
 	if (ddraw.backsurf) {

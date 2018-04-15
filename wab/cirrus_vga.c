@@ -4266,8 +4266,10 @@ void pc98_cirrus_vga_load()
     cirrus_update_bank_ptr(s, 0);
     cirrus_update_bank_ptr(s, 1);
 	
-    cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
-	np2wab_setScreenSize(width, height);
+	if(cirrusvga->get_resolution){
+		cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
+		np2wab_setScreenSize(width, height);
+	}
 
 	np2wab.paletteChanged = 1;
 }

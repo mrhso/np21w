@@ -95,6 +95,9 @@ typedef struct {
 	
 	UINT8	scrnmode; // Screen Mode
 	UINT8	savescrn; // Save ScreenMode
+	
+	UINT8	svscrmul; // Save Screen Size Multiplying Value 
+	UINT8	scrn_mul; // Screen Size Multiplying Value
 } NP2OSCFG;
 
 

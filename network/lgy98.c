@@ -234,6 +234,7 @@ static void ne2000_dma_update(LGY98 *s, int len)
         s->rcnt = 0;
         /* signal end of transfer */
         s->isr |= ENISR_RDC;
+		s->cmd |= E8390_NODMA; /* コマンドレジスタにDMA完了ビットを立てる */ 
         ne2000_update_irq(s);
 		//		TRACEOUT(("LGY-98: DMA_IRQ"));
     } else {

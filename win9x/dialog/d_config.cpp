@@ -193,6 +193,7 @@ BOOL CConfigureDlg::OnInitDialog()
 
 	CheckDlgButton(IDC_COMFIRM, (np2oscfg.comfirm) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_RESUME, (np2oscfg.resume) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(IDC_SAVEWINDOWSIZE, (np2oscfg.svscrmul) ? BST_CHECKED : BST_UNCHECKED);
 	SetClock();
 	m_baseClock.SetFocus();
 
@@ -350,6 +351,13 @@ void CConfigureDlg::OnOK()
 	if (np2oscfg.resume != bResume)
 	{
 		np2oscfg.resume = bResume;
+		nUpdated |= SYS_UPDATEOSCFG;
+	}
+	
+	const UINT8 bSaveScrnMul = (IsDlgButtonChecked(IDC_SAVEWINDOWSIZE) != BST_UNCHECKED) ? 1 : 0;
+	if (np2oscfg.svscrmul != bSaveScrnMul)
+	{
+		np2oscfg.svscrmul = bSaveScrnMul;
 		nUpdated |= SYS_UPDATEOSCFG;
 	}
 	sysmng_update(nUpdated);

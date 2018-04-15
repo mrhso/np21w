@@ -135,7 +135,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0, 0, 1, 0, 1, 1, 0, 0
+						0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 8
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -2157,6 +2157,9 @@ static void processwait(UINT cnt) {
 
 void unloadNP2INI(){
 	// 旧INI片付け
+
+	// 画面表示倍率を保存
+	np2oscfg.scrn_mul = scrnmng_getmultiple();
 #ifdef HOOK_SYSKEY
 	UnhookWindowsHookEx(hHook);
 #endif
@@ -2411,7 +2414,11 @@ void loadNP2INI(const OEMCHAR *fname){
 		}
 	}
 #endif
-
+	
+	// 画面表示倍率を復元
+	if(np2oscfg.svscrmul){
+		scrnmng_setmultiple(np2oscfg.scrn_mul);
+	}
 //	リセットしてから… 
 	// INIに記録されたディスクを挿入
 	if(np2cfg.savefddfile){
@@ -2588,7 +2595,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	if(np2oscfg.dragdrop)
 		DragAcceptFiles(hWnd, TRUE);	//	イメージファイルのＤ＆Ｄに対応(Kai1)
-
+	
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 	
@@ -2694,7 +2701,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		}
 	}
 #endif
-
+	
+	// 画面表示倍率を復元
+	if(np2oscfg.svscrmul){
+		scrnmng_setmultiple(np2oscfg.scrn_mul);
+	}
 //	リセットしてから… 
 	// INIに記録されたディスクを挿入
 	if(np2cfg.savefddfile){
@@ -2824,6 +2835,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		}
 	}
 	
+	// 画面表示倍率を保存
+	np2oscfg.scrn_mul = scrnmng_getmultiple();
 #ifdef HOOK_SYSKEY
 	UnhookWindowsHookEx(hHook);
 #endif

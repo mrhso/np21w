@@ -665,6 +665,9 @@ static const PFTBL s_IniItems[] =
 	PFVAL("SCRNMODE", PFTYPE_UINT8,		&np2oscfg.scrnmode), // フルスクリーン設定
 	PFVAL("SAVESCRN", PFTYPE_BOOL,		&np2oscfg.savescrn), // フルスクリーン設定を保存・復元する
 	
+	PFVAL("SVSCRMUL", PFTYPE_BOOL,		&np2oscfg.svscrmul), // 画面表示倍率を保存するか
+	PFVAL("SCRN_MUL", PFTYPE_UINT8,		&np2oscfg.scrn_mul), // 画面表示倍率（8が等倍）
+	
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };
 
