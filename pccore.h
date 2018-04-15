@@ -125,6 +125,17 @@ struct tagNP2Config
 	UINT8	spb_vrl;												// ver0.30
 	UINT8	spb_x;													// ver0.30
 
+	UINT16	snd118io;
+	UINT8	snd118id;
+	UINT8	snd118dma;
+	UINT8	snd118irqf;
+	UINT8	snd118irqp;
+	UINT8	snd118irqm;
+	
+	UINT8	sndwssid;
+	UINT8	sndwssdma;
+	UINT8	sndwssirq;
+
 	UINT8	BEEP_VOL;
 	UINT8	vol14[6];
 	UINT8	vol_fm;

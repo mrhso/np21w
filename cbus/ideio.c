@@ -647,7 +647,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				drv->sc &= ~(IDEINTR_REL | IDEINTR_IO);
 				drv->sc |= IDEINTR_CD;
 				drv->status &= ~(IDESTAT_BSY | IDESTAT_DMRD | IDESTAT_SERV | IDESTAT_CHK);
-				drv->status |= IDESTAT_DRQ;
+				drv->status |= IDESTAT_DRDY | IDESTAT_DRQ | IDESTAT_DSC;
 				drv->error = 0;
 				drv->bufpos = 0;
 				drv->bufsize = 12;
@@ -914,8 +914,12 @@ static REG8 IOINPCALL ideio_i644(UINT port) {
 
 	drv = getidedrv();
 	if (drv) {
+		UINT8 ret = drv->sc;
 		TRACEOUT(("ideio get SC %.2x [%.4x:%.8x]", drv->sc, CPU_CS, CPU_EIP));
-		return(drv->sc);
+		if (drv->device == IDETYPE_CDROM && drv->cmd == 0xa0) {
+			drv->sc = 7; // ????
+		}
+		return(ret);
 	}
 	else {
 		return(0xff);
