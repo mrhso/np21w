@@ -114,6 +114,9 @@ void winloc_setclientsize(HWND hwnd, int width, int height) {
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &rectDisktop, 0);
 	scx = GetSystemMetrics(SM_CXSCREEN);
 	scy = GetSystemMetrics(SM_CYSCREEN);
+	// マルチモニタ暫定対応 ver0.86 rev30
+	rectDisktop.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	rectDisktop.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
 	cnt = 2;
 	do {
@@ -192,6 +195,9 @@ void winloc_movingproc(WINLOC *wl, RECT *rect) {
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
 	winlx = rect->right - rect->left;
 	winly = rect->bottom - rect->top;
+	// マルチモニタ暫定対応 ver0.86 rev30
+	workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
 	if ((winlx > (workrc.right - workrc.left)) ||
 		(winly > (workrc.bottom - workrc.top))) {
@@ -446,6 +452,10 @@ void winlocex_setholdwnd(WINLOCEX wle, HWND hold) {
 		return;
 	}
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
+	// マルチモニタ暫定対応 ver0.86 rev30
+	workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
 	winloc_GetWindowRect(hold, &rect);
 	flag = 0;
 	if (workrc.left == rect.left) {
@@ -509,6 +519,10 @@ static BOOL gravityx(WINLOCEX wle, RECT *rect) {
 	}
 
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
+	// マルチモニタ暫定対応 ver0.86 rev30
+	workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
 	wnd = (WLEXWND *)(wle + 1);
 	for (i=0; i<wle->count; i++, wnd++) {
 		if (wnd->connect) {
@@ -593,6 +607,10 @@ static BOOL gravityy(WINLOCEX wle, RECT *rect) {
 	}
 
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
+	// マルチモニタ暫定対応 ver0.86 rev30
+	workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
 	wnd = (WLEXWND *)(wle + 1);
 	for (i=0; i<wle->count; i++, wnd++) {
 		if (wnd->connect) {
@@ -751,6 +769,10 @@ void winlocex_move(WINLOCEX wle) {
 	}
 	if ((i >= wle->count) && (wle->holdflag)) {
 		SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
+		// マルチモニタ暫定対応 ver0.86 rev30
+		workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+		workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
 		winloc_GetWindowRect(wle->hold, &rect);
 		cx = rect.right - rect.left;
 		cy = rect.bottom - rect.top;

@@ -151,7 +151,11 @@ static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 		times = (hrtmp.QuadPart - hrtimer.QuadPart) * hrtimerdiv;
 		//if(hrtmp.QuadPart - hrtimer.QuadPart >= hrtimerfreq.QuadPart/hrtimerdiv){
 		if(times >= hrtimerfreq.QuadPart){
-			hrtimerint = 1;
+			//hrtimerint = 1;
+			//if(hrtimerint){ // XXX: 位置てきとー
+				pic_setirq(15);
+				hrtimerint = 0;
+			//}
 			do{
 				hrtimer.QuadPart += hrtimerfreq.QuadPart/hrtimerdiv;
 				times -= hrtimerfreq.QuadPart;
@@ -162,6 +166,10 @@ static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 		if(hrtimertimeuint != hrtimertime_hl){
 			hrtimertime_hl = hrtimertimeuint;
 			hrtimerupd = 1;
+			if(hrtimerupd){ // XXX: 位置てきとー
+				STOREINTELDWORD(mem+0x04F1, hrtimertime_hl); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
+				hrtimerupd = 0;
+			}
 		}
 		Sleep(8);
 	}
@@ -795,18 +803,10 @@ void pccore_exec(BOOL draw) {
 		}
 #endif
 #if defined(SUPPORT_HRTIMER)
-		if(hrtimerint){ // XXX: 位置てきとー
-			pic_setirq(15);
-			hrtimerint = 0;
-		}
-		if(hrtimerupd){ // XXX: 位置てきとー
-			STOREINTELDWORD(mem+0x04F1, hrtimertime_hl); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
-			hrtimerupd = 0;
-			if(hrtimertime_hl - disptmr > 100){
-				// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
-				//pcstat.screendispflag = 0;
-				nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
-			}
+		if(hrtimertime_hl - disptmr > 100){
+			// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
+			pcstat.screendispflag = 0;
+			nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
 		}
 #endif
 		nevent_progress();

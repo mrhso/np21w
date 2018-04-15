@@ -97,6 +97,10 @@ static void setwindowsize(HWND hWnd, int width, int height)
 	const int scx = GetSystemMetrics(SM_CXSCREEN);
 	const int scy = GetSystemMetrics(SM_CYSCREEN);
 
+	// マルチモニタ暫定対応 ver0.86 rev30
+	workrc.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	workrc.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
 	UINT cnt = 2;
 	do
 	{
@@ -447,6 +451,24 @@ void scrnmng_initialize(void) {
 	setwindowsize(g_hWndMain, 640, 400);
 }
 
+static TCHAR dd_displayName[32] = {0};
+BOOL WINAPI DDEnumDisplayCallbackA(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext, HMONITOR hm) {
+	MONITORINFOEX  monitorInfoEx;
+	RECT rc;
+	RECT rcwnd;
+	if(hm){
+		GetWindowRect(g_hWndMain, &rcwnd);
+		monitorInfoEx.cbSize = sizeof(MONITORINFOEX);
+		GetMonitorInfo(hm, &monitorInfoEx);
+		_tcscpy(dd_displayName, monitorInfoEx.szDevice);
+		if(IntersectRect(&rc, &monitorInfoEx.rcWork, &rcwnd)){
+			*((LPGUID)lpContext) = *lpGUID;
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 BRESULT scrnmng_create(UINT8 scrnmode) {
 
 	DWORD			winstyle;
@@ -459,6 +481,9 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	UINT			bitcolor;
 	UINT			fscrnmod;
 	DEVMODE			devmode;
+	GUID			devguid = {0};
+	LPGUID			devlpguid;
+	HRESULT			r;
 
 	static UINT8 lastscrnmode = 0;
 	static WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
@@ -507,8 +532,22 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		}
 	}
 	
-	if (DirectDrawCreate(np2oscfg.emuddraw ? (LPGUID)DDCREATE_EMULATIONONLY : NULL, &ddraw.ddraw1, NULL) != DD_OK) {
-		goto scre_err;
+	if(np2oscfg.emuddraw){
+		devlpguid = (LPGUID)DDCREATE_EMULATIONONLY;
+	}else{
+		devlpguid = NULL;
+		if(scrnmode & SCRNMODE_FULLSCREEN){
+			r = DirectDrawEnumerateExA(DDEnumDisplayCallbackA, &devguid, DDENUM_ATTACHEDSECONDARYDEVICES);
+			if(devguid != GUID_NULL){
+				devlpguid = &devguid;
+			}
+		}
+	}
+	if ((r = DirectDrawCreate(&devguid, &ddraw.ddraw1, NULL)) != DD_OK) {
+		// プライマリで再挑戦
+		if (DirectDrawCreate(NULL, &ddraw.ddraw1, NULL) != DD_OK) {
+			goto scre_err;
+		}
 	}
 	ddraw.ddraw1->QueryInterface(IID_IDirectDraw2, (void **)&ddraw2);
 	ddraw.ddraw2 = ddraw2;
@@ -535,7 +574,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		bitcolor = np2oscfg.fscrnbpp;
 		fscrnmod = np2oscfg.fscrnmod;
 		if ((fscrnmod & (FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP)) &&
-			(EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode))) {
+			(dd_displayName[0] ? EnumDisplaySettings(dd_displayName, ENUM_REGISTRY_SETTINGS, &devmode) : EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode))) {
 			if (fscrnmod & FSCRNMOD_SAMERES) {
 				width = devmode.dmPelsWidth;
 				height = devmode.dmPelsHeight;

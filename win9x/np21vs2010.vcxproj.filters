@@ -83,18 +83,6 @@
     <Filter Include="ソース ファイル\win9x\dialog">
       <UniqueIdentifier>{07cc68b7-3ef5-4d41-a8d8-b3a31acbed6e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\win9x\ext">
-      <UniqueIdentifier>{e3dab829-1429-4afe-a67a-1d678b506809}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\win9x\ext\c86ctl">
-      <UniqueIdentifier>{d308c742-dff6-4204-b299-e39f082676ac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\win9x\ext\romeo">
-      <UniqueIdentifier>{a8828d61-4cc6-4243-86a4-f2db41d1e441}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\win9x\ext\scci">
-      <UniqueIdentifier>{94c5a64a-ae56-45a1-a3f8-0da954290725}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\win9x\misc">
       <UniqueIdentifier>{e579f35d-d455-4a04-a261-7eb3ce74cef4}</UniqueIdentifier>
     </Filter>
@@ -255,6 +243,18 @@
     </Filter>
     <Filter Include="ヘッダー ファイル\diskimage\hd">
       <UniqueIdentifier>{4b39f498-9f6e-4bdd-a406-50a6ed98f57b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\ext">
+      <UniqueIdentifier>{21ae3273-83b7-46fc-b674-bbb7f67fff9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\ext\c86ctl">
+      <UniqueIdentifier>{8715b47d-a8f8-4924-8c00-ec1cb242c772}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\ext\romeo">
+      <UniqueIdentifier>{b4ba5ea5-5846-4c9a-b67b-b50fd74f30fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\ext\scci">
+      <UniqueIdentifier>{41289458-0eb2-4530-b119-ddc4dcce989f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1035,38 +1035,8 @@
     <ClCompile Include="dialog\np2class.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
-    <ClCompile Include="ext\externalchipmanager.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\externalopl3.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\externalopm.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\externalopna.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\externalpsg.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\mt32snd.cpp">
-      <Filter>ソース ファイル\win9x\ext</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\opl3.cpp">
-      <Filter>ソース ファイル\sound</Filter>
-    </ClCompile>
     <ClCompile Include="ext\opna.cpp">
       <Filter>ソース ファイル\sound</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\c86ctl\c86ctlif.cpp">
-      <Filter>ソース ファイル\win9x\ext\c86ctl</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\romeo\juliet.cpp">
-      <Filter>ソース ファイル\win9x\ext\romeo</Filter>
-    </ClCompile>
-    <ClCompile Include="ext\scci\scciif.cpp">
-      <Filter>ソース ファイル\win9x\ext\scci</Filter>
     </ClCompile>
     <ClCompile Include="misc\DlgProc.cpp">
       <Filter>ソース ファイル\win9x\misc</Filter>
@@ -1214,6 +1184,39 @@
     </ClCompile>
     <ClCompile Include="..\fdd\sxsihdd_nvl.c">
       <Filter>ソース ファイル\fdd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sound\opl3.c">
+      <Filter>ソース ファイル\sound</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\externalchipmanager.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\externalopl3.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\externalopm.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\externalopna.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\externalpsg.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\mt32snd.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\opl3.cpp">
+      <Filter>ソース ファイル\win9x\ext</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\c86ctl\c86ctlif.cpp">
+      <Filter>ソース ファイル\win9x\ext\c86ctl</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\romeo\juliet.cpp">
+      <Filter>ソース ファイル\win9x\ext\scci</Filter>
+    </ClCompile>
+    <ClCompile Include="ext\scci\scciif.cpp">
+      <Filter>ソース ファイル\win9x\ext\romeo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -370,10 +370,13 @@
 #define IDS_GD5430_CB2                  30605
 #define IDS_GD5430_CX2                  30606
 #define IDS_GD5430_WAB                  30610
+#define IDS_GD5430_WSN_A2F              30611
 #define IDS_GD5430_WSN                  30612
 #define IDS_GD5430_GA98NB               30620
 #define IDS_GD5430_96                   30696
-#define IDS_GD5430_AUTO                 30699
+#define IDS_GD5430_AUTO_XE10_WABS       30697
+#define IDS_GD5430_AUTO_XE10_WSN2       30698
+#define IDS_GD5430_AUTO_XE10_WSN4       30699
 #define IDS_IDETYPE_NONE                30700
 #define IDS_IDETYPE_HDD                 30701
 #define IDS_IDETYPE_CDROM               30702
@@ -559,6 +562,8 @@
 #define IDM_SEEKSND                     40654
 #define IDM_SOUNDORCHESTRA              40655
 #define IDM_SOUNDORCHESTRAV             40656
+#define IDM_PC9801_86_WSS               40657
+#define IDM_MATE_X_PCM                  40658
 #define IDM_MEM640                      40661
 #define IDM_MEM16                       40662
 #define IDM_MEM36                       40663

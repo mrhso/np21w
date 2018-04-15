@@ -977,6 +977,16 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.SOUND_SW = 0x08;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
+			
+		case IDM_PC9801_86_WSS:
+			np2cfg.SOUND_SW = SOUNDID_PC_9801_86_WSS;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
+			
+		case IDM_MATE_X_PCM:
+			np2cfg.SOUND_SW = SOUNDID_MATE_X_PCM;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
 
 		case IDM_SPEAKBOARD:
 			np2cfg.SOUND_SW = 0x20;
@@ -1019,7 +1029,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2oscfg.jastsnd = !np2oscfg.jastsnd;
 			update |= SYS_UPDATEOSCFG;
 			break;
-
+			
 		case IDM_SEEKSND:
 			np2cfg.MOTOR = !np2cfg.MOTOR;
 			update |= SYS_UPDATECFG;

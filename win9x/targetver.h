@@ -9,7 +9,7 @@
 // Refer to MSDN for the latest info on corresponding values for different platforms.
 
 #ifndef WINVER                // Specifies that the minimum required platform is Windows 95.
-#define WINVER 0x0400         // Change this to the appropriate value to target other versions of Windows.
+#define WINVER 0x0500         // Change this to the appropriate value to target other versions of Windows.
 #endif
 
 #ifndef _WIN32_WINNT          // Specifies that the minimum required platform is Windows NT4.0 SP3.

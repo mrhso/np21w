@@ -898,6 +898,8 @@ BEGIN
             MENUITEM "PC-9801-26&K + 86",           IDM_PC9801_26_86
             MENUITEM "PC-9801-86 + &Chibi-oto",     IDM_PC9801_86_CB
             MENUITEM "PC-9801-11&8",                IDM_PC9801_118
+            MENUITEM "PC-9801-86 + Mate-X PCM(&B460)", IDM_PC9801_86_WSS
+            MENUITEM "Mate-&X PCM",                 IDM_MATE_X_PCM
             MENUITEM "S&peak board",                IDM_SPEAKBOARD
             MENUITEM "Sp&ark board",                IDM_SPARKBOARD
             MENUITEM "Sound &Orchestra",            IDM_SOUNDORCHESTRA
@@ -1435,10 +1437,13 @@ BEGIN
     IDS_GD5430_CB2          "PC-9821Cb2内蔵"
     IDS_GD5430_CX2          "PC-9821Cx2内蔵"
     IDS_GD5430_WAB          "MELCO WAB-S"
+    IDS_GD5430_WSN_A2F      "MELCO WSN-A2F"
     IDS_GD5430_WSN          "MELCO WSN-A2F,A4F"
     IDS_GD5430_GA98NB       "I-O DATA GA-98NBI/C,II,IV"
     IDS_GD5430_96           "PC-9801-96(PC-9801B3-E02)"
-    IDS_GD5430_AUTO         "自動選択"
+    IDS_GD5430_AUTO_XE10_WABS    "自動選択(Xe10, WAB-S)"
+    IDS_GD5430_AUTO_XE10_WSN2    "自動選択(Xe10, WSN-A2F)"
+    IDS_GD5430_AUTO_XE10_WSN4    "自動選択(Xe10, WSN-A4F)"
 END
 
 STRINGTABLE

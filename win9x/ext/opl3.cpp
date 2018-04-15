@@ -32,7 +32,7 @@ void opl3_destruct(POPL3 opl3)
 {
 	CExternalOpl3* pExt = reinterpret_cast<CExternalOpl3*>(opl3->userdata);
 	CExternalChipManager::GetInstance()->Release(pExt);
-	opl3->userdata = NULL;
+	opl3->userdata = 0;
 }
 
 /**
@@ -55,7 +55,7 @@ void opl3_reset(POPL3 opl3, REG8 cCaps)
 		if (pExt)
 		{
 			CExternalChipManager::GetInstance()->Release(pExt);
-			opl3->userdata = NULL;
+			opl3->userdata = 0;
 		}
 	}
 }
@@ -264,11 +264,11 @@ static void writeExtendedRegister(POPL3 opl3, UINT nAddress, REG8 cData)
 {
 	const UINT8 cCaps = opl3->s.cCaps;
 
-	if (!(cCaps & OPL3_HAS_OPL3))
+/*	if (!(cCaps & OPL3_HAS_OPL3))
 	{
 		return;
 	}
-
+*/
 	switch (nAddress & 0xe0)
 	{
 		case 0x20:
@@ -289,9 +289,10 @@ static void writeExtendedRegister(POPL3 opl3, UINT nAddress, REG8 cData)
 			}
 			if (nAddress & 0x10)
 			{
-				keydisp_opl3keyon(opl3->s.reg, (nAddress & 0x0f) + 9, cData);
+				keydisp_opl3keyon(opl3->s.reg, (nAddress & 0x0f) + 9  , cData);
 			}
 			break;
+
 
 		case 0xc0:
 			if ((nAddress & 0x1f) >= 9)
@@ -299,6 +300,7 @@ static void writeExtendedRegister(POPL3 opl3, UINT nAddress, REG8 cData)
 				return;
 			}
 			break;
+
 
 		default:
 			if ((nAddress == 0x04) || (nAddress == 0x05) || (nAddress == 0x08))
@@ -313,13 +315,13 @@ static void writeExtendedRegister(POPL3 opl3, UINT nAddress, REG8 cData)
 	{
 		pExt->WriteRegister(nAddress + 0x100, cData);
 	}
-#if 0
+//#if 0
 	else
 	{
 		sound_sync();
 		oplgen_setreg(&opl3->oplgen, nAddress + 0x100, cData);
 	}
-#endif
+//#endif
 }
 
 /**

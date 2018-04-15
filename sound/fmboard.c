@@ -184,6 +184,17 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 		case SOUNDID_PC_9801_118:
 			board118_reset(pConfig);
 			break;
+			
+		case SOUNDID_PC_9801_86_WSS:
+			g_nSoundID = nSoundID; // XXX: êÊÇ…ê›íË
+			board118_reset(pConfig);
+			board86_reset(pConfig, FALSE);
+			break;
+			
+		case SOUNDID_MATE_X_PCM:
+			g_nSoundID = nSoundID; // XXX: êÊÇ…ê›íË
+			board118_reset(pConfig);
+			break;
 
 		case SOUNDID_PC_9801_86_ADPCM:
 			board86_reset(pConfig, TRUE);
@@ -251,11 +262,20 @@ void fmboard_bind(void) {
 		case SOUNDID_PC_9801_118:
 			board118_bind();
 			break;
-
+			
+		case SOUNDID_PC_9801_86_WSS:
+			board118_bind();
+			board86_bind();
+			break;
+			
+		case SOUNDID_MATE_X_PCM:
+			board118_bind();
+			break;
+			
 		case SOUNDID_PC_9801_86_ADPCM:
 			board86_bind();
 			break;
-
+			
 		case SOUNDID_SPEAKBOARD:
 			boardspb_bind();
 			break;
@@ -272,7 +292,7 @@ void fmboard_bind(void) {
 		case SOUNDID_SOUNDORCHESTRAV:
 			boardso_bind();
 			break;
-
+			
 #if defined(SUPPORT_PX)
 		case SOUNDID_PX1:
 			boardpx1_bind();
