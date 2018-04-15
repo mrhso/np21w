@@ -101,7 +101,7 @@ struct tagNP2Config
 	UINT32	BG_COLOR;
 	UINT32	FG_COLOR;
 
-	UINT16	samplingrate;
+	UINT32	samplingrate;
 	UINT16	delayms;
 	UINT8	SOUND_SW;
 	UINT8	snd_x;
@@ -137,7 +137,7 @@ struct tagNP2Config
 
 	OEMCHAR	sasihdd[2][MAX_PATH];									// ver0.74
 #if defined(SUPPORT_IDEIO)
-	OEMCHAR	idecd[2][MAX_PATH];									// ver0.74
+	OEMCHAR	idecd[2][MAX_PATH];										// ver0.85w
 #endif
 #if defined(SUPPORT_SCSI)
 	OEMCHAR	scsihdd[4][MAX_PATH];									// ver0.74
@@ -154,6 +154,7 @@ struct tagNP2Config
 #endif
 #ifdef SUPPORT_CL_GD5430
 	UINT8	usegd5430;
+	UINT8	gd5430type;
 #endif
 
 };

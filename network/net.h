@@ -36,7 +36,7 @@ typedef struct tagVLANClientState VLANClientState;
 
 void np2net_setVC(VLANClientState *vc1);
 void np2net_init();
-int np2net_reset(CHAR* tapname);
+int np2net_reset(TCHAR* tapname);
 void np2net_shutdown();
 void np2net_getmacaddr(REG8 *macaddr);
 void np2net_suspend();

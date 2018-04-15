@@ -6,201 +6,231 @@
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="ソース ファイル\bios">
-      <UniqueIdentifier>{2740fe1a-dbd3-4080-b350-fe9dc0fddd25}</UniqueIdentifier>
+      <UniqueIdentifier>{4d6f0f22-c28c-45d0-bf37-eba2c4ed3538}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\cbus">
-      <UniqueIdentifier>{5cb49d16-c7eb-421f-a74c-3da6019b4fa7}</UniqueIdentifier>
+      <UniqueIdentifier>{6f994bd9-0656-48f4-b1a0-f1f13b632862}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\codecnv">
-      <UniqueIdentifier>{fb455ec3-33c3-498d-9352-9429c2898d53}</UniqueIdentifier>
+      <UniqueIdentifier>{9114fe24-c81a-4a24-8eda-f5c258f1753f}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\common">
-      <UniqueIdentifier>{38d12451-c058-4e54-98fb-5c302299be5b}</UniqueIdentifier>
+      <UniqueIdentifier>{de62cfb1-01b8-494d-904c-f1df84a9c4f8}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\fdd">
-      <UniqueIdentifier>{0ef33090-f0ff-4651-b414-130c9ab26d79}</UniqueIdentifier>
+      <UniqueIdentifier>{4bc8e514-5ad4-47ba-9d59-a301d507c6da}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\font">
-      <UniqueIdentifier>{0c69fcc3-0381-40e1-8c7f-70c4941859da}</UniqueIdentifier>
+      <UniqueIdentifier>{2999ed41-e2f2-4639-866d-f418fa57e642}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\generic">
-      <UniqueIdentifier>{2ccea382-2b08-4147-9e57-1aa6e6364f42}</UniqueIdentifier>
+      <UniqueIdentifier>{4ed23753-7dc1-4102-9764-81b0c8293dbf}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\i386c">
-      <UniqueIdentifier>{87bbebf9-4fe0-4c64-bb99-bde7b6b0c2b5}</UniqueIdentifier>
+      <UniqueIdentifier>{1e15725f-af87-4172-863b-79bdf7604f16}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\i386c\ia32">
-      <UniqueIdentifier>{a0102c0e-9a2e-475c-9cec-96c46ef6d713}</UniqueIdentifier>
+      <UniqueIdentifier>{caa3caec-4624-47c9-a715-8cb4e29db3c9}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\i386c\ia32\instructions">
-      <UniqueIdentifier>{17e4584b-bcf6-4d60-84ba-5df0674e1138}</UniqueIdentifier>
+      <UniqueIdentifier>{7fdd88d9-e205-4f0f-b686-0dbf1ee9a09f}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\i386c\ia32\instructions\fpu">
-      <UniqueIdentifier>{59196bda-dfdf-4423-bc16-86c39a58bdf4}</UniqueIdentifier>
+      <UniqueIdentifier>{c626ca30-d4b5-4214-8965-10fde22ffe8b}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\io">
-      <UniqueIdentifier>{183a8df8-6153-433c-b5ec-e25a92c591e9}</UniqueIdentifier>
+      <UniqueIdentifier>{b1465751-c599-439d-9d93-3b375835baa0}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\lio">
-      <UniqueIdentifier>{e5cc2282-f15e-49d1-ae68-3d26d9b53870}</UniqueIdentifier>
+      <UniqueIdentifier>{0d3ebdbc-3ba8-4c4f-ade8-cea5cda78d35}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\mem">
-      <UniqueIdentifier>{53a145e6-498d-4f22-ab69-1b850a6f6f92}</UniqueIdentifier>
+      <UniqueIdentifier>{21b2f35a-543b-4636-ab12-95667be2639e}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\sound">
-      <UniqueIdentifier>{ece2614f-9f84-4ae7-b192-d741c0d1f09e}</UniqueIdentifier>
+      <UniqueIdentifier>{27e00815-0b4d-46f2-81cb-f0c398d88347}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\sound\getsnd">
-      <UniqueIdentifier>{aca34640-9c1b-4a4d-bcfe-16ba86bd3b82}</UniqueIdentifier>
+      <UniqueIdentifier>{1f72ee05-5bbc-490a-ad0d-979e972b04a1}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\sound\vermouth">
-      <UniqueIdentifier>{ba3b3420-8de4-4fa3-92fc-a415999d5666}</UniqueIdentifier>
+      <UniqueIdentifier>{c34e675d-8a3e-4323-a868-b565174c8b56}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\trap">
-      <UniqueIdentifier>{56e67b43-3a3b-48b0-8cd0-6d62d32216c6}</UniqueIdentifier>
+      <UniqueIdentifier>{e5d8a66f-01bd-406e-98c6-cc83f4c17dca}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\vram">
-      <UniqueIdentifier>{3f8dbce8-28ae-4eb3-8046-7dee9f7684fd}</UniqueIdentifier>
+      <UniqueIdentifier>{990f2c29-185f-426b-950b-472687b16661}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x">
-      <UniqueIdentifier>{a4efda54-8f1e-48cb-a3b3-6c8ea19e4a4c}</UniqueIdentifier>
+      <UniqueIdentifier>{35d2392c-bcc4-481b-8fef-1c7708b4c4fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\commng">
+      <UniqueIdentifier>{be52450c-3648-40cf-ab40-5a9b78a5cb41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\commng\vsthost">
+      <UniqueIdentifier>{10180d3e-0e9d-429d-8f94-668794ae923a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\debuguty">
-      <UniqueIdentifier>{8ddec6d8-dd2b-4869-a583-9f9d4ea8f364}</UniqueIdentifier>
+      <UniqueIdentifier>{217bad5a-ef8c-4602-8859-7e689d77475c}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\dialog">
-      <UniqueIdentifier>{b2451246-3be1-43e7-8dc9-c38c2d63f7ac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\win9x\x64">
-      <UniqueIdentifier>{af62c07d-fb11-4d81-b399-b299249ce08a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\win9x\x86">
-      <UniqueIdentifier>{18f66007-59e6-47d1-ac9b-d187c98f4da9}</UniqueIdentifier>
+      <UniqueIdentifier>{8561fb9a-8538-4a5f-85ab-95198242a99a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\ext">
-      <UniqueIdentifier>{aa13f148-faac-487d-a6ff-3737f69ce147}</UniqueIdentifier>
+      <UniqueIdentifier>{99a6024c-82db-42dd-bb8f-2444c209c03f}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\ext\c86ctl">
-      <UniqueIdentifier>{524901a2-6e0e-45a4-8476-e0db780e7381}</UniqueIdentifier>
+      <UniqueIdentifier>{6e8cadfa-5a65-431c-8595-abdafaf218bf}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\ext\romeo">
-      <UniqueIdentifier>{77b1d59d-7c1a-420e-824c-2e8541df0c69}</UniqueIdentifier>
+      <UniqueIdentifier>{75431448-7c31-4790-a2bd-f42ea662ebd6}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\ext\scci">
-      <UniqueIdentifier>{ae62f848-71b7-40e3-bbfe-a1d1fb89ed6d}</UniqueIdentifier>
+      <UniqueIdentifier>{bb96a2a9-df67-4c8c-806c-e07f5e54d302}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\win9x\misc">
-      <UniqueIdentifier>{ac565dc2-9ddb-4b65-872f-fa7f0c7aeb35}</UniqueIdentifier>
+      <UniqueIdentifier>{4a9a0e9f-a769-41ff-b711-86b8ab668600}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\soundmng">
+      <UniqueIdentifier>{d4ad54dd-28b8-499e-9a9c-08621533728d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\soundmng\asio">
+      <UniqueIdentifier>{1988c085-b337-4e18-8c87-9c43fc72a31e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\subwnd">
+      <UniqueIdentifier>{f20c1cbb-5dbd-459d-8adc-ce60669dbcb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\x64">
+      <UniqueIdentifier>{561af55c-7b87-4f62-9990-e84cf353ec4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\x86">
+      <UniqueIdentifier>{d1516413-a5d4-42ba-b86a-0f36e5fd1725}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\zlib">
-      <UniqueIdentifier>{50d6683b-1d41-4818-9f21-98d9c53a1503}</UniqueIdentifier>
+      <UniqueIdentifier>{4380966a-caad-4266-89bd-2f3dd566cf9a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
     <Filter Include="ヘッダー ファイル\bios">
-      <UniqueIdentifier>{8558ad8d-981e-41a8-9fa2-0b548f9284be}</UniqueIdentifier>
+      <UniqueIdentifier>{5e3f1dc9-5f25-4c64-8a2d-b1308277f244}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\cbus">
-      <UniqueIdentifier>{674877dd-0645-4c5a-8f0d-9a42d8b0c816}</UniqueIdentifier>
+      <UniqueIdentifier>{d762666b-82ef-4d9a-bd7c-83994494d60d}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\codecnv">
-      <UniqueIdentifier>{9eececda-3e73-4fd5-ac7d-70ba27686115}</UniqueIdentifier>
+      <UniqueIdentifier>{367063f7-6078-4133-80cb-994e7c23f81e}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\common">
-      <UniqueIdentifier>{03fcd030-76fb-43c7-a43b-6440923c26d5}</UniqueIdentifier>
+      <UniqueIdentifier>{3d531e32-16f8-4c70-898d-a342a0aa235d}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\fdd">
-      <UniqueIdentifier>{bdbd96bb-1439-4e20-bd3b-d5d47d74f60d}</UniqueIdentifier>
+      <UniqueIdentifier>{b7bd69de-61a4-48dd-aa30-cd3d94c27807}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\font">
-      <UniqueIdentifier>{4cacbf48-b8c4-4115-947a-14811b3bfbdb}</UniqueIdentifier>
+      <UniqueIdentifier>{a0709399-58f3-4a75-b6a8-588f82efed01}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\generic">
-      <UniqueIdentifier>{4bb53771-9fff-45e7-b815-b8362be9ef00}</UniqueIdentifier>
+      <UniqueIdentifier>{79c88240-a30a-4e0e-b264-491f6a8d7e6a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\i386c">
-      <UniqueIdentifier>{faa47c80-e9c7-4e79-89bc-9581a2652097}</UniqueIdentifier>
+      <UniqueIdentifier>{6b6af024-b96c-4f8b-8df8-3d8db438409a}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\i386c\ia32">
-      <UniqueIdentifier>{2bd221f8-e1b2-4274-955c-a87159cb94b3}</UniqueIdentifier>
+      <UniqueIdentifier>{a8e4353b-3ea3-43d2-810e-ea7c62056181}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\i386c\ia32\instructions">
-      <UniqueIdentifier>{b50c02c9-13f0-4bc0-a5f8-de391b394093}</UniqueIdentifier>
+      <UniqueIdentifier>{cbf32a8a-4995-49c8-a6ac-3100db9c3ca9}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\fpu">
-      <UniqueIdentifier>{4f1c70ea-c1fd-4a9e-b410-111513ed61e0}</UniqueIdentifier>
+      <UniqueIdentifier>{f704a216-1314-462d-908b-4d671ea5fa65}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\io">
-      <UniqueIdentifier>{71aece09-d811-4f4b-831e-c4bdb8ab0759}</UniqueIdentifier>
+      <UniqueIdentifier>{1164b93c-7b37-4d56-a422-f8a71153a32e}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\lio">
-      <UniqueIdentifier>{8587f926-eb1d-4bf1-9f66-68160e3d7238}</UniqueIdentifier>
+      <UniqueIdentifier>{f4379e5c-76b6-4955-96c4-d763de555a1e}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\mem">
-      <UniqueIdentifier>{850b82d4-3e07-4070-afca-2ca7a85eec4d}</UniqueIdentifier>
+      <UniqueIdentifier>{e698e6d8-b648-4ba9-a30b-753bca592ee0}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\sound">
-      <UniqueIdentifier>{da4b9569-ca61-44e2-a77a-675cf7d7afde}</UniqueIdentifier>
+      <UniqueIdentifier>{efa19936-07cb-4c75-823d-f89719dd8ae2}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\sound\getsnd">
-      <UniqueIdentifier>{2a95d89e-481d-4e6f-a2e6-56e7954809e5}</UniqueIdentifier>
+      <UniqueIdentifier>{cdf53ae8-cbf3-4048-8639-052bc8e0fb4e}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\sound\vermouth">
-      <UniqueIdentifier>{05661a20-185b-49c6-9e42-dbde4f91a70d}</UniqueIdentifier>
+      <UniqueIdentifier>{79e838ac-3d2e-4a6f-bc0c-7cefc9cd1d98}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\trap">
-      <UniqueIdentifier>{4b6ceaf0-2d19-44f4-8fb5-4d13eb7094e1}</UniqueIdentifier>
+      <UniqueIdentifier>{1328c44a-0072-40c7-9f9e-a1ba4a2ebd69}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\vram">
-      <UniqueIdentifier>{e82eb2c2-d61b-40c9-8162-6b07a65f0154}</UniqueIdentifier>
+      <UniqueIdentifier>{d8d3bd6e-e6d9-4580-a323-101b00d0e0ed}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x">
-      <UniqueIdentifier>{31e5b817-7ca2-4f9a-9e74-dbed3e64ae97}</UniqueIdentifier>
+      <UniqueIdentifier>{17848264-50ce-49ca-9973-df2888ea3dc4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\win9x\dialog">
-      <UniqueIdentifier>{77881045-1990-409a-8289-e34f085e27e3}</UniqueIdentifier>
+    <Filter Include="ヘッダー ファイル\win9x\commng">
+      <UniqueIdentifier>{80cb9df8-8cbb-4814-a569-ef40e087ea4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\commng\vsthost">
+      <UniqueIdentifier>{0e7eda34-42d0-4758-95ee-728b641d0311}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\debuguty">
-      <UniqueIdentifier>{f8ae6840-5d60-43e2-83ea-c3ef3b53d4e3}</UniqueIdentifier>
+      <UniqueIdentifier>{7433db65-68c5-4a49-b59b-f13fcfc1dbba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\win9x\x86">
-      <UniqueIdentifier>{22c7ff4c-6cc6-481b-8a44-6cf3c7984c27}</UniqueIdentifier>
+    <Filter Include="ヘッダー ファイル\win9x\dialog">
+      <UniqueIdentifier>{23cbb21a-3236-4b5d-b114-31881b8d8a08}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\ext">
-      <UniqueIdentifier>{683f908c-312b-401a-818b-3dcc51fbc36a}</UniqueIdentifier>
+      <UniqueIdentifier>{df7c2293-685d-4741-a718-5500990004af}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\ext\c86ctl">
-      <UniqueIdentifier>{96d56fc8-9e59-4aa1-8286-ed03c167128d}</UniqueIdentifier>
+      <UniqueIdentifier>{917c2216-b99a-4717-b711-f33f34b87003}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\ext\romeo">
-      <UniqueIdentifier>{98e4344a-6b7d-4085-8884-a129306c3f5e}</UniqueIdentifier>
+      <UniqueIdentifier>{6e69ea28-f652-40f6-acf3-b3a471289880}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\ext\scci">
-      <UniqueIdentifier>{ba073343-39f9-477a-9ba3-0eb12d801684}</UniqueIdentifier>
+      <UniqueIdentifier>{ea3fbb23-2a49-4ced-8ae5-f49df4d8b523}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\win9x\misc">
-      <UniqueIdentifier>{ea9a8386-3526-4153-b679-7e404a5c25fc}</UniqueIdentifier>
+      <UniqueIdentifier>{4b3362b8-2b37-4433-aae1-12c0091ead45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\soundmng">
+      <UniqueIdentifier>{9575c6a1-7a44-4e4c-8381-801dfd946913}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\soundmng\asio">
+      <UniqueIdentifier>{0596390f-d306-4369-bd7e-23a868b8c19e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\subwnd">
+      <UniqueIdentifier>{15e516b3-4e11-4e20-8233-33b3bc5688ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\x86">
+      <UniqueIdentifier>{ac85586a-a943-443a-9f56-4133a16f5eb8}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\zlib">
-      <UniqueIdentifier>{a7ed7aa7-e78e-4fd5-9f74-149fe825f1e7}</UniqueIdentifier>
+      <UniqueIdentifier>{0247f58e-e1c4-40f2-8539-48641dcc3263}</UniqueIdentifier>
     </Filter>
     <Filter Include="リソース ファイル">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
     <Filter Include="ソース ファイル\network">
-      <UniqueIdentifier>{9e70e440-e54f-493b-8498-7db10f7ad75f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\network">
-      <UniqueIdentifier>{b4e2150d-88c6-45c1-9b0a-ae6d1158b00e}</UniqueIdentifier>
+      <UniqueIdentifier>{ef108be8-b194-4c86-9a2b-01299709ad99}</UniqueIdentifier>
     </Filter>
     <Filter Include="ソース ファイル\video">
-      <UniqueIdentifier>{b7710a47-538b-498f-8881-9d25c18890ec}</UniqueIdentifier>
+      <UniqueIdentifier>{c6a36e01-203b-4576-a270-de55ce1b8cc3}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\video">
-      <UniqueIdentifier>{ecc42a01-f72a-4643-b7f2-f59eb3123b2e}</UniqueIdentifier>
+      <UniqueIdentifier>{7648f04e-fc36-4fb6-9373-470660420b8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\network">
+      <UniqueIdentifier>{c1faa46b-b49c-43b6-8412-754cf6b67083}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -804,25 +834,10 @@
     <ClCompile Include="..\vram\vram.c">
       <Filter>ソース ファイル\vram</Filter>
     </ClCompile>
-    <ClCompile Include="cmmidi.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
-    <ClCompile Include="cmpara.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
-    <ClCompile Include="cmserial.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
     <ClCompile Include="commng.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
     <ClCompile Include="compiler.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
-    <ClCompile Include="dclock.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
-    <ClCompile Include="dd2.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
     <ClCompile Include="dosio.cpp">
@@ -852,13 +867,13 @@
     <ClCompile Include="oemtext.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
+    <ClCompile Include="recvideo.cpp">
+      <Filter>ソース ファイル\win9x</Filter>
+    </ClCompile>
     <ClCompile Include="scrnmng.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
     <ClCompile Include="soundmng.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
-    <ClCompile Include="subwind.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
     <ClCompile Include="sysmng.cpp">
@@ -870,14 +885,53 @@
     <ClCompile Include="timemng.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
-    <ClCompile Include="toolwin.cpp">
-      <Filter>ソース ファイル\win9x</Filter>
-    </ClCompile>
     <ClCompile Include="winkbd.cpp">
       <Filter>ソース ファイル\win9x</Filter>
     </ClCompile>
     <ClCompile Include="winloc.cpp">
       <Filter>ソース ファイル\win9x</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmbase.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidi.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidiin32.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidiout32.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidioutmt32sound.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidioutvermouth.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmmidioutvst.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmnull.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmpara.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\cmserial.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\vsthost\vstbuffer.cpp">
+      <Filter>ソース ファイル\win9x\commng\vsthost</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\vsthost\vsteditwnd.cpp">
+      <Filter>ソース ファイル\win9x\commng\vsthost</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\vsthost\vsteffect.cpp">
+      <Filter>ソース ファイル\win9x\commng\vsthost</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\vsthost\vstmidievent.cpp">
+      <Filter>ソース ファイル\win9x\commng\vsthost</Filter>
     </ClCompile>
     <ClCompile Include="debuguty\view1mb.cpp">
       <Filter>ソース ファイル\win9x\debuguty</Filter>
@@ -903,6 +957,18 @@
     <ClCompile Include="debuguty\viewsnd.cpp">
       <Filter>ソース ファイル\win9x\debuguty</Filter>
     </ClCompile>
+    <ClCompile Include="dialog\c_combodata.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="dialog\c_dipsw.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="dialog\c_midi.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="dialog\c_slidervalue.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
     <ClCompile Include="dialog\d_about.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
@@ -918,6 +984,9 @@
     <ClCompile Include="dialog\d_disk.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
+    <ClCompile Include="dialog\d_font.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
     <ClCompile Include="dialog\d_mpu98.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
@@ -930,7 +999,7 @@
     <ClCompile Include="dialog\d_sound.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
-    <ClCompile Include="dialog\dialogs.cpp">
+    <ClCompile Include="dialog\d_soundlog.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
     <ClCompile Include="dialog\np2class.cpp">
@@ -963,7 +1032,13 @@
     <ClCompile Include="ext\scci\scciif.cpp">
       <Filter>ソース ファイル\win9x\ext\scci</Filter>
     </ClCompile>
+    <ClCompile Include="misc\DlgProc.cpp">
+      <Filter>ソース ファイル\win9x\misc</Filter>
+    </ClCompile>
     <ClCompile Include="misc\extrom.cpp">
+      <Filter>ソース ファイル\win9x\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="misc\PropProc.cpp">
       <Filter>ソース ファイル\win9x\misc</Filter>
     </ClCompile>
     <ClCompile Include="misc\threadbase.cpp">
@@ -980,6 +1055,39 @@
     </ClCompile>
     <ClCompile Include="misc\WndProc.cpp">
       <Filter>ソース ファイル\win9x\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="soundmng\sdasio.cpp">
+      <Filter>ソース ファイル\win9x\soundmng</Filter>
+    </ClCompile>
+    <ClCompile Include="soundmng\sddsound3.cpp">
+      <Filter>ソース ファイル\win9x\soundmng</Filter>
+    </ClCompile>
+    <ClCompile Include="soundmng\sdwasapi.cpp">
+      <Filter>ソース ファイル\win9x\soundmng</Filter>
+    </ClCompile>
+    <ClCompile Include="soundmng\asio\asiodriverlist.cpp">
+      <Filter>ソース ファイル\win9x\soundmng\asio</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\dclock.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\dd2.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\kdispwnd.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\mdbgwnd.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\skbdwnd.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\subwnd.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
+    </ClCompile>
+    <ClCompile Include="subwnd\toolwnd.cpp">
+      <Filter>ソース ファイル\win9x\subwnd</Filter>
     </ClCompile>
     <ClCompile Include="..\zlib\adler32.c">
       <Filter>ソース ファイル\zlib</Filter>
@@ -999,33 +1107,30 @@
     <ClCompile Include="..\zlib\zutil.c">
       <Filter>ソース ファイル\zlib</Filter>
     </ClCompile>
+    <ClCompile Include="dialog\d_network.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="dialog\d_wab.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="..\video\cirrus_vga.c">
+      <Filter>ソース ファイル\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\video\video.c">
+      <Filter>ソース ファイル\video</Filter>
+    </ClCompile>
     <ClCompile Include="..\network\lgy98.c">
       <Filter>ソース ファイル\network</Filter>
     </ClCompile>
     <ClCompile Include="..\network\net.c">
       <Filter>ソース ファイル\network</Filter>
     </ClCompile>
-    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul.c">
-      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\video\cirrus_vga.c">
-      <Filter>ソース ファイル\video</Filter>
-    </ClCompile>
-    <ClCompile Include="dialog\d_wab.cpp">
-      <Filter>ソース ファイル\win9x\dialog</Filter>
-    </ClCompile>
-    <ClCompile Include="..\video\video.c">
-      <Filter>ソース ファイル\video</Filter>
-    </ClCompile>
-    <ClCompile Include="dialog\d_network.cpp">
-      <Filter>ソース ファイル\win9x\dialog</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="x64\parts.x64">
+    <YASM Include="x64\makegrph.x64">
       <Filter>ソース ファイル\win9x\x64</Filter>
     </YASM>
-    <YASM Include="x64\makegrph.x64">
+    <YASM Include="x64\parts.x64">
       <Filter>ソース ファイル\win9x\x64</Filter>
     </YASM>
   </ItemGroup>
@@ -1563,25 +1668,10 @@
     <ClInclude Include="..\vram\vram.h">
       <Filter>ヘッダー ファイル\vram</Filter>
     </ClInclude>
-    <ClInclude Include="cmmidi.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
-    <ClInclude Include="cmpara.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
-    <ClInclude Include="cmserial.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
     <ClInclude Include="commng.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
     <ClInclude Include="compiler.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
-    <ClInclude Include="dclock.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
-    <ClInclude Include="dd2.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
     <ClInclude Include="dosio.h">
@@ -1611,6 +1701,9 @@
     <ClInclude Include="oemtext.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
+    <ClInclude Include="recvideo.h">
+      <Filter>ヘッダー ファイル\win9x</Filter>
+    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
@@ -1618,9 +1711,6 @@
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
     <ClInclude Include="soundmng.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
-    <ClInclude Include="subwind.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
     <ClInclude Include="sysmng.h">
@@ -1632,23 +1722,59 @@
     <ClInclude Include="timemng.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
-    <ClInclude Include="toolwin.h">
-      <Filter>ヘッダー ファイル\win9x</Filter>
-    </ClInclude>
     <ClInclude Include="winkbd.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
     <ClInclude Include="winloc.h">
       <Filter>ヘッダー ファイル\win9x</Filter>
     </ClInclude>
-    <ClInclude Include="dialog\dialog.h">
-      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    <ClInclude Include="commng\cmbase.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
     </ClInclude>
-    <ClInclude Include="dialog\dialogs.h">
-      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    <ClInclude Include="commng\cmmidi.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
     </ClInclude>
-    <ClInclude Include="dialog\np2class.h">
-      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    <ClInclude Include="commng\cmmidiin32.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmmidiout.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmmidiout32.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmmidioutmt32sound.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmmidioutvermouth.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmmidioutvst.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmnull.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmpara.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmserial.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\vsthost\vstbuffer.h">
+      <Filter>ヘッダー ファイル\win9x\commng\vsthost</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\vsthost\vsteditwnd.h">
+      <Filter>ヘッダー ファイル\win9x\commng\vsthost</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\vsthost\vsteditwndbase.h">
+      <Filter>ヘッダー ファイル\win9x\commng\vsthost</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\vsthost\vsteffect.h">
+      <Filter>ヘッダー ファイル\win9x\commng\vsthost</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\vsthost\vstmidievent.h">
+      <Filter>ヘッダー ファイル\win9x\commng\vsthost</Filter>
     </ClInclude>
     <ClInclude Include="debuguty\view1mb.h">
       <Filter>ヘッダー ファイル\win9x\debuguty</Filter>
@@ -1674,8 +1800,23 @@
     <ClInclude Include="debuguty\viewsnd.h">
       <Filter>ヘッダー ファイル\win9x\debuguty</Filter>
     </ClInclude>
-    <ClInclude Include="x86\cputype.h">
-      <Filter>ヘッダー ファイル\win9x\x86</Filter>
+    <ClInclude Include="dialog\c_combodata.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog\c_dipsw.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog\c_midi.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog\c_slidervalue.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog\dialog.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog\np2class.h">
+      <Filter>ヘッダー ファイル\win9x\dialog</Filter>
     </ClInclude>
     <ClInclude Include="ext\externalchip.h">
       <Filter>ヘッダー ファイル\win9x\ext</Filter>
@@ -1722,10 +1863,16 @@
     <ClInclude Include="ext\scci\scciif.h">
       <Filter>ヘッダー ファイル\win9x\ext\scci</Filter>
     </ClInclude>
+    <ClInclude Include="misc\DlgProc.h">
+      <Filter>ヘッダー ファイル\win9x\misc</Filter>
+    </ClInclude>
     <ClInclude Include="misc\extrom.h">
       <Filter>ヘッダー ファイル\win9x\misc</Filter>
     </ClInclude>
     <ClInclude Include="misc\guard.h">
+      <Filter>ヘッダー ファイル\win9x\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\PropProc.h">
       <Filter>ヘッダー ファイル\win9x\misc</Filter>
     </ClInclude>
     <ClInclude Include="misc\threadbase.h">
@@ -1748,6 +1895,48 @@
     </ClInclude>
     <ClInclude Include="misc\WndProc.h">
       <Filter>ヘッダー ファイル\win9x\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\sdasio.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\sdbase.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\sddsound3.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\sdwasapi.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\asio\asiodriverlist.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="soundmng\asio\asiosdk.h">
+      <Filter>ヘッダー ファイル\win9x\soundmng\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\dclock.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\dd2.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\kdispwnd.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\mdbgwnd.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\skbdwnd.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\subwnd.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="subwnd\toolwnd.h">
+      <Filter>ヘッダー ファイル\win9x\subwnd</Filter>
+    </ClInclude>
+    <ClInclude Include="x86\cputype.h">
+      <Filter>ヘッダー ファイル\win9x\x86</Filter>
     </ClInclude>
     <ClInclude Include="..\zlib\crc32.h">
       <Filter>ヘッダー ファイル\zlib</Filter>
@@ -1773,23 +1962,14 @@
     <ClInclude Include="..\zlib\zutil.h">
       <Filter>ヘッダー ファイル\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\network\lgy98.h">
+    <ClInclude Include="..\network\lgy98dev.h">
       <Filter>ヘッダー ファイル\network</Filter>
     </ClInclude>
     <ClInclude Include="..\network\net.h">
       <Filter>ヘッダー ファイル\network</Filter>
     </ClInclude>
-    <ClInclude Include="memtool.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="..\video\cirrus_vga_rop.h">
-      <Filter>ヘッダー ファイル\video</Filter>
-    </ClInclude>
-    <ClInclude Include="..\video\cirrus_vga_rop2.h">
-      <Filter>ヘッダー ファイル\video</Filter>
-    </ClInclude>
-    <ClInclude Include="cirrus_vga.h">
-      <Filter>ヘッダー ファイル\video</Filter>
+    <ClInclude Include="..\network\lgy98.h">
+      <Filter>ヘッダー ファイル\network</Filter>
     </ClInclude>
     <ClInclude Include="..\video\vga_int.h">
       <Filter>ヘッダー ファイル\video</Filter>
@@ -1797,8 +1977,14 @@
     <ClInclude Include="..\video\video.h">
       <Filter>ヘッダー ファイル\video</Filter>
     </ClInclude>
-    <ClInclude Include="..\network\lgy98dev.h">
-      <Filter>ヘッダー ファイル\network</Filter>
+    <ClInclude Include="..\video\cirrus_vga_rop.h">
+      <Filter>ヘッダー ファイル\video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\video\cirrus_vga_rop2.h">
+      <Filter>ヘッダー ファイル\video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\video\cirrus_vga.h">
+      <Filter>ヘッダー ファイル\video</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1807,37 +1993,19 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="x86\np2asm.inc">
-      <Filter>ソース ファイル\win9x\x86</Filter>
+    <None Include="resources\np2.ico">
+      <Filter>リソース ファイル</Filter>
     </None>
-    <None Include="x86\pccore.inc">
-      <Filter>ソース ファイル\win9x\x86</Filter>
-    </None>
-    <None Include="x86\vram.inc">
-      <Filter>ソース ファイル\win9x\x86</Filter>
-    </None>
-    <None Include="..\i386c\x86\cpucore.inc">
-      <Filter>ソース ファイル\i386c</Filter>
-    </None>
-    <None Include="x64\np2asm.inc">
-      <Filter>ソース ファイル\win9x\x64</Filter>
-    </None>
-    <None Include="x64\pccore.inc">
-      <Filter>ソース ファイル\win9x\x64</Filter>
-    </None>
-    <None Include="x64\vram.inc">
-      <Filter>ソース ファイル\win9x\x64</Filter>
-    </None>
-    <None Include="resources\nekop2.bmp">
+    <None Include="resources\np2debug.ico">
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="resources\np2tool.bmp">
       <Filter>リソース ファイル</Filter>
     </None>
-    <None Include="resources\np2.ico">
+    <None Include="resources\np21tool.bmp">
       <Filter>リソース ファイル</Filter>
     </None>
-    <None Include="resources\np2debug.ico">
+    <None Include="resources\relay1.wav">
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="resources\fddseek.wav">
@@ -1846,10 +2014,7 @@
     <None Include="resources\fddseek1.wav">
       <Filter>リソース ファイル</Filter>
     </None>
-    <None Include="resources\relay1.wav">
-      <Filter>リソース ファイル</Filter>
-    </None>
-    <None Include="resources\np21tool.bmp">
+    <None Include="resources\nekop2.bmp">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>

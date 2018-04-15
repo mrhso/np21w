@@ -42,21 +42,21 @@
 
 #define	SWAP_BYTE(p, q) \
 do { \
-	register UINT8 __tmp = (p); \
+	UINT8 __tmp = (p); \
 	(p) = (q); \
 	(q) = __tmp; \
 } while (/*CONSTCOND*/ 0)
 
 #define	SWAP_WORD(p, q) \
 do { \
-	register UINT16 __tmp = (p); \
+	UINT16 __tmp = (p); \
 	(p) = (q); \
 	(q) = __tmp; \
 } while (/*CONSTCOND*/ 0)
 
 #define	SWAP_DWORD(p, q) \
 do { \
-	register UINT32 __tmp = (p); \
+	UINT32 __tmp = (p); \
 	(p) = (q); \
 	(q) = __tmp; \
 } while (/*CONSTCOND*/ 0)
@@ -87,10 +87,10 @@ do { \
 /*
  * instruction pointer
  */
-/* „Ç≥„Éº„Éâ„Éï„Çß„ÉÉ„ÉÅ„Å´‰ΩøÁî®„Åô„Çã„ÅÆ„Åß„ÄÅOpSize „ÅÆÂΩ±Èüø„ÇíÂèó„Åë„Å¶„ÅØ„ÅÑ„Åë„Å™„ÅÑ */
+/* ÉRÅ[ÉhÉtÉFÉbÉ`Ç…égópÇ∑ÇÈÇÃÇ≈ÅAOpSize ÇÃâeãøÇéÛÇØÇƒÇÕÇ¢ÇØÇ»Ç¢ */
 #define	_ADD_EIP(v) \
 do { \
-	register UINT32 __tmp_ip = CPU_EIP + (v); \
+	UINT32 __tmp_ip = CPU_EIP + (v); \
 	if (!CPU_STATSAVE.cpu_inst_default.op_32) { \
 		__tmp_ip &= 0xffff; \
 	} \
@@ -389,7 +389,7 @@ do { \
 
 #define	_DWORD_SBB(r, d, s) \
 do { \
-	register UINT32 __c = (CPU_FLAGL & C_FLAG); \
+	UINT32 __c = (CPU_FLAGL & C_FLAG); \
 	(r) = (d) - (s) - __c; \
 	CPU_OV = ((d) ^ (r)) & ((d) ^ (s)) & 0x80000000; \
 	CPU_FLAGL = (UINT8)(((r) ^ (d) ^ (s)) & A_FLAG); \
@@ -554,7 +554,7 @@ do { \
 
 #define	_DWORD_MUL(r, d, s) \
 do { \
-	register UINT64 __v; \
+	UINT64 __v; \
 	CPU_FLAGL &= (Z_FLAG | S_FLAG | A_FLAG | P_FLAG); \
 	__v = (UINT64)(d) * (UINT64)(s); \
 	(r) = (UINT32)__v; \
@@ -597,7 +597,7 @@ do { \
 /* flag no check */
 #define	_BYTE_INC(s) \
 do { \
-	register UINT8 __b = (s); \
+	UINT8 __b = (s); \
 	__b++; \
 	CPU_OV = __b & (__b ^ (s)) & 0x80; \
 	CPU_FLAGL &= C_FLAG; \
@@ -608,7 +608,7 @@ do { \
 
 #define	_WORD_INC(s) \
 do { \
-	register UINT16 __b = (s); \
+	UINT16 __b = (s); \
 	__b++; \
 	CPU_OV = __b & (__b ^ (s)) & 0x8000; \
 	CPU_FLAGL &= C_FLAG; \
@@ -619,7 +619,7 @@ do { \
 
 #define	_DWORD_INC(s) \
 do { \
-	register UINT32 __b = (s); \
+	UINT32 __b = (s); \
 	__b++; \
 	CPU_OV = __b & (__b ^ (s)) & 0x80000000; \
 	CPU_FLAGL &= C_FLAG; \
@@ -637,7 +637,7 @@ do { \
 /* flag no check */
 #define	_BYTE_DEC(s) \
 do { \
-	register UINT8 __b = (s); \
+	UINT8 __b = (s); \
 	__b--; \
 	CPU_OV = (s) & (__b ^ (s)) & 0x80; \
 	CPU_FLAGL &= C_FLAG; \
@@ -648,7 +648,7 @@ do { \
 
 #define	_WORD_DEC(s) \
 do { \
-	register UINT16 __b = (s); \
+	UINT16 __b = (s); \
 	__b--; \
 	CPU_OV = (s) & (__b ^ (s)) & 0x8000; \
 	CPU_FLAGL &= C_FLAG; \
@@ -659,7 +659,7 @@ do { \
 
 #define	_DWORD_DEC(s) \
 do { \
-	register UINT32 __b = (s); \
+	UINT32 __b = (s); \
 	__b--; \
 	CPU_OV = (s) & (__b ^ (s)) & 0x80000000; \
 	CPU_FLAGL &= C_FLAG; \
@@ -695,7 +695,7 @@ do { \
  */
 #define	REGPUSH(reg, clock) \
 do { \
-	register UINT16 __new_sp = CPU_SP - 2; \
+	UINT16 __new_sp = CPU_SP - 2; \
 	CPU_WORKCLOCK(clock); \
 	cpu_vmemorywrite_w(CPU_SS_INDEX, __new_sp, reg); \
 	CPU_SP = __new_sp; \
@@ -703,7 +703,7 @@ do { \
 
 #define	REGPUSH_32(reg, clock) \
 do { \
-	register UINT32 __new_esp = CPU_ESP - 4; \
+	UINT32 __new_esp = CPU_ESP - 4; \
 	CPU_WORKCLOCK(clock); \
 	cpu_vmemorywrite_d(CPU_SS_INDEX, __new_esp, reg); \
 	CPU_ESP = __new_esp; \
@@ -711,7 +711,7 @@ do { \
 
 #define	REGPUSH0(reg) \
 do { \
-	register UINT16 __new_sp = CPU_SP - 2; \
+	UINT16 __new_sp = CPU_SP - 2; \
 	cpu_vmemorywrite_w(CPU_SS_INDEX, __new_sp, (UINT16)reg); \
 	CPU_SP = __new_sp; \
 } while (/*CONSTCOND*/ 0)
@@ -719,7 +719,7 @@ do { \
 /* Operand Size == 16 && Stack Size == 32 */
 #define	REGPUSH0_16_32(reg) \
 do { \
-	register UINT32 __new_esp = CPU_ESP - 2; \
+	UINT32 __new_esp = CPU_ESP - 2; \
 	cpu_vmemorywrite_w(CPU_SS_INDEX, __new_esp, (UINT16)reg); \
 	CPU_ESP = __new_esp; \
 } while (/*CONSTCOND*/ 0)
@@ -727,14 +727,14 @@ do { \
 /* Operand Size == 32 && Stack Size == 16 */
 #define	REGPUSH0_32_16(reg) \
 do { \
-	register UINT16 __new_sp = CPU_SP - 4; \
+	UINT16 __new_sp = CPU_SP - 4; \
 	cpu_vmemorywrite_d(CPU_SS_INDEX, __new_sp, reg); \
 	CPU_SP = __new_sp; \
 } while (/*CONSTCOND*/ 0)
 
 #define	REGPUSH0_32(reg) \
 do { \
-	register UINT32 __new_esp = CPU_ESP - 4; \
+	UINT32 __new_esp = CPU_ESP - 4; \
 	cpu_vmemorywrite_d(CPU_SS_INDEX, __new_esp, reg); \
 	CPU_ESP = __new_esp; \
 } while (/*CONSTCOND*/ 0)
@@ -827,7 +827,7 @@ do { \
  */
 #define	SP_PUSH_16(reg) \
 do { \
-	register UINT16 __sp = CPU_SP; \
+	UINT16 __sp = CPU_SP; \
 	if (!CPU_STAT_SS32) { \
 		REGPUSH0(__sp); \
 	} else { \
@@ -837,7 +837,7 @@ do { \
 
 #define	ESP_PUSH_32(reg) \
 do { \
-	register UINT32 __esp = CPU_ESP; \
+	UINT32 __esp = CPU_ESP; \
 	if (!CPU_STAT_SS32) { \
 		REGPUSH0_32_16(__esp); \
 	} else { \
@@ -847,7 +847,7 @@ do { \
 
 #define	SP_POP_16(reg) \
 do { \
-	register UINT32 __sp; \
+	UINT32 __sp; \
 	if (!CPU_STAT_SS32) { \
 		__sp = CPU_SP; \
 	} else { \
@@ -858,7 +858,7 @@ do { \
 
 #define	ESP_POP_32(reg) \
 do { \
-	register UINT32 __esp; \
+	UINT32 __esp; \
 	if (!CPU_STAT_SS32) { \
 		__esp = CPU_SP; \
 	} else { \
@@ -873,8 +873,8 @@ do { \
  */
 #define	JMPSHORT(clock) \
 do { \
-	register UINT32 __new_ip; \
-	register UINT32 __dest; \
+	UINT32 __new_ip; \
+	UINT32 __dest; \
 	CPU_WORKCLOCK(clock); \
 	GET_PCBYTESD(__dest); \
 	__new_ip = CPU_EIP + __dest; \
@@ -889,8 +889,8 @@ do { \
 
 #define	JMPNEAR(clock) \
 do { \
-	register UINT16 __new_ip; \
-	register SINT16 __dest; \
+	UINT16 __new_ip; \
+	SINT16 __dest; \
 	CPU_WORKCLOCK(clock); \
 	GET_PCWORDS(__dest); \
 	__new_ip = CPU_IP + __dest; \
@@ -902,8 +902,8 @@ do { \
 
 #define	JMPNEAR32(clock) \
 do { \
-	register UINT32 __new_ip; \
-	register UINT32 __dest; \
+	UINT32 __new_ip; \
+	UINT32 __dest; \
 	CPU_WORKCLOCK(clock); \
 	GET_PCDWORD(__dest); \
 	__new_ip = CPU_EIP + __dest; \

@@ -26,7 +26,7 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL
 // Dialog
 //
 
-IDD_CONFIG DIALOG DISCARDABLE  0, 0, 182, 200
+IDD_CONFIG DIALOG DISCARDABLE  0, 0, 182, 238
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "設定"
 CLASS "np2dialog"
@@ -36,7 +36,7 @@ BEGIN
     COMBOBOX        IDC_BASECLOCK,14,22,54,43,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_GROUP | WS_TABSTOP
     LTEXT           "x",IDC_STATIC,72,26,8,8
-    COMBOBOX        IDC_MULTIPLE,80,22,32,80,CBS_DROPDOWN | CBS_SORT | 
+    COMBOBOX        IDC_MULTIPLE,80,22,32,80,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_GROUP | WS_TABSTOP
     RTEXT           "",IDC_CLOCKMSG,14,41,80,8
     LTEXT           "MHz",IDC_STATIC,96,41,16,8
@@ -47,67 +47,28 @@ BEGIN
                     68,54,10
     CONTROL         "PC-286",IDC_MODELEPSON,"Button",BS_AUTORADIOBUTTON,128,
                     68,44,10
-    GROUPBOX        "聲音",IDC_STATIC,8,88,166,46
-    LTEXT           "取樣速率",IDC_STATIC,14,101,50,8
-    CONTROL         "11KHz",IDC_RATE11,"Button",BS_AUTORADIOBUTTON | 
-                    WS_GROUP | WS_TABSTOP,66,100,34,10
-    CONTROL         "22KHz",IDC_RATE22,"Button",BS_AUTORADIOBUTTON,102,100,
-                    34,10
-    CONTROL         "44KHz",IDC_RATE44,"Button",BS_AUTORADIOBUTTON,138,100,
-                    34,10
-    LTEXT           "緩衝區",IDC_STATIC,14,118,50,8
-    EDITTEXT        IDC_SOUNDBUF,66,116,30,12,WS_GROUP
-    LTEXT           "ms",IDC_STATIC,102,118,16,8
+    GROUPBOX        "聲音",IDC_STATIC,8,88,166,84
+    LTEXT           "類型",IDC_STATIC,14,102,48,8
+    COMBOBOX        IDC_SOUND_DEVICE_TYPE,64,99,64,128,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "設備名稱",IDC_STATIC,14,120,48,8
+    COMBOBOX        IDC_SOUND_DEVICE_NAME,64,117,104,128,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "取樣速率",IDC_STATIC,14,138,48,8
+    COMBOBOX        IDC_SOUND_RATE,64,135,50,128,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "赫茲",IDC_STATIC,116,138,48,8
+    LTEXT           "緩衝區",IDC_STATIC,14,156,48,8
+    EDITTEXT        IDC_SOUND_BUFFER,64,153,30,12,WS_GROUP
+    LTEXT           "毫秒",IDC_STATIC,96,156,48,8
     CONTROL         "允許視窗調整大小",IDC_ALLOWRESIZE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,142,162,10
+                    WS_TABSTOP,8,180,162,10
     CONTROL         "禁用的 MMX",IDC_DISABLEMMX,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,156,162,10
+                    WS_TABSTOP,8,194,162,10
     CONTROL         "確認對話方塊 (重設/結束時)",IDC_COMFIRM,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,8,170,162,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,8,208,162,10
     CONTROL         "繼續",IDC_RESUME,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,184,162,10
-    DEFPUSHBUTTON   "確定",IDOK,130,8,44,14,WS_GROUP
-    PUSHBUTTON      "取消",IDCANCEL,130,26,44,14
-END
-
-IDD_CONFIGNOMMX DIALOG DISCARDABLE  0, 0, 182, 186
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "設定"
-CLASS "np2dialog"
-FONT 9, "新細明體"
-BEGIN
-    GROUPBOX        "CPU",IDC_STATIC,8,8,110,44
-    COMBOBOX        IDC_BASECLOCK,14,22,54,43,CBS_DROPDOWNLIST | WS_VSCROLL | 
-                    WS_GROUP | WS_TABSTOP
-    LTEXT           "x",IDC_STATIC,72,26,8,8
-    COMBOBOX        IDC_MULTIPLE,80,22,32,80,CBS_DROPDOWN | CBS_SORT | 
-                    WS_VSCROLL | WS_GROUP | WS_TABSTOP
-    RTEXT           "",IDC_CLOCKMSG,14,41,80,8
-    LTEXT           "MHz",IDC_STATIC,96,41,16,8
-    GROUPBOX        "模型",IDC_STATIC,8,56,166,28
-    CONTROL         "PC-9801VM",IDC_MODELVM,"Button",BS_AUTORADIOBUTTON | 
-                    WS_GROUP | WS_TABSTOP,16,68,54,10
-    CONTROL         "PC-9801VX",IDC_MODELVX,"Button",BS_AUTORADIOBUTTON,72,
-                    68,54,10
-    CONTROL         "PC-286",IDC_MODELEPSON,"Button",BS_AUTORADIOBUTTON,128,
-                    68,44,10
-    GROUPBOX        "聲音",IDC_STATIC,8,88,166,46
-    LTEXT           "取樣速率",IDC_STATIC,14,101,50,8
-    CONTROL         "11KHz",IDC_RATE11,"Button",BS_AUTORADIOBUTTON | 
-                    WS_GROUP | WS_TABSTOP,66,100,34,10
-    CONTROL         "22KHz",IDC_RATE22,"Button",BS_AUTORADIOBUTTON,102,100,
-                    34,10
-    CONTROL         "44KHz",IDC_RATE44,"Button",BS_AUTORADIOBUTTON,138,100,
-                    34,10
-    LTEXT           "緩衝區",IDC_STATIC,14,118,50,8
-    EDITTEXT        IDC_SOUNDBUF,66,116,30,12,WS_GROUP
-    LTEXT           "ms",IDC_STATIC,102,118,16,8
-    CONTROL         "允許視窗調整大小",IDC_ALLOWRESIZE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,142,162,10
-    CONTROL         "確認對話方塊 (重設/結束時)",IDC_COMFIRM,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,8,156,162,10
-    CONTROL         "繼續",IDC_RESUME,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,170,162,10
+                    WS_TABSTOP,8,222,162,10
     DEFPUSHBUTTON   "確定",IDOK,130,8,44,14,WS_GROUP
     PUSHBUTTON      "取消",IDCANCEL,130,26,44,14
 END
@@ -155,7 +116,7 @@ CLASS "np2dialog"
 FONT 9, "新細明體"
 BEGIN
     LTEXT           "磁碟大小",IDC_STATIC,8,10,38,8
-    COMBOBOX        IDC_HDDSIZE,48,8,32,46,CBS_DROPDOWN | CBS_SORT | 
+    COMBOBOX        IDC_HDDSIZE,48,8,32,46,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "MB",IDC_STATIC,86,10,16,8
     RTEXT           "",IDC_HDDLIMIT,48,30,54,8
@@ -274,26 +235,26 @@ BEGIN
                     WS_TABSTOP
     GROUPBOX        "連結",IDC_COM1STR00,8,28,144,84
     LTEXT           "每秒傳輸位元",IDC_COM1STR01,16,45,48,8
-    COMBOBOX        IDC_COM1SPEED,68,42,44,128,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_COM1SPEED,68,42,44,128,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "比特/秒",IDC_COM1STR02,116,45,26,8
     LTEXT           "資料位元",IDC_COM1STR03,16,61,48,8
-    COMBOBOX        IDC_COM1CHARSIZE,68,58,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_COM1CHARSIZE,68,58,44,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "位元",IDC_COM1STR04,116,61,26,8
     LTEXT           "同位檢查",IDC_COM1STR05,16,77,48,8
     COMBOBOX        IDC_COM1PARITY,68,74,44,48,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "停止位元",IDC_COM1STR06,16,93,48,8
-    COMBOBOX        IDC_COM1STOPBIT,68,90,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_COM1STOPBIT,68,90,44,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "位元",IDC_COM1STR07,116,93,26,8
     GROUPBOX        "連結",IDC_COM1STR10,8,28,186,84
     LTEXT           "裝置",IDC_COM1STR11,16,45,30,8
-    COMBOBOX        IDC_COM1MMAP,50,42,136,96,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_COM1MMAP,50,42,136,96,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "模組",IDC_COM1STR12,16,61,30,8
-    COMBOBOX        IDC_COM1MMDL,50,58,136,96,CBS_DROPDOWN | CBS_SORT | 
+    COMBOBOX        IDC_COM1MMDL,50,58,136,96,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "使用程式的檔案 (MIMPI 定義)",IDC_COM1DEFE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,82,170,10
@@ -312,96 +273,22 @@ BEGIN
     LTEXT           "插斷要求",IDC_STATIC,16,45,48,8
     LTEXT           "同步模式",IDC_STATIC,16,63,48,8
     LTEXT           "CH.1",IDC_STATIC,68,9,40,8
-    COMBOBOX        IDC_CH1SPEED,68,24,56,128,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_CH1SPEED,68,24,56,128,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_CH1INT,68,42,56,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_CH1INT,68,42,56,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_CH1MODE,68,60,56,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "CH.2",IDC_STATIC,136,9,40,8
-    COMBOBOX        IDC_CH2SPEED,136,24,56,128,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_CH2SPEED,136,24,56,128,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_CH2INT,136,42,56,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_CH2INT,136,42,56,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_CH2MODE,136,60,56,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "切換板",IDC_STATIC,8,84,32,8
     CONTROL         "",IDC_PC9861DIP,"Static",SS_ENHMETAFILE | SS_NOTIFY,44,
                     84,156,68
-END
-
-IDD_PC9861B DIALOG DISCARDABLE  0, 0, 202, 160
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "CH.1"
-FONT 9, "新細明體"
-BEGIN
-    LTEXT           "連接埠",IDC_STATIC,8,10,30,8
-    COMBOBOX        IDC_COM2PORT,40,8,48,96,CBS_DROPDOWNLIST | WS_VSCROLL | 
-                    WS_TABSTOP
-    GROUPBOX        "連結",IDC_COM2STR00,8,28,144,84
-    LTEXT           "每秒傳輸位元",IDC_COM2STR01,16,45,48,8
-    COMBOBOX        IDC_COM2SPEED,68,42,44,128,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "比特/秒",IDC_COM2STR02,116,45,26,8
-    LTEXT           "資料位元",IDC_COM2STR03,16,61,48,8
-    COMBOBOX        IDC_COM2CHARSIZE,68,58,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "位元",IDC_COM2STR04,116,61,26,8
-    LTEXT           "同位檢查",IDC_COM2STR05,16,77,48,8
-    COMBOBOX        IDC_COM2PARITY,68,74,44,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
-                    WS_TABSTOP
-    LTEXT           "停止位元",IDC_COM2STR06,16,93,48,8
-    COMBOBOX        IDC_COM2STOPBIT,68,90,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "位元",IDC_COM2STR07,116,93,26,8
-    GROUPBOX        "連結",IDC_COM2STR10,8,28,186,84
-    LTEXT           "裝置",IDC_COM2STR11,16,45,30,8
-    COMBOBOX        IDC_COM2MMAP,50,42,136,96,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "模組",IDC_COM2STR12,16,61,30,8
-    COMBOBOX        IDC_COM2MMDL,50,58,136,96,CBS_DROPDOWN | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    CONTROL         "使用程式的檔案 (MIMPI 定義)",IDC_COM2DEFE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,82,170,10
-    LTEXT           "",IDC_COM2DEFF,26,94,148,10,SS_SUNKEN
-    PUSHBUTTON      "...",IDC_COM2DEFB,176,94,10,10
-END
-
-IDD_PC9861C DIALOG DISCARDABLE  0, 0, 202, 160
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "CH.2"
-FONT 9, "新細明體"
-BEGIN
-    LTEXT           "連接埠",IDC_STATIC,8,10,30,8
-    COMBOBOX        IDC_COM3PORT,40,8,48,96,CBS_DROPDOWNLIST | WS_VSCROLL | 
-                    WS_TABSTOP
-    GROUPBOX        "連結",IDC_COM3STR00,8,28,144,84
-    LTEXT           "每秒傳輸位元",IDC_COM3STR01,16,45,48,8
-    COMBOBOX        IDC_COM3SPEED,68,42,44,128,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "比特/秒",IDC_COM3STR02,116,45,26,8
-    LTEXT           "資料位元",IDC_COM3STR03,16,61,48,8
-    COMBOBOX        IDC_COM3CHARSIZE,68,58,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "位元",IDC_COM3STR04,116,61,26,8
-    LTEXT           "同位檢查",IDC_COM3STR05,16,77,48,8
-    COMBOBOX        IDC_COM3PARITY,68,74,44,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
-                    WS_TABSTOP
-    LTEXT           "停止位元",IDC_COM3STR06,16,93,48,8
-    COMBOBOX        IDC_COM3STOPBIT,68,90,44,64,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "位元",IDC_COM3STR07,116,93,26,8
-    GROUPBOX        "連結",IDC_COM3STR10,8,28,186,84
-    LTEXT           "裝置",IDC_COM3STR11,16,45,30,8
-    COMBOBOX        IDC_COM3MMAP,50,42,136,96,CBS_DROPDOWNLIST | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "模組",IDC_COM3STR12,16,61,30,8
-    COMBOBOX        IDC_COM3MMDL,50,58,136,96,CBS_DROPDOWN | CBS_SORT | 
-                    WS_VSCROLL | WS_TABSTOP
-    CONTROL         "使用程式的檔案 (MIMPI 定義)",IDC_COM3DEFE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,82,170,10
-    LTEXT           "",IDC_COM3DEFF,26,94,148,10,SS_SUNKEN
-    PUSHBUTTON      "...",IDC_COM3DEFB,176,94,10,10
 END
 
 IDD_MPUPC98 DIALOG DISCARDABLE  0, 0, 202, 178
@@ -411,23 +298,23 @@ CLASS "np2dialog"
 FONT 9, "新細明體"
 BEGIN
     LTEXT           "輸入/輸出",IDC_STATIC,8,10,40,8
-    COMBOBOX        IDC_MPUIO,52,8,48,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_MPUIO,52,8,48,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "插斷要求",IDC_STATIC,8,26,40,8
-    COMBOBOX        IDC_MPUINT,52,24,48,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_MPUINT,52,24,48,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "切換板",IDC_STATIC,8,46,40,8
     CONTROL         "",IDC_MPUDIP,"Static",SS_ENHMETAFILE | SS_NOTIFY,52,46,
                     96,26
     GROUPBOX        "連結",IDC_STATIC,8,72,186,98
     LTEXT           "MIDI 輸出",IDC_STATIC,16,87,36,8
-    COMBOBOX        IDC_MPU98MMAP,54,84,132,96,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_MPU98MMAP,54,84,132,96,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "MIDI 輸入",IDC_STATIC,16,103,36,8
-    COMBOBOX        IDC_MPU98MDIN,54,100,132,96,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_MPU98MDIN,54,100,132,96,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "模組",IDC_STATIC,16,119,36,8
-    COMBOBOX        IDC_MPU98MMDL,54,116,132,96,CBS_DROPDOWN | CBS_SORT | 
+    COMBOBOX        IDC_MPU98MMDL,54,116,132,96,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "使用程式的檔案 (MIMPI 定義)",IDC_MPU98DEFE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,140,150,10
@@ -503,13 +390,13 @@ CAPTION "26"
 FONT 9, "新細明體"
 BEGIN
     LTEXT           "輸入/輸出",IDC_STATIC,8,10,40,8
-    COMBOBOX        IDC_SND26IO,50,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND26IO,50,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "插斷要求",IDC_STATIC,124,10,40,8
-    COMBOBOX        IDC_SND26INT,166,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND26INT,166,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "記憶體位址",IDC_STATIC,8,28,40,8
-    COMBOBOX        IDC_SND26ROM,50,26,40,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND26ROM,50,26,40,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "切換板",IDC_STATIC,8,66,40,8
     CONTROL         "",IDC_SND26JMP,"Static",SS_ENHMETAFILE | SS_NOTIFY,50,
@@ -523,14 +410,14 @@ CAPTION "86"
 FONT 9, "新細明體"
 BEGIN
     LTEXT           "輸入/輸出",IDC_STATIC,8,10,40,8
-    COMBOBOX        IDC_SND86IO,50,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND86IO,50,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "插斷要求",IDC_SND86INT,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,114,9,50,10
-    COMBOBOX        IDC_SND86INTA,166,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND86INTA,166,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "聲音 ID",IDC_STATIC,8,28,40,8
-    COMBOBOX        IDC_SND86ID,50,26,40,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SND86ID,50,26,40,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "記憶體位址",IDC_SND86ROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
                     114,27,50,10
@@ -546,13 +433,13 @@ CAPTION "SPB"
 FONT 9, "新細明體"
 BEGIN
     LTEXT           "輸入/輸出",IDC_STATIC,8,10,40,8
-    COMBOBOX        IDC_SPBIO,50,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SPBIO,50,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "插斷要求",IDC_STATIC,124,10,40,8
-    COMBOBOX        IDC_SPBINT,166,8,40,52,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SPBINT,166,8,40,52,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "記憶體位址",IDC_STATIC,8,28,40,8
-    COMBOBOX        IDC_SPBROM,50,26,40,64,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_SPBROM,50,26,40,64,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     CONTROL         "左右反向的聲音",IDC_SPBREVERSE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,114,27,92,10
@@ -636,6 +523,32 @@ BEGIN
                     ES_WANTRETURN | WS_VSCROLL
 END
 
+IDD_LGY98 DIALOGEX 0, 0, 184, 124
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "LGY-98"
+FONT 9, "新細明體", 0, 0, 0x0
+BEGIN
+    CONTROL         "Enabled",IDC_LGY98ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,40,10
+    LTEXT           "I/O port",IDC_STATIC,8,26,30,8
+    COMBOBOX        IDC_LGY98IO,40,24,40,52,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Interrupt",IDC_STATIC,104,26,30,8
+    COMBOBOX        IDC_LGY98INT,136,24,40,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "TAP device name",IDC_STATIC,8,43,76,8
+    COMBOBOX        IDC_LGY98TAP,8,52,168,12,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Defaults",IDC_LGY98DEF,136,102,40,14
+END
+
+IDD_GD5430 DIALOGEX 0, 0, 184, 124
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "CL-GD5430"
+FONT 9, "新細明體", 0, 0, 0x0
+BEGIN
+    CONTROL         "Enabled",IDC_GD5430ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,40,10
+    LTEXT           "Type",IDC_STATIC,8,26,30,8
+    COMBOBOX        IDC_GD5430TYPE,40,24,136,52,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Defaults",IDC_GD5430DEF,136,102,40,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -650,15 +563,7 @@ BEGIN
         LEFTMARGIN, 8
         RIGHTMARGIN, 174
         TOPMARGIN, 8
-        BOTTOMMARGIN, 192
-    END
-
-    IDD_CONFIGNOMMX, DIALOG
-    BEGIN
-        LEFTMARGIN, 8
-        RIGHTMARGIN, 174
-        TOPMARGIN, 8
-        BOTTOMMARGIN, 178
+        BOTTOMMARGIN, 230
     END
 
     IDD_NEWDISK, DIALOG
@@ -741,22 +646,6 @@ BEGIN
         BOTTOMMARGIN, 132
     END
 
-    IDD_PC9861B, DIALOG
-    BEGIN
-        LEFTMARGIN, 8
-        RIGHTMARGIN, 216
-        TOPMARGIN, 8
-        BOTTOMMARGIN, 132
-    END
-
-    IDD_PC9861C, DIALOG
-    BEGIN
-        LEFTMARGIN, 8
-        RIGHTMARGIN, 216
-        TOPMARGIN, 8
-        BOTTOMMARGIN, 132
-    END
-
     IDD_MPUPC98, DIALOG
     BEGIN
         LEFTMARGIN, 8
@@ -827,6 +716,22 @@ BEGIN
         RIGHTMARGIN, 188
         TOPMARGIN, 8
         BOTTOMMARGIN, 100
+    END
+
+    IDD_LGY98, DIALOG
+    BEGIN
+        LEFTMARGIN, 8
+        RIGHTMARGIN, 176
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 112
+    END
+
+    IDD_GD5430, DIALOG
+    BEGIN
+        LEFTMARGIN, 8
+        RIGHTMARGIN, 176
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 112
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -984,6 +889,12 @@ BEGIN
             MENUITEM "&1.6MB",                      IDM_MEM16
             MENUITEM "&3.6MB",                      IDM_MEM36
             MENUITEM "&7.6MB",                      IDM_MEM76
+            MENUITEM "&11.6MB",                     IDM_MEM116
+            MENUITEM "&13.6MB",                     IDM_MEM136
+            MENUITEM "&16.6MB",                     IDM_MEM166
+            MENUITEM "&32.6MB",                     IDM_MEM326
+            MENUITEM "&64.6MB",                     IDM_MEM646
+            MENUITEM "&120.6MB",                    IDM_MEM1206
         END
         MENUITEM "滑鼠(&M)",                    IDM_MOUSE
         MENUITEM SEPARATOR
@@ -993,6 +904,10 @@ BEGIN
         MENUITEM "MIDI 重設(&P)",               IDM_MIDIPANIC
         MENUITEM SEPARATOR
         MENUITEM "聲音選項(&U)...",             IDM_SNDOPT
+        MENUITEM SEPARATOR
+        MENUITEM "&Network option...",          IDM_NETOPT
+        MENUITEM SEPARATOR
+        MENUITEM "&Window Accelerator option...", IDM_WABOPT
     END
     POPUP "其他(&O)"
     BEGIN
@@ -1009,6 +924,7 @@ BEGIN
         MENUITEM "反向的遊戲台按鍵(&V)",        IDM_JOYX
         MENUITEM "快速的遊戲台按鍵(&R)",        IDM_RAPID
         MENUITEM "快速的滑鼠按鍵(&M)",          IDM_MSRAPID
+        MENUITEM "&ITF work",                   IDM_ITFWORK
         MENUITEM SEPARATOR
         MENUITEM "說明主題(&H)...",             IDM_HELP
         MENUITEM "關於(&A)...",                 IDM_ABOUT
@@ -1102,6 +1018,12 @@ BEGIN
         MENUITEM "開啟(&O)...",                 IDM_IDE2OPEN
         MENUITEM SEPARATOR
         MENUITEM "彈出(&E)",                    IDM_IDE2EJECT
+    END
+    POPUP "IDE #3"
+    BEGIN
+        MENUITEM "開啟(&O)...",                 IDM_IDE3OPEN
+        MENUITEM SEPARATOR
+        MENUITEM "彈出(&E)",                    IDM_IDE3EJECT
     END
 END
 
@@ -1252,6 +1174,7 @@ END
 
 NP2BMP                  BITMAP  DISCARDABLE     "..\\nekop2.bmp"
 NP2TOOL                 BITMAP  DISCARDABLE     "..\\np2tool.bmp"
+NP21TOOL                BITMAP  DISCARDABLE     "..\\np21tool.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1268,6 +1191,7 @@ IDI_ICON2               ICON    DISCARDABLE     "..\\np2debug.ico"
 
 SEEKWAV                 EXTROM  DISCARDABLE     "..\\fddseek.wav"
 SEEK1WAV                EXTROM  DISCARDABLE     "..\\fddseek1.wav"
+RELAY1WAV               EXTROM  DISCARDABLE     "..\\relay1.wav"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1304,6 +1228,8 @@ BEGIN
     IDS_SCREENOPTION        "螢幕選項"
     IDS_SOUNDOPTION         "聲音板選項"
     IDS_SERIALOPTION        "串行選項"
+    IDS_NETWORKOPTION       "Network option"
+    IDS_WABOPTION           "Window Accelerator board option"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1363,6 +1289,13 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
+    IDS_SERIAL1             "COM1"
+    IDS_PC9861B             "CH.1"
+    IDS_PC9861C             "CH.2"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
     IDS_COM1                "COM1"
 END
 
@@ -1402,6 +1335,14 @@ BEGIN
     IDS_5X                  "5x"
     IDS_6X                  "6x"
     IDS_7X                  "7x"
+    IDS_00D0                "00D0"
+    IDS_10D0                "10D0"
+    IDS_20D0                "20D0"
+    IDS_30D0                "30D0"
+    IDS_40D0                "40D0"
+    IDS_50D0                "50D0"
+    IDS_60D0                "60D0"
+    IDS_70D0                "70D0"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1417,6 +1358,16 @@ BEGIN
     IDS_ASYNC               "非同步"
     IDS_ASYNC16X            "非同步 16x"
     IDS_ASYNC64X            "非同步 64x"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_GD5430_XE           "PC-9821Xe built-in"
+    IDS_GD5430_CB           "PC-9821Cb built-in"
+    IDS_GD5430_CF           "PC-9821Cf built-in"
+    IDS_GD5430_XE10         "PC-9821Xe10,Xa7e,Xb10 built-in"
+    IDS_GD5430_CB2          "PC-9821Cb2 built-in"
+    IDS_GD5430_CX2          "PC-9821Cx2 built-in"
 END
 
 STRINGTABLE DISCARDABLE 

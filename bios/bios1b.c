@@ -957,15 +957,6 @@ void bios0x1b(void) {
 			ret_ah = scsibios_operate();
 			break;
 #endif
-		case 0xd0:
-			ret_ah = 0x40;
-			TRACEOUT(("IDE BIOS!!!"));
-			break;
-			
-		case 0xe0:
-			ret_ah = 0x40;
-			TRACEOUT(("IDE BIOS!!!"));
-			break;
 
 		default:
 			ret_ah = 0x40;

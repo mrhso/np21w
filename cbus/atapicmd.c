@@ -1,5 +1,9 @@
 #include	"compiler.h"
-#include	"win9x/misc/trace.h"
+
+//#ifdef	TRACEOUT
+//#undef	TRACEOUT
+//#endif
+//#define	TRACEOUT(s)	trace_fmt s
 
 // ‚±‚êAscsicmd‚Æ‚Ç‚¤“‡‚·‚é‚Ì‚æH
 
@@ -115,7 +119,6 @@ static void atapi_cmd_readsubch(IDEDRV drv);
 static void atapi_cmd_readtoc(IDEDRV drv);
 static void atapi_cmd_playaudiomsf(IDEDRV drv);
 static void atapi_cmd_pauseresume(IDEDRV drv);
-static void atapi_cmd_mechanismstatus(IDEDRV drv);
 
 void atapicmd_a0(IDEDRV drv) {
 
@@ -156,19 +159,19 @@ void atapicmd_a0(IDEDRV drv) {
 		break;
 
 	case 0x12:		// inquiry
-		TRACEOUT(("atapicmd: inquiry"));
+		//TRACEOUT(("atapicmd: inquiry"));
 		leng = drv->buf[4];
 		CopyMemory(drv->buf, cdrom_inquiry, sizeof(cdrom_inquiry));
 		senddata(drv, sizeof(cdrom_inquiry), leng);
 		break;
 
 	case 0x1b:		// start stop unit
-		TRACEOUT(("atapicmd: start stop unit"));
+		//TRACEOUT(("atapicmd: start stop unit"));
 		atapi_cmd_start_stop_unit(drv);
 		break;
 
 	case 0x1e:		// prevent allow medium removal
-		TRACEOUT(("atapicmd: prevent allow medium removal"));
+		//TRACEOUT(("atapicmd: prevent allow medium removal"));
 		atapi_cmd_prevent_allow_medium_removal(drv);
 		break;
 
@@ -185,47 +188,33 @@ void atapicmd_a0(IDEDRV drv) {
 		break;
 
 	case 0x55:		// mode select
-		TRACEOUT(("atapicmd: mode select"));
+		//TRACEOUT(("atapicmd: mode select"));
 		atapi_cmd_mode_select(drv);
 		break;
 
 	case 0x5a:		// mode sense(10)
-		TRACEOUT(("atapicmd: mode sense(10)"));
+		//TRACEOUT(("atapicmd: mode sense(10)"));
 		atapi_cmd_mode_sense(drv);
 		break;
 
 	case 0x42:
-		TRACEOUT(("atapicmd: read sub channel"));
+		//TRACEOUT(("atapicmd: read sub channel"));
 		atapi_cmd_readsubch(drv);
 		break;
 
 	case 0x43:		// read TOC
-		TRACEOUT(("atapicmd: read TOC"));
+		//TRACEOUT(("atapicmd: read TOC"));
 		atapi_cmd_readtoc(drv);
 		break;
 
 	case 0x47:		// Play Audio MSF
-		TRACEOUT(("atapicmd: Play Audio MSF"));
+		//TRACEOUT(("atapicmd: Play Audio MSF"));
 		atapi_cmd_playaudiomsf(drv);
 		break;
 
 	case 0x4b:
-		TRACEOUT(("atapicmd: pause resume"));
+		//TRACEOUT(("atapicmd: pause resume"));
 		atapi_cmd_pauseresume(drv);
-		break;
-		
-	case 0xbe:
-	//	//ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
-	//	//drv->asc = ATAPI_ASC_INVALID_COMMAND_OPERATION_CODE;
-	//	//senderror(drv);
-		TRACEOUT(("atapicmd: read cd"));
-		sendabort(drv);
-		break;
-	//	
-	case 0xbd:
-		TRACEOUT(("atapicmd: mechanism status"));
-		//atapi_cmd_mechanismstatus(drv);
-		sendabort(drv);
 		break;
 
 	default:
@@ -404,7 +393,7 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 
 	if (pctrl == 3) {
 		/* Saved Page is not supported */
-		TRACEOUT(("Saved Page is not supported"));
+		//TRACEOUT(("Saved Page is not supported"));
 		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
 		drv->asc = ATAPI_ASC_SAVING_PARAMETERS_NOT_SUPPORTED;
 		senderror(drv);
@@ -431,7 +420,7 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 	}
 
 	/* Mode Page */
-	TRACEOUT(("pcode = %.2x", pcode));
+	//TRACEOUT(("pcode = %.2x", pcode));
 	switch (pcode) {
 	case 0x3f:
 		/*FALLTHROUGH*/
@@ -635,7 +624,7 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 
 	leng = (drv->buf[7] << 8) + drv->buf[8];
 	format = (drv->buf[9] >> 6);
-	TRACEOUT(("atapi_cmd_readtoc fmt=%d leng=%d", format, leng));
+	//TRACEOUT(("atapi_cmd_readtoc fmt=%d leng=%d", format, leng));
 
 	switch (format) {
 	case 0: // track info
@@ -719,54 +708,6 @@ static void atapi_cmd_pauseresume(IDEDRV drv) {
 		}
 	}
 	cmddone(drv);
-}
-
-// 0xBD: MECHANISM STATUS
-static void atapi_cmd_mechanismstatus(IDEDRV drv) {
-
-	//const UINT8	*ptr;
-	//UINT	alloclen;
-	//UINT32	size;
-	//UINT32	pos = 0;
-
-	//alloclen = (drv->buf[8] << 8) | (drv->buf[9]);
-
-	///* Mechanism Status Header */
-	//ZeroMemory(drv->buf, 8);
-	//drv->buf[0] = 0;
-	//drv->buf[1] = (0x0)<<5;
-	//pos = drv->sn;
-	//pos |= (drv->cy << 8);
-	//pos |= (drv->hd << 24);
-	//drv->buf[2] = (pos >> 16) & 0xff;
-	//drv->buf[3] = (pos >>  8) & 0xff;
-	//drv->buf[4] = (pos      ) & 0xff;
-	//drv->buf[5] = 0;
-	//drv->buf[6] = 0;
-	//drv->buf[7] = 0;
-	
-	ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
-	drv->asc = ATAPI_ASC_INVALID_COMMAND_OPERATION_CODE;
-	senderror(drv);
-	
-	//size = min(8, alloclen);
-	//drv->sc = IDEINTR_IO;
-	//drv->cy = size;
-	//drv->status &= ~(IDESTAT_BSY|IDESTAT_DMRD|IDESTAT_SERV|IDESTAT_CHK);
-	//drv->status |= IDESTAT_DRQ;
-	//drv->error = 0;
-	//ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
-	//drv->asc = ATAPI_ASC_NO_ADDITIONAL_SENSE_INFORMATION;
-	//drv->bufdir = IDEDIR_IN;
-	//drv->buftc = IDETC_TRANSFEREND;
-	//drv->bufpos = 0;
-	//drv->bufsize = size;
-
-	//if (!(drv->ctrl & IDECTRL_NIEN)) {
-	//	//TRACEOUT(("atapicmd: senddata()"));
-	//	ideio.bank[0] = ideio.bank[1] | 0x80;			// ????
-	//	pic_setirq(IDE_IRQ);
-	//}
 }
 
 #endif	/* SUPPORT_IDEIO */

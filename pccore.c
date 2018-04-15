@@ -84,12 +84,12 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_SCSI)
 				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
 #endif
-				OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 
+				OEMTEXT(""), OEMTEXT(""), OEMTEXT(""),
 #if defined(SUPPORT_LGY98)
 				0, 0x10D0, 5, OEMTEXT("TAP1"),
 #endif
 #if defined(SUPPORT_CL_GD5430)
-				0,
+				0, 0x5B,
 #endif
 	};
 
@@ -186,7 +186,7 @@ static void pccore_set(const NP2CFG *pConfig)
 	{
 		extsize = np2cfg.EXTMEM;
 #if defined(CPUCORE_IA32)
-		extsize = min(extsize, 1023);
+		extsize = min(extsize, 120);
 #else
 		extsize = min(extsize, 13);
 #endif
@@ -215,14 +215,13 @@ static void pccore_set(const NP2CFG *pConfig)
 #if !defined(DISABLE_SOUND)
 static void sound_init(void)
 {
-	UINT	rate;
+	UINT rate;
 
 	rate = np2cfg.samplingrate;
-	if ((rate != 11025) && (rate != 22050) && (rate != 44100) && (rate != 48000))
+	if (sound_create(rate, np2cfg.delayms) != SUCCESS)
 	{
 		rate = 0;
 	}
-	sound_create(rate, np2cfg.delayms);
 	fddmtrsnd_initialize(rate);
 	beep_initialize(rate);
 	beep_setvol(np2cfg.BEEP_VOL);
@@ -286,7 +285,6 @@ void pccore_init(void) {
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_initialize();
 #endif
-
 }
 
 void pccore_term(void) {
@@ -445,11 +443,6 @@ void pccore_reset(void) {
 
 	timing_reset();
 	soundmng_play();
-
-#if 0 && defined(SUPPORT_IDEIO)	// Test!
-	sxsi_devopen(0x02, OEMTEXT("e:\\pn\\pn.iso"));
-#endif
-	
 }
 
 static void drawscreen(void) {
@@ -473,7 +466,7 @@ static void drawscreen(void) {
 	if (gdcs.textdisp & GDCSCRN_EXT) {
 		gdc_updateclock();
 	}
-	
+
 	if (!pcstat.drawframe) {
 		return;
 	}
@@ -654,56 +647,34 @@ void pccore_exec(BOOL draw) {
 	nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
 
 //	nevent_get1stevent();
-	if (!(CPU_TYPE & CPUTYPE_V30)) {
-		while(pcstat.screendispflag) {
+
+	while(pcstat.screendispflag) {
 #if defined(TRACE)
-			resetcnt++;
+		resetcnt++;
 #endif
-			pic_irq();
-			if (CPU_RESETREQ) {
-				CPU_RESETREQ = 0;
+		pic_irq();
+		if (CPU_RESETREQ) {
+			CPU_RESETREQ = 0;
 #if defined(SUPPORT_CL_GD5430)
-				np2vga_resetRelay();
+			np2vga_resetRelay();
 #endif
-				CPU_SHUT();
-			}
+			CPU_SHUT();
+		}
 #if !defined(SINGLESTEPONLY)
-			if (CPU_REMCLOCK > 0) {
+		if (CPU_REMCLOCK > 0) {
+			if (!(CPU_TYPE & CPUTYPE_V30)) {
 				CPU_EXEC();
 			}
-#else
-			while(CPU_REMCLOCK > 0) {
-				CPU_STEPEXEC();
-			}
-#endif
-
-			nevent_progress();
-		
-		}
-	}
-	else {
-		while(pcstat.screendispflag) {
-#if defined(TRACE)
-			resetcnt++;
-#endif
-			pic_irq();
-			if (CPU_RESETREQ) {
-				CPU_RESETREQ = 0;
-				CPU_SHUT();
-			}
-#if !defined(SINGLESTEPONLY)
-			if (CPU_REMCLOCK > 0) {
+			else {
 				CPU_EXECV30();
 			}
-#else
-			while(CPU_REMCLOCK > 0) {
-				CPU_STEPEXEC();
-			}
-#endif
-
-			nevent_progress();
-		
 		}
+#else
+		while(CPU_REMCLOCK > 0) {
+			CPU_STEPEXEC();
+		}
+#endif
+		nevent_progress();
 	}
 	artic_callback();
 	mpu98ii_callback();

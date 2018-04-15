@@ -24,18 +24,18 @@
  */
 
 #include "compiler.h"
-#include "cpu.h"
-#include "ia32.mcr"
+#include "ia32/cpu.h"
+#include "ia32/ia32.mcr"
 
 #include "misc_inst.h"
-#include "inst_table.h"
+#include "ia32/inst_table.h"
 
 
 void
 LEA_GwM(void)
 {
-	register UINT16 *out;
-	register UINT32 op, dst;
+	UINT16 *out;
+	UINT32 op, dst;
 
 	GET_PCBYTE(op);
 	if (op < 0xc0) {
@@ -51,8 +51,8 @@ LEA_GwM(void)
 void
 LEA_GdM(void)
 {
-	register UINT32 *out;
-	register UINT32 op, dst;
+	UINT32 *out;
+	UINT32 op, dst;
 
 	GET_PCBYTE(op);
 	if (op < 0xc0) {
@@ -162,19 +162,19 @@ AddrSize(void)
 void
 _2byte_ESC16(void)
 {
-	register UINT32 op;
+	UINT32 op;
 
 	GET_PCBYTE(op);
-	(*insttable_2byte[op])();
+	(*insttable_2byte[0][op])();
 }
 
 void
 _2byte_ESC32(void)
 {
-	register UINT32 op;
+	UINT32 op;
 
 	GET_PCBYTE(op);
-	(*insttable_2byte[op | 256])();
+	(*insttable_2byte[1][op])();
 }
 
 void

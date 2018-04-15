@@ -24,9 +24,9 @@
  */
 
 #include "compiler.h"
-#include "cpu.h"
-#include "ia32.mcr"
-#include "ctrlxfer.h"
+#include "ia32/cpu.h"
+#include "ia32/ia32.mcr"
+#include "ia32/ctrlxfer.h"
 
 #include "ctrl_trans.h"
 
@@ -62,8 +62,8 @@ JMP_Jd(void)
 void CPUCALL
 JMP_Ew(UINT32 op)
 {
-	register UINT32 madr;
-	register UINT16 new_ip;
+	UINT32 madr;
+	UINT16 new_ip;
 
 	if (op >= 0xc0) {
 		CPU_WORKCLOCK(7);
@@ -82,8 +82,8 @@ JMP_Ew(UINT32 op)
 void CPUCALL
 JMP_Ed(UINT32 op)
 {
-	register UINT32 madr;
-	register UINT32 new_ip;
+	UINT32 madr;
+	UINT32 new_ip;
 
 	if (op >= 0xc0) {
 		CPU_WORKCLOCK(7);
@@ -103,8 +103,8 @@ void
 JMP16_Ap(void)
 {
 	descriptor_t sd;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(11);
@@ -129,8 +129,8 @@ void
 JMP32_Ap(void)
 {
 	descriptor_t sd;
-	register UINT32 new_ip;
-	register UINT16 new_cs;
+	UINT32 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(11);
@@ -155,9 +155,9 @@ void CPUCALL
 JMP16_Ep(UINT32 op)
 {
 	descriptor_t sd;
-	register UINT32 madr;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT32 madr;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(11);
@@ -187,9 +187,9 @@ void CPUCALL
 JMP32_Ep(UINT32 op)
 {
 	descriptor_t sd;
-	register UINT32 madr;
-	register UINT32 new_ip;
-	register UINT16 new_cs;
+	UINT32 madr;
+	UINT32 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(11);
@@ -784,7 +784,7 @@ JeCXZ_Jb(void)
 void
 LOOPNE_Jb(void)
 {
-	register UINT32 cx;
+	UINT32 cx;
 
 	if (!CPU_INST_AS32) {
 		cx = CPU_CX;
@@ -809,7 +809,7 @@ LOOPNE_Jb(void)
 void
 LOOPE_Jb(void)
 {
-	register UINT32 cx;
+	UINT32 cx;
 
 	if (!CPU_INST_AS32) {
 		cx = CPU_CX;
@@ -834,7 +834,7 @@ LOOPE_Jb(void)
 void
 LOOP_Jb(void)
 {
-	register UINT32 cx;
+	UINT32 cx;
 
 	if (!CPU_INST_AS32) {
 		cx = CPU_CX;
@@ -861,8 +861,8 @@ LOOP_Jb(void)
 void
 CALL_Aw(void)
 {
-	register UINT16 new_ip;
-	register SINT16 dest;
+	UINT16 new_ip;
+	SINT16 dest;
 
 	CPU_WORKCLOCK(7);
 	CPU_SET_PREV_ESP();
@@ -879,8 +879,8 @@ CALL_Aw(void)
 void
 CALL_Ad(void)
 {
-	register UINT32 new_ip;
-	register UINT32 dest;
+	UINT32 new_ip;
+	UINT32 dest;
 
 	CPU_WORKCLOCK(7);
 	CPU_SET_PREV_ESP();
@@ -897,8 +897,8 @@ CALL_Ad(void)
 void CPUCALL
 CALL_Ew(UINT32 op)
 {
-	register UINT32 madr;
-	register UINT16 new_ip;
+	UINT32 madr;
+	UINT16 new_ip;
 
 	CPU_SET_PREV_ESP();
 	if (op >= 0xc0) {
@@ -920,8 +920,8 @@ CALL_Ew(UINT32 op)
 void CPUCALL
 CALL_Ed(UINT32 op)
 {
-	register UINT32 madr;
-	register UINT32 new_ip;
+	UINT32 madr;
+	UINT32 new_ip;
 
 	CPU_SET_PREV_ESP();
 	if (op >= 0xc0) {
@@ -944,8 +944,8 @@ void
 CALL16_Ap(void)
 {
 	descriptor_t sd;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(13);
@@ -975,8 +975,8 @@ void
 CALL32_Ap(void)
 {
 	descriptor_t sd;
-	register UINT32 new_ip;
-	register UINT16 new_cs;
+	UINT32 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(13);
@@ -1006,9 +1006,9 @@ void CPUCALL
 CALL16_Ep(UINT32 op)
 {
 	descriptor_t sd;
-	register UINT32 madr;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT32 madr;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(16);
@@ -1043,9 +1043,9 @@ void CPUCALL
 CALL32_Ep(UINT32 op)
 {
 	descriptor_t sd;
-	register UINT32 madr;
-	register UINT32 new_ip;
-	register UINT16 new_cs;
+	UINT32 madr;
+	UINT32 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(16);
@@ -1082,7 +1082,7 @@ CALL32_Ep(UINT32 op)
 void
 RETnear16(void)
 {
-	register UINT16 new_ip;
+	UINT16 new_ip;
 
 	CPU_WORKCLOCK(11);
 	CPU_SET_PREV_ESP();
@@ -1097,7 +1097,7 @@ RETnear16(void)
 void
 RETnear32(void)
 {
-	register UINT32 new_ip;
+	UINT32 new_ip;
 
 	CPU_WORKCLOCK(11);
 	CPU_SET_PREV_ESP();
@@ -1112,8 +1112,8 @@ RETnear32(void)
 void
 RETnear16_Iw(void)
 {
-	register UINT16 new_ip;
-	register UINT16 size;
+	UINT16 new_ip;
+	UINT16 size;
 
 	CPU_WORKCLOCK(11);
 	CPU_SET_PREV_ESP();
@@ -1134,8 +1134,8 @@ RETnear16_Iw(void)
 void
 RETnear32_Iw(void)
 {
-	register UINT32 new_ip;
-	register UINT16 size;
+	UINT32 new_ip;
+	UINT16 size;
 
 	CPU_WORKCLOCK(11);
 	CPU_SET_PREV_ESP();
@@ -1157,8 +1157,8 @@ void
 RETfar16(void)
 {
 	descriptor_t sd;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(15);
@@ -1187,8 +1187,8 @@ void
 RETfar32(void)
 {
 	descriptor_t sd;
-	register UINT32 new_ip;
-	register UINT32 new_cs;
+	UINT32 new_ip;
+	UINT32 new_cs;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(15);
@@ -1199,7 +1199,7 @@ RETfar32(void)
 		POP0_32(new_cs);
 
 		/* check new instrunction pointer with new code segment */
-		load_segreg(CPU_CS_INDEX, new_cs, &sreg, &sd, GP_EXCEPTION);
+		load_segreg(CPU_CS_INDEX, (UINT16)new_cs, &sreg, &sd, GP_EXCEPTION);
 		if (new_ip > sd.u.seg.limit) {
 			EXCEPTION(GP_EXCEPTION, 0);
 		}
@@ -1217,10 +1217,10 @@ void
 RETfar16_Iw(void)
 {
 	descriptor_t sd;
-	register UINT16 new_ip;
-	register UINT16 new_cs;
+	UINT16 new_ip;
+	UINT16 new_cs;
 	UINT16 sreg;
-	register UINT16 size;
+	UINT16 size;
 
 	CPU_WORKCLOCK(15);
 	GET_PCWORD(size);
@@ -1254,10 +1254,10 @@ void
 RETfar32_Iw(void)
 {
 	descriptor_t sd;
-	register UINT32 new_ip;
-	register UINT32 new_cs;
+	UINT32 new_ip;
+	UINT32 new_cs;
 	UINT16 sreg;
-	register UINT16 size;
+	UINT16 size;
 
 	CPU_WORKCLOCK(15);
 	GET_PCWORD(size);
@@ -1268,7 +1268,7 @@ RETfar32_Iw(void)
 		POP0_32(new_cs);
 
 		/* check new instrunction pointer with new code segment */
-		load_segreg(CPU_CS_INDEX, new_cs, &sreg, &sd, GP_EXCEPTION);
+		load_segreg(CPU_CS_INDEX, (UINT16)new_cs, &sreg, &sd, GP_EXCEPTION);
 		if (new_ip > sd.u.seg.limit) {
 			EXCEPTION(GP_EXCEPTION, 0);
 		}
@@ -1291,10 +1291,10 @@ void
 IRET(void)
 {
 	descriptor_t sd;
-	register UINT32 new_ip;
-	register UINT32 new_flags;
-	register UINT32 new_cs;
-	register UINT32 mask;
+	UINT32 new_ip;
+	UINT32 new_flags;
+	UINT32 new_cs;
+	UINT32 mask;
 	UINT16 sreg;
 
 	CPU_WORKCLOCK(22);
@@ -1314,7 +1314,7 @@ IRET(void)
 		}
 
 		/* check new instrunction pointer with new code segment */
-		load_segreg(CPU_CS_INDEX, new_cs, &sreg, &sd, GP_EXCEPTION);
+		load_segreg(CPU_CS_INDEX, (UINT16)new_cs, &sreg, &sd, GP_EXCEPTION);
 		if (new_ip > sd.u.seg.limit) {
 			EXCEPTION(GP_EXCEPTION, 0);
 		}
@@ -1365,7 +1365,7 @@ INTO(void)
 void
 INT_Ib(void)
 {
-	register UINT8 vect;
+	UINT8 vect;
 
 	CPU_WORKCLOCK(37);
 	if (!CPU_STAT_PM || !CPU_STAT_VM86 || (CPU_STAT_IOPL == CPU_IOPL3)) {
@@ -1383,8 +1383,8 @@ INT_Ib(void)
 void
 BOUND_GwMa(void)
 {
-	register UINT32 op, madr;
-	register UINT16 reg;
+	UINT32 op, madr;
+	UINT16 reg;
 
 	CPU_WORKCLOCK(13);
 	GET_PCBYTE(op);
@@ -1404,8 +1404,8 @@ BOUND_GwMa(void)
 void
 BOUND_GdMa(void)
 {
-	register UINT32 op, madr;
-	register UINT32 reg;
+	UINT32 op, madr;
+	UINT32 reg;
 
 	CPU_WORKCLOCK(13);
 	GET_PCBYTE(op);
@@ -1428,11 +1428,11 @@ BOUND_GdMa(void)
 void
 ENTER16_IwIb(void)
 {
-	register UINT32 sp, bp;
-	register UINT32 val;
-	register UINT16 dimsize;
-	register UINT16 new_bp;
-	register UINT8 level;
+	UINT32 sp, bp;
+	UINT32 val;
+	UINT16 dimsize;
+	UINT16 new_bp;
+	UINT8 level;
 
 	GET_PCWORD(dimsize);
 	GET_PCBYTE(level);
@@ -1495,11 +1495,11 @@ ENTER16_IwIb(void)
 void
 ENTER32_IwIb(void)
 {
-	register UINT32 sp, bp;
-	register UINT32 new_bp;
-	register UINT32 val;
-	register UINT16 dimsize;
-	register UINT8 level;
+	UINT32 sp, bp;
+	UINT32 new_bp;
+	UINT32 val;
+	UINT16 dimsize;
+	UINT8 level;
 
 	GET_PCWORD(dimsize);
 	GET_PCBYTE(level);

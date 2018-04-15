@@ -1,13 +1,12 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by H:\projects\vcp\xnp2-0.85-new1\win9x\resources\932\np2.rc
+// Used by H:\projects\vcp\np21w-0.86\win9x\resources\932\np2.rc
 //
 #define IDR_MANIFEST                    1
 #define IRT_MANIFEST                    24
 #define IDI_ICON1                       101
 #define IDI_ICON2                       102
 #define IDD_CONFIG                      111
-#define IDD_CONFIGNOMMX                 112
 #define IDD_NEWDISK                     121
 #define IDD_NEWHDDDISK                  122
 #define IDD_NEWSASI                     123
@@ -18,8 +17,6 @@
 #define IDD_SCROPT3                     134
 #define IDD_SERIAL1                     141
 #define IDD_PC9861A                     142
-#define IDD_PC9861B                     143
-#define IDD_PC9861C                     144
 #define IDD_MPUPC98                     151
 #define IDD_SNDMIX                      152
 #define IDD_SND14                       153
@@ -55,21 +52,20 @@
 #define IDR_VIEW                        331
 #define IDR_TRACE                       341
 #define RESOURCE_VERSION                830
-#define IDC_EDIT1                       1001
 #define IDC_BASECLOCK                   11101
 #define IDC_MULTIPLE                    11102
 #define IDC_CLOCKMSG                    11103
 #define IDC_MODELVM                     11104
 #define IDC_MODELVX                     11105
 #define IDC_MODELEPSON                  11106
-#define IDC_RATE11                      11107
-#define IDC_RATE22                      11108
-#define IDC_RATE44                      11109
-#define IDC_SOUNDBUF                    11110
+#define IDC_SOUND_BUFFER                11110
 #define IDC_ALLOWRESIZE                 11111
 #define IDC_DISABLEMMX                  11112
 #define IDC_COMFIRM                     11113
 #define IDC_RESUME                      11114
+#define IDC_SOUND_RATE                  11115
+#define IDC_SOUND_DEVICE_TYPE           11116
+#define IDC_SOUND_DEVICE_NAME           11117
 #define IDC_DISKLABEL                   12101
 #define IDC_MAKE2DD                     12102
 #define IDC_MAKE2HD                     12103
@@ -135,48 +131,6 @@
 #define IDC_CH2INT                      14206
 #define IDC_CH2MODE                     14207
 #define IDC_PC9861DIP                   14208
-#define IDC_COM2PORT                    14301
-#define IDC_COM2STR00                   14302
-#define IDC_COM2STR01                   14303
-#define IDC_COM2STR02                   14304
-#define IDC_COM2STR03                   14305
-#define IDC_COM2STR04                   14306
-#define IDC_COM2STR05                   14307
-#define IDC_COM2STR06                   14308
-#define IDC_COM2STR07                   14309
-#define IDC_COM2SPEED                   14310
-#define IDC_COM2CHARSIZE                14311
-#define IDC_COM2PARITY                  14312
-#define IDC_COM2STOPBIT                 14313
-#define IDC_COM2STR10                   14314
-#define IDC_COM2STR11                   14315
-#define IDC_COM2STR12                   14316
-#define IDC_COM2MMAP                    14317
-#define IDC_COM2MMDL                    14318
-#define IDC_COM2DEFE                    14319
-#define IDC_COM2DEFF                    14320
-#define IDC_COM2DEFB                    14321
-#define IDC_COM3PORT                    14401
-#define IDC_COM3STR00                   14402
-#define IDC_COM3STR01                   14403
-#define IDC_COM3STR02                   14404
-#define IDC_COM3STR03                   14405
-#define IDC_COM3STR04                   14406
-#define IDC_COM3STR05                   14407
-#define IDC_COM3STR06                   14408
-#define IDC_COM3STR07                   14409
-#define IDC_COM3SPEED                   14410
-#define IDC_COM3CHARSIZE                14411
-#define IDC_COM3PARITY                  14412
-#define IDC_COM3STOPBIT                 14413
-#define IDC_COM3STR10                   14414
-#define IDC_COM3STR11                   14415
-#define IDC_COM3STR12                   14416
-#define IDC_COM3MMAP                    14417
-#define IDC_COM3MMDL                    14418
-#define IDC_COM3DEFE                    14419
-#define IDC_COM3DEFF                    14420
-#define IDC_COM3DEFB                    14421
 #define IDC_MPUIO                       15101
 #define IDC_MPUINT                      15102
 #define IDC_MPUDEF                      15103
@@ -272,8 +226,11 @@
 #define IDC_LGY98ENABLED                19001
 #define IDC_LGY98IO                     19002
 #define IDC_LGY98INT                    19003
-#define IDC_LGY98DEF                    19004
+#define IDC_LGY98TAP                    19004
+#define IDC_LGY98DEF                    19005
 #define IDC_GD5430ENABLED               19011
+#define IDC_GD5430TYPE                  19012
+#define IDC_GD5430DEF                  19013
 #define IDS_APP_NAME2                   30001
 #define IDS_APP_NAME21                  30002
 #define IDS_FILENAME_HELP               30003
@@ -320,6 +277,9 @@
 #define IDS_CC000                       30163
 #define IDS_D0000                       30167
 #define IDS_D4000                       30171
+#define IDS_SERIAL1                     30181
+#define IDS_PC9861B                     30182
+#define IDS_PC9861C                     30183
 #define IDS_COM1                        30191
 #define IDS_COM2                        30192
 #define IDS_COM3                        30193
@@ -360,6 +320,12 @@
 #define IDS_ASYNC                       30512
 #define IDS_ASYNC16X                    30513
 #define IDS_ASYNC64X                    30514
+#define IDS_GD5430_XE                   30601
+#define IDS_GD5430_CB                   30602
+#define IDS_GD5430_CF                   30603
+#define IDS_GD5430_XE10                 30604
+#define IDS_GD5430_CB2                  30605
+#define IDS_GD5430_CX2                  30606
 #define IDS_FONTTITLE                   31001
 #define IDS_FONTEXT                     31002
 #define IDS_FONTFILTER                  31003
@@ -602,7 +568,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        101
 #define _APS_NEXT_COMMAND_VALUE         40135
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

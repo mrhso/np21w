@@ -4,6 +4,7 @@
 #if defined(SUPPORT_LGY98)
 
 #include <winioctl.h>
+#include <tchar.h>
 
 //#include	"lgy98dev.h"
 #include	"net.h"
@@ -12,7 +13,7 @@
  
 #pragma comment(lib, "Advapi32.lib")
  
-#define DEVICE_PATH_FMT "\\\\.\\Global\\%s.tap"
+#define DEVICE_PATH_FMT _T("\\\\.\\Global\\%s.tap")
  
 #define TAP_CONTROL_CODE(request,method) \
   CTL_CODE (FILE_DEVICE_UNKNOWN, request, method, FILE_ANY_ACCESS)
@@ -35,7 +36,7 @@ static UINT8*	np2net_Buf[TAP_BUFMAX] = {0};
 static VLANClientState*	np2net_vc = NULL;
 static CRITICAL_SECTION np2net_cs;
 
-CHAR *GetNetWorkDeviceGuid(CONST CHAR *, CHAR *, DWORD);
+TCHAR *GetNetWorkDeviceGuid(CONST TCHAR *, TCHAR *, DWORD);
 
 static REG8		np2net_membuf[NET_ARYLEN][NET_BUFLEN]; // 送信用バッファ
 static int		np2net_membuflen[NET_ARYLEN];
@@ -163,17 +164,17 @@ void np2net_closeTAP(){
 		np2net_vc = NULL;
     }
 }
-int np2net_openTAP(CHAR* tapname){
+int np2net_openTAP(TCHAR* tapname){
 	DWORD dwID;
 	DWORD dwLen;
 	ULONG status = TRUE;
 	OVERLAPPED ovl;
-	UCHAR Buf[2048];
-	CHAR szDevicePath[256];
-	CHAR *szTAPname;
-	CHAR szdefTAPname[] = "TAP1";
+	TCHAR Buf[2048];
+	TCHAR szDevicePath[256];
+	TCHAR *szTAPname;
+	TCHAR szdefTAPname[] = _T("TAP1");
 
-	if(strlen(tapname)){
+	if(_tcslen(tapname)){
 		szTAPname = tapname;
 	}else{
 		szTAPname = szdefTAPname;
@@ -182,12 +183,12 @@ int np2net_openTAP(CHAR* tapname){
 	np2net_closeTAP();
 
 	// 指定された表示名から TAP の GUID を得る
-	if (!GetNetWorkDeviceGuid(szTAPname, (CHAR*)Buf, 2048)) {
+	if (!GetNetWorkDeviceGuid(szTAPname, Buf, 2048)) {
 		TRACEOUT(("LGY-98: [%s] GUID is not found\n", szTAPname));
 		return 1;
 	}
 	TRACEOUT(("LGY-98: [%s] GUID = %s\n", szTAPname, Buf));
-	sprintf(szDevicePath, DEVICE_PATH_FMT, Buf);
+	_stprintf(szDevicePath, DEVICE_PATH_FMT, Buf);
  
 	// TAP デバイスを開く
 	np2net_hTap = CreateFile (szDevicePath, GENERIC_READ | GENERIC_WRITE,
@@ -227,7 +228,7 @@ int np2net_gsuspflag = 0;
 void np2net_send_packet(VLANClientState *vc1, const UINT8 *buf, int size)
 {
     VLANState *vlan = vc1->vlan;
-    VLANClientState *vc;
+    //VLANClientState *vc;
 
     if (vc1->link_down)
         return;
@@ -263,7 +264,7 @@ void np2net_init()
 	np2net_write_ovl.Offset = 0;
 	np2net_write_ovl.OffsetHigh = 0;
 }
-int np2net_reset(CHAR* tapname)
+int np2net_reset(TCHAR* tapname)
 {
 	return np2net_openTAP(tapname);
 }
@@ -289,9 +290,9 @@ void np2net_resume()
 // 参考文献: http://dsas.blog.klab.org/archives/51012690.html
 
 // ネットワークデバイス表示名からデバイス GUID 文字列を検索
-CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
+TCHAR *GetNetWorkDeviceGuid(CONST TCHAR *pDisplayName, TCHAR *pszBuf, DWORD cbBuf)
 {
-  CONST CHAR *SUBKEY = "SYSTEM\\CurrentControlSet\\Control\\Network";
+  CONST TCHAR *SUBKEY = _T("SYSTEM\\CurrentControlSet\\Control\\Network");
  
 #define BUFSZ 256
   // HKLM\SYSTEM\\CurrentControlSet\\Control\\Network\{id1]\{id2}\Connection\Name が
@@ -301,7 +302,7 @@ CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
   HKEY hKey1, hKey2, hKey3;
   LONG nResult;
   DWORD dwIdx1, dwIdx2;
-  CHAR szData[64], *pKeyName1, *pKeyName2, *pKeyName3, *pKeyName4; 
+  TCHAR szData[64], *pKeyName1, *pKeyName2, *pKeyName3, *pKeyName4; 
   DWORD dwSize, dwType = REG_SZ;
   BOOL bDone = FALSE;
   FILETIME ft;
@@ -312,13 +313,12 @@ CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
   // 主キーのオープン
   nResult = RegOpenKeyEx(HKEY_LOCAL_MACHINE, SUBKEY, 0, KEY_READ, &hKey1);
   if (nResult != ERROR_SUCCESS) {
-    printf("GetNetWorkDeviceGuid: open key err HKLM%s\n", SUBKEY);
     return NULL;
   }
-  pKeyName1 = (CHAR*)malloc(BUFSZ);
-  pKeyName2 = (CHAR*)malloc(BUFSZ);
-  pKeyName3 = (CHAR*)malloc(BUFSZ);
-  pKeyName4 = (CHAR*)malloc(BUFSZ);
+  pKeyName1 = (TCHAR*)malloc(sizeof(TCHAR)*BUFSZ);
+  pKeyName2 = (TCHAR*)malloc(sizeof(TCHAR)*BUFSZ);
+  pKeyName3 = (TCHAR*)malloc(sizeof(TCHAR)*BUFSZ);
+  pKeyName4 = (TCHAR*)malloc(sizeof(TCHAR)*BUFSZ);
  
   dwIdx1 = 0;
   while (bDone != TRUE) { // {id1} を列挙するループ
@@ -331,7 +331,7 @@ CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
     }
  
     // SUBKEY\{id1} キーをオープン
-    sprintf(pKeyName2, "%s\\%s", SUBKEY, pKeyName1);
+    _stprintf(pKeyName2, _T("%s\\%s"), SUBKEY, pKeyName1);
     nResult = RegOpenKeyEx(HKEY_LOCAL_MACHINE, pKeyName2,
                           0, KEY_READ, &hKey2);
     if (nResult != ERROR_SUCCESS) {
@@ -351,8 +351,8 @@ CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
       }
  
       // SUBKEY\{id1}\{id2]\Connection キーをオープン
-      sprintf(pKeyName4, "%s\\%s\\%s",
-                      pKeyName2, pKeyName3, "Connection");
+      _stprintf(pKeyName4, _T("%s\\%s\\%s"),
+                      pKeyName2, pKeyName3, _T("Connection"));
       nResult = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
                       pKeyName4, 0, KEY_READ, &hKey3);
       if (nResult != ERROR_SUCCESS) {
@@ -361,12 +361,12 @@ CHAR *GetNetWorkDeviceGuid(CONST CHAR *pDisplayName, CHAR *pszBuf, DWORD cbBuf)
  
       // SUBKEY\{id1}\{id2]\Connection\Name 値を取得
       dwSize = sizeof(szData);
-      nResult = RegQueryValueEx(hKey3, "Name",
+      nResult = RegQueryValueEx(hKey3, _T("Name"),
                       0, &dwType, (LPBYTE)szData, &dwSize);
  
       if (nResult == ERROR_SUCCESS) {
-        if (stricmp(szData, pDisplayName) == 0) {
-          strcpy(pszBuf, pKeyName3);
+        if (_tcsicmp(szData, pDisplayName) == 0) {
+           	_tcscpy(pszBuf, pKeyName3);
           bDone = TRUE;
           break;
         }

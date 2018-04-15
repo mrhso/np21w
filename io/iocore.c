@@ -6,9 +6,11 @@
 #include	"sound.h"
 #include	"fmboard.h"
 #include	"ideio.h"
-#include	"network/lgy98.h"
 #include	"cs4231io.h"
 #include	"iocore16.tbl"
+#ifdef SUPPORT_LGY98
+#include	"network/lgy98.h"
+#endif
 
 
 	_ARTIC		artic;
@@ -87,9 +89,11 @@ static void IOOUTCALL defout8(UINT port, REG8 dat) {
 		dipsw_w8(port, dat);
 		return;
 	}
+//	TRACEOUT(("defout8 - %x %x %.4x %.4x", port, dat, CPU_CS, CPU_IP));
 }
 
 static REG8 IOINPCALL definp8(UINT port) {
+
 #if !defined(DISABLE_SOUND)
 	UINT	tmp;
 
@@ -105,6 +109,7 @@ static REG8 IOINPCALL definp8(UINT port) {
 	if ((port & 0xf0ff) == 0x801e) {
 		return(dipsw_r8(port));
 	}
+//	TRACEOUT(("definp8 - %x %.4x %.4x", port, CPU_CS, CPU_IP));
 	return(0xff);
 }
 
@@ -513,7 +518,7 @@ void iocore_bind(void)
 void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
 
 	IOFUNC	iof;
-	
+
 #if defined(SUPPORT_PC9821)
 	if((port&0xff) == 0xf0 && (port&0xff00) != 0x0000){
 		// Win2000デバイス検出リセット対策（根拠無し）
@@ -521,9 +526,6 @@ void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
 		return;
 	}
 #endif
-	//if((port&0xff00) != 0 && port!=0x07EF && port!=0x0432 && (port&0xffF0)!=0x0640 && (port&0xffF0)!=0x7FD0){
-	//	TRACEOUT(("OUT8 %.4X", port));
-	//}
 //	TRACEOUT(("iocore_out8(%.2x, %.2x)", port, dat));
 	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
@@ -534,6 +536,7 @@ REG8 IOINPCALL iocore_inp8(UINT port) {
 
 	IOFUNC	iof;
 	REG8	ret;
+
 #if defined(SUPPORT_PC9821)
 	if((port&0xff) == 0xf0 && (port&0xff00) != 0x0000){
 		// Win2000デバイス検出リセット対策（根拠無し）
@@ -541,10 +544,6 @@ REG8 IOINPCALL iocore_inp8(UINT port) {
 		return 0xff;
 	}
 #endif
-	//if((port&0xff00) != 0 && port!=0x07EF && port!=0x0432 && (port&0xffF0)!=0x0640 && (port&0xffF0)!=0x7FD0){
-	//	TRACEOUT(("INP8 %.4X", port));
-	//}
-
 	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
 	ret = iof->ioinp[port & 0xff](port);
@@ -570,9 +569,6 @@ void IOOUTCALL iocore_out16(UINT port, REG16 dat) {
 		return;
 	}
 #endif
-	//if(1){
-	//	TRACEOUT(("OUT16 %.4X", port));
-	//}
 	if ((port & 0xfff1) == 0x04a0) {
 		egc_w16(port, dat);
 		return;
@@ -614,9 +610,6 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 		return(lgy98_ib200_16(port));
 	}
 #endif
-	//if(1){
-	//	TRACEOUT(("INP16 %.4X", port));
-	//}
 	if ((port & 0xfffc) == 0x005c) {
 		return(artic_r16(port));
 	}
@@ -657,9 +650,6 @@ void IOOUTCALL iocore_out32(UINT port, UINT32 dat) {
 		return;
 	}
 #endif
-	//if(1){
-	//	TRACEOUT(("OUT32 %.4X", port));
-	//}
 	iocore_out16(port, (UINT16)dat);
 	iocore_out16(port+2, (UINT16)(dat >> 16));
 }
@@ -674,9 +664,6 @@ UINT32 IOINPCALL iocore_inp32(UINT port) {
 		return(pcidev_r32(port));
 	}
 #endif
-	//if(1){
-	//	TRACEOUT(("INP32 %.4X", port));
-	//}
 	ret = iocore_inp16(port);
 	return(ret + (iocore_inp16(port+2) << 16));
 }

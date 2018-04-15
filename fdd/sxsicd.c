@@ -57,7 +57,7 @@ static REG8 sec2048_read(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 
 	FILEH	fh;
 	UINT	rsize;
-	
+
 	if (sxsi_prepare(sxsi) != SUCCESS) {
 		return(0x60);
 	}
@@ -193,7 +193,7 @@ static BRESULT openimg(SXSIDEV sxsi, const OEMCHAR *path,
 
 	FILEH	fh;
 	UINT	type;
-	FILEPOS		totals;
+	FILEPOS	totals;
 	CDINFO	cdinfo;
 	UINT	mediatype;
 	UINT	i;
@@ -260,11 +260,6 @@ static BRESULT openimg(SXSIDEV sxsi, const OEMCHAR *path,
 	sxsi->surfaces = 1;
 	sxsi->headersize = 0;
 	sxsi->mediatype = mediatype;
-
-#if defined(SUPPORT_IDEIO)
-	ideio_notify(sxsi->drv, 1);
-#endif
-
 	return(SUCCESS);
 
 sxsiope_err2:

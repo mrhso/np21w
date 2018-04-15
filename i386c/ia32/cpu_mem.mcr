@@ -28,8 +28,8 @@ valtype MEMCALL \
 cpu_vmemoryread_##width(int idx, UINT32 offset) \
 { \
 	descriptor_t *sdp; \
-	register UINT32 addr; \
-	register int exc; \
+	UINT32 addr; \
+	int exc; \
 \
 	__ASSERT((unsigned int)idx < CPU_SEGREG_NUM); \
 \
@@ -64,8 +64,8 @@ void MEMCALL \
 cpu_vmemorywrite_##width(int idx, UINT32 offset, valtype value) \
 { \
 	descriptor_t *sdp; \
-	register UINT32 addr; \
-	register int exc; \
+	UINT32 addr; \
+	int exc; \
 \
 	__ASSERT((unsigned int)idx < CPU_SEGREG_NUM); \
 \
@@ -103,10 +103,10 @@ UINT32 MEMCALL \
 cpu_vmemory_RMW_##width(int idx, UINT32 offset, UINT32 (CPUCALL *func)(UINT32, void *), void *arg) \
 { \
 	descriptor_t *sdp; \
-	register UINT32 addr; \
-	register UINT32 result; \
+	UINT32 addr; \
+	UINT32 result; \
 	valtype value; \
-	register int exc; \
+	int exc; \
 \
 	__ASSERT((unsigned int)idx < CPU_SEGREG_NUM); \
 \
@@ -116,7 +116,7 @@ cpu_vmemory_RMW_##width(int idx, UINT32 offset, UINT32 (CPUCALL *func)(UINT32, v
 	if (!CPU_STAT_PM) { \
 		value = cpu_memoryread_##width(addr); \
 		result = (*func)(value, arg); \
-		cpu_memorywrite_##width(addr, result); \
+		cpu_memorywrite_##width(addr, (valtype)result); \
 		return value; \
 	} \
 \

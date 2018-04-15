@@ -28,25 +28,25 @@
 #include "ia32.mcr"
 
 /*
- * ãƒšãƒ¼ã‚¸ãƒ•ã‚©ãƒ«ãƒˆä¾‹å¤–
+ * ƒy[ƒWƒtƒHƒ‹ƒg—áŠO
  *
- * 4-31: äºˆç´„æ¸ˆã¿
- *    3: RSVD: 0 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¯äºˆç´„ãƒ“ãƒƒãƒˆé•åã§ã¯ãªã‹ã£ãŸï¼Ž
- *             1 = ãƒšãƒ¼ã‚¸ãƒ»ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¯ï¼Œé•åã¨ãƒžãƒ¼ã‚¯ã•ã‚ŒãŸ PTE ã¾ãŸã¯
- *                 PDE ã®äºˆç´„ãƒ“ãƒƒãƒˆä½ç½®ã®ã†ã¡ä¸€ã¤ã§ï¼Œ1 ãŒæ¤œå‡ºã•ã‚ŒãŸã“ã¨ã§ã‚ã‚‹ï¼Ž
- *    2: U/S:  0 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¨ãªã£ãŸã‚¢ã‚¯ã‚»ã‚¹ã¯ãƒ—ãƒ­ã‚»ãƒƒã‚µãŒã‚¹ãƒ¼ãƒ‘ãƒã‚¤ã‚¶ãƒ»
- *                 ãƒ¢ãƒ¼ãƒ‰ã§å®Ÿè¡Œä¸­ã«è¡Œã‚ã‚ŒãŸï¼Ž
- *             1 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¨ãªã£ãŸã‚¢ã‚¯ã‚»ã‚¹ã¯ãƒ—ãƒ­ã‚»ãƒƒã‚µãŒãƒ¦ãƒ¼ã‚¶ãƒ»ãƒ¢ãƒ¼ãƒ‰ã§
- *                 å®Ÿè¡Œä¸­ã«è¡Œã‚ã‚ŒãŸï¼Ž
- *    1: W/R:  0 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¨ãªã£ãŸã‚¢ã‚¯ã‚»ã‚¹ãŒèª­ã¿å–ã‚Šã§ã‚ã£ãŸï¼Ž
- *             1 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ã¨ãªã£ãŸã‚¢ã‚¯ã‚»ã‚¹ãŒæ›¸ãè¾¼ã¿ã§ã‚ã£ãŸï¼Ž
- *    0: P:    0 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ãŒä¸åœ¨ãƒšãƒ¼ã‚¸ã§ã‚ã£ãŸï¼Ž
- *             1 = ãƒ•ã‚©ãƒ«ãƒˆã®åŽŸå› ãŒãƒšãƒ¼ã‚¸ãƒ»ãƒ¬ãƒ™ãƒ«ä¿è­·é•åã§ã‚ã£ãŸï¼Ž
+ * 4-31: —\–ñÏ‚Ý
+ *    3: RSVD: 0 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚Í—\–ñƒrƒbƒgˆá”½‚Å‚Í‚È‚©‚Á‚½D
+ *             1 = ƒy[ƒWEƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚ÍCˆá”½‚Æƒ}[ƒN‚³‚ê‚½ PTE ‚Ü‚½‚Í
+ *                 PDE ‚Ì—\–ñƒrƒbƒgˆÊ’u‚Ì‚¤‚¿ˆê‚Â‚ÅC1 ‚ªŒŸo‚³‚ê‚½‚±‚Æ‚Å‚ ‚éD
+ *    2: U/S:  0 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚Æ‚È‚Á‚½ƒAƒNƒZƒX‚ÍƒvƒƒZƒbƒT‚ªƒX[ƒpƒoƒCƒUE
+ *                 ƒ‚[ƒh‚ÅŽÀs’†‚És‚í‚ê‚½D
+ *             1 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚Æ‚È‚Á‚½ƒAƒNƒZƒX‚ÍƒvƒƒZƒbƒT‚ªƒ†[ƒUEƒ‚[ƒh‚Å
+ *                 ŽÀs’†‚És‚í‚ê‚½D
+ *    1: W/R:  0 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚Æ‚È‚Á‚½ƒAƒNƒZƒX‚ª“Ç‚ÝŽæ‚è‚Å‚ ‚Á‚½D
+ *             1 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚Æ‚È‚Á‚½ƒAƒNƒZƒX‚ª‘‚«ž‚Ý‚Å‚ ‚Á‚½D
+ *    0: P:    0 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚ª•sÝƒy[ƒW‚Å‚ ‚Á‚½D
+ *             1 = ƒtƒHƒ‹ƒg‚ÌŒ´ˆö‚ªƒy[ƒWEƒŒƒxƒ‹•ÛŒìˆá”½‚Å‚ ‚Á‚½D
  */
 
 /*
- * ä¸‹å·» 4.12. ãƒšãƒ¼ã‚¸ä¿è­·ã¨ã‚»ã‚°ãƒ¡ãƒ³ãƒˆä¿è­·ã®çµ„ã¿åˆã‚ã›
- * ã€Œè¡¨ 4-2. ãƒšãƒ¼ã‚¸ãƒ»ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã¨ãƒšãƒ¼ã‚¸ãƒ»ãƒ†ãƒ¼ãƒ–ãƒ«ã®ä¿è­·ã®çµ„ã¿åˆã‚ã›ã€
+ * ‰ºŠª 4.12. ƒy[ƒW•ÛŒì‚ÆƒZƒOƒƒ“ƒg•ÛŒì‚Ì‘g‚Ý‡‚í‚¹
+ * u•\ 4-2. ƒy[ƒWEƒfƒBƒŒƒNƒgƒŠ‚Æƒy[ƒWEƒe[ƒuƒ‹‚Ì•ÛŒì‚Ì‘g‚Ý‡‚í‚¹v
  *
  * +------------+------------+------------+
  * |    PDE     |    PTE     |   merge    |
@@ -71,11 +71,11 @@
  * |  s  |  rw  |  s  |  rw  |  s  |  rw  |
  * +-----+------+-----+------+-----+------+
  *
- * â€» rw/p : CR0 ã® WP ãƒ“ãƒƒãƒˆãŒ ON ã®å ´åˆã«ã¯ ro
+ * ¦ rw/p : CR0 ‚Ì WP ƒrƒbƒg‚ª ON ‚Ìê‡‚É‚Í ro
  */
 
 /*
- * ãƒ¡ãƒ¢ãƒªã‚¢ã‚¯ã‚»ã‚¹/PxE(ä¸Šè¨˜å‚ç…§)/CPL/CR0 ã¨ãƒšãƒ¼ã‚¸ã‚¢ã‚¯ã‚»ã‚¹æ¨©ã®é–¢ä¿‚
+ * ƒƒ‚ƒŠƒAƒNƒZƒX/PxE(ã‹LŽQÆ)/CPL/CR0 ‚Æƒy[ƒWƒAƒNƒZƒXŒ ‚ÌŠÖŒW
  *
  * +-----+-----+-----+-----+-----+---+
  * | CR0 | CPL | PxE | PxE | ope |   |
@@ -107,7 +107,6 @@
  * |  p  |  u  |  u  |  w  |  w  | o |
  * +-----+-----------+-----+-----+---+
  */
-//#define USE_PAGE_ACCESS_TABLE
 #if !defined(USE_PAGE_ACCESS_TABLE)
 #define	page_access	0xd0ddd0ff
 #else	/* USE_PAGE_ACCESS_TABLE */
@@ -156,17 +155,17 @@ static const UINT8 page_access_bit[32] = {
 
 /*
  *--
- * 32bit ç‰©ç†ã‚¢ãƒ‰ãƒ¬ã‚¹ 4k ãƒšãƒ¼ã‚¸
+ * 32bit •¨—ƒAƒhƒŒƒX 4k ƒy[ƒW
  *
- * ãƒªãƒ‹ã‚¢ãƒ»ã‚¢ãƒ‰ãƒ¬ã‚¹
+ * ƒŠƒjƒAEƒAƒhƒŒƒX
  *  31                    22 21                  12 11                       0
  * +------------------------+----------------------+--------------------------+
- * |  ãƒšãƒ¼ã‚¸ãƒ»ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª  |   ãƒšãƒ¼ã‚¸ãƒ»ãƒ†ãƒ¼ãƒ–ãƒ«   |        ã‚ªãƒ•ã‚»ãƒƒãƒˆ        |
+ * |  ƒy[ƒWEƒfƒBƒŒƒNƒgƒŠ  |   ƒy[ƒWEƒe[ƒuƒ‹   |        ƒIƒtƒZƒbƒg        |
  * +------------------------+----------------------+--------------------------+
  *             |                        |                       |
  * +-----------+            +-----------+                       +----------+
  * |                        |                                              |
- * |  ãƒšãƒ¼ã‚¸ãƒ»ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª  |   ãƒšãƒ¼ã‚¸ãƒ»ãƒ†ãƒ¼ãƒ–ãƒ«            ãƒšãƒ¼ã‚¸         |
+ * |  ƒy[ƒWEƒfƒBƒŒƒNƒgƒŠ  |   ƒy[ƒWEƒe[ƒuƒ‹            ƒy[ƒW         |
  * | +--------------------+ | +-------------------+   +------------------+ |
  * | |                    | | |                   |   |                  | |
  * | |                    | | +-------------------+   |                  | |
@@ -178,7 +177,7 @@ static const UINT8 page_access_bit[32] = {
  *   |                    | | |                   | | |                  |
  * +>+--------------------+ +>+-------------------+ +>+------------------+
  * |
- * +- CR3(ç‰©ç†ã‚¢ãƒ‰ãƒ¬ã‚¹)
+ * +- CR3(•¨—ƒAƒhƒŒƒX)
  */
 
 /* TLB */
@@ -646,13 +645,13 @@ static UINT32 MEMCALL
 paging(UINT32 laddr, int ucrw)
 {
 	struct tlb_entry *ep;
-	register UINT32 paddr;		/* physical address */
-	register UINT32 pde_addr;	/* page directory entry address */
-	register UINT32 pde;		/* page directory entry */
-	register UINT32 pte_addr;	/* page table entry address */
-	register UINT32 pte;		/* page table entry */
-	register UINT bit;
-	register UINT err;
+	UINT32 paddr;		/* physical address */
+	UINT32 pde_addr;	/* page directory entry address */
+	UINT32 pde;		/* page directory entry */
+	UINT32 pte_addr;	/* page table entry address */
+	UINT32 pte;		/* page table entry */
+	UINT bit;
+	UINT err;
 
 	ep = tlb_lookup(laddr, ucrw);
 	if (ep != NULL)
@@ -712,7 +711,7 @@ paging(UINT32 laddr, int ucrw)
 		cpu_memorywrite_d(pte_addr, pte);
 	}
 
-	tlb_update(laddr, pte, (bit & (CPU_PTE_WRITABLE|CPU_PTE_USER_MODE)) + ((ucrw & CPU_PAGE_CODE)>>1/* ? 1 : 0*/));
+	tlb_update(laddr, pte, (bit & (CPU_PTE_WRITABLE|CPU_PTE_USER_MODE)) + ((ucrw & CPU_PAGE_CODE) ? 1 : 0));
 
 	return paddr;
 
@@ -775,26 +774,22 @@ tlb_init(void)
 void MEMCALL
 tlb_flush(BOOL allflush)
 {
-	tlb_t *tt;
 	struct tlb_entry *ep;
-	register int i;
-	register int n;
+	int i;
+	int n;
 
 	if (allflush) {
 		tlb_init();
 		return;
 	}
 
-	tt = tlb;
 	for (n = 0; n < NTLB; n++) {
-		ep = tt->entry;
 		for (i = 0; i < NENTRY ; i++) {
+			ep = &tlb[n].entry[i];
 			if (TLB_IS_VALID(ep) && !TLB_IS_GLOBAL(ep)) {
 				TLB_SET_INVALID(ep);
 			}
-			ep++;
 		}
-		tt++;
 	}
 }
 
@@ -802,8 +797,8 @@ void MEMCALL
 tlb_flush_page(UINT32 laddr)
 {
 	struct tlb_entry *ep;
-	register int idx;
-	register int n;
+	int idx;
+	int n;
 
 	idx = (laddr >> TLB_ENTRY_SHIFT) & TLB_ENTRY_MASK;
 
@@ -821,11 +816,11 @@ struct tlb_entry * MEMCALL
 tlb_lookup(UINT32 laddr, int ucrw)
 {
 	struct tlb_entry *ep;
-	register UINT bit;
-	register int idx;
-	register int n;
+	UINT bit;
+	int idx;
+	int n;
 
-	n = (ucrw & CPU_PAGE_CODE)>>1;// ? 1 : 0;
+	n = (ucrw & CPU_PAGE_CODE) ? 1 : 0;
 	idx = (laddr >> TLB_ENTRY_SHIFT) & TLB_ENTRY_MASK;
 	ep = &tlb[n].entry[idx];
 
@@ -853,8 +848,8 @@ static void MEMCALL
 tlb_update(UINT32 laddr, UINT entry, int bit)
 {
 	struct tlb_entry *ep;
-	register int idx;
-	register int n;
+	int idx;
+	int n;
 
 	n = bit & 1;
 	idx = (laddr >> TLB_ENTRY_SHIFT) & TLB_ENTRY_MASK;

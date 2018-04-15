@@ -144,7 +144,7 @@ static void getcattime(const ZIPCAT *cat, ARCTIME *at) {
 typedef struct {
 	_ARCFH	arcfh;
 	FILEH	fh;
-	FILEPOS	fposbase;
+	long	fposbase;
 	UINT	pos;
 	UINT	size;
 } METHOD0;
@@ -153,7 +153,7 @@ static UINT method0_read(ARCFH arcfh, void *buffer, UINT size) {
 
 	METHOD0	*m0;
 	UINT	rsize;
-	FILEPOS	fpos;
+	long	fpos;
 
 	m0 = (METHOD0 *)arcfh;
 	rsize = m0->size - m0->pos;
@@ -170,7 +170,7 @@ static UINT method0_read(ARCFH arcfh, void *buffer, UINT size) {
 	return(rsize);
 }
 
-static FILEPOS method0_seek(ARCFH arcfh, FILEPOS pos, UINT method) {
+static long method0_seek(ARCFH arcfh, long pos, UINT method) {
 
 	METHOD0	*m0;
 
@@ -191,7 +191,7 @@ static FILEPOS method0_seek(ARCFH arcfh, FILEPOS pos, UINT method) {
 	if (pos < 0) {
 		pos = 0;
 	}
-	else if (pos > (FILEPOS)m0->size) {
+	else if (pos > (long)m0->size) {
 		pos = m0->size;
 	}
 	m0->pos = (UINT)pos;
@@ -204,7 +204,7 @@ static void method0_close(ARCFH arcfh) {
 	_MFREE(arcfh);
 }
 
-static ARCFH method0_open(ARCH arch, FILEH fh, FILEPOS fpos, const ZIPDAT *zd) {
+static ARCFH method0_open(ARCH arch, FILEH fh, long fpos, const ZIPDAT *zd) {
 
 	UINT	size;
 	METHOD0	*ret;
@@ -237,7 +237,7 @@ static ARCFH method0_open(ARCH arch, FILEH fh, FILEPOS fpos, const ZIPDAT *zd) {
 typedef struct {
 	_ARCFH		arcfh;
 	FILEH		fh;
-	FILEPOS		fposbase;
+	long		fposbase;
 	UINT		srcsize;
 	UINT		srcpos;
 	UINT		dstsize;
@@ -268,7 +268,7 @@ static UINT method8read(METHOD8 *m8, void *buffer, UINT size) {
 	UINT	r;
 	UINT8	*ptr;
 	UINT	dstrem;
-	FILEPOS	fpos;
+	long	fpos;
 
 	r = m8->dstsize - m8->dstpos;
 	size = min(size, r);
@@ -339,7 +339,7 @@ static UINT method8_read(ARCFH arcfh, void *buffer, UINT size) {
 	return(method8read(m8, buffer, size));
 }
 
-static FILEPOS method8_seek(ARCFH arcfh, FILEPOS pos, UINT method) {
+static long method8_seek(ARCFH arcfh, long pos, UINT method) {
 
 	METHOD8	*m8;
 
@@ -377,7 +377,7 @@ static void method8_close(ARCFH arcfh) {
 	_MFREE(arcfh);
 }
 
-static ARCFH method8_open(ARCH arch, FILEH fh, FILEPOS fpos, const ZIPDAT *zd) {
+static ARCFH method8_open(ARCH arch, FILEH fh, long fpos, const ZIPDAT *zd) {
 
 	METHOD8	*ret;
 
@@ -405,7 +405,7 @@ static ARCFH openzipfile(ARCH arch, const ZIPCAT *cat) {
 
 	ZIPHDL	*hdl;
 	UINT	method;
-	FILEPOS	fpos;
+	long	fpos;
 	UINT	size;
 	FILEH	fh;
 	ZIPDAT	zd;
@@ -563,9 +563,9 @@ const ZIPCAT	*cat;
 
 // ---- unzip open
 
-static BRESULT getziphdrpos(FILEH fh, FILEPOS *hdrpos) {
+static BRESULT getziphdrpos(FILEH fh, long *hdrpos) {
 
-	FILEPOS	fpos;
+	long	fpos;
 	UINT	bufrem;
 	UINT8	buf[0x400];
 	UINT	rsize;
@@ -575,7 +575,7 @@ static BRESULT getziphdrpos(FILEH fh, FILEPOS *hdrpos) {
 	bufrem = 0;
 	while(fpos > 0) {
 		rsize = NELEMENTS(buf) - bufrem;
-		rsize = (UINT)(min(fpos, (FILEPOS)rsize));
+		rsize = (UINT)(min(fpos, (long)rsize));
 		fpos -= rsize;
 		r = bufrem;
 		while(r) {
@@ -612,10 +612,10 @@ static void deinitialize(ARCH arch) {
 ARCH arcunzip_open(const OEMCHAR *path) {
 
 	FILEH	fh;
-	FILEPOS	fpos;
+	long	fpos;
 	ZIPHDR	hdr;
 	UINT	catsize;
-	FILEPOS	catfpos;
+	long	catfpos;
 	ZIPHDL	*ret;
 
 //	TRACEOUT(("open file: %s", path));

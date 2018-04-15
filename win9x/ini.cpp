@@ -467,15 +467,11 @@ static const PFTBL s_IniItems[] =
 
 	PFEXT("DIPswtch", PFTYPE_BIN,		np2cfg.dipsw,			3),
 	PFEXT("MEMswtch", PFTYPE_BIN,		np2cfg.memsw,			8),
-	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			1023),
+	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			255),
 	PFVAL("ITF_WORK", PFRO_BOOL,		&np2cfg.ITF_WORK),
 
 	PFSTR("HDD1FILE", PFTYPE_STR,		np2cfg.sasihdd[0]),
 	PFSTR("HDD2FILE", PFTYPE_STR,		np2cfg.sasihdd[1]),
-#if defined(SUPPORT_IDEIO)
-	//PFSTR("IDE3FILE", PFTYPE_STR,		np2cfg.idecd[0]),
-	//PFSTR("IDE4FILE", PFTYPE_STR,		np2cfg.idecd[1]),
-#endif
 #if defined(SUPPORT_SCSI)
 	PFSTR("SCSIHDD0", PFTYPE_STR,		np2cfg.scsihdd[0]),
 	PFSTR("SCSIHDD1", PFTYPE_STR,		np2cfg.scsihdd[1]),
@@ -483,7 +479,7 @@ static const PFTBL s_IniItems[] =
 	PFSTR("SCSIHDD3", PFTYPE_STR,		np2cfg.scsihdd[3]),
 #endif
 
-	PFVAL("SampleHz", PFTYPE_UINT16,	&np2cfg.samplingrate),
+	PFVAL("SampleHz", PFTYPE_UINT32,	&np2cfg.samplingrate),
 	PFVAL("Latencys", PFTYPE_UINT16,	&np2cfg.delayms),
 	PFVAL("SNDboard", PFTYPE_HEX8,		&np2cfg.SOUND_SW),
 	PFAND("BEEP_vol", PFTYPE_UINT8,		&np2cfg.BEEP_VOL,		3),
@@ -540,7 +536,7 @@ static const PFTBL s_IniItems[] =
 	PFEXT("FDDRIVE2", PFRO_BITMAP,		&np2cfg.fddequip,		1),
 	PFEXT("FDDRIVE3", PFRO_BITMAP,		&np2cfg.fddequip,		2),
 	PFEXT("FDDRIVE4", PFRO_BITMAP,		&np2cfg.fddequip,		3),
-	
+
 #if defined(SUPPORT_LGY98)
 	PFVAL("USELGY98", PFTYPE_BOOL,		&np2cfg.uselgy98),
 	PFVAL("LGY98_IO", PFTYPE_UINT16,	&np2cfg.lgy98io),
@@ -549,6 +545,7 @@ static const PFTBL s_IniItems[] =
 #endif
 #if defined(SUPPORT_CL_GD5430)
 	PFVAL("USEGD5430", PFTYPE_BOOL,		&np2cfg.usegd5430),
+	PFVAL("GD5430TYPE",PFTYPE_UINT8,	&np2cfg.gd5430type),
 #endif
 
 	// OSàÀë∂ÅH
@@ -608,6 +605,14 @@ static const PFTBL s_IniItems[] =
 	PFVAL("fscrn_cy", PFRO_SINT32,		&np2oscfg.fscrn_cy),
 	PFVAL("fscrnbpp", PFRO_UINT8,		&np2oscfg.fscrnbpp),
 	PFVAL("fscrnmod", PFTYPE_HEX8,		&np2oscfg.fscrnmod),
+
+	PFVAL("snddev_t", PFTYPE_UINT8,		&np2oscfg.cSoundDeviceType),
+	PFSTR("snddev_n", PFTYPE_STR,		np2oscfg.szSoundDeviceName),
+
+#if defined(SUPPORT_VSTi)
+	PFSTR("VSTiFile", PFRO_STR,			np2oscfg.szVSTiFile),
+#endif	// defined(SUPPORT_VSTi)
+
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };
 

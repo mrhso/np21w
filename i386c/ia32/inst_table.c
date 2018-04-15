@@ -29,20 +29,20 @@
 #include "inst_table.h"
 #include "groups.h"
 
-#include "bin_arith.h"
-#include "bit_byte.h"
-#include "ctrl_trans.h"
-#include "data_trans.h"
-#include "dec_arith.h"
-#include "flag_ctrl.h"
-#include "logic_arith.h"
-#include "misc_inst.h"
-#include "seg_reg.h"
-#include "shift_rotate.h"
-#include "string_inst.h"
-#include "system_inst.h"
+#include "ia32/instructions/bin_arith.h"
+#include "ia32/instructions/bit_byte.h"
+#include "ia32/instructions/ctrl_trans.h"
+#include "ia32/instructions/data_trans.h"
+#include "ia32/instructions/dec_arith.h"
+#include "ia32/instructions/flag_ctrl.h"
+#include "ia32/instructions/logic_arith.h"
+#include "ia32/instructions/misc_inst.h"
+#include "ia32/instructions/seg_reg.h"
+#include "ia32/instructions/shift_rotate.h"
+#include "ia32/instructions/string_inst.h"
+#include "ia32/instructions/system_inst.h"
 
-#include "instructions/fpu/fp.h"
+#include "ia32/instructions/fpu/fp.h"
 
 
 /*
@@ -337,9 +337,9 @@ UINT8 insttable_info[256] = {
 	0,
 };
 
-void (*insttable_1byte[2*256])(void) = {
+void (*insttable_1byte[2][256])(void) = {
 	/* 16bit */
-	//{
+	{
 		ADD_EbGb,		/* 00 */
 		ADD_EwGw,
 		ADD_GbEb,
@@ -611,10 +611,10 @@ void (*insttable_1byte[2*256])(void) = {
 		STD,
 		Grp4,
 		Grp5_Ew,
-	//},
+	},
 
 	/* 32bit */
-	//{
+	{
 		ADD_EbGb,		/* 00 */
 		ADD_EdGd,
 		ADD_GbEb,
@@ -886,12 +886,12 @@ void (*insttable_1byte[2*256])(void) = {
 		STD,
 		Grp4,
 		Grp5_Ed,
-	//},
+	},
 };
 
-void (*insttable_2byte[2*256])(void) = {
+void (*insttable_2byte[2][256])(void) = {
 	/* 16bit */
-	//{
+	{
 		Grp6,			/* 00 */
 		Grp7,
 		LAR_GwEw,
@@ -1163,10 +1163,10 @@ void (*insttable_2byte[2*256])(void) = {
 		undef_op,
 		undef_op,
 		undef_op,
-	//},
+	},
 
 	/* 32bit */
-	//{
+	{
 		Grp6,			/* 00 */
 		Grp7,
 		LAR_GdEw,
@@ -1438,7 +1438,7 @@ void (*insttable_2byte[2*256])(void) = {
 		undef_op,
 		undef_op,
 		undef_op,
-	//},
+	},
 };
 
 

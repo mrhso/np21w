@@ -114,16 +114,19 @@ extern REG8		ga_relay;
 extern void		*cirrusvga_opaque;
 //extern UINT8	*g_memptr;
 extern UINT32	ga_VRAMWindowAddr;
+extern int		ga_wndwidth;
+extern int		ga_wndheight;
 
 
 // –³—–î—ŠO‚©‚çŒÄ‚×‚é‚æ‚¤‚É
 void pc98_cirrus_vga_init();
 void pc98_cirrus_vga_bind();
 void pc98_cirrus_vga_shutdown();
+void pc98_cirrus_vga_resetscreensize();
 
 void cirrusvga_setGAWindow(HWND hWnd, HDC hdc);
 
-void np2vga_init(HINSTANCE g_hInstance);
+void np2vga_init(HINSTANCE hInstance, HWND g_hWndMain);
 void np2vga_drawframe();
 void np2vga_shutdown();
 

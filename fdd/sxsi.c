@@ -264,7 +264,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 			if (cdchange_flag) {
 				// CD交換中
 				if(GetTickCount()-cdchange_reqtime>15000){
-					// 怪しいので再度要求
+					// 怪しいので再度交換要求
 					cdchange_timeoutset();
 				}
 				return(FAILURE);
@@ -272,9 +272,9 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 			if ((fname == NULL) || (fname[0] == '\0')) {
 				int num = drv & 0x0f;
 				ideio_notify(sxsi->drv, 0);
-				file_cpyname(sxsi->fname, "\0\0\0\0", 1);
+				file_cpyname(sxsi->fname, _T("\0\0\0\0"), 1);
 				sxsi->flag = 0;
-				file_cpyname(np2cfg.idecd[num-2], "\0\0\0\0", 1);
+				file_cpyname(np2cfg.idecd[num-2], _T("\0\0\0\0"), 1);
 				sysmng_updatecaption(1);
 				return(SUCCESS);
 			}
@@ -297,7 +297,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 					sysmng_updatecaption(1);
 				}else{
 					int num = drv & 0x0f;
-					file_cpyname(np2cfg.idecd[num-2], "\0\0\0\0", 1);
+					file_cpyname(np2cfg.idecd[num-2], _T("\0\0\0\0"), 1);
 					sysmng_updatecaption(1);
 				}
 			}

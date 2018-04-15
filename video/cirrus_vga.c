@@ -33,7 +33,7 @@
 #if defined(SUPPORT_CL_GD5430)
 
 #include	"video.h"
-#include	"cirrus_vga.h"
+#include	"video/cirrus_vga.h"
 #include	"vga_int.h"
 #include	"dosio.h"
 #include	"cpucore.h"
@@ -54,6 +54,9 @@ BITMAPINFO *ga_bmpInfo;
 HWND ga_hWnd = NULL;
 HDC ga_hdc = NULL;
 HPALETTE ga_hpal = NULL;
+
+HBITMAP hBmpBuf;
+HDC     hdcBuf;
 
 UINT32 ga_VRAMWindowAddr = (0x0F<<24);
 
@@ -2196,7 +2199,7 @@ static void cirrus_mem_writeb_mode4and5_16bpp(CirrusVGAState * s,
 
 uint32_t_ cirrus_vga_mem_readb(void *opaque, target_phys_addr_t addr)
 {
-    CirrusVGAState *s = opaque;
+    CirrusVGAState *s = (CirrusVGAState*)opaque;
     unsigned bank_index;
     unsigned bank_offset;
     uint32_t_ val;
@@ -2273,7 +2276,7 @@ uint32_t_ cirrus_vga_mem_readl(void *opaque, target_phys_addr_t addr)
 void cirrus_vga_mem_writeb(void *opaque, target_phys_addr_t addr,
                                   uint32_t_ mem_value)
 {
-    CirrusVGAState *s = opaque;
+    CirrusVGAState *s = (CirrusVGAState*)opaque;
     unsigned bank_index;
     unsigned bank_offset;
     unsigned mode;
@@ -3743,6 +3746,8 @@ void cirrusvga_drawGraphic(){
 	HCURSOR hCursor = GetCursor();
 	HWND hWnd = ga_hWnd;
 	HDC hdc = ga_hdc;
+	static int lastscalemode = 0;
+	int scalemode = 0;
 	int r;
 	int scanW = 0;
 	int scanpixW = 0;
@@ -3806,6 +3811,18 @@ void cirrusvga_drawGraphic(){
 	ga_bmpInfo->bmiHeader.biPlanes = 1;
 	ga_bmpInfo->bmiHeader.biBitCount = bpp;
 	vga_draw_graphic((VGAState *)cirrusvga, 1);
+	scalemode = ga_wndwidth!=width || ga_wndheight!=height;
+	if(lastscalemode!=scalemode){
+		if(scalemode){
+			SetStretchBltMode(ga_hdc, HALFTONE);
+		}else{
+			SetStretchBltMode(ga_hdc, BLACKONWHITE);
+		}
+		lastscalemode = scalemode;
+	}
+	if(scalemode){
+		hdc = hdcBuf;
+	}
 	if(bpp<=8){
 		if(cirrusvga_paletteChanged){
 			//for(i=0;i<256;i++){
@@ -3857,6 +3874,22 @@ void cirrusvga_drawGraphic(){
 				);
 				scanptr += scanW;
 			}
+		}
+	}
+	if(scalemode){
+		if(ga_wndwidth * height != width * ga_wndheight){
+			int dstw = width * ga_wndheight / height;
+			int dsth = ga_wndheight;
+			int mgnw = (ga_wndwidth - dstw);
+			int shx = 0;
+			if(mgnw&0x1) shx = 1;
+			mgnw = mgnw>>1;
+			// ‰¡’·Œˆ‚ß‘Å‚¿
+			BitBlt(ga_hdc, 0, 0, mgnw, ga_wndheight, NULL, 0, 0, BLACKNESS);
+			BitBlt(ga_hdc, ga_wndwidth-mgnw-shx, 0, mgnw+shx, ga_wndheight, NULL, 0, 0, BLACKNESS);
+			StretchBlt(ga_hdc, mgnw, 0, dstw, dsth, hdcBuf, 0, 0, width, height, SRCCOPY);
+		}else{
+			StretchBlt(ga_hdc, 0, 0, ga_wndwidth, ga_wndheight, hdcBuf, 0, 0, width, height, SRCCOPY);
 		}
 	}
 	ga_bmpInfo->bmiHeader.biWidth = width; // ‘O‰ñ‚Ì‰ð‘œ“x‚ð•Û‘¶
@@ -4024,7 +4057,7 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 	TRACEOUT(("CIRRUS VGA: inp %04X", port));
 	switch(cirrusvga_regindexA2){
 	case 0x00:
-		ret = 0x5B;
+		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
 		ret = 0x80;
@@ -4082,7 +4115,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 	TRACEOUT(("CIRRUS VGA: inp %04X", port));
 	switch(cirrusvga_regindex){
 	case 0x00:
-		ret = 0x5B;
+		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
 		ret = 0x80;
@@ -4288,11 +4321,17 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 
 void pc98_cirrus_vga_init()
 {
+	RECT rc;
+	HDC hdc;
 	UINT i;
 	WORD* PalIndexes;
 	ga_bmpInfo = (BITMAPINFO*)calloc(1, sizeof(BITMAPINFO)+sizeof(WORD)*256);	
 	PalIndexes = (WORD*)((char*)ga_bmpInfo + sizeof(BITMAPINFOHEADER));
 	for (i = 0; i < 256; ++i) PalIndexes[i] = i;
+    hdc = GetDC(ga_hWnd);
+    hBmpBuf = CreateCompatibleBitmap(hdc, 1024, 768);
+    hdcBuf = CreateCompatibleDC(NULL);
+    SelectObject(hdcBuf, hBmpBuf);
 	//ga_hpal = 
 	//vga_common_init((VGAState *)s, vga_ram_base, vga_ram_offset, vga_ram_size);
 }
@@ -4314,7 +4353,17 @@ void pc98_cirrus_vga_bind()
 void pc98_cirrus_vga_shutdown()
 {
 	//DeleteObject(ga_hpal);
+	DeleteDC(hdcBuf);
+	DeleteObject(hBmpBuf);
 	free(ga_bmpInfo);
+}
+void pc98_cirrus_vga_resetscreensize()
+{
+	RECT rect = {0};
+    cirrusvga->get_resolution((VGAState*)cirrusvga, &rect.right, &rect.bottom);
+	AdjustWindowRectEx( &rect, WS_OVERLAPPEDWINDOW, FALSE, 0 );
+	SetWindowPos( ga_hWnd, NULL, 0, 0, rect.right-rect.left, rect.bottom-rect.top, SWP_NOMOVE|SWP_NOZORDER );
+	cirrusvga_paletteChanged = 1;
 }
 
 

@@ -3,11 +3,11 @@
 #include	"iocore.h"
 #include	"cbuscore.h"
 #include	"ideio.h"
-#include	"network/lgy98.h"
 #include	"sasiio.h"
 #include	"scsiio.h"
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
+#include	"network/lgy98.h"
 #include	"video/video.h"
 
 

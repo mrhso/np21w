@@ -8,12 +8,8 @@
  * @date	$Date: 2011/03/09 00:22:18 $
  */
 
-#pragma once
-
 #include "targetver.h"
 #define _USE_MATH_DEFINES
-#include <winsock2.h>
-#pragma comment(lib, "Ws2_32.lib")
 #include <windows.h>
 #if !defined(__GNUC__)
 #include <tchar.h>
@@ -76,7 +72,6 @@ typedef	signed __int64		SINT64;
 #define	sigsetjmp(env, mask)	setjmp(env)
 #define	siglongjmp(env, val)	longjmp(env, val)
 #endif	// !defined(__GNUC__)
-//#define	msgbox(title, msg)		MessageBox(NULL, msg, title, MB_OK)
 #define	msgbox(title, msg)		MessageBoxA(NULL, msg, title, MB_OK)
 
 #define	STRCALL		__stdcall
@@ -90,7 +85,6 @@ typedef	signed __int64		SINT64;
 #define	OEMSTRLEN			lstrlen
 
 #include "common.h"
-#include "memtool.h"
 #include "milstr.h"
 #include "_memory.h"
 #include "rect.h"
@@ -101,8 +95,7 @@ typedef	signed __int64		SINT64;
 
 #define	GETTICK()			GetTickCounter()
 #if defined(TRACE)
-//#define	__ASSERT(s)			assert(s)
-#define	__ASSERT(s)
+#define	__ASSERT(s)			assert(s)
 #else
 #define	__ASSERT(s)
 #endif
@@ -155,7 +148,9 @@ typedef	signed __int64		SINT64;
 #define	SUPPORT_CRT15KHZ
 #define	SUPPORT_PC9861K
 #define	SUPPORT_SOFTKBD		0
-#define	SUPPORT_S98
+#define SUPPORT_S98
+#define SUPPORT_WAVEREC
+#define SUPPORT_RECVIDEO
 #define	SUPPORT_KEYDISP
 #define	SUPPORT_MEMDBG32
 #define	SUPPORT_HOSTDRV
@@ -170,11 +165,17 @@ typedef	signed __int64		SINT64;
 #define	SUPPORT_DCLOCK
 #endif
 
-//#define	SUPPORT_RESUME
-//#define	SUPPORT_STATSAVE	10
+#define	SUPPORT_RESUME
+#define	SUPPORT_STATSAVE	10
 #define	SUPPORT_ROMEO
 
+#define SOUND_CRITICAL
 #define	SOUNDRESERVE	20
+#define SUPPORT_VSTi
+#define SUPPORT_ASIO
+#if (_MSC_VER >= 1500)
+#define SUPPORT_WASAPI
+#endif	/* (_MSC_VER >= 1500) */
 
 #define	SUPPORT_TEXTCNV
 
@@ -191,3 +192,16 @@ typedef long	FILEPOS;
 typedef long	FILELEN;
 #define	NHD_MAXSIZE	2000
 #endif
+
+
+#if (_MSC_VER >= 1500)
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_IA64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+#endif	/* (_MSC_VER >= 1500) */

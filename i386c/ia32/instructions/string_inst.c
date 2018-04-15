@@ -24,8 +24,8 @@
  */
 
 #include "compiler.h"
-#include "cpu.h"
-#include "ia32.mcr"
+#include "ia32/cpu.h"
+#include "ia32/ia32.mcr"
 
 #include "string_inst.h"
 
@@ -34,7 +34,7 @@
 void
 MOVSB_XbYb(void)
 {
-	register UINT8 tmp;
+	UINT8 tmp;
 
 	CPU_WORKCLOCK(5);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -54,7 +54,7 @@ MOVSB_XbYb(void)
 void
 MOVSW_XwYw(void)
 {
-	register UINT16 tmp;
+	UINT16 tmp;
 
 	CPU_WORKCLOCK(5);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -74,7 +74,7 @@ MOVSW_XwYw(void)
 void
 MOVSD_XdYd(void)
 {
-	register UINT32 tmp;
+	UINT32 tmp;
 
 	CPU_WORKCLOCK(5);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -96,7 +96,7 @@ MOVSD_XdYd(void)
 void
 CMPSB_XbYb(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(8);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -118,7 +118,7 @@ CMPSB_XbYb(void)
 void
 CMPSW_XwYw(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(8);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -140,7 +140,7 @@ CMPSW_XwYw(void)
 void
 CMPSD_XdYd(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(8);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -164,7 +164,7 @@ CMPSD_XdYd(void)
 void
 SCASB_ALXb(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(7);
 	dst = CPU_AL;
@@ -182,7 +182,7 @@ SCASB_ALXb(void)
 void
 SCASW_AXXw(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(7);
 	dst = CPU_AX;
@@ -200,7 +200,7 @@ SCASW_AXXw(void)
 void
 SCASD_EAXXd(void)
 {
-	register UINT32 src, dst, res;
+	UINT32 src, dst, res;
 
 	CPU_WORKCLOCK(7);
 	dst = CPU_EAX;
@@ -327,7 +327,7 @@ _REPE(void)
 void
 INSB_YbDX(void)
 {
-	register UINT8 data;
+	UINT8 data;
 
 	CPU_WORKCLOCK(12);
 	data = cpu_in(CPU_DX);
@@ -343,7 +343,7 @@ INSB_YbDX(void)
 void
 INSW_YwDX(void)
 {
-	register UINT16 data;
+	UINT16 data;
 
 	CPU_WORKCLOCK(12);
 	data = cpu_in_w(CPU_DX);
@@ -359,7 +359,7 @@ INSW_YwDX(void)
 void
 INSD_YdDX(void)
 {
-	register UINT32 data;
+	UINT32 data;
 
 	CPU_WORKCLOCK(12);
 	data = cpu_in_d(CPU_DX);
@@ -377,7 +377,7 @@ INSD_YdDX(void)
 void
 OUTSB_DXXb(void)
 {
-	register UINT8 data;
+	UINT8 data;
 
 	CPU_WORKCLOCK(14);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -395,7 +395,7 @@ OUTSB_DXXb(void)
 void
 OUTSW_DXXw(void)
 {
-	register UINT16 data;
+	UINT16 data;
 
 	CPU_WORKCLOCK(14);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -413,7 +413,7 @@ OUTSW_DXXw(void)
 void
 OUTSD_DXXd(void)
 {
-	register UINT32 data;
+	UINT32 data;
 
 	CPU_WORKCLOCK(14);
 	CPU_INST_SEGREG_INDEX = DS_FIX;

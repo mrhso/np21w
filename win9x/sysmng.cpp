@@ -62,12 +62,12 @@ void sysmng_updatecaption(UINT8 flag) {
 															NELEMENTS(title));
 		}
 #ifdef SUPPORT_IDEIO
-		if (strlen(np2cfg.idecd[0])) {
+		if (_tcslen(np2cfg.idecd[0])) {
 			milstr_ncat(title, OEMTEXT("  CD1:"), NELEMENTS(title));
 			milstr_ncat(title, file_getname(np2cfg.idecd[0]),
 															NELEMENTS(title));
 		}
-		if (strlen(np2cfg.idecd[1])){//sxsi_getdevtype(3)!=SXSIDEV_NC) {
+		if (_tcslen(np2cfg.idecd[1])){//sxsi_getdevtype(3)!=SXSIDEV_NC) {
 			milstr_ncat(title, OEMTEXT("  CD2:"), NELEMENTS(title));
 			milstr_ncat(title, file_getname(np2cfg.idecd[1]),
 															NELEMENTS(title));
@@ -91,7 +91,7 @@ void sysmng_updatecaption(UINT8 flag) {
 			if (clock[0] == '\0') {
 				milstr_ncpy(clock, OEMTEXT(" -"), NELEMENTS(clock));
 			}
-			milstr_ncat(clock, work, sizeof(clock));
+			milstr_ncat(clock, work, NELEMENTS(clock));
 #if 0
 			OEMSPRINTF(work, OEMTEXT(" (debug: OPN %d / PSG %s)"),
 							opngen.playing,
