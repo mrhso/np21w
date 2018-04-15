@@ -1,7 +1,6 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"i286c.h"
-#include	"memory.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"i286c.mcr"
@@ -70,6 +69,75 @@ I286EXT i286c_rep_outsw(void) {
 
 // ---------------------------------------------------------------------- movs
 
+#if 1
+I286EXT i286c_rep_movsb(void) {
+
+	UINT16	r_cx;
+	int		stp;
+	UINT16	r_si;
+	UINT16	r_di;
+
+	I286_WORKCLOCK(5);
+	r_cx = I286_CX;
+	if (r_cx) {
+		stp = STRING_DIR;
+		r_si = I286_SI;
+		r_di = I286_DI;
+		while(1) {
+			REG8 dat = i286_memoryread(DS_FIX + r_si);
+			i286_memorywrite(ES_BASE + r_di, dat);
+			r_si += stp;
+			r_di += stp;
+			I286_WORKCLOCK(4);
+			r_cx--;
+			if (!r_cx) {
+				break;
+			}
+			if (I286_REMCLOCK <= 0) {
+				I286_IP -= I286_PREFIX + 1;
+				break;
+			}
+		}
+		I286_CX = r_cx;
+		I286_SI = r_si;
+		I286_DI = r_di;
+	}
+}
+
+I286EXT i286c_rep_movsw(void) {
+
+	UINT16	r_cx;
+	int		stp;
+	UINT16	r_si;
+	UINT16	r_di;
+
+	I286_WORKCLOCK(5);
+	r_cx = I286_CX;
+	if (r_cx) {
+		stp = STRING_DIRx2;
+		r_si = I286_SI;
+		r_di = I286_DI;
+		while(1) {
+			REG16 dat = i286_memoryread_w(DS_FIX + r_si);
+			i286_memorywrite_w(ES_BASE + r_di, dat);
+			r_si += stp;
+			r_di += stp;
+			I286_WORKCLOCK(4);
+			r_cx--;
+			if (!r_cx) {
+				break;
+			}
+			if (I286_REMCLOCK <= 0) {
+				I286_IP -= I286_PREFIX + 1;
+				break;
+			}
+		}
+		I286_CX = r_cx;
+		I286_SI = r_si;
+		I286_DI = r_di;
+	}
+}
+#else
 I286EXT i286c_rep_movsb(void) {
 
 	I286_WORKCLOCK(5);
@@ -86,7 +154,7 @@ I286EXT i286c_rep_movsb(void) {
 				break;
 			}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}
@@ -109,12 +177,13 @@ I286EXT i286c_rep_movsw(void) {
 				break;
 			}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}
 	}
 }
+#endif
 
 
 // ---------------------------------------------------------------------- lods
@@ -133,7 +202,7 @@ I286EXT i286c_rep_lodsb(void) {
 				break;
 			}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}
@@ -154,7 +223,7 @@ I286EXT i286c_rep_lodsw(void) {
 		 		break;
 		 	}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}
@@ -178,7 +247,7 @@ I286EXT i286c_rep_stosb(void) {
 				break;
 			}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}
@@ -199,7 +268,7 @@ I286EXT i286c_rep_stosw(void) {
 				break;
 			}
 			if (I286_REMCLOCK <= 0) {
-				I286_IP -= i286core.s.prefix + 1;
+				I286_IP -= I286_PREFIX + 1;
 				break;
 			}
 		}

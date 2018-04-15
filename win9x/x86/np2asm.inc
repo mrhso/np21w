@@ -47,30 +47,39 @@ SCRN_BUFSIZE	equ		04b000h
 
 GDCCMD_MAX		equ		32
 
-				struc	i286stat_t
+				struc	i286core_t
 .reg			resw	14
-.remainclock	resd	1
-.baseclock		resd	1
-.clock			resd	1
-.adrsmask		resd	1
 .es_base		resd	1
 .cs_base		resd	1
 .ss_base		resd	1
 .ds_base		resd	1
 .ss_fix			resd	1
 .ds_fix			resd	1
+.adrsmask		resd	1
 .prefix			resw	1
 .trap			resb	1
-.cpu_type		resb	1
-.pf_semaphore	resd	1
-.repbak			resd	1
-.inport			resd	1
+.resetreq		resb	1
 .prefetchque	resd	1
 .GDTR			resb	6
-.IDTR			resb	6
 .MSW			resw	1
-.resetreq		resb	1
+.IDTR			resb	6
+.LDTR			resw	1
+.LDTRC			resb	6
+.TR				resw	1
+.TRC			resb	6
+				resb	2
+
+.cpu_type		resb	1
 .itfbank		resb	1
+.ram_d0			resw	1
+.remainclock	resd	1
+.baseclock		resd	1
+.clock			resd	1
+
+.ext			resd	1
+.extsize		resd	1
+.repbak			resd	1
+.inport			resd	1
 				endstruc
 
 				struc	gdcd_t
@@ -161,9 +170,6 @@ GDCCMD_MAX		equ		32
 .func			resd	1
 .remain			resd	1
 .stack			resd	1
-				resd	4
-.buf			resb	(4096/8 + 4*4)
-				resd	4
 .inptr			resd	1
 .outptr			resd	1
 .mask2			resw	1
@@ -172,6 +178,10 @@ GDCCMD_MAX		equ		32
 .dstbit			resb	1
 .sft8bitl		resb	1
 .sft8bitr		resb	1
+
+				resd	4
+.buf			resb	(4096/8 + 4*4)
+				resd	4
 				endstruc
 
 				struc	dsync_t

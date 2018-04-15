@@ -6,8 +6,8 @@
 #define	IOINPCALL
 #endif
 
-typedef	void (IOOUTCALL *IOOUT)(UINT port, BYTE val);
-typedef	BYTE (IOINPCALL *IOINP)(UINT port);
+typedef	void (IOOUTCALL *IOOUT)(UINT port, REG8 val);
+typedef	REG8 (IOINPCALL *IOINP)(UINT port);
 
 typedef void (*IOCBFN)(void);
 
@@ -19,14 +19,15 @@ typedef void (*IOCBFN)(void);
 #include	"dipsw.h"
 #include	"dmac.h"
 #include	"egc.h"
+#include	"epsonio.h"
 #include	"extmem.h"
 #include	"fdc.h"
 #include	"fdd320.h"
 #include	"gdc.h"
 #include	"gdc_cmd.h"
 #include	"gdc_sub.h"
-#include	"itf.h"
 #include	"mouseif.h"
+#include	"necio.h"
 #include	"nmiio.h"
 #include	"np2sysp.h"
 #include	"pic.h"
@@ -47,6 +48,7 @@ extern	_CGWINDOW	cgwindow;
 extern	_CRTC		crtc;
 extern	_DMAC		dmac;
 extern	_EGC		egc;
+extern	_EPSONIO	epsonio;
 extern	_EXTMEM		extmem;
 extern	_FDC		fdc;
 extern	_GDC		gdc;
@@ -95,11 +97,14 @@ void iocore_cb(const IOCBFN *cbfn, UINT count);
 void iocore_reset(void);
 void iocore_bind(void);
 
-void IOOUTCALL iocore_out8(UINT port, BYTE val);
-BYTE IOINPCALL iocore_inp8(UINT port);
+void IOOUTCALL iocore_out8(UINT port, REG8 dat);
+REG8 IOINPCALL iocore_inp8(UINT port);
 
-void IOOUTCALL iocore_out16(UINT port, UINT16 dat);
-UINT16 IOINPCALL iocore_inp16(UINT port);
+void IOOUTCALL iocore_out16(UINT port, REG16 dat);
+REG16 IOINPCALL iocore_inp16(UINT port);
+
+void IOOUTCALL iocore_out32(UINT port, UINT32 dat);
+UINT32 IOINPCALL iocore_inp32(UINT port);
 
 #ifdef __cplusplus
 }

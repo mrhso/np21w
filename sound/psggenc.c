@@ -67,14 +67,14 @@ void psggen_reset(PSGGEN psg) {
 
 	ZeroMemory(psg, sizeof(_PSGGEN));
 	for (i=0; i<3; i++) {
-		psg->tone[i].pvol = &psg->envvol;
+		psg->tone[i].pvol = psggencfg.volume + 0;
 	}
 	for (i=0; i<sizeof(psggen_deftbl); i++) {
-		psggen_setreg(psg, (BYTE)i, psggen_deftbl[i]);
+		psggen_setreg(psg, (REG8)i, psggen_deftbl[i]);
 	}
 }
 
-void psggen_setreg(PSGGEN psg, BYTE reg, BYTE value) {
+void psggen_setreg(PSGGEN psg, REG8 reg, REG8 value) {
 
 	UINT	freq;
 	UINT	ch;
@@ -123,10 +123,10 @@ void psggen_setreg(PSGGEN psg, BYTE reg, BYTE value) {
 			ch = reg - 8;
 			keydisp_psgvol(psg, (BYTE)ch);
 			if (value & 0x10) {
-				psg->tone[ch].pvol = &psg->envvol;
+				psg->tone[ch].pvol = &psg->evol;
 			}
 			else {
-				psg->tone[ch].pvol = ((BYTE *)&psg->reg) + reg;
+				psg->tone[ch].pvol = psggencfg.volume + (value & 15);
 			}
 			psg->tone[ch].puchi = psggencfg.puchidec;
 			psg->puchicount = psggencfg.puchidec;
@@ -151,12 +151,12 @@ void psggen_setreg(PSGGEN psg, BYTE reg, BYTE value) {
 	}
 }
 
-BYTE psggen_getreg(PSGGEN psg, BYTE reg) {
+REG8 psggen_getreg(PSGGEN psg, REG8 reg) {
 
 	return(((BYTE *)&psg->reg)[reg & 15]);
 }
 
-void psggen_setpan(PSGGEN psg, UINT ch, BYTE pan) {
+void psggen_setpan(PSGGEN psg, UINT ch, REG8 pan) {
 
 	if ((psg) && (ch < 3)) {
 		psg->tone[ch].pan = pan;

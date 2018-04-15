@@ -1,10 +1,10 @@
 #include	"compiler.h"
+#include	"strres.h"
 #include	"dosio.h"
 #include	"soundmng.h"
 #include	"sysmng.h"
 #include	"timemng.h"
-#include	"i286.h"
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"np2ver.h"
 #include	"pccore.h"
 #include	"iocore.h"
@@ -23,6 +23,7 @@
 #include	"sound.h"
 #include	"fmboard.h"
 #include	"beep.h"
+#include	"s98.h"
 #include	"font.h"
 #include	"diskdrv.h"
 #include	"fddfile.h"
@@ -30,8 +31,10 @@
 #include	"sxsi.h"
 #include	"calendar.h"
 #include	"timing.h"
-//#include	"hostdrv.h"
 #include	"debugsub.h"
+#if defined(SUPPORT_HOSTDRV)
+#include	"hostdrv.h"
+#endif
 
 
 	const char	np2version[] = NP2VER_CORE;
@@ -50,19 +53,18 @@
 				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 64, 64, 64, 64, 64,
 				1, 0x82,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
-				1, 80, 0,
-				{"", ""}, "", ""};
+				1, 80, 0, 0,
+				{"", ""}, "", "", ""};
 
-	PCCORE	pc = {	PCBASECLOCK25,
-					4,
-					4 * PCBASECLOCK25,
-					4 * PCBASECLOCK25 * 50 / 3104,
-					4 * PCBASECLOCK25 * 5 / 3104,
-					4 * PCBASECLOCK25 / 120,
-					4 * PCBASECLOCK25 / 1920,
-					4 * PCBASECLOCK25 / 3125,
-					4 * PCBASECLOCK25 / 56400,
-					100, 20, 0, PCMODEL_VX};
+	PCCORE	pccore = {	PCBASECLOCK25, 4,
+						0, PCMODEL_VX, 0, 0,
+						0, 0,
+						4 * PCBASECLOCK25,
+						4 * PCBASECLOCK25 * 50 / 3104,
+						4 * PCBASECLOCK25 * 5 / 3104,
+						4 * PCBASECLOCK25 / 1920,
+						4 * PCBASECLOCK25 / 3125,
+						100, 20};
 
 									// on=0, off=1
 //	BYTE	dip_default[3] = {0x3e, 0x63, 0x7a};
@@ -75,16 +77,12 @@ static const BYTE msw_default[8] =
 	BOOL	drawframe;
 	UINT	drawcount = 0;
 
-	BYTE	mem[0x200000];
-
 
 // ---------------------------------------------------------------------------
 
 void getbiospath(char *path, const char *fname, int maxlen) {
 
 const char	*p;
-
-	p = np2cfg.biospath;
 
 	p = np2cfg.biospath;
 	if (p[0]) {
@@ -130,24 +128,33 @@ static void setvsyncclock(void) {
 		vs = 1;
 	}
 	maxy = disp + vs;
-	cnt = (pc.realclock * 5) / 282;
-	pc.raster = cnt / maxy;
-	pc.hsync = (pc.raster * 4) / 5;
-	pc.dispclock = pc.raster * disp;
-	pc.vsyncclock = cnt - pc.dispclock;
+	cnt = (pccore.realclock * 5) / 282;
+	pccore.raster = cnt / maxy;
+	pccore.hsync = (pccore.raster * 4) / 5;
+	pccore.dispclock = pccore.raster * disp;
+	pccore.vsyncclock = cnt - pccore.dispclock;
 }
 
-static void setpcclock(UINT base, UINT multiple) {
+static void setpcclock(const char *modelstr, UINT base, UINT multiple) {
 
-	pc.model = PCMODEL_VX;
+	UINT8	model;
+
+	model = PCMODEL_VX;
+	if (!milstr_cmp(modelstr, str_VM)) {
+		model = PCMODEL_VM;
+	}
+	else if (!milstr_cmp(modelstr, str_EPSON)) {
+		model = PCMODEL_EPSON | PCMODEL_VM;
+	}
+	pccore.model = model;
 
 	if (base >= ((PCBASECLOCK25 + PCBASECLOCK20) / 2)) {
-		pc.baseclock = PCBASECLOCK25;			// 2.5MHz
-		pc.cpumode = 0;
+		pccore.baseclock = PCBASECLOCK25;			// 2.5MHz
+		pccore.cpumode = 0;
 	}
 	else {
-		pc.baseclock = PCBASECLOCK20;			// 2.0MHz
-		pc.cpumode = CPUMODE_8MHz;
+		pccore.baseclock = PCBASECLOCK20;			// 2.0MHz
+		pccore.cpumode = CPUMODE_8MHz;
 	}
 	if (multiple == 0) {
 		multiple = 1;
@@ -155,16 +162,14 @@ static void setpcclock(UINT base, UINT multiple) {
 	else if (multiple > 32) {
 		multiple = 32;
 	}
-	pc.multiple = multiple;
-	pc.realclock = pc.baseclock * multiple;
-	pc.raster = pc.realclock / 24816;							// ver0.28
-	pc.hsync = (pc.raster * 4) / 5;								// ver0.28
-	pc.dispclock = pc.realclock * 50 / 3102;
-	pc.vsyncclock = pc.realclock * 5 / 3102;
-	pc.mouseclock = pc.realclock / 120;
-	pc.keyboardclock = pc.realclock / 1920;
-	pc.midiclock = pc.realclock / 3125;
-	pc.frame1000 = pc.realclock / 56400;
+	pccore.multiple = multiple;
+	pccore.realclock = pccore.baseclock * multiple;
+	pccore.raster = pccore.realclock / 24816;
+	pccore.hsync = (pccore.raster * 4) / 5;
+	pccore.dispclock = pccore.realclock * 50 / 3102;
+	pccore.vsyncclock = pccore.realclock * 5 / 3102;
+	pccore.keyboardclock = pccore.realclock / 1920;
+	pccore.midiclock = pccore.realclock / 3125;
 }
 
 
@@ -179,6 +184,9 @@ static void sound_init(void) {
 		rate = 0;
 	}
 	sound_create(rate, np2cfg.delayms);
+#if defined(SUPPORT_WAVEMIX)
+	wavemix_initialize(rate);
+#endif
 	beep_initialize(rate);
 	beep_setvol(np2cfg.BEEP_VOL);
 	tms3631_initialize(rate);
@@ -193,18 +201,22 @@ static void sound_init(void) {
 	adpcm_setvol(np2cfg.vol_adpcm);
 	pcm86gen_initialize(rate);
 	pcm86gen_setvol(np2cfg.vol_pcm);
+	cs4231_initialize(rate);
 }
 
 static void sound_term(void) {
 
 	soundmng_stop();
+#if defined(SUPPORT_WAVEMIX)
+	wavemix_deinitialize();
+#endif
 	rhythm_deinitialize();
 	sound_destroy();
 }
 
 void pccore_init(void) {
 
-	i286_initialize();
+	CPU_INITIALIZE();
 
 	pal_initlcdtable();
 	pal_makelcdpal();
@@ -226,9 +238,17 @@ void pccore_init(void) {
 	pc9861k_construct();
 
 	iocore_create();
+
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_initialize();
+#endif
 }
 
 void pccore_term(void) {
+
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_deinitialize();
+#endif
 
 	sound_term();
 
@@ -270,17 +290,15 @@ void pccore_reset(void) {
 
 	int		i;
 
-//	reset_hostdrv();
-
 	ZeroMemory(mem, 0x10fff0);									// ver0.28
 	ZeroMemory(mem + VRAM1_B, 0x18000);
 	ZeroMemory(mem + VRAM1_E, 0x08000);
 	ZeroMemory(mem + FONT_ADRS, 0x08000);
 
-	i286_reset();
-	CPUTYPE = 0;
+	CPU_RESET();
+	CPU_TYPE = 0;
 	if (np2cfg.dipsw[2] & 0x80) {
-		CPUTYPE = CPUTYPE_V30;
+		CPU_TYPE = CPUTYPE_V30;
 	}
 
 	//メモリスイッチ
@@ -298,17 +316,25 @@ void pccore_reset(void) {
 		sound_init();
 	}
 
-	setpcclock(np2cfg.baseclock, np2cfg.multiple);
+	setpcclock(np2cfg.model, np2cfg.baseclock, np2cfg.multiple);
 	sound_changeclock();
 	beep_changeclock();
 	nevent_init();
 
 	sound_reset();
+#if defined(SUPPORT_WAVEMIX)
+	wavemix_bind();
+#endif
+
+	if (pccore.model & PCMODEL_EPSON) {			// RAM ctrl
+		CPU_RAM_D000 = 0xffff;
+	}
 
 	iocore_reset();								// サウンドでpicを呼ぶので…
 	cbuscore_reset();
 	fmboard_reset(np2cfg.SOUND_SW);
 
+	i286_memorymap((pccore.model & PCMODEL_EPSON)?1:0);
 	iocore_build();
 	iocore_bind();
 	cbuscore_bind();
@@ -326,21 +352,25 @@ void pccore_reset(void) {
 
 	if (np2cfg.ITF_WORK) {
 		CS_BASE = 0xf0000;
-		I286_CS = 0xf000;
-		I286_IP = 0xfff0;
+		CPU_CS = 0xf000;
+		CPU_IP = 0xfff0;
 	}
 	else {
 		for (i=0; i<8; i++) {
 			mem[0xa3fe2 + i*4] = msw_default[i];
 		}
 		CS_BASE = 0xfd800;
-		I286_CS = 0xfd80;
-		I286_IP = 0x0002;
+		CPU_CS = 0xfd80;
+		CPU_IP = 0x0002;
 	}
-	i286_resetprefetch();
+	CPU_CLEARPREFETCH();
 	sysmng_cpureset();
 
 	soundmng_play();
+
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_reset();
+#endif
 }
 
 static void drawscreen(void) {
@@ -492,18 +522,18 @@ void screendisp(NEVENTITEM item) {
 
 void screenvsync(NEVENTITEM item) {
 
-	vramop.tramwait = np2cfg.wait[1];
-	vramop.vramwait = np2cfg.wait[3];
-	vramop.grcgwait = np2cfg.wait[5];
+	MEMWAIT_TRAM = np2cfg.wait[1];
+	MEMWAIT_VRAM = np2cfg.wait[3];
+	MEMWAIT_GRCG = np2cfg.wait[5];
 	gdc_work(GDCWORK_MASTER);
 	gdc.vsync = 0x20;
 	if (gdc.vsyncint) {
 		gdc.vsyncint = 0;
 		pic_setirq(2);
 	}
-	nevent_set(NEVENT_FLAMES, pc.vsyncclock, screendisp, NEVENT_RELATIVE);
+	nevent_set(NEVENT_FLAMES, pccore.vsyncclock, screendisp, NEVENT_RELATIVE);
 
-	// drawscreenで pc.vsyncclockが変更される可能性があります		// ver0.28
+	// drawscreenで pccore.vsyncclockが変更される可能性があります
 	if (np2cfg.DISPSYNC) {											// ver0.29
 		drawscreen();
 	}
@@ -529,10 +559,10 @@ void pccore_exec(BOOL draw) {
 
 	gdc.vsync = 0;
 	screendispflag = 1;
-	vramop.tramwait = np2cfg.wait[0];
-	vramop.vramwait = np2cfg.wait[2];
-	vramop.grcgwait = np2cfg.wait[4];
-	nevent_set(NEVENT_FLAMES, pc.dispclock, screenvsync, NEVENT_RELATIVE);
+	MEMWAIT_TRAM = np2cfg.wait[0];
+	MEMWAIT_VRAM = np2cfg.wait[2];
+	MEMWAIT_GRCG = np2cfg.wait[4];
+	nevent_set(NEVENT_FLAMES, pccore.dispclock, screenvsync, NEVENT_RELATIVE);
 
 //	nevent_get1stevent();
 
@@ -541,30 +571,34 @@ void pccore_exec(BOOL draw) {
 	resetcnt++;
 #endif
 		pic_irq();
-		if (i286core.s.resetreq) {
-			i286core.s.resetreq = 0;
-			I286_CS = 0xf000;
+		if (CPU_RESETREQ) {
+			CPU_RESETREQ = 0;
+#if 1
+			CPU_SHUT();
+#else
+			CPU_CS = 0xf000;
 			CS_BASE = 0xf0000;
-			I286_IP = 0xfff0;
-#ifdef CPU386											// defineを変えてね
-			I286_DX = 0x0300;
+			CPU_IP = 0xfff0;
+#if defined(CPUCORE_IA32)
+			CPU_DX = 0x0300;
 #endif
-			i286_resetprefetch();
+			CPU_CLEARPREFETCH();
+#endif
 		}
 
 #if 1 // ndef TRACE
-		if (I286_REMCLOCK > 0) {
-			if (!(CPUTYPE & CPUTYPE_V30)) {
-				i286();
+		if (CPU_REMCLOCK > 0) {
+			if (!(CPU_TYPE & CPUTYPE_V30)) {
+				CPU_EXEC();
 			}
 			else {
-				v30();
+				CPU_EXECV30();
 			}
 		}
 #else
-		while(I286_REMCLOCK > 0) {
-			TRACEOUT(("%.4x:%.4x", I286_CS, I286_IP));
-			i286_step();
+		while(CPU_REMCLOCK > 0) {
+			TRACEOUT(("%.4x:%.4x", CPU_CS, CPU_IP));
+			i286x_step();
 		}
 #endif
 		nevent_progress();
@@ -573,12 +607,13 @@ void pccore_exec(BOOL draw) {
 	mpu98ii_callback();
 	diskdrv_callback();
 	calendar_inc();
+	S98_sync();
 	sound_sync();													// happy!
 
 #if defined(TRACE)
 	execcnt++;
 	if (execcnt >= 60) {
-		TRACEOUT(("resetcnt = %d / pic %d", resetcnt, piccnt));
+//		TRACEOUT(("resetcnt = %d / pic %d", resetcnt, piccnt));
 		execcnt = 0;
 		resetcnt = 0;
 		piccnt = 0;

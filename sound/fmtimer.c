@@ -1,5 +1,5 @@
 #include	"compiler.h"
-#include	"i286.h"
+// #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"sound.h"
@@ -66,11 +66,11 @@ static void set_fmtimeraevent(BOOL absolute) {
 	SINT32	l;
 
 	l = 18 * (1024 - fmtimer.timera);
-	if (pc.cpumode & CPUMODE_8MHz) {		// 4MHz
-		l = (l * 1248 / 625) * pc.multiple;
+	if (pccore.cpumode & CPUMODE_8MHz) {		// 4MHz
+		l = (l * 1248 / 625) * pccore.multiple;
 	}
-	else {									// 5MHz
-		l = (l * 1536 / 625) * pc.multiple;
+	else {										// 5MHz
+		l = (l * 1536 / 625) * pccore.multiple;
 	}
 	nevent_set(NEVENT_FMTIMERA, l, fmport_a, absolute);
 }
@@ -80,16 +80,16 @@ static void set_fmtimerbevent(BOOL absolute) {
 	SINT32	l;
 
 	l = 288 * (256 - fmtimer.timerb);
-	if (pc.cpumode & CPUMODE_8MHz) {		// 4MHz
-		l = (l * 1248 / 625) * pc.multiple;
+	if (pccore.cpumode & CPUMODE_8MHz) {		// 4MHz
+		l = (l * 1248 / 625) * pccore.multiple;
 	}
-	else {									// 5MHz
-		l = (l * 1536 / 625) * pc.multiple;
+	else {										// 5MHz
+		l = (l * 1536 / 625) * pccore.multiple;
 	}
 	nevent_set(NEVENT_FMTIMERB, l, fmport_b, absolute);
 }
 
-void fmtimer_reset(BYTE irq) {
+void fmtimer_reset(UINT irq) {
 
 	ZeroMemory(&fmtimer, sizeof(fmtimer));
 
@@ -104,9 +104,9 @@ void fmtimer_reset(BYTE irq) {
 	pic_registext(fmtimer.irq);
 }
 
-void fmtimer_setreg(BYTE reg, BYTE value) {
+void fmtimer_setreg(REG8 reg, REG8 value) {
 
-//	TRACEOUT(("fm %x %x [%.4x:%.4x]", reg, value, I286_CS, I286_IP));
+//	TRACEOUT(("fm %x %x [%.4x:%.4x]", reg, value, CPU_CS, CPU_IP));
 
 	switch(reg) {
 		case 0x24:

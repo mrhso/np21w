@@ -14,9 +14,6 @@ static const UINT16 cs4231samprate[] = {
 					54840,	37800,	64000,	44100,
 					48000,	33075,	 9600,	 6620};
 
-static const BYTE dmach[] =  {0xff, 0x00, 0x01, 0x03, 0xff, 0xff, 0xff, 0xff};
-static const BYTE dmairq[] = {0xff, 0x03, 0x06, 0x0a, 0x0c, 0xff, 0xff, 0xff};
-
 
 void cs4231_initialize(UINT rate) {
 
@@ -31,35 +28,41 @@ void cs4231_setvol(UINT vol) {
 
 void cs4231_dma(NEVENTITEM item) {
 
-	BYTE	ret;
+	DMACH	dmach;
+	REG8	ret;
 	SINT32	cnt;
 
 	if (item->flag & NEVENT_SETEVENT) {
-		if (dmac.dmach[0].leng.w) {
-			sound_sync();
-			ret = cs4231.proc();
-			if ((ret) && (cs4231.reg.pinctrl & 2)) {
-				dmac.dmach[0].leng.w = 0;
-				cs4231.intflag = 1;
-				pic_setirq(0x0c);
+		if (cs4231.dmach != 0xff) {
+			dmach = dmac.dmach + cs4231.dmach;
+			if (dmach->leng.w) {
+				sound_sync();
+				ret = cs4231.proc(dmach);
+				if ((ret) && (cs4231.reg.pinctrl & 2)) {
+					dmach->leng.w = 0;
+					if (cs4231.dmairq != 0xff) {
+						cs4231.intflag = 1;
+						pic_setirq(cs4231.dmairq);
+					}
+				}
 			}
 		}
 		if (cs4231cfg.rate) {
-			cnt = pc.realclock * 16 / cs4231cfg.rate;
+			cnt = pccore.realclock * 16 / cs4231cfg.rate;
 			nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_RELATIVE);
 		}
 	}
 	(void)item;
 }
 
-BYTE DMACCALL cs4231dmafunc(BYTE func) {
+REG8 DMACCALL cs4231dmafunc(REG8 func) {
 
 	SINT32	cnt;
 
 	switch(func) {
 		case DMAEXT_START:
 			if (cs4231cfg.rate) {
-				cnt = pc.realclock * 16 / cs4231cfg.rate;
+				cnt = pccore.realclock * 16 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
 			}
 			break;
@@ -84,7 +87,9 @@ void cs4231_update(void) {
 }
 
 
-void cs4231_control(UINT index, BYTE value) {
+void cs4231_control(UINT index, REG8 value) {
+
+	DMACH	dmach;
 
 	*(((BYTE *)(&cs4231.reg)) + index) = value;
 	switch(index) {
@@ -94,13 +99,16 @@ void cs4231_control(UINT index, BYTE value) {
 			break;
 
 		case 9:
-			if ((value & 0x5) == 0x5) {
-				dmac.dmach[0].ready = 1;
+			if (cs4231.dmach != 0xff) {
+				dmach = dmac.dmach + cs4231.dmach;
+				if ((value & 0x5) == 0x5) {
+					dmach->ready = 1;
+				}
+				else {
+					dmach->ready = 0;
+				}
+				dmac_check();
 			}
-			else {
-				dmac.dmach[0].ready = 0;
-			}
-			dmac_check();
 			break;
 	}
 }

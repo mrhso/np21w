@@ -1,7 +1,10 @@
+#define	VERBOSE(s)	printf s
+
 #include "compiler.h"
 
 #include <sys/stat.h>
 #include <time.h>
+#include <dirent.h>
 
 #include "codecnv.h"
 #include "dosio.h"
@@ -112,28 +115,36 @@ file_attr(const char *path)
 	return -1;
 }
 
+static BOOL
+cnvdatetime(struct stat *sb, DOSDATE *dosdate, DOSTIME *dostime)
+{
+	struct tm *ftime;
+
+	ftime = localtime(&sb->st_mtime);
+	if (ftime) {
+		if (dosdate) {
+			dosdate->year = ftime->tm_year + 1900;
+			dosdate->month = ftime->tm_mon + 1;
+			dosdate->day = ftime->tm_mday;
+		}
+		if (dostime) {
+			dostime->hour = ftime->tm_hour;
+			dostime->minute = ftime->tm_min;
+			dostime->second = ftime->tm_sec;
+		}
+		return SUCCESS;
+	}
+	return FAILURE;
+}
+
 short
 file_getdatetime(FILEH handle, DOSDATE *dosdate, DOSTIME *dostime)
 {
 	struct stat sb;
-	struct tm *ftime;
 
-	if (fstat(fileno(handle), &sb) == 0) {
-		ftime = localtime(&sb.st_mtime);
-		if (ftime) {
-			if (dosdate) {
-				dosdate->year = ftime->tm_year + 1900;
-				dosdate->month = ftime->tm_mon + 1;
-				dosdate->day = ftime->tm_mday;
-			}
-			if (dostime) {
-				dostime->hour = ftime->tm_hour;
-				dostime->minute = ftime->tm_min;
-				dostime->second = ftime->tm_sec;
-			}
-			return 0;
-		}
-	}
+	if ((fstat(fileno(handle), &sb) == 0)
+	 && (cnvdatetime(&sb, dosdate, dostime)))
+		return 0;
 	return -1;
 }
 
@@ -214,6 +225,66 @@ file_attr_c(const char *sjis)
 	*curfilep = '\0';
 	file_catname(curpath, sjis, sizeof(curpath));
 	return file_attr_c(curpath);
+}
+
+FLISTH
+file_list1st(const char *dir, FLINFO *fli)
+{
+	char eucpath[MAX_PATH];
+	DIR *ret;
+
+	mileuc_ncpy(eucpath, dir, sizeof(eucpath));
+	file_setseparator(eucpath, sizeof(eucpath));
+	ret = opendir(eucpath);
+	VERBOSE(("file_list1st: opendir(%s)\n", eucpath));
+	if (ret == NULL) {
+		VERBOSE(("file_list1st: opendir failure"));
+		return FLISTH_INVALID;
+	}
+	if (file_listnext((FLISTH)ret, fli) == SUCCESS) {
+		return (FLISTH)ret;
+	}
+	VERBOSE(("file_list1st: file_listnext failure\n"));
+	closedir(ret);
+	return FLISTH_INVALID;
+}
+
+BOOL
+file_listnext(FLISTH hdl, FLINFO *fli)
+{
+	struct dirent *de;
+	struct stat sb;
+
+	de = readdir((DIR *)hdl);
+	if (de == NULL) {
+		VERBOSE(("file_listnext: readdir failure\n"));
+		return FAILURE;
+	}
+	if (stat(de->d_name, &sb) != 0) {
+		VERBOSE(("file_listnext: stat failure\n"));
+		return FAILURE;
+	}
+
+	fli->caps = FLICAPS_SIZE | FLICAPS_ATTR | FLICAPS_DATE | FLICAPS_TIME;
+	fli->size = sb.st_size;
+	if (S_ISDIR(sb.st_mode)) {
+		fli->attr |= FILEATTR_DIRECTORY;
+	}
+	if (!(sb.st_mode & S_IWUSR)) {
+		fli->attr |= FILEATTR_READONLY;
+	}
+	cnvdatetime(&sb, &fli->date, &fli->time);
+	mileuc_ncpy(fli->path, de->d_name, sizeof(fli->path));
+
+	VERBOSE(("file_listnext: success\n"));
+	return SUCCESS;
+}
+
+void
+file_listclose(FLISTH hdl)
+{
+
+	closedir((DIR *)hdl);
 }
 
 static int

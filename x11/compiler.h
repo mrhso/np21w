@@ -39,6 +39,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -50,35 +51,33 @@
 #define	OSLANG_EUC
 #define	OSLINEBREAK_LF
 
-typedef	signed char	CHAR;
-typedef	signed short	SHORT;
-typedef	signed int	INT;
-typedef	signed long	LONG;
+typedef	signed char		CHAR;
+typedef	signed short		SHORT;
+typedef	signed int		INT;
+typedef	signed long		LONG;
 
-typedef	unsigned char	UCHAR;
-typedef	unsigned short	USHORT;
-typedef	unsigned int	UINT;
-typedef	unsigned long	ULONG;
+typedef	unsigned char		UCHAR;
+typedef	unsigned short		USHORT;
+typedef	unsigned int		UINT;
+typedef	unsigned long		ULONG;
 
-typedef	signed char	SINT8;
-typedef	signed short	SINT16;
-typedef	signed int	SINT32;
+typedef	signed char		SINT8;
+typedef	signed short		SINT16;
+typedef	signed int		SINT32;
+typedef	signed long long	SINT64;
 
-typedef	unsigned char	UINT8;
-typedef	unsigned short	UINT16;
-typedef	unsigned int	UINT32;
+typedef	unsigned char		UINT8;
+typedef	unsigned short		UINT16;
+typedef	unsigned int		UINT32;
+typedef	unsigned long long	UINT64;
 
-typedef	unsigned char	BYTE;
-typedef	unsigned char	TCHAR;
+typedef	unsigned char		BYTE;
+typedef	unsigned short		WORD;
+typedef	unsigned int		DWORD;
 
-typedef	int		BOOL;
+typedef	unsigned char		TCHAR;
 
-#include "common.h"
-#include "milstr.h"
-#include "_memory.h"
-#include "rect.h"
-#include "lstarray.h"
-#include "trace.h"
+typedef	int			BOOL;
 
 #ifndef	TRUE
 #define	TRUE	1
@@ -114,13 +113,21 @@ typedef	int		BOOL;
 #endif
 
 #define	UNUSED(v)	((void)(v))
-#define	INLINE		__inline
+#define	FASTCALL
 #define	SOUNDCALL
+#define	MEMCALL
+#define	CPUCALL
 
 #ifdef	DEBUG
+#define	INLINE
 #define	__ASSERT(s)	assert(s)
 #else
+#ifndef	__ASSERT
 #define	__ASSERT(s)
+#endif
+#ifndef	INLINE
+#define	INLINE		__inline
+#endif
 #endif
 
 #ifndef	NELEMENTS
@@ -136,20 +143,29 @@ UINT32 gettick();
 #undef	MEMOPTIMIZE
 #elif defined(arm) || defined (__arm__)
 #define	MEMOPTIMIZE	2
+#define	REG8		UINT
+#define	REG16		UINT
 #else
 #define	MEMOPTIMIZE	1
 #endif
 
 #define	SUPPORT_EUC
 
-#define	SUPPORT_8BPP
-#define	SUPPORT_24BPP
+#undef	SUPPORT_8BPP
 #define	SUPPORT_16BPP
+#define	SUPPORT_24BPP
 #define	SUPPORT_32BPP
 #define	SUPPORT_NORMALDISP
 
 #if defined(USE_GTK)
 #define	SUPPORT_KEYDISP
+#endif
+
+#if defined(USE_SDL)
+#define	USE_SYSMENU
+#define	SCREEN_BPP	16
+#undef	SUPPORT_24BPP
+#undef	SUPPORT_32BPP
 #endif
 
 /*
@@ -158,5 +174,12 @@ UINT32 gettick();
  */
 extern char timidity_cfgfile_path[MAX_PATH];
 #define	TIMIDITY_CFGFILE	timidity_cfgfile_path
+
+#include "common.h"
+#include "milstr.h"
+#include "_memory.h"
+#include "rect.h"
+#include "lstarray.h"
+#include "trace.h"
 
 #endif	/* NP2_X11_COMPILER_H__ */

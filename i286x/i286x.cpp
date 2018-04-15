@@ -1,11 +1,10 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"i286x.h"
 #include	"i286xadr.h"
 #include	"i286xs.h"
 #include	"i286xrep.h"
 #include	"i286xcts.h"
-#include	"memory.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"i286x.mcr"
@@ -52,22 +51,35 @@ const BYTE iflags[256] = {					// Z_FLAG, S_FLAG, P_FLAG
 			0x80, 0x84, 0x84, 0x80, 0x84, 0x80, 0x80, 0x84};
 
 
-void i286_initialize(void) {
+void i286x_initialize(void) {
 
 	i286xadr_init();
-	v30init();
+	v30xinit();
 }
 
-void i286_reset(void) {
+static void i286x_initreg(void) {
+
+	I286_CS = 0xf000;
+	CS_BASE = 0xf0000;
+	I286_IP = 0xfff0;
+	i286core.s.adrsmask = 0xfffff;
+	i286x_resetprefetch();
+}
+
+void i286x_reset(void) {
 
 	ZeroMemory(&i286core.s, sizeof(i286core.s));
-	I286_CS = 0x1fc0;
-	CS_BASE = 0x1fc00;
-	i286core.s.adrsmask = 0xfffff;
+	i286x_initreg();
+}
+
+void i286x_shut(void) {
+
+	ZeroMemory(&i286core.s, offsetof(I286STAT, cpu_type));
+	i286x_initreg();
 }
 
 
-LABEL void i286_resetprefetch(void) {
+LABEL void i286x_resetprefetch(void) {
 
 	__asm {
 				pushad
@@ -79,7 +91,7 @@ LABEL void i286_resetprefetch(void) {
 	}
 }
 
-LABEL void __fastcall i286_interrupt(BYTE vect) {
+LABEL void __fastcall i286x_interrupt(BYTE vect) {
 
 	__asm {
 				pushad
@@ -168,8 +180,32 @@ LABEL void __fastcall i286x_localint(void) {
 }
 
 
+// プロテクトモードのセレクタ(in ax / ret eax)
+LABEL void __fastcall i286x_selector(void) {
 
-LABEL void i286(void) {
+	__asm {
+				mov		ecx, dword ptr (I286_GDTR.base)
+				test	eax, 4
+				je		short ixsl_1
+				mov		ecx, dword ptr (I286_LDTRC.base)
+ixsl_1:			and		eax, not 7
+				and		ecx, 0ffffffh
+				lea		ecx, [ecx + eax + 2]
+				call	i286_memoryread_w
+				push	eax
+				add		ecx, 2
+				call	i286_memoryread
+				pop		ecx
+				and		eax, 0ffh
+				movzx	ecx, cx
+				shl		eax, 16
+				add		eax, ecx
+				ret
+		}
+}
+
+
+LABEL void i286x(void) {
 
 	__asm {
 				pushad
@@ -217,7 +253,7 @@ i286notrap:		mov		dword ptr (i286core.s.prefetchque), ebx
 
 
 
-LABEL void i286_step(void) {
+LABEL void i286x_step(void) {
 
 	__asm {
 				pushad
@@ -364,11 +400,16 @@ I286 pop_es(void) {								// 07: pop es
 		__asm {
 				I286CLOCK(5)
 				REGPOP(I286_ES)
-				and		eax, 00ffffh
+				movzx	eax, ax
+				test	I286_MSW, MSW_PE
+				jne		short pop_es_pe
 				shl		eax, 4					// make segreg
-				mov		ES_BASE, eax
+pop_es_base:	mov		ES_BASE, eax
 				GET_NEXTPRE1
 				ret
+
+pop_es_pe:		push	offset pop_es_base
+				jmp		i286x_selector
 		}
 }
 
@@ -572,9 +613,11 @@ I286 pop_ss(void) {								// 17: pop ss
 		__asm {
 				I286CLOCK(5)
 				REGPOP(I286_SS)
-				and		eax, 00ffffh
+				movzx	eax, ax
+				test	I286_MSW, MSW_PE
+				jne		short pop_ss_pe
 				shl		eax, 4					// make segreg
-				mov		SS_BASE, eax
+pop_ss_base:	mov		SS_BASE, eax
 				mov		SS_FIX, eax
 				cmp		i286core.s.prefix, 0		// 00/06/24
 				jne		prefix_exist
@@ -582,6 +625,9 @@ I286 pop_ss(void) {								// 17: pop ss
 				movzx	ebp, bh
 				GET_NEXTPRE1
 				jmp		i286op[ebp*4]
+
+pop_ss_pe:		push	offset pop_ss_base
+				jmp		i286x_selector
 
 prefix_exist:	pop		eax						// eax<-offset removeprefix
 				call	eax
@@ -696,12 +742,17 @@ I286 pop_ds(void) {								// 1F: pop ds
 		__asm {
 				I286CLOCK(5)
 				REGPOP(I286_DS)
-				and		eax, 00ffffh
+				movzx	eax, ax
+				test	I286_MSW, MSW_PE
+				jne		short pop_ds_pe
 				shl		eax, 4					// make segreg
-				mov		DS_BASE, eax
+pop_ds_base:	mov		DS_BASE, eax
 				mov		DS_FIX, eax
 				GET_NEXTPRE1
 				ret
+
+pop_ds_pe:		push	offset pop_ds_base
+				jmp		i286x_selector
 		}
 }
 
@@ -1678,13 +1729,8 @@ I286 _insb(void) {								// 6C: insb
 		__asm {
 				GET_NEXTPRE1
 				I286CLOCK(5)
-#if 1
 				movzx	ecx, I286_DX
 				call	iocore_inp8
-#else
-				mov		cx, I286_DX
-				call	i286_in
-#endif
 				mov		dl, al
 				movzx	ecx, I286_ES
 				shl		ecx, 4
@@ -1725,13 +1771,8 @@ I286 _outsb(void) {								// 6E: outsb
 				mov		dl, al
 				STRING_DIR
 				add		I286_SI, ax
-#if 1
 				movzx	ecx, I286_DX
 				jmp		iocore_out8
-#else
-				mov		cx, I286_DX
-				jmp		i286_out
-#endif
 		}
 }
 
@@ -2402,23 +2443,24 @@ I286 mov_seg_ea(void) {							// 8E: mov segrem, EA
 				GET_NEXTPRE2
 				mov		ax, word ptr I286_REG[edi*2]
 				jmp		segset
-				align	16
+				align	4
 		src_memory:
 				I286CLOCK(5)
 				call	p_ea_dst[eax*4]
 				call	i286_memoryread_w
 		segset:
 				mov		word ptr I286_SEGREG[ebp], ax
-				and		eax, 0000ffffh
+				movzx	eax, ax
+				test	I286_MSW, MSW_PE
+				jne		short mov_seg_pe
 				shl		eax, 4					// make segreg
-				mov		SEG_BASE[ebp*2], eax
+mov_seg_base:	mov		SEG_BASE[ebp*2], eax
 				sub		ebp, 2*2
-				jc		segsetr
+				jc		short segsetr
 				mov		SS_FIX[ebp*2], eax
-				je		setss
+				je		short setss
 		segsetr:ret
 
-				align	16
 		setss:	cmp		i286core.s.prefix, 0	// 00/05/13
 				je		noprefix
 				pop		eax
@@ -2427,9 +2469,10 @@ I286 mov_seg_ea(void) {							// 8E: mov segrem, EA
 				movzx	eax, bl
 				jmp		i286op[eax*4]
 
-				align	16
-		fixcs:
-				INT_NUM(6)
+mov_seg_pe:		push	offset mov_seg_base
+				jmp		i286x_selector
+
+		fixcs:	INT_NUM(6)
 		}
 }
 
@@ -2668,7 +2711,8 @@ I286 _popf(void) {								// 9D: popf
 				cmp		ah, 3
 				sete	I286_TRAP
 
-				test	ah, 2					// fast_intr
+				je		irqcheck				// fast_intr
+				test	ah, 2
 				je		nextop
 				cmp		pic.ext_irq, 0
 				jne		nextop
@@ -2677,7 +2721,7 @@ I286 _popf(void) {								// 9D: popf
 				not		ax
 				test	al, pic.pi[0].irr
 				jne		irqcheck
-				test	al, pic.pi[1].irr
+				test	ah, pic.pi[1].irr
 				jne		irqcheck
 nextop:			ret
 
@@ -3294,7 +3338,7 @@ I286 les_r16_ea(void) {							// C4: les REG16, EA
 				shl		eax, 4					// make segreg
 				mov		ES_BASE, eax
 				ret
-				align	16
+				align	4
 		src_register:
 				INT_NUM(6)
 		}
@@ -3555,15 +3599,13 @@ I286 int_data8(void) {							// CD: int DATA8
 I286 _into(void) {								// CE: into
 
 		__asm {
+				I286CLOCK(4)
 				test	I286_FLAG, O_FLAG
 				jne		intovf
-				I286CLOCK(4)
 				GET_NEXTPRE1
 				ret
-				align	16
-		intovf:
-				I286CLOCK(24)
-				INT_NUM(4)
+
+		intovf:	INT_NUM(4)
 		}
 }
 
@@ -3596,7 +3638,9 @@ I286 _iret(void) {								// CF: iret
 				sete	I286_TRAP
 				RESET_XPREFETCH
 
-				test	I286_FLAG, I_FLAG		// fast_intr
+				cmp		I286_TRAP, 0			// fast_intr
+				jne		irqcheck
+				test	I286_FLAG, I_FLAG
 				je		nextop
 				cmp		pic.ext_irq, 0
 				jne		nextop
@@ -3605,7 +3649,7 @@ I286 _iret(void) {								// CF: iret
 				not		ax
 				test	al, pic.pi[0].irr
 				jne		irqcheck
-				test	al, pic.pi[1].irr
+				test	ah, pic.pi[1].irr
 				jne		irqcheck
 nextop:			ret
 
@@ -3778,9 +3822,8 @@ nzflagsed:		xor		al, ah
 				or		I286_FLAGL, al
 				GET_NEXTPRE2
 				ret
-				align	16
-		div0:
-				INT_NUM(0)
+
+		div0:	INT_NUM(0)
 		}
 }
 
@@ -3924,15 +3967,11 @@ I286 in_al_data8(void) {						// E4: in al, DATA8
 				I286CLOCK(5)
 				lea		eax, [esi + 2]
 				add		eax, CS_BASE
-				mov		i286core.s.inport, eax
+				mov		I286_INPADRS, eax
 				movzx	ecx, bh
-#if 1
 				call	iocore_inp8
-#else
-				call	i286_in
-#endif
 				mov		I286_AL, al
-				mov		i286core.s.inport, 0
+				mov		I286_INPADRS, 0
 				GET_NEXTPRE2
 				ret
 		}
@@ -3961,12 +4000,8 @@ I286 out_data8_al(void) {						// E6: out DATA8, al
 				GET_NEXTPRE2
 				pop		ecx
 				mov		dl, I286_AL
-#if 1
 				jmp		iocore_out8
-#else
-				jmp		i286_out
-#endif
-			}
+		}
 }
 
 I286 out_data8_ax(void) {						// E7: out DATA8, ax
@@ -4041,13 +4076,8 @@ I286 in_al_dx(void) {							// EC: in al, dx
 
 		__asm {
 				I286CLOCK(5)
-#if 1
 				movzx	ecx, I286_DX
 				call	iocore_inp8
-#else
-				mov		cx, I286_DX
-				call	i286_in
-#endif
 				mov		I286_AL, al
 				GET_NEXTPRE1
 				ret
@@ -4071,15 +4101,9 @@ I286 out_dx_al(void) {							// EE: out dx, al
 		__asm {
 				GET_NEXTPRE1
 				I286CLOCK(3)
-#if 1
 				movzx	ecx, I286_DX
 				mov		dl, I286_AL
 				jmp		iocore_out8
-#else
-				mov		cx, I286_DX
-				mov		dl, I286_AL
-				jmp		i286_out
-#endif
 			}
 }
 
@@ -4201,14 +4225,15 @@ I286 _sti(void) {								// FB: sti
 				test	I286_FLAG, T_FLAG
 				setne	I286_TRAP
 
-				cmp		pic.ext_irq, 0			// fast_intr
+				jne		nextopandexit			// fast_intr
+				cmp		pic.ext_irq, 0
 				jne		jmp_nextop
 				mov		al, pic.pi[0].imr
 				mov		ah, pic.pi[1].imr
 				not		ax
 				test	al, pic.pi[0].irr
 				jne		nextopandexit
-				test	al, pic.pi[1].irr
+				test	ah, pic.pi[1].irr
 				jne		nextopandexit
 jmp_nextop:		jmp		i286op[ebp*4]
 

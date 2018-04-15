@@ -46,7 +46,7 @@
 // #define	OPENING_WAIT	1500
 
 
-		NP2OSCFG	np2oscfg = {"Neko Project IIx", -1, -1, 0, 2, 0, 0, 0, 0, 0, 1, 0};
+		NP2OSCFG	np2oscfg = {"Neko Project IIx", -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
@@ -141,9 +141,9 @@ static void MenuBarInit(void) {
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
     ChangeMenuAttributes(GetMenuRef(IDM_EDIT), kMenuAttrAutoDisable, 0);
     DisableAllMenuItems(GetMenuHandle(IDM_EDIT));
-    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2OPEN, kMenuOptionModifier);
-    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2EJECT, kMenuOptionModifier);
-    SetMenuItemModifiers(GetMenuRef(IDM_SASI2), IDM_SASI2OPEN, kMenuOptionModifier);
+    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2OPEN, kMenuShiftModifier);
+    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2EJECT, kMenuShiftModifier);
+    SetMenuItemModifiers(GetMenuRef(IDM_SASI2), IDM_SASI2OPEN, kMenuShiftModifier);
 	DrawMenuBar();
 #else
     OSStatus	err;
@@ -499,6 +499,11 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case IDM_JASTSOUND:
+			menu_setjastsound(np2oscfg.jastsnd ^ 1);
+			update |= SYS_UPDATEOSCFG;
+			break;
+
 		case IDM_SEEKSND:
 			menu_setmotorflg(np2cfg.MOTOR ^ 1);
 			update |= SYS_UPDATECFG;
@@ -712,6 +717,7 @@ int main(int argc, char *argv[]) {
 	menu_setf12key(np2oscfg.F12KEY);
 	menu_setbeepvol(np2cfg.BEEP_VOL);
 	menu_setsound(np2cfg.SOUND_SW);
+	menu_setjastsound(np2oscfg.jastsnd);
 	menu_setmotorflg(np2cfg.MOTOR);
 	menu_setextmem(np2cfg.EXTMEM);
 	menu_setdispclk(np2oscfg.DISPCLK);
@@ -967,6 +973,22 @@ static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef
                 }
 #endif
                 break;
+		case kEventClassKeyboard:
+                if (GetEventKind(event)==kEventRawKeyModifiersChanged) {
+					static UInt32 backup = 0;
+                    if (modif & shiftKey) keystat_senddata(0x70);
+                    else keystat_senddata(0x70 | 0x80);
+                    if (modif & optionKey) keystat_senddata(0x73);
+                    else keystat_senddata(0x73 | 0x80);
+                    if (modif & controlKey) keystat_senddata(0x74);
+                    else keystat_senddata(0x74 | 0x80);
+                    if ((modif & alphaLock) != (backup & alphaLock)) {
+                        keystat_senddata(0x71);
+                        backup = modif;
+                    }
+                    result = noErr;
+				}
+				break;
         default:
             break; 
     }
@@ -988,7 +1010,6 @@ static pascal OSStatus np2windowevent(EventHandlerCallRef myHandler,  EventRef e
     eventClass = GetEventClass(event);
     whatHappened = GetEventKind(event);
         
-    static UInt32 backup = 0;
     switch (eventClass)
     {        
         case kEventClassKeyboard:
@@ -1016,19 +1037,6 @@ static pascal OSStatus np2windowevent(EventHandlerCallRef myHandler,  EventRef e
                     }
                     else {
                         mackbd_keydown(key);
-                    }
-                    result = noErr;
-                    break;
-                case kEventRawKeyModifiersChanged:
-                    if (modif & shiftKey) keystat_senddata(0x70);
-                    else keystat_senddata(0x70 | 0x80);
-                    if (modif & optionKey) keystat_senddata(0x73);
-                    else keystat_senddata(0x73 | 0x80);
-                    if (modif & controlKey) keystat_senddata(0x74);
-                    else keystat_senddata(0x74 | 0x80);
-                    if ((modif & alphaLock) != (backup & alphaLock)) {
-                        keystat_senddata(0x71);
-                        backup = modif;
                     }
                     result = noErr;
                     break;
@@ -1078,6 +1086,7 @@ static const EventTypeSpec appEventList[] = {
 				{kEventClassMouse,		kEventMouseMoved},
 				{kEventClassMouse,		kEventMouseUp},
 #endif
+				{kEventClassKeyboard,	kEventRawKeyModifiersChanged},
 			};
 
 static const EventTypeSpec windEventList[] = {
@@ -1090,7 +1099,6 @@ static const EventTypeSpec windEventList[] = {
 				{kEventClassKeyboard,	kEventRawKeyDown},
 				{kEventClassKeyboard,	kEventRawKeyUp},
 				{kEventClassKeyboard,	kEventRawKeyRepeat},
-				{kEventClassKeyboard,	kEventRawKeyModifiersChanged},
 			};
 
 
@@ -1141,7 +1149,11 @@ static bool setupMainWindow(void) {
     setUpCarbonEvent();
     if (backupwidth) scrnmng_setwidth(0, backupwidth);
     if (backupheight) scrnmng_setheight(0, backupheight);
-    SetWindowTitleWithCFString(hWndMain, CFStringCreateWithCString(NULL, np2oscfg.titles, kCFStringEncodingUTF8));
+	CFStringRef title = CFStringCreateWithCString(NULL, np2oscfg.titles, kCFStringEncodingUTF8);
+	if (title) {
+		SetWindowTitleWithCFString(hWndMain, title);
+		CFRelease(title);
+	}
 	ShowWindow(hWndMain);
     return(true);
 }

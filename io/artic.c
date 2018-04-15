@@ -1,5 +1,5 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 
@@ -9,14 +9,14 @@ void artic_callback(void) {
 	SINT32	mul;
 	SINT32	leng;
 
-	mul = pc.multiple;
-	if (pc.baseclock == PCBASECLOCK25) {
+	mul = pccore.multiple;
+	if (pccore.baseclock == PCBASECLOCK25) {
 		mul *= 16;
 	}
 	else {
 		mul *= 13;
 	}
-	leng = I286_CLOCK + I286_BASECLOCK + I286_REMCLOCK;
+	leng = CPU_CLOCK + CPU_BASECLOCK + CPU_REMCLOCK;
 	leng *= 2;
 	leng -= artic.lastclk2;
 	if (leng > 0) {
@@ -31,14 +31,14 @@ static UINT32 artic_getcnt(void) {
 	SINT32	mul;
 	SINT32	leng;
 
-	mul = pc.multiple;
-	if (pc.baseclock != PCBASECLOCK20) {
+	mul = pccore.multiple;
+	if (pccore.baseclock != PCBASECLOCK20) {
 		mul *= 16;
 	}
 	else {
 		mul *= 13;
 	}
-	leng = I286_CLOCK + I286_BASECLOCK + I286_REMCLOCK;
+	leng = CPU_CLOCK + CPU_BASECLOCK + CPU_REMCLOCK;
 	leng *= 2;
 	leng -= artic.lastclk2;
 	if (leng > 0) {
@@ -51,29 +51,29 @@ static UINT32 artic_getcnt(void) {
 
 // ---- I/O
 
-static void IOOUTCALL artic_o5c(UINT port, BYTE dat) {
+static void IOOUTCALL artic_o5f(UINT port, REG8 dat) {
 
 	(void)port;
 	(void)dat;
-	I286_REMCLOCK -= 20;
+	CPU_REMCLOCK -= 20;
 }
 
-static BYTE IOINPCALL artic_i5c(UINT port) {
+static REG8 IOINPCALL artic_i5c(UINT port) {
 
 	(void)port;
-	return((BYTE)artic_getcnt());
+	return((UINT8)artic_getcnt());
 }
 
-static BYTE IOINPCALL artic_i5d(UINT port) {
+static REG8 IOINPCALL artic_i5d(UINT port) {
 
 	(void)port;
-	return((BYTE)(artic_getcnt() >> 8));
+	return((UINT8)(artic_getcnt() >> 8));
 }
 
-static BYTE IOINPCALL artic_i5f(UINT port) {
+static REG8 IOINPCALL artic_i5f(UINT port) {
 
 	(void)port;
-	return((BYTE)(artic_getcnt() >> 16));
+	return((UINT8)(artic_getcnt() >> 16));
 }
 
 
@@ -86,14 +86,14 @@ void artic_reset(void) {
 
 void artic_bind(void) {
 
-	iocore_attachout(0x005c, artic_o5c);
+	iocore_attachout(0x005f, artic_o5f);
 	iocore_attachinp(0x005c, artic_i5c);
 	iocore_attachinp(0x005d, artic_i5d);
 	iocore_attachinp(0x005e, artic_i5d);
 	iocore_attachinp(0x005f, artic_i5f);
 }
 
-UINT16 IOINPCALL artic_r16(UINT port) {
+REG16 IOINPCALL artic_r16(UINT port) {
 
 	UINT32	cnt;
 

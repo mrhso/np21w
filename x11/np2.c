@@ -37,6 +37,7 @@
 
 #include "kdispwin.h"
 #include "toolwin.h"
+#include "viewer.h"
 
 #include "commng.h"
 #include "joymng.h"
@@ -45,10 +46,11 @@
 #include "scrnmng.h"
 #include "soundmng.h"
 #include "sysmng.h"
+#include "taskmng.h"
 
 
 NP2OSCFG np2oscfg = {
-#if !defined(CPU386)		/* titles */
+#if !defined(CPUCORE_IA32)		/* titles */
 	"Neko Project II",
 #else
 	"Neko Project II + IA32",
@@ -58,12 +60,12 @@ NP2OSCFG np2oscfg = {
 	0,			/* paddingy */
 
 	0,			/* NOWAIT */
-	2,			/* DRAW_SKIP */
+	0,			/* DRAW_SKIP */
 
 	0,			/* DISPCLK */
 
 	KEY_KEY106,		/* KEYBOARD */
-	0,			/* F12COPY */
+	0,			/* F12KEY */
 
 	0,			/* MOUSE_SW */
 	0,			/* JOYPAD1 */
@@ -80,6 +82,7 @@ NP2OSCFG np2oscfg = {
 	0,			/* toolwin */
 	0,			/* keydisp */
 	0,			/* hostdrv_write */
+	0,			/* jastsnd */
 	0,			/* I286SAVE */
 
 	SNDDRV_NODRV,		/* snddrv */
@@ -91,8 +94,12 @@ NP2OSCFG np2oscfg = {
 
 #if defined(USE_GTK)		/* toolkit */
 	"gtk",
-#else
+#elif defined(USE_QT)
 	"qt",
+#elif defined(USE_SDL)
+	"sdl",
+#else
+	"unknown",
 #endif
 
 	MMXFLAG_DISABLE,	/* disablemmx */
@@ -114,6 +121,16 @@ char fddfolder[MAX_PATH];
 char bmpfilefolder[MAX_PATH];
 char modulefile[MAX_PATH];
 char statpath[MAX_PATH];
+
+#ifndef FONTFACE
+#define FONTFACE "-misc-fixed-%s-r-normal--%d-*-*-*-*-*-*-*"
+#endif
+char fontname[1024] = FONTFACE;
+
+#ifndef	FONTNAME_DEFAULT
+#define	FONTNAME_DEFAULT	"./default.ttf"
+#endif
+char fontfilename[MAX_PATH] = FONTNAME_DEFAULT;
 
 char timidity_cfgfile_path[MAX_PATH];
 
@@ -258,6 +275,7 @@ framereset(UINT cnt)
 	scrnmng_dispclock();
 	kdispwin_draw((BYTE)cnt);
 	toolwin_draw((BYTE)cnt);
+	viewer_allreload(FALSE);
 	if (np2oscfg.DISPCLK & 3) {
 		if (sysmng_workclockrenewal()) {
 			sysmng_updatecaption(3);
@@ -273,7 +291,7 @@ processwait(UINT cnt)
 		timing_setcount(0);
 		framereset(cnt);
 	} else {
-		usleep(1);
+		taskmng_sleep(1);
 	}
 }
 

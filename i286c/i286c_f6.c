@@ -1,7 +1,6 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"i286c.h"
-#include	"memory.h"
 #include	"i286c.mcr"
 
 
@@ -47,7 +46,7 @@ I286_F6 _not_ea8(UINT op) {
 
 I286_F6 _neg_ea8(UINT op) {
 
-	BYTE	*out;
+	UINT8	*out;
 	UINT	src;
 	UINT	dst;
 	UINT32	madr;
@@ -62,14 +61,14 @@ I286_F6 _neg_ea8(UINT op) {
 		if (madr >= I286_MEMWRITEMAX) {
 			src = i286_memoryread(madr);
 			NEGBYTE(dst, src)
-			i286_memorywrite(madr, (BYTE)dst);
+			i286_memorywrite(madr, (REG8)dst);
 			return;
 		}
 		out = mem + madr;
 	}
 	src = *out;
 	NEGBYTE(dst, src)
-	*out = (BYTE)dst;
+	*out = (UINT8)dst;
 }
 
 I286_F6 _mul_ea8(UINT op) {
@@ -134,7 +133,7 @@ I286_F6 _div_ea8(UINT op) {
 I286_F6 _idiv_ea8(UINT op) {
 
 	SINT16	tmp, r;
-	char	src;
+	SINT8	src;
 	UINT16	ip;
 
 	ip = I286_IP;
@@ -150,7 +149,7 @@ I286_F6 _idiv_ea8(UINT op) {
 	if (src) {
 		r = tmp / src;
 		if (!((r + 0x80) & 0xff00)) {
-			I286_AL = (char)r;
+			I286_AL = (UINT8)r;
 			I286_AH = tmp % src;
 			return;
 		}
@@ -278,8 +277,8 @@ I286_F6 _div_ea16(UINT op) {
 	}
 	tmp = (I286_DX << 16) + I286_AX;
 	if ((src) && (tmp < (src << 16))) {
-		I286_AX = (SINT16)(tmp / src);
-		I286_DX = (SINT16)(tmp % src);
+		I286_AX = tmp / src;
+		I286_DX = tmp % src;
 	}
 	else {
 		INT_NUM(0, ip - 2);										// 80x86

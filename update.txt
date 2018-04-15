@@ -8,6 +8,71 @@
 
 // ----
 
+　ver0.72 → ver0.73
+
+　・主にRISC向けの最適化、その２
+　・EPSON PCシリーズのアーキテクチャをサポート
+　・ARM版CPUコアのサポート
+　・CPU(I286C) … シングルステップ割り込みの修正
+　・CPU(I286C) … int3 / int imm8 / into クロック数を修正
+　・CPU(I286C) … shl r/m8,cl / shr r/m8,cl の修正
+　・CPU(I286C) … sar r/m (eVC3/eVC4コンパイラバグ回避)
+　・CPU(I286C/I286X/I286A) … グループ７とか…
+　・DMAC … インプットでアドレスとカウンタが逆なのを修正
+　・PIT … ビープカウンタを修正
+　・NP2SYSP … ポートを叩いた瞬間 フリーズするバグを修正
+　・CALENDAR … 時間をインクリメントしないバグの修正
+　・ITF … 拡張メモリ使用時にエミュレーション内部のメモリを破壊するのを修正
+　・CS4231 … 再生しなくなっていたのを修正
+　・CS4231 … DMA,IRQを変更出来るようにしました
+　・CS4231 … デフォルトのDMAチャネルを #1に変更
+　・MIDI … STATSAVEの修正
+　・SOUND … JAST SOUNDをサポート
+　・Vermouth … Roland GSコマンドの一部に対応
+
+　補足
+　　ver0.73では EPSONモードの時 D000～DFFFがRAM化されます。
+　　・SOUND BIOSは D000,D400に配置しないで下さい、もしくはUMB等で破壊されないようにして下さい。
+
+
+　(X11)
+　　・Qt 2.x の実験的なサポート
+　　・SDL の実験的なサポート
+　　・ビープ音量が設定ファイルに保存されないのを修正
+
+
+　ver0.73向け
+　　・io/necio.c io/epsonio.c をリンクして下さい
+　　・io/itf.cをリンクよりはずして下さい
+
+　　・configのモデル選択 http://retropc.net/yui/cvs/config.gif
+　　　np2cfg.model に それぞれ "VM" "VX" "EPSON"の文字列を設定する。
+　　　(それぞれ common/strresにstr_VM, str_VX, str_EPSONが用意されています)
+
+　　・JAST SOUNDの選択 http://retropc.net/yui/cvs/jastsnd.gif
+　　　パラレルなので 機種依存部の COMMNG.Cを修正して CMJASTCを呼ぶ
+　　　使用・未使用判定は OSごとに(np2oscfgで)設定すること
+
+　　・wavemix sound/getsnd については ver0.73では不要ですが、
+　　　ver0.74あたりで使用する予定(Seeksnd?/OPNA/AMD-98の共用ルーチン化)
+　　　今までのseeksndインタフェイスはどうするかね…
+
+
+　更新履歴に書かなくていい変更点
+　　・i286a/i286c/i286xに簡易プロテクトモードを追加(保護・タスクなし)
+　　・DMACを再配置できるように修正
+　　・CPU/EGCのストラクチャの調整
+　　・BIOS … DISK BIOSをサポート(但し 通常のBIOSコールは DISK BIOSを使用せずに BIOSレベルでシミュレートしています)
+　　・BIOS … SASI/SCSI BIOS ROMをサポート(BIOSアドレス d000:0000)
+　　　補足→ (ver0.74に回す)
+　　　　SASI/SCSI BIOSは 殆どの場合にはブート時にしか使っていないので RAM内容を破壊しても HDDアクセスは正常に行なわれます。
+　　　　※アプリケーションが SASI/SCSI BIOSを直視しない限りは大丈夫。
+　　　　　ver0.72までは SASI/SCSI BIOSがサポートされていない(＝つまり使われていない) ver0.72までに動いていたソフトウェアはほぼ大丈夫と言えます。
+　　・hostdrv...
+
+
+// ----
+
 　ver0.71 → ver0.72
 
 　・主にRISC向けの最適化(CPU, BEEP counter, BIOS etc...)

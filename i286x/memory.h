@@ -3,11 +3,18 @@
 #define	MEMCALL
 #endif
 
+#if defined(MEMORDERTYPE) && (MEMORDERTYPE != 0)
+#error : MEMORDERTYPE != 0
+#endif
+
 
 // 000000-0fffff ÉÅÉCÉìÉÅÉÇÉä
 // 100000-10ffef HMA
 // 110000-193fff FONT-ROM/RAM
-// 1a8000-1e7fff VRAM1
+// 1a8000-1bffff VRAM1
+// 1c0000-1c7fff ITF-ROM BAK
+// 1c8000-1dffff EPSON RAM
+// 1e0000-1e7fff VRAM1
 // 1f8000-1fffff ITF-ROM
 
 enum {
@@ -30,7 +37,7 @@ enum {
 	ITF_ADRS	= 0x1f8000
 };
 
-#define	VRAM_POS(a)	((a) & (VRAM_STEP | 0x7fff))
+#define	VRAMADDRMASKEX(a)	((a) & (VRAM_STEP | 0x7fff))
 
 
 #ifdef __cplusplus
@@ -39,6 +46,8 @@ extern "C" {
 
 extern	BYTE	mem[0x200000];
 
+void MEMCALL i286_memorymap(UINT type);
+void MEMCALL i286_romareamap(UINT16 map);
 void MEMCALL i286_vram_dispatch(UINT operate);
 
 BYTE MEMCALL i286_memoryread(UINT32 address);

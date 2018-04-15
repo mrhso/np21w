@@ -351,6 +351,8 @@ static const INITBL iniitem[] = {
 	{"HDD2FILE", INITYPE_STR,		np2cfg.hddfile[1],		MAX_PATH},
 	{"fontfile", INITYPE_STR,		np2cfg.fontfile,		MAX_PATH},
 	{"biospath", INITYPE_STR,		np2cfg.biospath,		MAX_PATH},
+	{"hdrvroot", INITYPE_STR,		np2cfg.hdrvroot,		MAX_PATH},
+	{"hdrv_acc", INITYPE_UINT8,		&np2cfg.hdrvacc,		0},
 
 	{"SampleHz", INITYPE_UINT16,	&np2cfg.samplingrate,	0},
 	{"Latencys", INITYPE_UINT16,	&np2cfg.delayms,		0},
@@ -407,6 +409,7 @@ static const INITBL iniitem[] = {
 	{"comfirm_", INITYPE_BOOL,		&np2oscfg.comfirm,		0},
 	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},		// ver0.30
 	{"toolwind", INITYPE_BOOL,		&np2oscfg.toolwin,		0},		// ver0.38
+	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
 	{"I286SAVE", INITYPE_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 #define	INIITEMS	(sizeof(iniitem) / sizeof(INITBL))

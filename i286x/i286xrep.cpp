@@ -1,9 +1,8 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"i286x.h"
 #include	"i286xs.h"
 #include	"i286xrep.h"
-#include	"memory.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"i286x.mcr"
@@ -17,7 +16,7 @@
 #define	REPLOOP(a)												\
 				__asm {	cmp		I286_REMCLOCK, 0			}	\
 				__asm {	jg		(a)							}	\
-				__asm {	mov		esi, REPPOSBAK				}
+				__asm {	mov		esi, I286_REPPOSBAK			}
 
 
 // ---------------------------------------------------------------------- ins

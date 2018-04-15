@@ -1,7 +1,7 @@
 #include	"compiler.h"
 #include	"dosio.h"
+#include	"cpucore.h"
 #include	"pccore.h"
-#include	"memory.h"
 #include	"soundrom.h"
 
 
@@ -38,6 +38,12 @@ static BOOL loadsoundrom(UINT address, const char *name) {
 	}
 	file_cpyname(soundrom.name, romname, sizeof(soundrom.name));
 	soundrom.address = address;
+	if (address == 0xd0000) {
+		CPU_RAM_D000 &= ~(0x0f << 0);
+	}
+	else if (address == 0xd4000) {
+		CPU_RAM_D000 &= ~(0x0f << 4);
+	}
 	return(SUCCESS);
 
 lsr_err:
@@ -67,7 +73,7 @@ void soundrom_load(UINT32 address, const char *primary) {
 	soundrom.address = address;
 }
 
-void soundrom_loadex(BYTE sw, const char *primary) {
+void soundrom_loadex(UINT sw, const char *primary) {
 
 	if (sw < 4) {
 		soundrom_load((0xc8000 + ((UINT32)sw << 14)), primary);

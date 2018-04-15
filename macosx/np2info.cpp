@@ -3,8 +3,7 @@
 #include	"np2.h"
 #include	"scrnmng.h"
 #include	"np2info.h"
-#include	"i286.h"
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"bios.h"
@@ -68,7 +67,7 @@ static void info_ver(char *str, int maxlen) {
 
 static void info_cpu(char *str, int maxlen) {
 
-	milstr_ncpy(str, (CPUTYPE & CPUTYPE_V30)?str_V30:str_i286, maxlen);
+	milstr_ncpy(str, (CPU_TYPE & CPUTYPE_V30)?str_V30:str_i286, maxlen);
 }
 
 static void info_clock(char *str, int maxlen) {
@@ -76,14 +75,14 @@ static void info_clock(char *str, int maxlen) {
 	UINT32	clock;
 	char	clockstr[16];
 
-	clock = (pc.realclock + 50000) / 100000;
+	clock = (pccore.realclock + 50000) / 100000;
 	SPRINTF(clockstr, str_clockfmt, clock/10, clock % 10);
 	milstr_ncpy(str, clockstr, maxlen);
 }
 
 static void info_base(char *str, int maxlen) {
 
-	milstr_ncpy(str, (pc.baseclock == PCBASECLOCK25)?str_5MHz:str_8MHz,
+	milstr_ncpy(str, (pccore.baseclock == PCBASECLOCK25)?str_5MHz:str_8MHz,
 																	maxlen);
 }
 

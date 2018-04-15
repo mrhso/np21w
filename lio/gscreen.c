@@ -1,6 +1,5 @@
 #include	"compiler.h"
-#include	"i286.h"
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"lio.h"
@@ -41,7 +40,7 @@ BYTE lio_gscreen(void) {
 	BYTE			bit;
 	int				disp;
 
-	i286_memstr_read(I286_DS, I286_BX, &data, sizeof(data));
+	i286_memstr_read(CPU_DS, CPU_BX, &data, sizeof(data));
 	if (data.mode == 0xff) {
 		data.mode = lio.gscreen.mode;
 	}

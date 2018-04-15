@@ -25,7 +25,6 @@ typedef struct {
 
 	BYTE	background;
 	BYTE	DISPCLK;
-
 	BYTE	KEYBOARD;
 	BYTE	F12COPY;
 
@@ -58,6 +57,7 @@ typedef struct {
 	BYTE	keydisp;
 	BYTE	I286SAVE;
 	BYTE	hostdrv_write;
+	BYTE	jastsnd;
 } NP2OSCFG;
 
 

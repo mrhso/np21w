@@ -4,8 +4,7 @@
 #include	"scrnmng.h"
 #include	"soundmng.h"
 #include	"timemng.h"
-#include	"i286.h"
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"cbuscore.h"
@@ -56,11 +55,15 @@ typedef struct {
 enum {
 	NP2FLAG_BIN			= 0,
 	NP2FLAG_TERM,
+#if defined(CGWND_FONTPTR)
+	NP2FLAG_CGW,
+#endif
 	NP2FLAG_CLOCK,
 	NP2FLAG_COM,
 	NP2FLAG_DISK,
 	NP2FLAG_DMA,
 	NP2FLAG_EGC,
+	NP2FLAG_EPSON,
 	NP2FLAG_EVT,
 	NP2FLAG_EXT,
 	NP2FLAG_FM,
@@ -408,8 +411,8 @@ static int flagsave_ext(NP2FFILE f, const STENTRY *t) {
 	ret = flagsave_create(f, t);
 	if (ret != NP2FLAG_FAILURE) {
 		ret |= flagsave_save(f, &extmem, sizeof(extmem));
-		if (extmemmng_size) {
-			ret |= flagsave_save(f, extmemmng_ptr, extmemmng_size);
+		if (CPU_EXTMEM) {
+			ret |= flagsave_save(f, CPU_EXTMEM, CPU_EXTMEMSIZE);
 		}
 		ret |= flagsave_close(f);
 	}
@@ -429,8 +432,8 @@ static int flagload_ext(NP2FFILE f, const STENTRY *t) {
 		}
 		if (!extmemmng_realloc(extmem.maxmem - 1)) {
 			pagemax = (extmem.maxmem - 1) << 8;
-			if (extmemmng_size) {
-				ret |= flagload_load(f, extmemmng_ptr, extmemmng_size);
+			if (CPU_EXTMEM) {
+				ret |= flagload_load(f, CPU_EXTMEM, CPU_EXTMEMSIZE);
 			}
 		}
 		else {
@@ -439,7 +442,7 @@ static int flagload_ext(NP2FFILE f, const STENTRY *t) {
 	}
 	for (i=0; i<4; i++) {
 		if (extmem.page[i] < pagemax) {
-			extmem.pageptr[i] = extmemmng_ptr + (extmem.page[i] << 12);
+			extmem.pageptr[i] = CPU_EXTMEM + (extmem.page[i] << 12);
 		}
 		else {
 			extmem.pageptr[i] = mem + 0xc0000 + (i << 14);
@@ -448,6 +451,38 @@ static int flagload_ext(NP2FFILE f, const STENTRY *t) {
 	(void)t;
 	return(ret);
 }
+
+
+// ---- cg window
+
+#if defined(CGWND_FONTPTR)
+static int flagsave_cgwnd(NP2FFILE f, const STENTRY *t) {
+
+	int			ret;
+	_CGWINDOW	cgwnd;
+
+	cgwnd = cgwindow;
+	cgwnd.fontlow -= (long)fontrom;
+	cgwnd.fonthigh -= (long)fontrom;
+	ret = flagsave_create(f, t);
+	if (ret != NP2FLAG_FAILURE) {
+		ret |= flagsave_save(f, &cgwindow, sizeof(cgwindow));
+		ret |= flagsave_close(f);
+	}
+	return(ret);
+}
+
+static int flagload_cgwnd(NP2FFILE f, const STENTRY *t) {
+
+	int		ret;
+
+	ret = flagload_load(f, &cgwindow, sizeof(cgwindow));
+	cgwindow.fontlow += (long)fontrom;
+	cgwindow.fonthigh += (long)fontrom;
+	(void)t;
+	return(ret);
+}
+#endif
 
 
 // ---- dma
@@ -460,9 +495,9 @@ static int flagsave_dma(NP2FFILE f, const STENTRY *t) {
 
 	dmabak = dmac;
 	for (i=0; i<4; i++) {
-		if ((PROC2NUM(dmabak.dmach[i].outproc, dmaproc)) ||
-			(PROC2NUM(dmabak.dmach[i].inproc, dmaproc)) ||
-			(PROC2NUM(dmabak.dmach[i].extproc, dmaproc))) {
+		if ((PROC2NUM(dmabak.dmach[i].proc.outproc, dmaproc)) ||
+			(PROC2NUM(dmabak.dmach[i].proc.inproc, dmaproc)) ||
+			(PROC2NUM(dmabak.dmach[i].proc.extproc, dmaproc))) {
 			return(NP2FLAG_FAILURE);
 		}
 	}
@@ -482,16 +517,16 @@ static int flagload_dma(NP2FFILE f, const STENTRY *t) {
 	ret = flagload_load(f, &dmac, sizeof(dmac));
 
 	for (i=0; i<4; i++) {
-		if (NUM2PROC(dmac.dmach[i].outproc, dmaproc)) {
-			dmac.dmach[i].outproc = dma_dummyout;
+		if (NUM2PROC(dmac.dmach[i].proc.outproc, dmaproc)) {
+			dmac.dmach[i].proc.outproc = dma_dummyout;
 			ret |= NP2FLAG_WARNING;
 		}
-		if (NUM2PROC(dmac.dmach[i].inproc, dmaproc)) {
-			dmac.dmach[i].inproc = dma_dummyin;
+		if (NUM2PROC(dmac.dmach[i].proc.inproc, dmaproc)) {
+			dmac.dmach[i].proc.inproc = dma_dummyin;
 			ret |= NP2FLAG_WARNING;
 		}
-		if (NUM2PROC(dmac.dmach[i].extproc, dmaproc)) {
-			dmac.dmach[i].extproc = dma_dummyproc;
+		if (NUM2PROC(dmac.dmach[i].proc.extproc, dmaproc)) {
+			dmac.dmach[i].proc.extproc = dma_dummyproc;
 			ret |= NP2FLAG_WARNING;
 		}
 	}
@@ -526,6 +561,37 @@ static int flagload_egc(NP2FFILE f, const STENTRY *t) {
 	ret = flagload_load(f, &egc, sizeof(egc));
 	egc.inptr += (long)egc.buf;
 	egc.outptr += (long)egc.buf;
+	(void)t;
+	return(ret);
+}
+
+
+// ---- epson
+
+static int flagsave_epson(NP2FFILE f, const STENTRY *t) {
+
+	int		ret;
+
+	if (!(pccore.model & PCMODEL_EPSON)) {
+		return(NP2FLAG_SUCCESS);
+	}
+	ret = flagsave_create(f, t);
+	if (ret != NP2FLAG_FAILURE) {
+		ret |= flagsave_save(f, &epsonio, sizeof(epsonio));
+		ret |= flagsave_save(f, mem + 0x1c0000, 0x8000);
+		ret |= flagsave_save(f, mem + 0x1e8000, 0x18000);
+		ret |= flagsave_close(f);
+	}
+	return(ret);
+}
+
+static int flagload_epson(NP2FFILE f, const STENTRY *t) {
+
+	int		ret;
+
+	ret = flagload_load(f, &epsonio, sizeof(epsonio));
+	ret |= flagload_load(f, mem + 0x1c0000, 0x8000);
+	ret |= flagload_load(f, mem + 0x1e8000, 0x18000);
 	(void)t;
 	return(ret);
 }
@@ -1267,6 +1333,12 @@ const STENTRY	*tblterm;
 				ret |= flagsave_term(&f, tbl);
 				break;
 
+#if defined(CGWND_FONTPTR)
+			case NP2FLAG_CGW:
+				ret |= flagsave_cgwnd(&f, tbl);
+				break;
+#endif
+
 			case NP2FLAG_COM:
 				ret |= flagsave_com(&f, tbl);
 				break;
@@ -1281,6 +1353,10 @@ const STENTRY	*tblterm;
 
 			case NP2FLAG_EGC:
 				ret |= flagsave_egc(&f, tbl);
+				break;
+
+			case NP2FLAG_EPSON:
+				ret |= flagsave_epson(&f, tbl);
 				break;
 
 			case NP2FLAG_EVT:
@@ -1349,6 +1425,9 @@ const STENTRY	*tblterm;
 			if (tbl < tblterm) {
 				switch(tbl->type) {
 					case NP2FLAG_BIN:
+#if defined(CGWND_FONTPTR)
+					case NP2FLAG_CGW:
+#endif
 					case NP2FLAG_CLOCK:
 					case NP2FLAG_MEM:
 						ret |= flagcheck_versize(&f, tbl, &e);
@@ -1361,6 +1440,7 @@ const STENTRY	*tblterm;
 					case NP2FLAG_COM:
 					case NP2FLAG_DMA:
 					case NP2FLAG_EGC:
+					case NP2FLAG_EPSON:
 					case NP2FLAG_EVT:
 					case NP2FLAG_EXT:
 					case NP2FLAG_GIJ:
@@ -1408,6 +1488,9 @@ const STENTRY	*tblterm;
 	mpu98ii_midipanic();
 	pc9861k_midipanic();
 	sound_reset();
+#if defined(SUPPORT_WAVEMIX)
+	wavemix_bind();
+#endif
 	fmboard_reset(0);
 
 	done = FALSE;
@@ -1434,6 +1517,12 @@ const STENTRY	*tblterm;
 					done = TRUE;
 					break;
 
+#if defined(CGWND_FONTPTR)
+				case NP2FLAG_CGW:
+					ret |= flagload_cgwnd(&f, tbl);
+					break;
+#endif
+
 				case NP2FLAG_CLOCK:
 					ret |= flagload_clock(&f, tbl);
 					break;
@@ -1452,6 +1541,10 @@ const STENTRY	*tblterm;
 
 				case NP2FLAG_EGC:
 					ret |= flagload_egc(&f, tbl);
+					break;
+
+				case NP2FLAG_EPSON:
+					ret |= flagload_epson(&f, tbl);
 					break;
 
 				case NP2FLAG_EVT:
@@ -1487,6 +1580,7 @@ const STENTRY	*tblterm;
 	flagclose(&f);
 
 	// I/OçÏÇËíºÇµ
+	i286_memorymap((pccore.model & PCMODEL_EPSON)?1:0);
 	iocore_build();
 	iocore_bind();
 	cbuscore_bind();
@@ -1499,6 +1593,10 @@ const STENTRY	*tblterm;
 	gdcs.palchange = GDCSCRN_REDRAW;
 	tramflag.renewal = 1;
 	cgwindow.writable |= 0x80;
+#if defined(CPUSTRUC_FONTPTR)
+	FONTPTR_LOW = fontrom + cgwindow.low;
+	FONTPTR_HIGH = fontrom + cgwindow.high;
+#endif
 	i286_vram_dispatch(vramop.operate);
 	soundmng_play();
 

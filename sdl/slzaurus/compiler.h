@@ -72,13 +72,18 @@ typedef	unsigned char	BYTE;
 #define	BYTESEX_LITTLE
 #endif	/* SDL_BYTEORDER == SDL_BIG_ENDIAN */
 
-#define	__ASSERT(s)	assert(s)
-
 #define	UNUSED(v)	((void)(v))
 
 #ifndef	NELEMENTS
 #define	NELEMENTS(a)	((int)(sizeof(a) / sizeof(a[0])))
 #endif
+
+
+#if !defined(SIZE_VGA)
+#define	RGB16		UINT32
+#define	SIZE_QVGA
+#endif
+
 
 #include	"common.h"
 #include	"milstr.h"
@@ -86,6 +91,7 @@ typedef	unsigned char	BYTE;
 #include	"rect.h"
 #include	"lstarray.h"
 #include	"trace.h"
+
 
 #define	GETTICK()	SDL_GetTicks()
 #define	SPRINTF		sprintf
@@ -98,10 +104,6 @@ typedef	unsigned char	BYTE;
 
 #define	SUPPORT_16BPP
 #define	MEMOPTIMIZE		2
-
-#ifndef SIZE_VGA
-#define	SIZE_QVGA
-#endif
 
 #define	SOUNDRESERVE	100
 

@@ -1,6 +1,7 @@
 #include	"compiler.h"
 #include	"np2.h"
 #include	"commng.h"
+#include	"cmjasts.h"
 
 
 // ---- non connect
@@ -69,6 +70,9 @@ COMMNG commng_create(UINT device) {
 
 		case COMCREATE_PRINTER:
 			cfg = NULL;
+			if (np2oscfg.jastsnd) {
+				ret = cmjasts_create();
+			}
 			break;
 
 		case COMCREATE_MPU98II:

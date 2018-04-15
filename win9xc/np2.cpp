@@ -1,6 +1,8 @@
 #include	"compiler.h"
 #include	<time.h>
+#ifndef __GNUC__
 #include	<winnls32.h>
+#endif
 #include	"strres.h"
 #include	"parts.h"
 #include	"resource.h"
@@ -45,17 +47,21 @@
 #define	STATSAVEMAX		10
 
 static	char		np2help[] = "np2.hlp";
-static	char		np2resume[] = "sav";
+// static char		np2resume[] = "sav";
 
-static	const char	szAppCaption[] = "Neko Project II - C version";
+#if defined(CPUCORE_IA32)
+		const char szAppCaption[] = "Neko Project II (IA-32)";
+#else
+		const char szAppCaption[] = "Neko Project II (C Version)";
+#endif
 static	const char	szClassName[] = "NP2-MainWindow";
 
 
 		NP2OSCFG	np2oscfg = {
-						CW_USEDEFAULT, CW_USEDEFAULT, 0, 2,
+						CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
 						KEY_UNKNOWN, 0,
 						0, 0, 0, {1, 2, 2, 1},
-						0};
+						0, 0};
 
 		HWND		hWndMain;
 		HINSTANCE	hInst;
@@ -133,8 +139,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	switch (msg) {
 		case WM_CREATE:
+#ifndef __GNUC__
 			WINNLSEnableIME(hWnd, FALSE);
-//			DragAcceptFiles(hWnd, TRUE);
+#endif
 			break;
 
 		case WM_SYSCOMMAND:
@@ -333,19 +340,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 				case IDM_F12MOUSE:
 					xmenu_setf12copy(0);
-					keystat_resetcopyhelp();
+					winkbd_resetf12();
 					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12COPY:
 					xmenu_setf12copy(1);
-					keystat_resetcopyhelp();
+					winkbd_resetf12();
 					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12STOP:
 					xmenu_setf12copy(2);
-					keystat_resetcopyhelp();
+					winkbd_resetf12();
+					update |= SYS_UPDATEOSCFG;
+					break;
+
+				case IDM_F12EQU:
+					xmenu_setf12copy(3);
+					winkbd_resetf12();
+					update |= SYS_UPDATEOSCFG;
+					break;
+
+				case IDM_F12COMMA:
+					xmenu_setf12copy(4);
+					winkbd_resetf12();
 					update |= SYS_UPDATEOSCFG;
 					break;
 
@@ -374,66 +393,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					break;
 
 				case IDM_NOSOUND:
-					xmenu_setsound(0);
+					xmenu_setsound(0x00);
 					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_PC9801_14:
-					xmenu_setsound(1);
+					xmenu_setsound(0x01);
 					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_PC9801_26K:
-					{
-						BYTE	sw;
-						sw = np2cfg.SOUND_SW;
-						if (sw & 4) {
-							sw &= 6;
-							sw ^= 2;
-						}
-						else {
-							sw = 2;
-						}
-						xmenu_setsound(sw);
-						update |= SYS_UPDATECFG;
-					}
-					break;
-
-				case IDM_PC9801_86:
-					{
-						BYTE	sw;
-						sw = np2cfg.SOUND_SW;
-						if (sw & 2) {
-							sw &= 6;
-							sw ^= 4;
-						}
-						else if (!(sw & 4)) {
-							sw = 4;
-						}
-						xmenu_setsound(sw);
-						update |= SYS_UPDATECFG;
-					}
-					break;
-
-				case IDM_PC9801_118:
-					xmenu_setsound(8);
+					xmenu_setsound(0x02);
 					update |= SYS_UPDATECFG;
 					break;
 
-				case IDM_CHIBIOTO:
-					{
-						BYTE	sw;
-						sw = np2cfg.SOUND_SW;
-						if (sw & 4) {
-							sw &= 0x14;
-							sw ^= 0x10;
-						}
-						else {
-							sw = 0x14;
-						}
-						xmenu_setsound(sw);
-						update |= SYS_UPDATECFG;
-					}
+				case IDM_PC9801_86:
+					xmenu_setsound(0x04);
+					update |= SYS_UPDATECFG;
+					break;
+
+				case IDM_PC9801_26_86:
+					xmenu_setsound(0x06);
+					update |= SYS_UPDATECFG;
+					break;
+
+				case IDM_PC9801_86_CB:
+					xmenu_setsound(0x14);
+					update |= SYS_UPDATECFG;
+					break;
+
+				case IDM_PC9801_118:
+					xmenu_setsound(0x08);
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_SPEAKBOARD:
@@ -451,13 +442,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					update |= SYS_UPDATECFG;
 					break;
 
-				case IDM_SNDOPT:
-					winuienter();
-					dialog_sndopt(hWnd);
-					winuileave();
+				case IDM_JASTSOUND:
+					xmenu_setjastsound(np2oscfg.jastsnd ^ 1);
+					update |= SYS_UPDATEOSCFG;
 					break;
 
-				case IDM_SEEKSND:
+				case IDM_SEEKWAIT:
 					xmenu_setmotorflg(np2cfg.MOTOR ^ 1);
 					update |= SYS_UPDATECFG;
 					break;
@@ -499,6 +489,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					rs232c_midipanic();
 					mpu98ii_midipanic();
 					pc9861k_midipanic();
+					break;
+
+				case IDM_SNDOPT:
+					winuienter();
+					dialog_sndopt(hWnd);
+					winuileave();
 					break;
 
 				case IDM_BMPSAVE:
@@ -649,7 +645,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				sysmng_update(SYS_UPDATECFG);
 			}
 			else {
-				winkeydown106(wParam, lParam);
+				winkbd_keydown(wParam, lParam);
 			}
 			break;
 		case WM_KEYUP:
@@ -657,16 +653,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				return(DefWindowProc(hWnd, WM_SYSKEYUP, VK_F10, lParam));
 			}
 			if ((wParam != VK_F12) || (np2oscfg.F12COPY)) {
-				winkeyup106(wParam, lParam);
+				winkbd_keyup(wParam, lParam);
 			}
 			break;
 
 		case WM_SYSKEYDOWN:
-			winkeydown106(wParam, lParam);
+			winkbd_keydown(wParam, lParam);
 			break;
 
 		case WM_SYSKEYUP:
-			winkeyup106(wParam, lParam);
+			winkbd_keyup(wParam, lParam);
 			break;
 
 		case WM_LBUTTONDOWN:
@@ -802,7 +798,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		np2.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 		np2.hCursor = LoadCursor(NULL, IDC_ARROW);
 		np2.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-		np2.lpszMenuName = MAKEINTRESOURCE(IDM_MAIN);
+		np2.lpszMenuName = MAKEINTRESOURCE(IDR_MAIN);
 		np2.lpszClassName = szClassName;
 		if (!RegisterClass(&np2)) {
 			return(FALSE);
@@ -817,23 +813,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 
 	scrnmng_initialize();
 
-	xmenu_setsound(np2cfg.SOUND_SW);
-	xmenu_setbeepvol(np2cfg.BEEP_VOL);
-	xmenu_setkey(0);
-	xmenu_setbtnrapid(np2cfg.BTN_RAPID);
-	xmenu_setbtnmode(np2cfg.BTN_MODE);
-	xmenu_setmsrapid(np2cfg.MOUSERAPID);
+	xmenu_setroltate(0);
+	xmenu_setdispmode(np2cfg.DISPSYNC);
+	xmenu_setraster(np2cfg.RASTER);
 	xmenu_setwaitflg(np2oscfg.NOWAIT);
 	xmenu_setframe(np2oscfg.DRAW_SKIP);
-	xmenu_setdispmode(np2cfg.DISPSYNC);
-	xmenu_seti286save(np2oscfg.I286SAVE);
-	xmenu_setmotorflg(np2cfg.MOTOR);
-	xmenu_setroltate(0);
+
+	xmenu_setkey(0);
 	xmenu_setxshift(0);
 	xmenu_setf12copy(np2oscfg.F12COPY);
+	xmenu_setbeepvol(np2cfg.BEEP_VOL);
+	xmenu_setsound(np2cfg.SOUND_SW);
+	xmenu_setjastsound(np2oscfg.jastsnd);
+	xmenu_setmotorflg(np2cfg.MOTOR);
 	xmenu_setextmem(np2cfg.EXTMEM);
-	xmenu_setraster(np2cfg.RASTER);
 	xmenu_setmouse(np2oscfg.MOUSE_SW);
+
+	xmenu_setbtnmode(np2cfg.BTN_MODE);
+	xmenu_setbtnrapid(np2cfg.BTN_RAPID);
+	xmenu_setmsrapid(np2cfg.MOUSERAPID);
+	xmenu_seti286save(np2oscfg.I286SAVE);
 
 	ShowWindow(hWndMain, nCmdShow);
 	UpdateWindow(hWndMain);

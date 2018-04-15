@@ -319,6 +319,7 @@ static const char ini_title[] = "NekoProjectII";
 enum {
 	INIRO_STR			= INITYPE_STR + INIFLAG_RO,
 	INIRO_BOOL			= INITYPE_BOOL + INIFLAG_RO,
+	INIRO_UINT8			= INITYPE_UINT8 + INIFLAG_RO,
 	INIMAX_UINT8		= INITYPE_UINT8 + INIFLAG_MAX,
 	INIAND_UINT8		= INITYPE_UINT8 + INIFLAG_AND,
 	INIROMAX_SINT32		= INITYPE_SINT32 + INIFLAG_RO + INIFLAG_MAX,
@@ -343,6 +344,8 @@ static const INITBL iniitem[] = {
 	{"bmap_Dir", INITYPE_STR,		bmpfilefolder,			MAX_PATH},
 	{"fontfile", INITYPE_STR,		np2cfg.fontfile,		MAX_PATH},
 	{"biospath", INIRO_STR,			np2cfg.biospath,		MAX_PATH},
+	{"hdrvroot", INIRO_STR,			np2cfg.hdrvroot,		MAX_PATH},
+	{"hdrv_acc", INIRO_UINT8,		&np2cfg.hdrvacc,		0},
 
 	{"pc_model", INITYPE_STR,		&np2cfg.model,
 													sizeof(np2cfg.model)},
@@ -454,13 +457,14 @@ static const INITBL iniitem[] = {
 	{"com3mmdl", INITYPE_STR,		np2oscfg.com3.mdl,		64},
 	{"com3mdef", INITYPE_STR,		np2oscfg.com3.def,		MAX_PATH},
 
-	{"force400", INITYPE_BOOL,		&np2oscfg.force400,		0},
+	{"force400", INIRO_BOOL,		&np2oscfg.force400,		0},
 	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},
 	{"STATSAVE", INIRO_BOOL,		&np2oscfg.statsave,		0},
 	{"nousemmx", INITYPE_BOOL,		&np2oscfg.disablemmx,	0},		// ver0.36
 	{"windtype", INITYPE_UINT8,		&np2oscfg.wintype,		0},
 	{"toolwind", INITYPE_BOOL,		&np2oscfg.toolwin,		0},		// ver0.38
 	{"keydispl", INITYPE_BOOL,		&np2oscfg.keydisp,		0},
+	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
 	{"I286SAVE", INIRO_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 

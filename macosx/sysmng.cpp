@@ -1,8 +1,8 @@
 #include	"compiler.h"
 #include	"np2.h"
 #include	"dosio.h"
-#include	"i286.h"
 #include	"sysmng.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"fddfile.h"
 #include	"diskdrv.h"
@@ -24,7 +24,7 @@ static struct {
 void sysmng_workclockreset(void) {
 
 	workclock.tick = GETTICK();
-	workclock.clock = I286_CLOCK;
+	workclock.clock = CPU_CLOCK;
 	workclock.draws = drawcount;
 }
 
@@ -39,8 +39,8 @@ BOOL sysmng_workclockrenewal(void) {
 	workclock.tick += tick;
 	workclock.fps = ((drawcount - workclock.draws) * 10000) / tick;
 	workclock.draws = drawcount;
-	workclock.khz = (I286_CLOCK - workclock.clock) / tick;
-	workclock.clock = I286_CLOCK;
+	workclock.khz = (CPU_CLOCK - workclock.clock) / tick;
+	workclock.clock = CPU_CLOCK;
 	return(TRUE);
 }
 
@@ -104,7 +104,10 @@ void sysmng_updatecaption(BYTE flag) {
 	milstr_ncat(work, strclock, sizeof(work));
 
 #if defined(NP2GCC)
-    SetWindowTitleWithCFString(hWndMain, CFStringCreateWithCString(NULL, work, CFStringGetSystemEncoding()));
+	CFStringRef cfstr;
+	cfstr = CFStringCreateWithCString(NULL, work, CFStringGetSystemEncoding());
+    SetWindowTitleWithCFString(hWndMain, cfstr);
+	CFRelease(cfstr);
 #else
 	mkstr255(str, work);
 	SetWTitle(hWndMain, str);

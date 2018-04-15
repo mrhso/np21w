@@ -11,7 +11,6 @@ typedef signed char		SINT8;
 typedef	signed short	SINT16;
 typedef	signed int		SINT32;
 
-
 #ifndef	ZeroMemory
 #define	ZeroMemory(a, b)		memset((a),  0 , (b))
 #endif
@@ -31,7 +30,6 @@ typedef	signed int		SINT32;
 // for ARM optimize
 #define	REG8		UINT
 #define REG16		UINT
-#define REG32		UINT
 #define	LOW12(a)	((((UINT)(a)) << 20) >> 20)
 #define	LOW14(a)	((((UINT)(a)) << 18) >> 18)
 #define	LOW15(a)	((((UINT)(a)) << 17) >> 17)
@@ -51,7 +49,7 @@ typedef	signed int		SINT32;
 #define	SPRINTF		sprintf
 #define	__ASSERT(s)
 
-#if defined(WIN32_PLATFORM_PSPC)
+#if defined(WIN32_PLATFORM_PSPC) && defined(SIZE_QVGA)
 #define	MENU_TASKMINIMIZE
 #define SUPPORT_SOFTKBD
 #endif
@@ -71,4 +69,6 @@ typedef	signed int		SINT32;
 #if defined(ARM)
 #define	OPNGENARM
 #endif
+
+#define	CPUSTRUC_MEMWAIT
 

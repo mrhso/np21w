@@ -1001,6 +1001,10 @@ SOURCE=..\IO\EGC.C
 # End Source File
 # Begin Source File
 
+SOURCE=..\IO\EPSONIO.C
+# End Source File
+# Begin Source File
+
 SOURCE=..\IO\EXTMEM.C
 # End Source File
 # Begin Source File
@@ -1029,11 +1033,11 @@ SOURCE=..\IO\IOCORE.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\ITF.C
+SOURCE=..\IO\MOUSEIF.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\MOUSEIF.C
+SOURCE=..\IO\NECIO.C
 # End Source File
 # Begin Source File
 
@@ -1204,11 +1208,23 @@ SOURCE=..\VRAM\VRAM.C
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\GENERIC\CMJASTS.C
+# End Source File
+# Begin Source File
+
 SOURCE=..\GENERIC\CMNDRAW.C
 # End Source File
 # Begin Source File
 
 SOURCE=..\GENERIC\DIPSWBMP.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\GENERIC\HOSTDRV.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\GENERIC\HOSTDRVS.C
 # End Source File
 # Begin Source File
 

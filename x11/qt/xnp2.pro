@@ -47,6 +47,7 @@ INCLUDEPATH+= . .. ../.. ../../common ../../generic
 INCLUDEPATH+= ../../bios ../../cbus ../../fdd ../../font
 INCLUDEPATH+= ../../io ../../lio ../../vram
 INCLUDEPATH+= ../../sound ../../sound/vermouth
+INCLUDEPATH+= ../debug
 INCLUDEPATH+= ../../i286c
 
 SOURCES+= ../../i286c/i286c.c ../../i286c/i286c_mn.c ../../i286c/i286c_ea.c \
@@ -78,13 +79,17 @@ SOURCES+= ../../font/font.c ../../font/fontdata.c ../../font/fontmake.c \
           ../../font/fontpc88.c ../../font/fontpc98.c ../../font/fontv98.c \
           ../../font/fontfm7.c ../../font/fontx1.c ../../font/fontx68k.c \
 
+SOURCES+= ../../generic/cmjasts.c \
+          ../../generic/hostdrv.c ../../generic/hostdrvs.c
+
 SOURCES+= ../../io/iocore.c ../../io/artic.c ../../io/cgrom.c ../../io/cpuio.c \
           ../../io/crtc.c ../../io/dipsw.c ../../io/dmac.c ../../io/egc.c \
           ../../io/extmem.c ../../io/fdc.c ../../io/fdd320.c ../../io/gdc.c \
-          ../../io/gdc_sub.c ../../io/gdc_pset.c ../../io/itf.c \
+          ../../io/gdc_sub.c ../../io/gdc_pset.c \
           ../../io/mouseif.c ../../io/nmiio.c ../../io/np2sysp.c \
           ../../io/pic.c ../../io/pit.c ../../io/printif.c ../../io/serial.c \
-          ../../io/sysport.c ../../io/upd4990.c
+          ../../io/sysport.c ../../io/upd4990.c \
+	  ../../io/necio.c ../../io/epsonio.c
 
 SOURCES+= ../../lio/lio.c ../../lio/gscreen.c ../../lio/gview.c \
           ../../lio/gcolor1.c ../../lio/gcolor2.c ../../lio/gcls.c \
@@ -103,7 +108,12 @@ SOURCES+= ../../sound/sound.c ../../sound/soundrom.c ../../sound/s98.c \
           ../../sound/psggenc.c ../../sound/psggeng.c \
           ../../sound/rhythmc.c ../../sound/rhythmg.c \
           ../../sound/sndcsec.c \
-          ../../sound/tms3631c.c ../../sound/tms3631g.c
+          ../../sound/tms3631c.c ../../sound/tms3631g.c \
+          ../../sound/wavemix.c
+
+SOURCES+= ../../sound/getsnd/getsnd.c ../../sound/getsnd/getsmix.c \
+          ../../sound/getsnd/getmp3.c ../../sound/getsnd/getogg.c \
+          ../../sound/getsnd/getwave.c
 
 SOURCES+= ../../sound/vermouth/midiout.c ../../sound/vermouth/midimod.c \
           ../../sound/vermouth/midinst.c ../../sound/vermouth/midvoice.c \
@@ -114,8 +124,8 @@ SOURCES+= ../../vram/vram.c ../../vram/scrndraw.c ../../vram/sdraw.c \
           ../../vram/maketgrp.c ../../vram/makegrph.c ../../vram/scrnbmp.c
 
 SOURCES+= ../dosio.c ../ini.c ../trace.c ../cmmidi.c ../np2.c ../toolkit.c \
-          ../commng.c ../joymng.c ../soundmng.c ../sysmng.c ../taskmng.c \
-          ../timemng.c \
+          ../commng.c ../drawmng.c ../joymng.c ../kbdmng.c ../soundmng.c \
+	  ../sysmng.c ../taskmng.c ../timemng.c \
           ../main.c
 
 SOURCES+= ../snddrv/esd.c ../snddrv/netbsd.c ../snddrv/oss.c ../snddrv/sdl.c

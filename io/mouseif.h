@@ -1,7 +1,8 @@
 
 typedef struct {
 	UINT32	lastc;
-	UINT	rapidclock;
+	UINT32	intrclock;
+	UINT32	moveclock;
 	SINT16	x;
 	SINT16	y;
 	SINT16	rx;
@@ -10,11 +11,11 @@ typedef struct {
 	SINT16	sy;
 	SINT16	latch_x;
 	SINT16	latch_y;
-	BYTE	portc;
-	BYTE	timing;
-	BYTE	mode;
-	BYTE	rapid;
-	BYTE	b;
+	UINT8	portc;
+	UINT8	timing;
+	UINT8	mode;
+	UINT8	rapid;
+	UINT8	b;
 } _MOUSEIF, *MOUSEIF;
 
 

@@ -35,6 +35,7 @@ static const char str_device[] = "Device";
 static const char str_keyboard[] = "Keyboard";
 static const char str_joykey1[] = "JoyKey-1";
 static const char str_joykey2[] = "JoyKey-2";
+static const char str_mousekey[] = "Mouse-Key";
 static const char str_mecshift[] = "mechanical SHIFT";
 static const char str_mecctrl[] = "mechanical CTRL";
 static const char str_mecgrph[] = "mechanical GRPH";
@@ -61,6 +62,7 @@ static const char str_pc9801118[] = "PC-9801-118";
 static const char str_spreakboard[] = "Speak board";
 static const char str_sparkboard[] = "Spark board";
 static const char str_amd98[] = "AMD-98";
+static const char str_jastsnd[] = "JAST SOUND";
 static const char str_seeksound[] = "Seek Sound";
 
 static const char str_memory[] = "Memory";
@@ -145,6 +147,7 @@ static const MSYSITEM s_keybd[] = {
 		{str_keyboard,		NULL,		MID_KEY,			0},
 		{str_joykey1,		NULL,		MID_JOY1,			0},
 		{str_joykey2,		NULL,		MID_JOY2,			0},
+		{str_mousekey,		NULL,		MID_MOUSEKEY,		0},
 		{NULL,				NULL,		MID_STATIC,			MENU_SEPARATOR},
 		{str_mecshift,		NULL,		MID_XSHIFT,			0},
 		{str_mecctrl,		NULL,		MID_XCTRL,			0},
@@ -173,6 +176,7 @@ static const MSYSITEM s_snd[] = {
 		{str_spreakboard,	NULL,		MID_SPEAKBOARD,		0},
 		{str_sparkboard,	NULL,		MID_SPARKBOARD,		0},
 		{str_amd98,			NULL,		MID_AMD98,			0},
+		{str_jastsnd,		NULL,		MID_JASTSND,		0},
 		{NULL,				NULL,		MID_STATIC,			MENU_SEPARATOR},
 		{str_seeksound,		NULL,		MID_SEEKSND,		MENU_DELETED}};
 
@@ -192,7 +196,7 @@ static const MSYSITEM s_device[] = {
 		{str_seropt,		NULL,		MID_SERIAL1,		MENU_GRAY},
 		{NULL,				NULL,		MID_STATIC,			MENU_SEPARATOR},
 		{str_midiopt,		NULL,		MID_MPUPC98,		MENU_GRAY},
-		{str_midipanic,		NULL,		MID_MIDIPANIC,		MENU_GRAY},
+		{str_midipanic,		NULL,		MID_MIDIPANIC,		0},
 		{NULL,				NULL,		MID_STATIC,			MENU_SEPARATOR},
 		{str_sndopt,		NULL,		MID_SNDOPT,			MENU_GRAY |
 															MENU_DELETED}};

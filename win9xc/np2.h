@@ -17,6 +17,7 @@ typedef struct {
 	BYTE	JOYPAD2;
 	BYTE	JOY1BTN[4];
 
+	BYTE	jastsnd;
 	BYTE	I286SAVE;
 } NP2OSCFG;
 
@@ -33,6 +34,8 @@ enum {
 enum {
 	IDM_MEMORYDUMP		= 20000,
 
+	IDM_I286SAVE		= 20200,
+
 	WM_NP2CMD			= (WM_USER + 200)
 };
 
@@ -43,6 +46,7 @@ enum {
 	NP2CMD_DUMMY		= 0xffff
 };
 
+extern	const char	szAppCaption[];
 extern	NP2OSCFG	np2oscfg;
 extern	HWND		hWndMain;
 extern	HINSTANCE	hInst;

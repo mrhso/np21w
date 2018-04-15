@@ -34,7 +34,7 @@
 #define	USE_RESUME
 
 
-		NP2OSCFG	np2oscfg = {100, 100, 0, 2, 0, 0,  0, 0, 0, 0};
+		NP2OSCFG	np2oscfg = {100, 100,  0, 0, 0, 0,  0, 0, 0, 0, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
@@ -119,12 +119,12 @@ static void MenuBarInit(void) {
 #if TARGET_API_MAC_CARBON
 	hmenu = GetMenuHandle(IDM_FDD2);
 	SetItemCmd(hmenu, LoWord(IDM_FDD2OPEN), 'D');
-	SetMenuItemModifiers(hmenu, LoWord(IDM_FDD2OPEN), kMenuOptionModifier);
+	SetMenuItemModifiers(hmenu, LoWord(IDM_FDD2OPEN), kMenuShiftModifier);
 	SetItemCmd(hmenu, LoWord(IDM_FDD2EJECT), 'E');
-	SetMenuItemModifiers(hmenu, LoWord(IDM_FDD2EJECT), kMenuOptionModifier);
+	SetMenuItemModifiers(hmenu, LoWord(IDM_FDD2EJECT), kMenuShiftModifier);
 	hmenu = GetMenuHandle(IDM_SASI2);
 	SetItemCmd(hmenu, LoWord(IDM_SASI2OPEN), 'O');
-	SetMenuItemModifiers(hmenu, LoWord(IDM_SASI2OPEN), kMenuOptionModifier);
+	SetMenuItemModifiers(hmenu, LoWord(IDM_SASI2OPEN), kMenuShiftModifier);
 #else
 	EnableItem(GetMenuHandle(IDM_DEVICE), LoWord(IDM_MOUSE));
 	EnableItem(GetMenuHandle(IDM_KEYBOARD), LoWord(IDM_F12MOUSE));
@@ -426,6 +426,11 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case IDM_JASTSND:
+			menu_setjastsnd(np2oscfg.jastsnd ^ 1);
+			update |= SYS_UPDATEOSCFG;
+			break;
+
 		case IDM_SEEKSND:
 			menu_setmotorflg(np2cfg.MOTOR ^ 1);
 			update |= SYS_UPDATECFG;
@@ -722,6 +727,7 @@ int main(int argc, char *argv[]) {
 	menu_setf12key(np2oscfg.F12KEY);
 	menu_setbeepvol(np2cfg.BEEP_VOL);
 	menu_setsound(np2cfg.SOUND_SW);
+	menu_setjastsnd(np2oscfg.jastsnd);
 	menu_setmotorflg(np2cfg.MOTOR);
 	menu_setextmem(np2cfg.EXTMEM);
 	menu_setdispclk(np2oscfg.DISPCLK);

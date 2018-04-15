@@ -1,5 +1,5 @@
 #include	"compiler.h"
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"font.h"
@@ -7,41 +7,50 @@
 
 static void cgwindowset(CGROM cr) {
 
+	UINT	low;
+	UINT	high;
 	int		code;
 
-	cgwindow.low = 0x7fff0;
 	cgwindow.writable &= ~1;
+	low = 0x7fff0;
 	if (grcg.chip >= 2) {
 		if (!(cr->code & 0xff00)) {
-			cgwindow.high = 0x80000 + (cr->code << 4);
+			high = 0x80000 + (cr->code << 4);
 		}
 		else {
 			code = cr->code & 0x007f;
-			cgwindow.high = (cr->code & 0x7f7f) << 4;
+			high = (cr->code & 0x7f7f) << 4;
 			if ((code >= 0x56) && (code < 0x58)) {
 				cgwindow.writable |= 1;
-				cgwindow.high += cr->lr;
+				high += cr->lr;
 			}
 			else if (((code >= 0x0c) && (code < 0x10)) ||
 				((code >= 0x58) && (code < 0x60))) {
-				cgwindow.high += cr->lr;
+				high += cr->lr;
 			}
 			else if ((code < 0x08) || (code >= 0x10)) {
-				cgwindow.low = cgwindow.high;
-				cgwindow.high += 0x800;
+				low = high;
+				high += 0x800;
 			}
 		}
 	}
 	else {
-		cgwindow.high = cgwindow.low;
+		high = low;
 	}
+#if !defined(CGWND_FONTPTR)
+	cgwindow.low = low;
+	cgwindow.high = high;
+#else
+	cgwindow.fontlow = fontrom + low;
+	cgwindow.fonthigh = fontrom + high;
+#endif
 }
 
 
 // ---- I/O
 
 // write charactor code low
-static void IOOUTCALL cgrom_oa1(UINT port, BYTE dat) {
+static void IOOUTCALL cgrom_oa1(UINT port, REG8 dat) {
 
 	CGROM	cr;
 
@@ -52,7 +61,7 @@ static void IOOUTCALL cgrom_oa1(UINT port, BYTE dat) {
 }
 
 // write charactor code high
-static void IOOUTCALL cgrom_oa3(UINT port, BYTE dat) {
+static void IOOUTCALL cgrom_oa3(UINT port, REG8 dat) {
 
 	CGROM	cr;
 
@@ -63,7 +72,7 @@ static void IOOUTCALL cgrom_oa3(UINT port, BYTE dat) {
 }
 
 // write charactor line
-static void IOOUTCALL cgrom_oa5(UINT port, BYTE dat) {
+static void IOOUTCALL cgrom_oa5(UINT port, REG8 dat) {
 
 	CGROM	cr;
 
@@ -75,20 +84,20 @@ static void IOOUTCALL cgrom_oa5(UINT port, BYTE dat) {
 }
 
 // CG write pattern
-static void IOOUTCALL cgrom_oa9(UINT port, BYTE dat) {
+static void IOOUTCALL cgrom_oa9(UINT port, REG8 dat) {
 
 	CGROM	cr;
 
 	cr = &cgrom;
 	if ((cr->code & 0x007e) == 0x0056) {
 		fontrom[((cr->code & 0x7f7f) << 4) +
-							cr->lr + cr->line] = dat;
+							cr->lr + cr->line] = (UINT8)dat;
 		cgwindow.writable |= 0x80;
 	}
 	(void)port;
 }
 
-static BYTE IOINPCALL cgrom_ia9(UINT port) {
+static REG8 IOINPCALL cgrom_ia9(UINT port) {
 
 	CGROM	cr;
 const BYTE	*ptr;
@@ -124,8 +133,13 @@ void cgrom_reset(void) {
 
 	cgw = &cgwindow;
 	ZeroMemory(cgw, sizeof(cgrom));
+#if !defined(CGWND_FONTPTR)
 	cgw->low = 0x7fff0;
 	cgw->high = 0x7fff0;
+#else
+	cgw->fontlow = fontrom + 0x7fff0;
+	cgw->fonthigh = fontrom + 0x7fff0;
+#endif
 	cgw->writable = 0;
 }
 

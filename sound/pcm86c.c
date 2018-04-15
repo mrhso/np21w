@@ -1,5 +1,5 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"sound.h"
@@ -42,9 +42,9 @@ void pcm86_reset(void) {											// ver0.28
 	pcm86.dactrl = 0x32;
 	pcm86.stepmask = (1 << 2) - 1;
 	pcm86.stepbit = 2;
-	pcm86.stepclock = (pc.baseclock << 6);
+	pcm86.stepclock = (pccore.baseclock << 6);
 	pcm86.stepclock /= 44100;
-	pcm86.stepclock *= pc.multiple;
+	pcm86.stepclock *= pccore.multiple;
 	pcm86.rescue = (PCM86_RESCUE * 32) << 2;
 }
 
@@ -54,14 +54,14 @@ void pcm86gen_update(void) {
 	pcm86_setpcmrate(pcm86.fifo);
 }
 
-void pcm86_setpcmrate(BYTE val) {
+void pcm86_setpcmrate(REG8 val) {
 
 	SINT32	rate;
 
 	rate = pcm86rate8[val & 7];
-	pcm86.stepclock = (pc.baseclock << 6);
+	pcm86.stepclock = (pccore.baseclock << 6);
 	pcm86.stepclock /= rate;
-	pcm86.stepclock *= (pc.multiple << 3);
+	pcm86.stepclock *= (pccore.multiple << 3);
 	if (pcm86cfg.rate) {
 		pcm86.div = (rate << (PCM86_DIVBIT - 3)) / pcm86cfg.rate;
 		pcm86.div2 = (pcm86cfg.rate << (PCM86_DIVBIT + 3)) / rate;
@@ -95,9 +95,9 @@ void pcm86_setnextintr(void) {
 			cnt += pcm86.stepmask;
 			cnt >>= pcm86.stepbit;
 //			cnt += 4;								// ‚¿‚å‚Á‚Æ‰„‘Ø‚³‚¹‚é
-			// ‚±‚±‚Å clk = pc.realclock * cnt / 86pcm_rate
-			// clk = ((pc.baseclock / 86pcm_rate) * cnt) * pc.multiple
-			if (pc.baseclock == PCBASECLOCK25) {
+			// ‚±‚±‚Å clk = pccore.realclock * cnt / 86pcm_rate
+			// clk = ((pccore.baseclock / 86pcm_rate) * cnt) * pccore.multiple
+			if (pccore.baseclock == PCBASECLOCK25) {
 				clk = clk25_128[pcm86.fifo & 7];
 			}
 			else {
@@ -107,7 +107,7 @@ void pcm86_setnextintr(void) {
 			clk *= cnt;
 			clk >>= 7;
 //			clk++;						// roundup
-			clk *= pc.multiple;
+			clk *= pccore.multiple;
 			nevent_set(NEVENT_86PCM, clk, pcm86_cb, NEVENT_ABSOLUTE);
 		}
 	}
@@ -118,7 +118,7 @@ void SOUNDCALL pcm86gen_checkbuf(void) {
 	long	bufs;
 	UINT32	past;
 
-	past = I286_CLOCK + I286_BASECLOCK - I286_REMCLOCK;
+	past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
 	past <<= 6;
 	past -= pcm86.lastclock;
 	if (past >= pcm86.stepclock) {

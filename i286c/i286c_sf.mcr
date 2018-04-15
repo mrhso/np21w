@@ -37,13 +37,19 @@
 #define	BYTE_SHR1(d, s)												\
 		(d) = (s) >> 1;												\
 		I286_OV = (s) & 0x80;										\
-		I286_FLAGL = (BYTE)(BYTESZPF(d) | A_FLAG | ((s) & 1));
+		I286_FLAGL = (UINT8)(BYTESZPF(d) | A_FLAG | ((s) & 1));
 
+#if 1
 #define	BYTE_SAR1(d, s)												\
-		(d) = (BYTE)(((SINT8)s) >> 1);								\
+		(d) = ((s) & 0x80) + ((s) >> 1);							\
 		I286_OV = 0;												\
-		I286_FLAGL = (BYTE)(BYTESZPF(d) | A_FLAG | ((s) & 1));
-
+		I286_FLAGL = (UINT8)(BYTESZPF(d) | A_FLAG | ((s) & 1));
+#else	// eVC3/4 compiler bug
+#define	BYTE_SAR1(d, s)												\
+		(d) = (BYTE)(((SINT8)(s)) >> 1);							\
+		I286_OV = 0;												\
+		I286_FLAGL = (UINT8)(BYTESZPF(d) | A_FLAG | ((s) & 1));
+#endif
 
 
 #define	WORD_ROL1(d, s)	{											\
@@ -82,13 +88,19 @@
 #define	WORD_SHR1(d, s)												\
 		(d) = (s) >> 1;												\
 		I286_OV = (s) & 0x8000;										\
-		I286_FLAGL = (BYTE)(WORDSZPF(d) | A_FLAG | ((s) & 1));
+		I286_FLAGL = (UINT8)(WORDSZPF(d) | A_FLAG | ((s) & 1));
 
+#if 1
 #define	WORD_SAR1(d, s)												\
-		(d) = (UINT16)(((SINT16)s) >> 1);							\
+		(d) = ((s) & 0x8000) + ((s) >> 1);							\
 		I286_OV = 0;												\
-		I286_FLAGL = (BYTE)(WORDSZPF(d) | A_FLAG | ((s) & 1));
-
+		I286_FLAGL = (UINT8)(WORDSZPF(d) | A_FLAG | ((s) & 1));
+#else	// eVC3/4 compiler bug
+#define	WORD_SAR1(d, s)												\
+		(d) = (UINT16)(((SINT16)(s)) >> 1);							\
+		I286_OV = 0;												\
+		I286_FLAGL = (UINT8)(WORDSZPF(d) | A_FLAG | ((s) & 1));
+#endif
 
 
 
@@ -154,9 +166,8 @@
 #define	BYTE_SHLCL(d, s, c)											\
 		(c) &= 0x1f;												\
 		if (c) {													\
-			if ((c) >= 0x10) {										\
-				(c) &= 7;											\
-				(c) |= 8;											\
+			if ((c) > 10) {											\
+				(c) = 10;											\
 			}														\
 			(s) <<= (c);											\
 			(s) &= 0x1ff;											\
@@ -168,9 +179,8 @@
 #define	BYTE_SHRCL(d, s, c)											\
 		(c) &= 0x1f;												\
 		if (c) {													\
-			if ((c) >= 0x10) {										\
-				(c) &= 7;											\
-				(c) |= 8;											\
+			if ((c) >= 10) {										\
+				(c) = 10;											\
 			}														\
 			(s) >>= ((c) - 1);										\
 			I286_FLAGL = (BYTE)((s) & 1);							\
@@ -180,6 +190,7 @@
 		}															\
 		(d) = (s);
 
+#if !defined(_WIN32_WCE) || (_WIN32_WCE < 300)
 #define	BYTE_SARCL(d, s, c)											\
 		(c) &= 0x1f;												\
 		if (c) {													\
@@ -190,7 +201,20 @@
 			I286_FLAGL |= BYTESZPF(s) | A_FLAG;						\
 		}															\
 		(d) = (s);
-
+#else
+#define	BYTE_SARCL(d, s, c)											\
+		(c) &= 0x1f;												\
+		if (c) {													\
+			SINT32 t;												\
+			t = (s) << 24;											\
+			t = t >> ((c) - 1);										\
+			I286_FLAGL = (UINT8)((t >> 24) & 1);					\
+			(s) = (t >> 25) & 0xff;									\
+			I286_OV = 0;											\
+			I286_FLAGL |= BYTESZPF(s) | A_FLAG;						\
+		}															\
+		(d) = (s);
+#endif
 
 #define	WORD_ROLCL(d, s, c)											\
 		(c) &= 0x1f;												\
@@ -291,20 +315,35 @@
 			else {													\
 				I286_OV = (s) & 0x8000;								\
 			}														\
-			I286_FLAGL = (BYTE)((s) & 1);							\
+			I286_FLAGL = (UINT8)((s) & 1);							\
 			(s) >>= 1;												\
 			I286_FLAGL |= WORDSZPF(s);								\
 		}															\
 		(d) = (s);
 
+#if !defined(_WIN32_WCE) || (_WIN32_WCE < 300)
 #define	WORD_SARCL(d, s, c)											\
 		(c) &= 0x1f;												\
 		if (c) {													\
 			(s) = ((SINT16)(s)) >> ((c) - 1);						\
-			I286_FLAGL = (BYTE)((s) & 1);							\
+			I286_FLAGL = (UINT8)((s) & 1);							\
 			(s) = (UINT16)(((SINT16)s) >> 1);						\
 			I286_OV = 0;											\
 			I286_FLAGL |= WORDSZPF(s);								\
 		}															\
 		(d) = (s);
+#else	// eVCÅ`
+#define	WORD_SARCL(d, s, c)											\
+		(c) &= 0x1f;												\
+		if (c) {													\
+			SINT32 tmp;												\
+			tmp = (s) << 16;										\
+			tmp = tmp >> (16 + (c) - 1);							\
+			I286_FLAGL = (UINT8)(tmp & 1);							\
+			(s) = (UINT16)(tmp >> 1);								\
+			I286_OV = 0;											\
+			I286_FLAGL |= WORDSZPF(s);								\
+		}															\
+		(d) = (s);
+#endif
 

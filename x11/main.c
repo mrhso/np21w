@@ -27,6 +27,7 @@
 
 #include "compiler.h"
 
+#include <sys/stat.h>
 #include <getopt.h>
 #include <signal.h>
 
@@ -43,15 +44,20 @@
 #include "toolkit.h"
 
 #include "kdispwin.h"
+#include "sysmenu.h"
 #include "toolwin.h"
+#include "viewer.h"
 
 #include "commng.h"
+#include "fontmng.h"
+#include "inputmng.h"
 #include "joymng.h"
 #include "kbdmng.h"
 #include "mousemng.h"
 #include "scrnmng.h"
 #include "soundmng.h"
 #include "sysmng.h"
+#include "taskmng.h"
 
 
 /*
@@ -95,6 +101,9 @@ static struct option longopts[] = {
 	{ "config",		required_argument,	0,	'c' },
 	{ "timidity-config",	required_argument,	0,	'C' },
 	{ "shared-pixmap",	no_argument,		0,	'p' },
+#if defined(USE_SDL) || defined(USE_SYSMENU)
+	{ "ttfont",		required_argument,	0,	't' },
+#endif
 	{ "help",		no_argument,		0,	'h' },
 	{ 0,			0,			0,	0   },
 };
@@ -105,7 +114,15 @@ static void
 usage(void)
 {
 
-	printf("Usage: %s [options] [[FD1 image] [[FD2 image] [[FD3 image] [FD4 image]]]]\n", progname);
+	printf("Usage: %s [options] [[FD1 image] [[FD2 image] [[FD3 image] [FD4 image]]]]\n\n", progname);
+	printf("options:\n");
+	printf("\t--help            [-h]        : print this message\n");
+	printf("\t--config          [-c] <file> : specify config file\n");
+	printf("\t--timidity-config [-C] <file> : specify timidity config file\n");
+	printf("\t--shared-pixmap   [-p]        : use MIT-SHM pixmap extention\n");
+#if defined(USE_SDL) || defined(USE_SYSMENU)
+	printf("\t--ttfont          [-t] <file> : specify TrueType font\n");
+#endif
 	exit(1);
 }
 
@@ -128,7 +145,7 @@ main(int argc, char *argv[])
 	toolkit_initialize();
 	toolkit_arginit(&argc, &argv);
 
-	while ((ch = getopt_long(argc, argv, "c:C:nh", longopts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "c:C:t:ph", longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'c':
 			if (stat(optarg, &sb) < 0 || !S_ISREG(sb.st_mode)) {
@@ -149,6 +166,14 @@ main(int argc, char *argv[])
 			}
 			milstr_ncpy(timidity_cfgfile_path, optarg,
 			    sizeof(timidity_cfgfile_path));
+			break;
+
+		case 't':
+			if (stat(optarg, &sb) < 0 || !S_ISREG(sb.st_mode)) {
+				fprintf(stderr, "Can't access %s.\n", optarg);
+				exit(1);
+			}
+			milstr_ncpy(fontfilename, optarg, sizeof(fontfilename));
 			break;
 
 		case 'p':
@@ -234,20 +259,26 @@ main(int argc, char *argv[])
 
 	TRACEINIT();
 
-	keystat_reset();
+	if (fontmng_init() != SUCCESS)
+		goto fontmng_failure;
 
 	kdispwin_initialize();
+	viewer_init();
 
 	toolkit_widget_create();
 	scrnmng_initialize();
 	kbdmng_init();
+	inputmng_init();
+	keystat_reset();
 
 	scrnmode = 0;
 	if (np2cfg.RASTER) {
 		scrnmode |= SCRNMODE_HIGHCOLOR;
 	}
+	if (sysmenu_create() != SUCCESS)
+		goto sysmenu_failure;
 	if (scrnmng_create(scrnmode) != SUCCESS)
-		goto resource_cleanup;
+		goto scrnmng_failure;
 
 	if (soundmng_initialize() == SUCCESS) {
 		result = soundmng_pcmload(SOUND_PCMSEEK, file_getcd("fddseek.wav"));
@@ -274,6 +305,7 @@ main(int argc, char *argv[])
 
 	commng_initialize();
 	sysmng_initialize();
+	taskmng_initialize();
 
 	joy_init();
 	pccore_init();
@@ -307,9 +339,7 @@ main(int argc, char *argv[])
 	setup_signal(SIGINT, sighandler);
 	setup_signal(SIGTERM, sighandler);
 
-	np2running = TRUE;
 	toolkit_widget_mainloop();
-	np2running = FALSE;
 	rv = 0;
 
 	kdispwin_destroy();
@@ -331,7 +361,13 @@ main(int argc, char *argv[])
 	soundmng_deinitialize();
 	scrnmng_destroy();
 
-resource_cleanup:
+scrnmng_failure:
+	sysmenu_destroy();
+
+sysmenu_failure:
+	fontmng_terminate();
+
+fontmng_failure:
 	if (sys_updates & (SYS_UPDATECFG|SYS_UPDATEOSCFG)) {
 		initsave();
 		toolwin_writeini();
@@ -341,6 +377,7 @@ resource_cleanup:
 	TRACETERM();
 	dosio_term();
 
+	viewer_term();
 	toolkit_terminate();
 
 	return rv;

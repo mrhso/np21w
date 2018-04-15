@@ -2,8 +2,8 @@
 #include	"midiout.h"
 
 
-#define	MIDIOUT_VERSION		0x104
-#define	MIDIOUT_VERSTRING	"VERMOUTH 1.04"
+#define	MIDIOUT_VERSION		0x105
+#define	MIDIOUT_VERSTRING	"VERMOUTH 1.05"
 
 
 static const char vermouthver[] = MIDIOUT_VERSTRING;
@@ -616,6 +616,7 @@ static void allresetmidi(MIDIHDL midi) {
 	CHANNEL	chterm;
 	UINT	flag;
 
+	midi->master = 127;
 	ch = midi->channel;
 	chterm = ch + 16;
 	ZeroMemory(ch, sizeof(_CHANNEL) * 16);
@@ -661,7 +662,7 @@ MIDIHDL midiout_create(MIDIMOD module, UINT worksize) {
 		ret->samprate = module->samprate;
 		ret->worksize = worksize;
 		ret->module = module;
-		ret->master = 127;
+	//	ret->master = 127;
 		ret->bank0[0] = module->tone[0];
 		ret->bank0[1] = module->tone[1];
 		ret->sampbuf = (SINT32 *)(ret + 1);
@@ -731,14 +732,68 @@ void midiout_shortmsg(MIDIHDL hdl, UINT32 msg) {
 	}
 }
 
+static void longmsg_gm(MIDIHDL hdl, const BYTE *msg, UINT size) {
+
+	if ((size > 5) && (msg[2] == 0x7f) && (msg[3] == 0x09)) {
+		allresetmidi(hdl);						// GM reset
+	}
+}
+
+static void longmsg_roland(MIDIHDL hdl, const BYTE *msg, UINT size) {
+
+	UINT	addr;
+	UINT	part;
+	CHANNEL	ch;
+
+	if ((size > 10) && (msg[2] == 0x10) &&
+		(msg[3] == 0x42) && (msg[4] == 0x12)) {		// GS data set
+		addr = (msg[5] << 16) + (msg[6] << 8) + msg[7];
+		if ((addr & (~0x400000)) == 0x7f) {			// GS reset
+			allresetmidi(hdl);
+			TRACEOUT(("GS-Reset"));
+		}
+		else if (addr == 0x400004) {				// Vol
+			hdl->master = msg[8] & 0x7f;
+			allvolupdate(hdl);
+		}
+		else if ((addr & (~(0x000f00))) == 0x401015) {	// Tone/Rhythm
+			part = (addr >> 8) & 0x0f;
+			if (part == 0) {							// part10
+				part = 9;
+			}
+			else if (part < 10) {						// part1-9
+				part--;
+			}
+			ch = hdl->channel + part;
+			if (msg[8] == 0) {
+				ch->flag &= ~CHANNEL_RHYTHM;
+				TRACEOUT(("ch%d - tone", part + 1));
+			}
+			else if ((msg[8] == 1) || (msg[8] == 2)) {
+				ch->flag |= CHANNEL_RHYTHM;
+				TRACEOUT(("ch%d - rhythm", part + 1));
+			}
+		}
+		else {
+			TRACEOUT(("Roland GS - %.6x", addr));
+		}
+	}
+}
+
 void midiout_longmsg(MIDIHDL hdl, const BYTE *msg, UINT size) {
+
+	UINT	id;
 
 	if ((hdl == NULL) || (msg == NULL)) {
 		return;
 	}
-	if ((size > 5) && (msg[1] == 0x7e)) {			// GM
-		if ((msg[2] == 0x7f) && (msg[3] == 0x09)) {
-			allresetmidi(hdl);						// GM reset
+	if (size > 3) {							// (msg[size - 1] == 0xf7)
+		id = msg[1];
+		if (id == 0x7e) {					// GM
+			longmsg_gm(hdl, msg, size);
+		}
+		else if (id == 0x41) {				// Roland
+			longmsg_roland(hdl, msg, size);
 		}
 	}
 }

@@ -42,14 +42,14 @@ static const TCHAR szAppCaption[] = STRLITERAL("Neko Project II");
 static const TCHAR szClassName[] = STRLITERAL("NP2-MainWindow");
 
 
-		NP2OSCFG	np2oscfg = {0, 2, 0, 0,
+		NP2OSCFG	np2oscfg = {0, 0, 0, 0,
 #if !defined(GX_DLL)
 								CW_USEDEFAULT, CW_USEDEFAULT,
 #endif
 #if defined(WIN32_PLATFORM_PSPC)
 								0, 0,
 #endif
-							};
+								0};
 		HWND		hWndMain;
 		HINSTANCE	hInst;
 		HINSTANCE	hPrev;
@@ -269,7 +269,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (sysrunning) {
 				if (LOWORD(wParam) != WA_INACTIVE) {
 					GXResume();
-#if defined(WIN32_PLATFORM_PSPC)
+#if defined(GX_DLL)
 					scrnmng_enable(TRUE);
 #endif
 					scrndraw_redraw();
@@ -279,7 +279,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				else {
 					sysrunning &= ~SYSRUNNING_FORE;
 					soundmng_disable(SNDPROC_MAIN);
-#if defined(WIN32_PLATFORM_PSPC)
+#if defined(GX_DLL)
 					scrnmng_enable(FALSE);
 #endif
 					GXSuspend();
@@ -308,9 +308,11 @@ static void processwait(UINT cnt) {
 		timing_setcount(0);
 		framereset(cnt);
 	}
+#if !defined(_WIN32_WCE)
 	else {
 		Sleep(1);
 	}
+#endif
 }
 
 

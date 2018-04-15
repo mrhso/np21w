@@ -1,17 +1,35 @@
 #include	"compiler.h"
-#include	"i286.h"
+#include	"commng.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 
 
+	COMMNG	cm_prt;
+
+
 // ---- I/O
 
-static BYTE IOINPCALL prt_i42(UINT port) {
+static void IOOUTCALL prt_o40(UINT port, REG8 dat) {
 
-	BYTE	ret;
+	COMMNG	prt;
+
+	prt = cm_prt;
+	if (prt == NULL) {
+		prt = commng_create(COMCREATE_PRINTER);
+		cm_prt = prt;
+	}
+	prt->write(prt, (UINT8)dat);
+//	TRACEOUT(("prt - %.2x", dat));
+	(void)port;
+}
+
+static REG8 IOINPCALL prt_i42(UINT port) {
+
+	REG8	ret;
 
 	ret = 0x84;
-	if (pc.cpumode & CPUMODE_8MHz) {
+	if (pccore.cpumode & CPUMODE_8MHz) {
 		ret |= 0x20;
 	}
 	if (np2cfg.dipsw[0] & 4) {
@@ -20,15 +38,16 @@ static BYTE IOINPCALL prt_i42(UINT port) {
 	if (np2cfg.dipsw[0] & 0x80) {
 		ret |= 0x08;
 	}
-#ifndef EPSON_286
-	if (CPUTYPE & CPUTYPE_V30) {
-		ret |= 0x02;
+	if (!(pccore.model & PCMODEL_EPSON)) {
+		if (CPU_TYPE & CPUTYPE_V30) {
+			ret |= 0x02;
+		}
 	}
-#else
-	if (np2cfg.dipsw[2] & 0x80) {
-		ret |= 0x02;
+	else {
+		if (np2cfg.dipsw[2] & 0x80) {
+			ret |= 0x02;
+		}
 	}
-#endif
 	(void)port;
 	return(ret);
 }
@@ -36,14 +55,21 @@ static BYTE IOINPCALL prt_i42(UINT port) {
 
 // ---- I/F
 
+static const IOOUT prto40[4] = {
+					prt_o40,	NULL,		NULL,		NULL};
+
 static const IOINP prti40[4] = {
 					NULL,		prt_i42,	NULL,		NULL};
 
 void printif_reset(void) {
+
+	commng_destroy(cm_prt);
+	cm_prt = NULL;
 }
 
 void printif_bind(void) {
 
+	iocore_attachsysoutex(0x0040, 0x0cf1, prto40, 4);
 	iocore_attachsysinpex(0x0040, 0x0cf1, prti40, 4);
 }
 

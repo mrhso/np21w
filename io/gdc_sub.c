@@ -1,6 +1,6 @@
 #include	"compiler.h"
 #include	<math.h>
-#include	"memory.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"gdc_pset.h"
@@ -51,15 +51,15 @@ static void calc_gdcslavewait(UINT dots) {
 	SINT32	clk;
 
 	clk = dots;
-	if (pc.baseclock != PCBASECLOCK20) {
+	if (pccore.baseclock != PCBASECLOCK20) {
 		clk *= 27648;
 	}
 	else {
 		clk *= 22464;
 	}
-	clk *= pc.multiple;
+	clk *= pccore.multiple;
 	clk /= 15625;
-	clk += 30 * pc.multiple;
+	clk += 30 * pccore.multiple;
 	gdc.s_drawing = 8;							// GDC DRAWING!
 	nevent_set(NEVENT_GDCSLAVE, clk, gdcslavewait, NEVENT_ABSOLUTE);
 }

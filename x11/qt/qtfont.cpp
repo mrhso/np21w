@@ -35,6 +35,18 @@
 #include "qt/xnp2.h"
 
 
+BOOL
+fontmng_init(void)
+{
+
+	return SUCCESS;
+}
+
+void
+fontmng_terminate(void)
+{
+}
+
 void
 fontmng_setdeffontname(const char *name)
 {

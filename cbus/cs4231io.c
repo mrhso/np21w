@@ -7,13 +7,17 @@
 #include	"fmboard.h"
 
 
-static void IOOUTCALL csctrl_oc24(UINT port, BYTE dat) {
+static const UINT8 cs4231dma[] = {0xff,0x00,0x01,0x03,0xff,0xff,0xff,0xff};
+static const UINT8 cs4231irq[] = {0xff,0x03,0x06,0x0a,0x0c,0xff,0xff,0xff};
+
+
+static void IOOUTCALL csctrl_oc24(UINT port, REG8 dat) {
 
 	cs4231.portctrl = dat;
 	(void)port;
 }
 
-static void IOOUTCALL csctrl_oc2b(UINT port, BYTE dat) {
+static void IOOUTCALL csctrl_oc2b(UINT port, REG8 dat) {
 
 	if ((cs4231.portctrl & 0x2f) == 0x20) {
 		cs4231.port &= 0xff00;
@@ -22,7 +26,7 @@ static void IOOUTCALL csctrl_oc2b(UINT port, BYTE dat) {
 	(void)port;
 }
 
-static void IOOUTCALL csctrl_oc2d(UINT port, BYTE dat) {
+static void IOOUTCALL csctrl_oc2d(UINT port, REG8 dat) {
 
 	if ((cs4231.portctrl & 0x2f) == 0x20) {
 		cs4231.port &= 0x00ff;
@@ -31,13 +35,13 @@ static void IOOUTCALL csctrl_oc2d(UINT port, BYTE dat) {
 	(void)port;
 }
 
-static BYTE IOINPCALL csctrl_ic24(UINT port) {
+static REG8 IOINPCALL csctrl_ic24(UINT port) {
 
 	(void)port;
 	return(0x80 | cs4231.portctrl);
 }
 
-static BYTE IOINPCALL csctrl_ic2b(UINT port) {
+static REG8 IOINPCALL csctrl_ic2b(UINT port) {
 
 	switch(cs4231.portctrl & 0x0f) {
 		case 0x00:
@@ -53,7 +57,7 @@ static BYTE IOINPCALL csctrl_ic2b(UINT port) {
 	return(0xff);
 }
 
-static BYTE IOINPCALL csctrl_ic2d(UINT port) {
+static REG8 IOINPCALL csctrl_ic2d(UINT port) {
 
 	switch(cs4231.portctrl & 0x0f) {
 		case 0x00:
@@ -74,20 +78,22 @@ static BYTE IOINPCALL csctrl_ic2d(UINT port) {
 
 void cs4231io_reset(void) {
 
-	cs4231.enable = 0;
-	cs4231.port = 0xffff;
+	cs4231.enable = 1;
+	cs4231.port = 0xf40;
+	cs4231.adrs = 0x22;
+	cs4231.dmairq = cs4231irq[(cs4231.adrs >> 3) & 7];
+	cs4231.dmach = cs4231dma[cs4231.adrs & 7];
+	cs4231.step = 22050;
+	if (cs4231.dmach != 0xff) {
+		dmac_attach(DMADEV_CS4231, cs4231.dmach);
+	}
+	TRACEOUT(("CS4231 - IRQ = %d", cs4231.dmairq));
+	TRACEOUT(("CS4231 - DMA channel = %d", cs4231.dmach));
 }
 
 void cs4231io_bind(void) {
 
-	cs4231.enable = 1;
-	cs4231.port = 0xf40;
-	cs4231.adrs = 0x21;
-	cs4231.dmach = 0;
-	cs4231.dmairq = 0x0c;
-	cs4231.step = 22050;
 	sound_streamregist(&cs4231, (SOUNDCB)cs4231_getpcm);
-
 	iocore_attachout(0xc24, csctrl_oc24);
 	iocore_attachout(0xc2b, csctrl_oc2b);
 	iocore_attachout(0xc2d, csctrl_oc2d);
@@ -96,15 +102,17 @@ void cs4231io_bind(void) {
 	iocore_attachinp(0xc2d, csctrl_ic2d);
 }
 
-void IOOUTCALL cs4231io_w8(UINT port, BYTE value) {
+void IOOUTCALL cs4231io_w8(UINT port, REG8 value) {
 
 	switch(port & 0x0f) {
 		case 0:
-#if 0
 			cs4231.adrs = value;
-			cs4231.dmairq = dmairq[(value >> 3) & 3];
-			cs4231.dmach = dmach[value & 7];
-#endif
+			cs4231.dmairq = cs4231irq[(value >> 3) & 7];
+			cs4231.dmach = cs4231dma[value & 7];
+			dmac_detach(DMADEV_CS4231);
+			if (cs4231.dmach != 0xff) {
+				dmac_attach(DMADEV_CS4231, cs4231.dmach);
+			}
 			break;
 
 		case 4:
@@ -121,7 +129,7 @@ void IOOUTCALL cs4231io_w8(UINT port, BYTE value) {
 	}
 }
 
-BYTE IOINPCALL cs4231io_r8(UINT port) {
+REG8 IOINPCALL cs4231io_r8(UINT port) {
 
 	switch(port & 0x0f) {
 		case 0:

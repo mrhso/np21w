@@ -8,8 +8,12 @@
 #include	"iocore.h"
 #include	"fddfile.h"
 
+enum {
+	FDC_DMACH2HD	= 2,
+	FDC_DMACH2DD	= 3
+};
 
-static const BYTE FDCCMD_TABLE[32] = {
+static const UINT8 FDCCMD_TABLE[32] = {
 						0, 0, 8, 2, 1, 8, 8, 1, 0, 8, 1, 0, 8, 5, 0, 2,
 						0, 8, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0};
 
@@ -40,7 +44,7 @@ static BOOL fdc_isfdcinterrupt(void) {
 	return(fdc.intreq);
 }
 
-BYTE DMACCALL fdc_dmafunc(BYTE func) {
+REG8 DMACCALL fdc_dmafunc(REG8 func) {
 
 	switch(func) {
 		case DMAEXT_START:
@@ -53,13 +57,13 @@ BYTE DMACCALL fdc_dmafunc(BYTE func) {
 	return(0);
 }
 
-static void fdc_dmaready(BYTE enable) {
+static void fdc_dmaready(REG8 enable) {
 
 	if (CTRL_FDMEDIA == DISKTYPE_2HD) {
-		dmac.dmach[DMA_2HD].ready = enable;
+		dmac.dmach[FDC_DMACH2HD].ready = enable;
 	}
 	else {
-		dmac.dmach[DMA_2DD].ready = enable;
+		dmac.dmach[FDC_DMACH2DD].ready = enable;
 	}
 }
 
@@ -143,7 +147,7 @@ static void fdc_timeoutset(void) {
 
 
 
-static BOOL FDC_DriveCheck(BYTE protectcheck) {
+static BOOL FDC_DriveCheck(BOOL protectcheck) {
 
 	if (!fddfile[fdc.us].fname[0]) {
 		fdc.stat[fdc.us] = FDCRLT_IC0 | FDCRLT_NR | (fdc.hd << 2) | fdc.us;
@@ -628,7 +632,7 @@ static void fdcstatusreset(void) {
 	fdc.status = FDCSTAT_RQM;
 }
 
-void DMACCALL fdc_DataRegWrite(BYTE data) {
+void DMACCALL fdc_DataRegWrite(REG8 data) {
 
 //	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO)) == FDCSTAT_RQM) {
 		switch(fdc.event) {
@@ -667,8 +671,7 @@ void DMACCALL fdc_DataRegWrite(BYTE data) {
 //	}
 }
 
-
-BYTE DMACCALL fdc_DataRegRead(void) {
+REG8 DMACCALL fdc_DataRegRead(void) {
 
 //	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO))
 //									== (FDCSTAT_RQM | FDCSTAT_DIO)) {
@@ -712,7 +715,7 @@ BYTE DMACCALL fdc_DataRegRead(void) {
 
 // ---- I/O
 
-static void IOOUTCALL fdc_o92(UINT port, BYTE dat) {
+static void IOOUTCALL fdc_o92(UINT port, REG8 dat) {
 
 //	TRACEOUT(("fdc out %x %x", port, dat));
 	CTRL_FDMEDIA = DISKTYPE_2HD;
@@ -722,7 +725,7 @@ static void IOOUTCALL fdc_o92(UINT port, BYTE dat) {
 	(void)port;
 }
 
-static void IOOUTCALL fdc_o94(UINT port, BYTE dat) {
+static void IOOUTCALL fdc_o94(UINT port, REG8 dat) {
 
 //	TRACEOUT(("fdc out %x %x", port, dat));
 	CTRL_FDMEDIA = DISKTYPE_2HD;
@@ -735,7 +738,7 @@ static void IOOUTCALL fdc_o94(UINT port, BYTE dat) {
 	(void)port;
 }
 
-static BYTE IOINPCALL fdc_i90(UINT port) {
+static REG8 IOINPCALL fdc_i90(UINT port) {
 
 //	TRACEOUT(("fdc in %x %x", port, fdc.status));
 	CTRL_FDMEDIA = DISKTYPE_2HD;
@@ -744,9 +747,9 @@ static BYTE IOINPCALL fdc_i90(UINT port) {
 	return(fdc.status);
 }
 
-static BYTE IOINPCALL fdc_i92(UINT port) {
+static REG8 IOINPCALL fdc_i92(UINT port) {
 
-	BYTE	ret;
+	REG8	ret;
 
 	CTRL_FDMEDIA = DISKTYPE_2HD;
 	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO))
@@ -761,7 +764,7 @@ static BYTE IOINPCALL fdc_i92(UINT port) {
 	return(ret);
 }
 
-static BYTE IOINPCALL fdc_i94(UINT port) {
+static REG8 IOINPCALL fdc_i94(UINT port) {
 
 	CTRL_FDMEDIA = DISKTYPE_2HD;
 
@@ -770,21 +773,21 @@ static BYTE IOINPCALL fdc_i94(UINT port) {
 }
 
 
-static void IOOUTCALL fdc_oca(UINT port, BYTE dat) {
+static void IOOUTCALL fdc_oca(UINT port, REG8 dat) {
 
 	CTRL_FDMEDIA = DISKTYPE_2DD;
 	fdc_DataRegWrite(dat);
 	(void)port;
 }
 
-static void IOOUTCALL fdc_occ(UINT port, BYTE dat) {
+static void IOOUTCALL fdc_occ(UINT port, REG8 dat) {
 
 	CTRL_FDMEDIA = DISKTYPE_2DD;
 	fdc.ctrlreg = dat;
 	(void)port;
 }
 
-static BYTE IOINPCALL fdc_ic8(UINT port) {
+static REG8 IOINPCALL fdc_ic8(UINT port) {
 
 	CTRL_FDMEDIA = DISKTYPE_2DD;
 
@@ -792,9 +795,9 @@ static BYTE IOINPCALL fdc_ic8(UINT port) {
 	return(fdc.status);
 }
 
-static BYTE IOINPCALL fdc_ica(UINT port) {
+static REG8 IOINPCALL fdc_ica(UINT port) {
 
-	BYTE	ret;
+	REG8	ret;
 
 	CTRL_FDMEDIA = DISKTYPE_2DD;
 	ret = fdc_DataRegRead();
@@ -803,7 +806,7 @@ static BYTE IOINPCALL fdc_ica(UINT port) {
 	return(ret);
 }
 
-static BYTE IOINPCALL fdc_icc(UINT port) {
+static REG8 IOINPCALL fdc_icc(UINT port) {
 
 	CTRL_FDMEDIA = DISKTYPE_2DD;
 
@@ -812,13 +815,13 @@ static BYTE IOINPCALL fdc_icc(UINT port) {
 }
 
 
-static void IOOUTCALL fdc_obe(UINT port, BYTE dat) {
+static void IOOUTCALL fdc_obe(UINT port, REG8 dat) {
 
 	fdc.chgreg = dat;
 	(void)port;
 }
 
-static BYTE IOINPCALL fdc_ibe(UINT port) {
+static REG8 IOINPCALL fdc_ibe(UINT port) {
 
 	(void)port;
 	return((fdc.chgreg & 3) | 8);
@@ -844,6 +847,8 @@ void fdc_reset(void) {
 	ZeroMemory(&fdc, sizeof(fdc));
 	fdcstatusreset();
 	CTRL_FDMEDIA = DISKTYPE_2HD;
+	dmac_attach(DMADEV_2HD, FDC_DMACH2HD);
+	dmac_attach(DMADEV_2DD, FDC_DMACH2DD);
 }
 
 void fdc_bind(void) {
