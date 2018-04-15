@@ -723,8 +723,9 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				drv->status = IDESTAT_DRDY | IDESTAT_DSC;
 				drv->error = 0;
 				setintr(drv);
+			}else{
+				cmdabort(drv);
 			}
-			//cmdabort(drv);
 			break;
 			
 		case 0xe5:		// Check power mode

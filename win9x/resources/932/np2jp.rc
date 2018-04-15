@@ -502,6 +502,24 @@ BEGIN
     PUSHBUTTON      "キャンセル",IDCANCEL,140,130,44,14
 END
 
+IDD_HOSTDRV DIALOGEX 0, 0, 195, 156
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ホストディレクトリ共有設定"
+CLASS "np2dialog"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
+BEGIN
+    CONTROL         "有効",IDC_HOSTDRVENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,140,10
+    LTEXT           "Shared Directory",IDC_STATIC,8,23,76,8
+    EDITTEXT        IDC_HOSTDRVDIR,8,33,130,12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_HOSTDRVBROWSE,140,32,44,14
+    LTEXT           "Permission",IDC_STATIC,8,51,76,8
+    CONTROL         "Read",IDC_HOSTDRVREAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED,16,65,140,10
+    CONTROL         "Write",IDC_HOSTDRVWRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,80,140,10
+    CONTROL         "Delete",IDC_HOSTDRVDELETE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,95,140,10
+    DEFPUSHBUTTON   "&OK",IDOK,92,130,44,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,140,130,44,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -904,6 +922,8 @@ BEGIN
         MENUITEM "ネットワークボード設定(&N)...", IDM_NETOPT
         MENUITEM SEPARATOR
         MENUITEM "ウィンドウアクセラレータ設定(&W)...", IDM_WABOPT
+        MENUITEM SEPARATOR
+        MENUITEM "ホストディレクトリ共有設定(&H)...",   IDM_HOSTDRVOPT
     END
     POPUP "その他(&O)"
     BEGIN
@@ -1003,24 +1023,32 @@ BEGIN
         MENUITEM "開く(&O)...",                    IDM_IDE0OPEN
         MENUITEM SEPARATOR
         MENUITEM "取り外し(&R)...",                     IDM_IDE0EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE0STATE
     END
     POPUP "IDE #1"
     BEGIN
         MENUITEM "開く(&O)...",                    IDM_IDE1OPEN
         MENUITEM SEPARATOR
         MENUITEM "取り外し(&R)...",                     IDM_IDE1EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE1STATE
     END
     POPUP "IDE #2"
     BEGIN
         MENUITEM "開く(&O)...",                    IDM_IDE2OPEN
         MENUITEM SEPARATOR
         MENUITEM "取り出し(&E)...",                      IDM_IDE2EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE2STATE
     END
     POPUP "IDE #3"
     BEGIN
         MENUITEM "開く(&O)...",                    IDM_IDE3OPEN
         MENUITEM SEPARATOR
         MENUITEM "取り出し(&E)...",                      IDM_IDE3EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE3STATE
     END
     MENUITEM "&IDE機器設定...",              IDM_IDEOPT
 END

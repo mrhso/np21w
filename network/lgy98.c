@@ -1010,13 +1010,13 @@ void lgy98_reset(const NP2CFG *pConfig){
 	
 	lgy98cfg.enabled = np2cfg.uselgy98;
 
+	// ‰Šú‰»
+	memset(&lgy98, 0, sizeof(lgy98));
+
 	// MACƒAƒhƒŒƒX
 	memcpy(lgy98.macaddr, np2cfg.lgy98mac, 6);
 
 	np2net.recieve_packet = np2net_lgy98_default_recieve_packet;
-
-	// ‰Šú‰»
-	memset(&lgy98, 0, sizeof(lgy98));
 
 	if(np2cfg.lgy98io) base = np2cfg.lgy98io;
 	if(np2cfg.lgy98irq) irq = np2cfg.lgy98irq;

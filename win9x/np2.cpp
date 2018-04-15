@@ -70,6 +70,7 @@
 #include "subwnd/toolwnd.h"
 #include "bmpdata.h"
 #include "vram/scrnsave.h"
+#include "fdd/sxsi.h"
 #if !defined(_WIN64)
 #include "cputype.h"
 #endif
@@ -524,6 +525,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 				}
 				pccore_cfgupdate();
 				pccore_reset();
+				sysmng_updatecaption(1);
 			}
 			break;
 
@@ -622,20 +624,24 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuienter();
 			dialog_changehdd(hWnd, 0x00);
 			winuileave();
+			sysmng_updatecaption(1);
 			break;
 
 		case IDM_IDE0EJECT:
 			diskdrv_setsxsi(0x00, NULL);
+			sysmng_updatecaption(1);
 			break;
 
 		case IDM_IDE1OPEN:
 			winuienter();
 			dialog_changehdd(hWnd, 0x01);
 			winuileave();
+			sysmng_updatecaption(1);
 			break;
 
 		case IDM_IDE1EJECT:
 			diskdrv_setsxsi(0x01, NULL);
+			sysmng_updatecaption(1);
 			break;
 
 #if defined(SUPPORT_IDEIO)
@@ -643,28 +649,60 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuienter();
 			dialog_changehdd(hWnd, 0x02);
 			winuileave();
+			sysmng_updatecaption(1);
 			break;
 
 		case IDM_IDE2EJECT:
 			diskdrv_setsxsi(0x02, NULL);
+			sysmng_updatecaption(1);
 			break;
 			
 		case IDM_IDE3OPEN:
 			winuienter();
 			dialog_changehdd(hWnd, 0x03);
 			winuileave();
+			sysmng_updatecaption(1);
 			break;
 
 		case IDM_IDE3EJECT:
 			diskdrv_setsxsi(0x03, NULL);
+			sysmng_updatecaption(1);
 			break;
 			
 		case IDM_IDEOPT:
 			winuienter();
 			dialog_ideopt(hWnd);
 			winuileave();
+			sysmng_updatecaption(1);
 			break;
 #endif
+			
+		case IDM_IDE0STATE:
+		case IDM_IDE1STATE:
+		case IDM_IDE2STATE:
+		case IDM_IDE3STATE:
+			{
+				const OEMCHAR *fname;
+				fname = sxsi_getfilename(uID - IDM_IDE0STATE);
+				if(!fname || !(*fname)){
+#if defined(SUPPORT_IDEIO)
+					if(np2cfg.idetype[uID - IDM_IDE0STATE]==SXSIDEV_CDROM){
+						fname = np2cfg.idecd[uID - IDM_IDE0STATE];
+					}else{
+#endif
+						fname = diskdrv_getsxsi(uID - IDM_IDE0STATE);
+#if defined(SUPPORT_IDEIO)
+					}
+#endif
+				}
+				if(fname && *fname){
+					TCHAR seltmp[500];
+					_tcscpy(seltmp, OEMTEXT("/select,"));
+					_tcscat(seltmp, fname);
+					ShellExecute(NULL, NULL, OEMTEXT("explorer.exe"), seltmp, NULL, SW_SHOWNORMAL);
+				}
+			}
+			break;
 
 #if defined(SUPPORT_SCSI)
 		case IDM_SCSI0OPEN:
@@ -1112,6 +1150,15 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuileave();
 			break;
 #endif
+#if defined(SUPPORT_HOSTDRV)
+		case IDM_HOSTDRVOPT:
+			winuienter();
+			dialog_hostdrvopt(hWnd);
+			winuileave();
+			sysmng_updatecaption(1);
+			break;
+#endif
+
 		case IDM_BMPSAVE:
 			winuienter();
 			dialog_writebmp(hWnd);

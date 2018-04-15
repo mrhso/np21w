@@ -1592,7 +1592,7 @@ void hostdrv_reset(void) {
 
 void hostdrv_mount(const void *arg1, long arg2) {
 
-	if ((np2cfg.hdrvroot[0] == '\0') || (hostdrv.stat.is_mount)) {
+	if ((np2cfg.hdrvroot[0] == '\0') || (!np2cfg.hdrvenable) || (hostdrv.stat.is_mount)) {
 		np2sysp_outstr(OEMTEXT("ng"), 0);
 		return;
 	}
@@ -1619,7 +1619,10 @@ void hostdrv_intr(const void *arg1, long arg2) {
 	ZeroMemory(&intrst, sizeof(intrst));
 	intrst.is_chardev = (CPU_FLAG & C_FLAG) == 0;
 	CPU_FLAG &= ~(C_FLAG | Z_FLAG);				// not fcb / chain
-
+	
+	if (!np2cfg.hdrvenable) {
+		return;
+	}
 	if (!hostdrv.stat.is_mount) {
 		return;
 	}

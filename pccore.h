@@ -141,6 +141,7 @@ struct tagNP2Config
 	UINT8	MOTORVOL;
 	UINT8	PROTECTMEM;
 	UINT8	hdrvacc;
+	UINT8	hdrvenable;
 	
 	UINT8	savefddfile;											// ver0.86w rev20
 	OEMCHAR	fddfile[4][MAX_PATH];									// ver0.86w rev20

@@ -31,6 +31,7 @@
 #define IDD_NETWORK                     181
 #define IDD_GD5430                      190
 #define IDD_WAB                         191
+#define IDD_HOSTDRV                     198
 #define IDD_IDE                         199
 #define IDR_SYS                         201
 #define IDR_SYSKEYDISP                  202
@@ -246,6 +247,12 @@
 #define IDC_WABMULTIWIN                 19015
 #define IDC_WABMULTHREAD                19016
 #define IDC_GD5430FAKECURSOR            19017
+#define IDC_HOSTDRVENABLE				19090
+#define IDC_HOSTDRVDIR					19091
+#define IDC_HOSTDRVREAD					19092
+#define IDC_HOSTDRVWRITE				19093
+#define IDC_HOSTDRVDELETE				19094
+#define IDC_HOSTDRVBROWSE				19099
 #define IDC_IDE1TYPE                    19100
 #define IDC_IDE2TYPE                    19101
 #define IDC_IDE3TYPE                    19102
@@ -487,6 +494,10 @@
 #define IDM_SCSI6EJECT                  40437
 #define IDM_SCSI7EJECT                  40438
 #define IDM_SXSIOPTION                  40441
+#define IDM_IDE0STATE                   40451
+#define IDM_IDE1STATE                   40452
+#define IDM_IDE2STATE                   40453
+#define IDM_IDE3STATE                   40454
 #define IDM_WINDOW                      40501
 #define IDM_FULLSCREEN                  40502
 #define IDM_ROLNORMAL                   40503
@@ -553,6 +564,7 @@
 #define IDM_SNDOPT                      40675
 #define IDM_NETOPT                      40676
 #define IDM_WABOPT                      40677
+#define IDM_HOSTDRVOPT                  40678
 #define IDM_MOUSERAW                    40690
 #define IDM_MOUSE30X                    40691
 #define IDM_MOUSE20X                    40692

@@ -503,6 +503,24 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,140,130,44,14
 END
 
+IDD_HOSTDRV DIALOGEX 0, 0, 195, 156
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Hostdrv Configure"
+CLASS "np2dialog"
+FONT 9, "‚l‚r ‚oƒSƒVƒbƒN", 0, 0, 0x0
+BEGIN
+    CONTROL         "Enabled",IDC_HOSTDRVENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,140,10
+    LTEXT           "Shared Directory",IDC_STATIC,8,23,76,8
+    EDITTEXT        IDC_HOSTDRVDIR,8,33,130,12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_HOSTDRVBROWSE,140,32,44,14
+    LTEXT           "Permission",IDC_STATIC,8,51,76,8
+    CONTROL         "Read",IDC_HOSTDRVREAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED,16,65,140,10
+    CONTROL         "Write",IDC_HOSTDRVWRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,80,140,10
+    CONTROL         "Delete",IDC_HOSTDRVDELETE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,95,140,10
+    DEFPUSHBUTTON   "&OK",IDOK,92,130,44,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,140,130,44,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -893,16 +911,18 @@ BEGIN
             MENUITEM "x1/3",                        IDM_MOUSED3X
             MENUITEM "x1/4",                        IDM_MOUSED4X
         END
-        MENUITEM "Se&rial option...",           IDM_SERIAL1
+        MENUITEM "Se&rial option...",               IDM_SERIAL1
         MENUITEM SEPARATOR
-        MENUITEM "MIDI &option...",             IDM_MPUPC98
-        MENUITEM "MIDI &panic",                 IDM_MIDIPANIC
+        MENUITEM "MIDI &option...",                 IDM_MPUPC98
+        MENUITEM "MIDI &panic",                     IDM_MIDIPANIC
         MENUITEM SEPARATOR
-        MENUITEM "So&und option...",            IDM_SNDOPT
+        MENUITEM "So&und option...",                IDM_SNDOPT
         MENUITEM SEPARATOR
-        MENUITEM "&Network option...",          IDM_NETOPT
+        MENUITEM "&Network option...",              IDM_NETOPT
         MENUITEM SEPARATOR
-        MENUITEM "&Window Accelerator option...", IDM_WABOPT
+        MENUITEM "&Window Accelerator option...",   IDM_WABOPT
+        MENUITEM SEPARATOR
+        MENUITEM "&Hostdrv option...",              IDM_HOSTDRVOPT
     END
     POPUP "&Other"
     BEGIN
@@ -1002,24 +1022,32 @@ BEGIN
         MENUITEM "&Open...",                    IDM_IDE0OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE0EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE0STATE
     END
     POPUP "IDE #1"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE1OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE1EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE1STATE
     END
     POPUP "IDE #2"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE2OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE2EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE2STATE
     END
     POPUP "IDE #3"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE3OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE3EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE3STATE
     END
     MENUITEM "&IDE option...",                  IDM_IDEOPT
 END

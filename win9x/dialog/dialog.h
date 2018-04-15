@@ -64,3 +64,8 @@ void dialog_wabopt(HWND hWnd);
 #if defined(SUPPORT_IDEIO)
 void dialog_ideopt(HWND hwndParent);
 #endif
+
+// d_hostdrv.cpp
+#if defined(SUPPORT_HOSTDRV)
+void dialog_hostdrvopt(HWND hwndParent);
+#endif

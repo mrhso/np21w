@@ -119,16 +119,32 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 		return;
 	}
 
-	LPCTSTR lpPath = diskdrv_getsxsi(drv);
+	LPCTSTR lpPath;
+#ifdef SUPPORT_IDEIO
+	if(np2cfg.idetype[drv]!=SXSIDEV_CDROM)
+	{
+		lpPath = np2cfg.idecd[drv];
+	}
+	else
+	{
+#endif
+		lpPath = diskdrv_getsxsi(drv);
+#ifdef SUPPORT_IDEIO
+	}
+#endif
 	if ((lpPath == NULL) || (lpPath[0] == '\0'))
 	{
-		if(sxsi_getdevtype(drv)!=SXSIDEV_CDROM)
+		lpPath = sxsi_getfilename(drv);
+		if ((lpPath == NULL) || (lpPath[0] == '\0'))
 		{
-			lpPath = hddfolder;
-		}
-		else
-		{
-			lpPath = cdfolder;
+			if(sxsi_getdevtype(drv)!=SXSIDEV_CDROM)
+			{
+				lpPath = hddfolder;
+			}
+			else
+			{
+				lpPath = cdfolder;
+			}
 		}
 	}
 
@@ -136,20 +152,24 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 	std::tstring rFilter(LoadTString(nFilter));
 	std::tstring rTitle(LoadTString(nTitle));
 
-	CFileDlg dlg(TRUE, rExt.c_str(), lpPath, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, rFilter.c_str(), hWnd);
+	CFileDlg dlg(TRUE, rExt.c_str(), lpPath, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_SHAREAWARE, rFilter.c_str(), hWnd);
 	dlg.m_ofn.lpstrTitle = rTitle.c_str();
 	dlg.m_ofn.nFilterIndex = nIndex;
 	if (dlg.DoModal())
 	{
 		LPCTSTR lpImage = dlg.GetPathName();
-		if(sxsi_getdevtype(drv)!=SXSIDEV_CDROM)
+#ifdef SUPPORT_IDEIO
+		if(np2cfg.idetype[drv]!=SXSIDEV_CDROM)
 		{
 			file_cpyname(hddfolder, lpImage, _countof(hddfolder));
 		}
 		else
 		{
+#endif
 			file_cpyname(cdfolder, lpImage, _countof(cdfolder));
+#ifdef SUPPORT_IDEIO
 		}
+#endif
 		sysmng_update(SYS_UPDATEOSCFG);
 		diskdrv_setsxsi(drv, lpImage);
 	}

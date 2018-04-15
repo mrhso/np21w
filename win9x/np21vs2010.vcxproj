@@ -180,6 +180,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -478,6 +479,7 @@
     <ClCompile Include="dialog\d_config.cpp" />
     <ClCompile Include="dialog\d_disk.cpp" />
     <ClCompile Include="dialog\d_font.cpp" />
+    <ClCompile Include="dialog\d_hostdrv.cpp" />
     <ClCompile Include="dialog\d_ide.cpp" />
     <ClCompile Include="dialog\d_mpu98.cpp" />
     <ClCompile Include="dialog\d_network.cpp" />

@@ -154,8 +154,8 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 		RECALC_NOWCLKWAIT(past);
 	}
 	
-	// XXX: Windowsでフリーズする問題の暫定対症療法（ある程度時間が経ったバッファを捨てる）
-	if(pcm86->virbuf > 0){
+	// XXX: Windowsでフリーズする問題の暫定対症療法（ある程度時間が経った小さいバッファを捨てる）
+	if(0 < pcm86->virbuf && pcm86->virbuf < 128){
 		if(pcm86->virbuf == lastvirbuf){
 			lastvirbufcnt++;
 			if(lastvirbufcnt > 500){

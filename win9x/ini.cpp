@@ -459,8 +459,9 @@ static const PFTBL s_IniItems[] =
 	PFSTR("biospath", PFRO_STR,			np2cfg.biospath),
 
 #if defined(SUPPORT_HOSTDRV)
-	PFSTR("hdrvroot", PFRO_STR,			np2cfg.hdrvroot),
-	PFVAL("hdrv_acc", PFRO_UINT8,		&np2cfg.hdrvacc),
+	PFVAL("use_hdrv", PFTYPE_UINT8,		&np2cfg.hdrvenable),
+	PFSTR("hdrvroot", PFTYPE_STR,		np2cfg.hdrvroot),
+	PFVAL("hdrv_acc", PFTYPE_UINT8,		&np2cfg.hdrvacc),
 #endif
 
 	PFSTR("pc_model", PFTYPE_STR,		np2cfg.model),

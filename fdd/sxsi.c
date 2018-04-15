@@ -233,11 +233,13 @@ DWORD cdchange_reqtime = 0;
 REG8 cdchange_drv;
 OEMCHAR cdchange_fname[MAX_PATH];
 void cdchange_timeoutproc(NEVENTITEM item) {
+
 	cdchange_flag = 0;
 	sxsi_devopen(cdchange_drv, cdchange_fname);
 #if defined(SUPPORT_IDEIO)
 	ideio_mediachange(cdchange_drv);
 #endif
+	sysmng_updatecaption(1);
 }
 static void cdchange_timeoutset(void) {
 
@@ -287,6 +289,8 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 					ideio_notify(sxsi->drv, 0);
 					sxsi->flag = 0;
 					cdchange_drv = drv;
+					file_cpyname(sxsi->fname, _T("\0\0\0\0"), 1);
+					file_cpyname(np2cfg.idecd[drv & 0x0f], _T("\0\0\0\0"), NELEMENTS(cdchange_fname));
 					file_cpyname(cdchange_fname, fname, NELEMENTS(cdchange_fname));
 					cdchange_flag = 1;
 					cdchange_timeoutset();
@@ -297,12 +301,11 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 				if (r == SUCCESS) {
 					int num = drv & 0x0f;
 					file_cpyname(np2cfg.idecd[num], fname, NELEMENTS(cdchange_fname));
-					sysmng_updatecaption(1);
 				}else{
 					int num = drv & 0x0f;
 					file_cpyname(np2cfg.idecd[num], _T("\0\0\0\0"), 1);
-					sysmng_updatecaption(1);
 				}
+				sysmng_updatecaption(1);
 				ideio_mediachange(cdchange_drv);
 			}
 #endif
