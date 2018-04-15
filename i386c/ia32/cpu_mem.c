@@ -236,11 +236,11 @@ cpu_stack_push_check(UINT16 s, descriptor_t *sdp, UINT32 sp, UINT len,
 		goto exc;
 	}
 
-	start = sp - len;
-	limit = is32bit ? 0xffffffff : 0x0000ffff;
-	//sp = (sp - 1) & (SEG_IS_32BIT(sdp) ? 0xffffffff : 0x0000ffff);
-	//start = (sp - len) & (SEG_IS_32BIT(sdp) ? 0xffffffff : 0x0000ffff);
+	//start = sp - len;
 	//limit = is32bit ? 0xffffffff : 0x0000ffff;
+	limit = is32bit ? 0xffffffff : 0x0000ffff;
+	sp = (sp - 1) & limit;
+	start = (sp - len) & limit;
 
 
 	if (SEG_IS_EXPANDDOWN_DATA(sdp)) {

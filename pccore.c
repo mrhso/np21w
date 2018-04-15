@@ -406,6 +406,7 @@ void pccore_reset(void) {
 	}
 #endif
 	ZeroMemory(mem, 0x110000);
+	FillMemory(mem + 0xC0000, 0x100000 - 0xC0000, 0xff); // ‚È‚¼
 	ZeroMemory(mem + VRAM1_B, 0x18000);
 	ZeroMemory(mem + VRAM1_E, 0x08000);
 	ZeroMemory(mem + FONT_ADRS, 0x08000);

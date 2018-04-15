@@ -835,6 +835,25 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 		case IDM_SCSI3EJECT:
 			diskdrv_setsxsi(0x23, NULL);
 			break;
+			
+		case IDM_SCSI0STATE:
+		case IDM_SCSI1STATE:
+		case IDM_SCSI2STATE:
+		case IDM_SCSI3STATE:
+			{
+				const OEMCHAR *fname;
+				fname = sxsi_getfilename(uID - IDM_SCSI0STATE + 0x20);
+				if(!fname || !(*fname)){
+					fname = diskdrv_getsxsi(uID - IDM_IDE0STATE + 0x20);
+				}
+				if(fname && *fname){
+					TCHAR seltmp[500];
+					_tcscpy(seltmp, OEMTEXT("/select,"));
+					_tcscat(seltmp, fname);
+					ShellExecute(NULL, NULL, OEMTEXT("explorer.exe"), seltmp, NULL, SW_SHOWNORMAL);
+				}
+			}
+			break;
 #endif
 
 		case IDM_WINDOW:
