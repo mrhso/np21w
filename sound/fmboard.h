@@ -19,6 +19,20 @@
 #define OPNA_MAX	2
 #endif	/* defined(SUPPORT_PX) */
 
+typedef struct {
+	UINT	addr;
+	UINT	addr2;
+	UINT8	reg[0x1ff];
+} OPL;
+
+typedef struct {
+	UINT8	dmairq;
+	UINT8	dmach;
+	UINT16	base;
+	UINT8	mixsel;
+	UINT8	mixreg[0x18];
+} SB16;
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -29,6 +43,8 @@ extern	OPL3		g_opl3;
 extern	OPNA		g_opna[OPNA_MAX];
 extern	_PCM86		g_pcm86;
 extern	_CS4231		cs4231;
+extern	OPL			g_opl;
+extern	SB16		g_sb16;
 
 REG8 fmboard_getjoy(POPNA opna);
 

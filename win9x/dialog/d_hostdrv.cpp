@@ -79,7 +79,7 @@ BOOL CHostdrvDlg::OnInitDialog()
 	
 	_tcscpy(m_hdrvroot, np2cfg.hdrvroot);
 	m_hdrvacc = np2cfg.hdrvacc;
-	m_hdrvenable= np2cfg.hdrvenable;
+	m_hdrvenable = np2cfg.hdrvenable;
 	
 	m_chkenabled.SubclassDlgItem(IDC_HOSTDRVENABLE, this);
 	if(m_hdrvenable)

@@ -5066,6 +5066,9 @@ static void pc98_cirrus_reset(CirrusVGAState * s, int device_id, int is_pci)
 	//np2clvga.VRAMWindowAddr = (0x0F<<24);
 	//np2clvga.VRAMWindowAddr2 = (0xf20000);
 	
+	np2clvga.VRAMWindowAddr2 = 0;
+	np2clvga.VRAMWindowAddr3 = 0;
+	
 	pc98_cirrus_vga_initVRAMWindowAddr();
 
 	np2wab.relaystateext = 0;
@@ -5099,9 +5102,6 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
     rop_to_index[CIRRUS_ROP_NOTSRC_AND_NOTDST] = 15;
     s->device_id = device_id;
     s->bustype = CIRRUS_BUSTYPE_ISA;
-	
-	np2clvga.VRAMWindowAddr2 = 0;
-	np2clvga.VRAMWindowAddr3 = 0;
 	
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO || np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD

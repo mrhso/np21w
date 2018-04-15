@@ -748,7 +748,11 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				drv->error = 0;
 				setintr(drv);
 			}
-			else {
+			else if (drv->device == IDETYPE_CDROM) {
+				drvreset(drv);
+				cmdabort(drv);
+			}
+			else{
 				cmdabort(drv);
 			}
 			break;

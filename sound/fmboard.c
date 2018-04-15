@@ -15,12 +15,15 @@
 #endif	// defined(SUPPORT_PX)
 #include	"boardso.h"
 #include	"amd98.h"
+#if defined(SUPPORT_SOUND_SB16)
+#include	"boardsb16.h"
+#endif	// defined(SUPPORT_SOUND_SB16)
 #include	"pcm86io.h"
 #include	"cs4231io.h"
 #include	"sound.h"
 #include	"fmboard.h"
 #include	"beep.h"
-#include "soundrom.h"
+#include	"soundrom.h"
 #include	"keydisp.h"
 #include	"keystat.h"
 
@@ -28,6 +31,11 @@
 	SOUNDID g_nSoundID;
 	OPL3 g_opl3;
 	OPNA g_opna[OPNA_MAX];
+	
+#if defined(SUPPORT_SOUND_SB16)
+	OPL			g_opl;
+	SB16		g_sb16;
+#endif	// defined(SUPPORT_SOUND_SB16)
 
 	_PCM86		g_pcm86;
 	_CS4231		cs4231;
@@ -275,6 +283,11 @@ void fmboard_bind(void) {
 			break;
 #endif	// defined(SUPPORT_PX)
 
+#if defined(SUPPORT_SOUND_SB16)
+		case SOUNDID_SB16:
+			boardsb16_bind();
+			break;
+#endif	// defined(SUPPORT_SOUND_SB16)
 		default:
 			break;
 	}

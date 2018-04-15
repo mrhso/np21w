@@ -6,6 +6,8 @@
 #include	"sound.h"
 #include	"fmboard.h"
 
+#ifdef SUPPORT_SOUND_SB16
+
 /**
  * Creative SoundBlaster16 DSP CT1741
  *
@@ -98,16 +100,16 @@ void ct1741_set_dma_irq(UINT8 irq) {
 	dsp_info.dmairq = irq;
 	switch(irq) {
 		case 1:
-			sb16.dmairq = 3;
+			g_sb16.dmairq = 3;
 			break;
 		case 8:
-			sb16.dmairq = 5;
+			g_sb16.dmairq = 5;
 			break;
 		case 2:
-			sb16.dmairq = 10;
+			g_sb16.dmairq = 10;
 			break;
 		case 4:
-			sb16.dmairq = 12;
+			g_sb16.dmairq = 12;
 			break;
 	}
 }
@@ -118,8 +120,8 @@ UINT8 ct1741_get_dma_irq() {
 
 void ct1741_set_dma_ch(UINT8 dmach) {
 	dsp_info.dmach = dmach;
-	if (dmach & 0x01) sb16.dmach = 0;
-	if (dmach & 0x02) sb16.dmach = 3;
+	if (dmach & 0x01) g_sb16.dmach = 0;
+	if (dmach & 0x02) g_sb16.dmach = 3;
 }
 
 UINT8 ct1741_get_dma_ch() {
@@ -199,7 +201,7 @@ static void ct1741_prepare_dma_old(DMA_MODES mode, BOOL autoinit) {
 	dsp_info.dma.autoinit = autoinit;
 	if (!autoinit)
 		dsp_info.dma.total = 1 + dsp_info.in.data[0] + (dsp_info.in.data[1] << 8);
-	dsp_info.dma.chan = dmac.dmach + sb16.dmach;	// 8bit dma irq
+	dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;	// 8bit dma irq
 	ct1741_dma_transfer(mode, dsp_info.freq / 1, FALSE);
 //	ct1741_dma_transfer(mode, dsp_info.freq / (sb.mixer.stereo ? 2 : 1), sb.mixer.stereo);
 }
@@ -209,17 +211,17 @@ static void ct1741_prepare_dma(DMA_MODES mode, UINT32 length, BOOL autoinit, BOO
 	dsp_info.dma.total = length;
 	dsp_info.dma.autoinit = autoinit;
 	if (mode==DSP_DMA_16) {
-		if (sb16.dmairq != 0xff) {
-			dsp_info.dma.chan = dmac.dmach + sb16.dmach;
+		if (g_sb16.dmairq != 0xff) {
+			dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;
 //			dsp_info.dma.chan = GetDMAChannel(sb.hw.dma16);
 		} else {
-			dsp_info.dma.chan = dmac.dmach + sb16.dmach;
+			dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;
 //			dsp_info.dma.chan = GetDMAChannel(sb.hw.dma8);
 			mode = DSP_DMA_16_ALIASED;
 			freq /= 2;
 		}
 	} else {
-		dsp_info.dma.chan = dmac.dmach + sb16.dmach;
+		dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;
 //		sb.dma.chan = GetDMAChannel(sb.hw.dma8);
 	}
 	ct1741_dma_transfer(mode, freq, stereo);
@@ -492,7 +494,7 @@ void ct1741_dma(NEVENTITEM item)
 	UINT	size;
 
 	if (item->flag & NEVENT_SETEVENT) {
-		if (sb16.dmach != 0xff) {
+		if (g_sb16.dmach != 0xff) {
 			sound_sync();
 //			if (dsp_info.mode == DSP_MODE_DMA) {
 				// ì]ëóÅ`
@@ -525,7 +527,7 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 		case DMAEXT_END:
 //			if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
 //				cs4231.intflag = 1;
-			pic_setirq(sb16.dmairq);
+			pic_setirq(g_sb16.dmairq);
 //			}
 			break;
 
@@ -540,17 +542,18 @@ void ct1741io_reset(void)
 {
 	ct1741_reset();
 	dsp_info.state = DSP_STATUS_NORMAL;
-	dmac_attach(DMADEV_CT1741, sb16.dmach);
+	dmac_attach(DMADEV_CT1741, g_sb16.dmach);
 }
 
 void ct1741io_bind(void)
 {
-	iocore_attachout(0x2600 + sb16.base, ct1741_write_reset);	/* DSP Reset */
-	iocore_attachout(0x2C00 + sb16.base, ct1741_write_data);	/* DSP Write Command/Data */
+	iocore_attachout(0x2600 + g_sb16.base, ct1741_write_reset);	/* DSP Reset */
+	iocore_attachout(0x2C00 + g_sb16.base, ct1741_write_data);	/* DSP Write Command/Data */
 
-	iocore_attachinp(0x2600 + sb16.base, ct1741_read_reset);	/* DSP Reset */
-	iocore_attachinp(0x2a00 + sb16.base, ct1741_read_data);		/* DSP Read Data Port */
-	iocore_attachinp(0x2c00 + sb16.base, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
-	iocore_attachinp(0x2e00 + sb16.base, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
+	iocore_attachinp(0x2600 + g_sb16.base, ct1741_read_reset);	/* DSP Reset */
+	iocore_attachinp(0x2a00 + g_sb16.base, ct1741_read_data);		/* DSP Read Data Port */
+	iocore_attachinp(0x2c00 + g_sb16.base, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
+	iocore_attachinp(0x2e00 + g_sb16.base, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
 }
 
+#endif

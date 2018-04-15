@@ -1203,6 +1203,15 @@
     <ClCompile Include="dialog\d_hostdrv.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
+    <ClCompile Include="..\cbus\boardsb16.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cbus\ct1741io.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cbus\ct1745io.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2107,6 +2116,15 @@
     </ClInclude>
     <ClInclude Include="..\wab\wabbmpsave.h">
       <Filter>ヘッダー ファイル\wab</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\boardsb16.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\ct1741io.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\ct1745io.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

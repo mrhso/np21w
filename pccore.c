@@ -776,7 +776,7 @@ void pccore_exec(BOOL draw) {
 			np2clvga.gd54xxtype = np2clvga.defgd54xxtype; // Auto Select用
 #endif
 #if defined(SUPPORT_IDEIO)
-			ideio_reset(&np2cfg); // XXX: ソフトウェアリセットでIDEデバイスが認識しないのをごまかす。高速再起動には効かないのでもっといい場所へ移住すべき
+			ideio_reset(&np2cfg); // XXX: Win9xの再起動で必要
 #endif
 			CPU_SHUT();
 		}

@@ -44,6 +44,7 @@ enum tagNEventId
 	NEVENT_SASIIO		= 26,
 	NEVENT_SCSIIO		= 27,
 	NEVENT_CDWAIT		= 28, // XXX: ŸŽè‚ÉŽg‚Á‚ÄOK?
+	NEVENT_CT1741		= 29, // np2s‚æ‚è 28‚ðŽg‚Á‚¿‚á‚Á‚½‚Ì‚Å29‚É np21w ver0.86 rev29
 	/* ---- */
 	NEVENT_MAXEVENTS	= 32,
 };
