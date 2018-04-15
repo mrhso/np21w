@@ -329,7 +329,7 @@ const BYTE		*d;
 			if (sizeof(_SAMPLE) != 2) {				// Ara!?
 #endif
 				d = (BYTE *)dat;
-				d += layer->datasize;
+				d += layer->datasize * 2;
 				q = dat + layer->datasize;
 				do {
 					d -= 2;
@@ -409,6 +409,7 @@ const BYTE		*d;
 		}
 
 		if ((ret->freq) && (!(wave.mode & MODE_LOOPING))) {
+			TRACEOUT(("resample: %s", cfg->name));
 			resample(mod, layer, ret->freq);
 		}
 		if (cfg->flag & TONECFG_NOTAIL) {
@@ -480,6 +481,43 @@ int inst_singleload(MIDIMOD mod, UINT bank, UINT num) {
 			ZeroMemory(inst, sizeof(INSTRUMENT) * 128);
 		}
 		inst[num] = tone;
+	}
+	return(MIDIOUT_SUCCESS);
+}
+
+int inst_bankload(MIDIMOD mod, UINT bank) {
+
+	INSTRUMENT	*inst;
+	INSTRUMENT	tone;
+	TONECFG		cfg;
+	UINT		num;
+
+	if (bank >= (MIDI_BANKS * 2)) {
+		return(MIDIOUT_FAILURE);
+	}
+	cfg = mod->tonecfg[bank];
+	if (cfg == NULL) {
+		return(MIDIOUT_FAILURE);
+	}
+	inst = mod->tone[bank];
+	for (num = 0; num<0x80; num++) {
+		if ((inst == NULL) || (inst[num] == NULL)) {
+			tone = inst_create(mod, cfg + num);
+			if (tone) {
+//				TRACEOUT(("load %d %d", bank, num));
+				if (inst == NULL) {
+					inst = (INSTRUMENT *)_MALLOC(
+										sizeof(INSTRUMENT) * 128, "INST");
+					if (inst == NULL) {
+						inst_destroy(tone);
+						return(MIDIOUT_FAILURE);
+					}
+					mod->tone[bank] = inst;
+					ZeroMemory(inst, sizeof(INSTRUMENT) * 128);
+				}
+				inst[num] = tone;
+			}
+		}
 	}
 	return(MIDIOUT_SUCCESS);
 }

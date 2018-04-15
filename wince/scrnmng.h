@@ -23,59 +23,42 @@ void scrnmng_setwidth(int posx, int width);
 void scrnmng_setheight(int posy, int height);
 const SCRNSURF *scrnmng_surflock(void);
 void scrnmng_surfunlock(const SCRNSURF *surf);
-void scrnmng_update(void);
 
 #define	scrnmng_haveextend()	(0)
 #define	scrnmng_getbpp()		(16)
-#define	scrnmng_allflash()		
 #define	scrnmng_palchanged()	
+#define scrnmng_update()		
+
+#if defined(SUPPORT_SOFTKBD)
+void scrnmng_allflash(void);
+#else
+#define scrnmng_allflash()
+#endif
 
 RGB16 scrnmng_makepal16(RGB32 pal32);
 
-#ifdef __cplusplus
-}
-#endif
+
+// ---- for wince
+
+void scrnmng_enable(BOOL enable);
+BOOL scrnmng_mousepos(LPARAM *lp);
+void scrnmng_clear(BOOL logo);
+void scrnmng_keybinds(void);
 
 
+// ---- for menubase
 
-
-
-
-
-
-
-
-
-
-
-
-#if 0
 typedef struct {
-	BYTE	*ptr;
-	int		xalign;
-	int		yalign;
 	int		width;
 	int		height;
-	int		bit;
-const void	*arg;
-} DEST_SURFACE;
+	int		bpp;
+} SCRNMENU;
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void gdraws_init(void);
-BOOL gdraws_InitDirectDraw(HWND hWnd, LONG width, LONG height);
-void gdraws_TermDirectDraw(void);
-BOOL gdraws_draws(void (*cb)(DEST_SURFACE *ds), const void *arg);
-void gdraws_enable(BOOL enable);
-BOOL gdraws_mousepos(LPARAM *lp);
-void gdraws_keybinds(struct GXKeyList *gxkey);
-long gdraws_getyalign(void);
+BOOL scrnmng_entermenu(SCRNMENU *smenu);
+void scrnmng_leavemenu(void);
+void scrnmng_menudraw(const RECT_T *rct);
 
 #ifdef __cplusplus
 }
-#endif
 #endif
 

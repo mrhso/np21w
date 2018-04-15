@@ -9,7 +9,7 @@
 #include	"i286c.mcr"
 
 
-	I286REG		i286reg;
+	I286CORE	i286core;
 
 const BYTE iflags[256] = {					// Z_FLAG, S_FLAG, P_FLAG
 			0x44, 0x00, 0x00, 0x04, 0x00, 0x04, 0x04, 0x00,
@@ -48,32 +48,26 @@ const BYTE iflags[256] = {					// Z_FLAG, S_FLAG, P_FLAG
 
 // ----
 
-	UINT32	EA_FIX;
-	BYTE	*reg8_b53[256];
-	BYTE	*reg8_b20[256];
-	UINT16	*reg16_b53[256];
-	UINT16	*reg16_b20[256];
-	BYTE	szpcflag[0x200];
-	CALCEA	c_calc_ea_dst[256];
-	CALCLEA	c_calc_lea[192];
-	GETLEA	c_get_ea[192];
+	BYTE	_szpcflag8[0x200];
 
-#if !defined(CPUW2TEST)
-	BYTE	szpflag_w[0x10000];
+#if !defined(MEMOPTIMIZE)
+	BYTE	_szpflag16[0x10000];
 #endif
 
-
-static UINT32 ea_nop(void) {
-
-	return(0);
-}
+#if !defined(MEMOPTIMIZE) || (MEMOPTIMIZE < 2)
+	BYTE	*_reg8_b53[256];
+	BYTE	*_reg8_b20[256];
+#endif
+#if !defined(MEMOPTIMIZE) || (MEMOPTIMIZE < 2)
+	UINT16	*_reg16_b53[256];
+	UINT16	*_reg16_b20[256];
+#endif
 
 void i286_initialize(void) {
 
 	UINT	i;
 	UINT	bit;
 	BYTE	f;
-	int		pos;
 
 	for (i=0; i<0x100; i++) {
 		f = P_FLAG;
@@ -88,40 +82,35 @@ void i286_initialize(void) {
 		if (i & 0x80) {
 			f |= S_FLAG;
 		}
-		szpcflag[i+0x000] = f;
-		szpcflag[i+0x100] = f | C_FLAG;
+		_szpcflag8[i+0x000] = f;
+		_szpcflag8[i+0x100] = f | C_FLAG;
 	}
 
+#if !defined(MEMOPTIMIZE) || (MEMOPTIMIZE < 2)
 	for (i=0; i<0x100; i++) {
+		int pos;
 #if defined(BYTESEX_LITTLE)
 		pos = ((i & 0x20)?1:0);
 #else
 		pos = ((i & 0x20)?0:1);
 #endif
 		pos += ((i >> 3) & 3) * 2;
-		reg8_b53[i] = ((BYTE *)&I286_REG) + pos;
+		_reg8_b53[i] = ((BYTE *)&I286_REG) + pos;
 #if defined(BYTESEX_LITTLE)
 		pos = ((i & 0x4)?1:0);
 #else
 		pos = ((i & 0x4)?0:1);
 #endif
 		pos += (i & 3) * 2;
-		reg8_b20[i] = ((BYTE *)&I286_REG) + pos;
-		reg16_b53[i] = ((UINT16 *)&I286_REG) + ((i >> 3) & 7);
-		reg16_b20[i] = ((UINT16 *)&I286_REG) + (i & 7);
+		_reg8_b20[i] = ((BYTE *)&I286_REG) + pos;
+#if !defined(MEMOPTIMIZE) || (MEMOPTIMIZE < 2)
+		_reg16_b53[i] = ((UINT16 *)&I286_REG) + ((i >> 3) & 7);
+		_reg16_b20[i] = ((UINT16 *)&I286_REG) + (i & 7);
+#endif
 	}
+#endif
 
-	for (i=0; i<0xc0; i++) {
-		pos = ((i >> 3) & 0x18) + (i & 0x07);
-		c_calc_ea_dst[i] = i286c_ea_dst_tbl[pos];
-		c_calc_lea[i] = i286c_lea_tbl[pos];
-		c_get_ea[i] = i286c_ea_tbl[pos];
-	}
-	for (; i<0x100; i++) {
-		c_calc_ea_dst[i] = ea_nop;
-	}
-
-#if !defined(CPUW2TEST)
+#if !defined(MEMOPTIMIZE)
 	for (i=0; i<0x10000; i++) {
 		f = P_FLAG;
 		for (bit=0x80; bit; bit>>=1) {
@@ -135,24 +124,27 @@ void i286_initialize(void) {
 		if (i & 0x8000) {
 			f |= S_FLAG;
 		}
-		szpflag_w[i] = f;
+		_szpflag16[i] = f;
 	}
+#endif
+#if !defined(MEMOPTIMIZE) || (MEMOPTIMIZE < 2)
+	i286cea_initialize();
 #endif
 	v30init();
 }
 
 void i286_reset(void) {
 
-	i286_initialize();
-	ZeroMemory(&i286reg, sizeof(i286reg));
+	ZeroMemory(&i286core.s, sizeof(i286core.s));
 	I286_CS = 0x1fc0;
 	CS_BASE = 0x1fc00;
+	i286core.s.adrsmask = 0xfffff;
 }
 
 void i286_resetprefetch(void) {
 }
 
-void CPUCALL i286_intnum(UINT vect, UINT16 IP) {
+void CPUCALL i286_intnum(UINT vect, REG16 IP) {
 
 const BYTE	*ptr;
 
@@ -238,4 +230,65 @@ void i286_step(void) {
 	}
 	dmap_i286();
 }
+
+
+// ---- test
+
+#if defined(I286C_TEST)
+BYTE BYTESZPF(UINT r) {
+
+	if (r & (~0xff)) {
+		TRACEOUT(("BYTESZPF bound error: %x", r));
+	}
+	return(_szpcflag8[r & 0xff]);
+}
+
+BYTE BYTESZPCF(UINT r) {
+
+	if (r & (~0x1ff)) {
+		TRACEOUT(("BYTESZPCF bound error: %x", r));
+	}
+	return(_szpcflag8[r & 0x1ff]);
+}
+
+BYTE WORDSZPF(UINT32 r) {
+
+	BYTE	f1;
+	BYTE	f2;
+
+	if (r & (~0xffff)) {
+		TRACEOUT(("WORDSZPF bound error: %x", r));
+	}
+	f1 = _szpflag16[r & 0xffff];
+	f2 = _szpcflag8[r & 0xff] & P_FLAG;
+	f2 += (r)?0:Z_FLAG;
+	f2 += (r >> 8) & S_FLAG;
+	if (f1 != f2) {
+		TRACEOUT(("word flag error: %.2x %.2x", f1, f2));
+	}
+	return(f1);
+}
+
+BYTE WORDSZPCF(UINT32 r) {
+
+	BYTE	f1;
+	BYTE	f2;
+
+	if ((r & 0xffff0000) && (!(r & 0x00010000))) {
+		TRACEOUT(("WORDSZPCF bound error: %x", r));
+	}
+	f1 = (r >> 16) & 1;
+	f1 += _szpflag16[LOW16(r)];
+
+	f2 = _szpcflag8[r & 0xff] & P_FLAG;
+	f2 += (LOW16(r))?0:Z_FLAG;
+	f2 += (r >> 8) & S_FLAG;
+	f2 += (r >> 16) & 1;
+
+	if (f1 != f2) {
+		TRACEOUT(("word flag error: %.2x %.2x", f1, f2));
+	}
+	return(f1);
+}
+#endif
 

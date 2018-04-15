@@ -10,7 +10,8 @@
 #include	"beep.h"
 
 
-// #define	uPD71054								// NP2はuPD8253Cベース
+// #define	uPD71054					// NP2はuPD8253Cベース
+#define	BEEPCOUNTEREX					// BEEPアイドル時のカウンタをα倍に
 
 
 // --- Interval timer
@@ -45,19 +46,43 @@ static void setsystimerevent(BOOL absolute) {
 void systimer(NEVENTITEM item) {
 
 	if (item->flag & NEVENT_SETEVENT) {
+		if (pit.intr[0]) {
+			pit.intr[0] = 0;
+			pic_setirq(0);
+		}
 		if ((pit.mode[0] & 0x0c) == 0x04) {
 			// レートジェネレータ
+			pit.intr[0] = 1;
 			setsystimerevent(NEVENT_RELATIVE);
 		}
 		else {
-			setsystimerevent_noint(NEVENT_RELATIVE);
+			nevent_set(NEVENT_ITIMER, pc.multiple << 16,
+												systimer, NEVENT_RELATIVE);
 		}
 	}
-	pic_setirq(0);
 }
 
 
 // --- Beep
+
+#if defined(BEEPCOUNTEREX)
+static void setbeepeventex(BOOL absolute) {
+
+	UINT32	cnt;
+
+	cnt = pit.value[1];
+	if (cnt > 2) {
+		cnt *= pc.multiple;
+	}
+	else {
+		cnt = pc.multiple << 16;
+	}
+	while(cnt < 0x100000) {
+		cnt <<= 1;
+	}
+	nevent_set(NEVENT_BEEP, (SINT32)cnt, beeponeshot, absolute);
+}
+#endif
 
 static void setbeepevent(BOOL absolute) {
 
@@ -85,7 +110,11 @@ void beeponeshot(NEVENTITEM item) {
 		if (pit.mode[1] & 0x02)
 #endif
 		{
+#if defined(BEEPCOUNTEREX)
+			setbeepeventex(NEVENT_RELATIVE);
+#else
 			setbeepevent(NEVENT_RELATIVE);
+#endif
 		}
 	}
 }
@@ -117,6 +146,7 @@ void rs232ctimer(NEVENTITEM item) {
 	rs232c_callback();
 }
 
+
 // ---------------------------------------------------------------------------
 
 static UINT16 itimer_latch(int ch) {
@@ -133,6 +163,20 @@ static UINT16 itimer_latch(int ch) {
 				return(pit.value[1] & 0xfffe);
 #endif
 		}
+#if defined(BEEPCOUNTEREX)
+		clock = nevent_getremain(NEVENT_ITIMER + ch);
+		if (clock < 0) {
+			return(0);
+		}
+		clock /= pc.multiple;
+		if (pit.value[1] > 2) {
+			clock %= pit.value[1];
+		}
+		else {
+			clock >>= 16;
+		}
+		return((UINT16)clock);
+#endif
 	}
 	clock = nevent_getremain(NEVENT_ITIMER + ch);
 	if (clock >= 0) {
@@ -140,7 +184,6 @@ static UINT16 itimer_latch(int ch) {
 	}
 	return(0);
 }
-
 
 void itimer_setflag(int ch, BYTE value) {
 
@@ -215,11 +258,12 @@ BYTE itimer_getcount(int ch) {
 // system timer
 static void IOOUTCALL pit_o71(UINT port, BYTE dat) {
 
-//	TRACEOUT(("pic71: %d", dat));
+//	TRACEOUT(("pic o71: %x [%.4x %.4x]", dat, I286_CS, I286_IP));
 	if (itimer_setcount(0, dat)) {
 		return;
 	}
 	pic.pi[0].irr &= (~1);
+	pit.intr[0] = 1;
 	setsystimerevent(NEVENT_ABSOLUTE);
 	(void)port;
 }
@@ -256,14 +300,15 @@ static void IOOUTCALL pit_o77(UINT port, BYTE dat) {
 
 	int		ch;
 
-//	TRACEOUT(("pic77: %x", dat));
+//	TRACEOUT(("pic o77: %x", dat));
 	ch = (dat >> 6) & 3;
 	if (ch != 3) {
 		itimer_setflag(ch, dat);
 		if (ch == 0) {			// 書込みで itimerのirrがリセットされる…
 			pic.pi[0].irr &= (~1);
 			if (dat & 0x30) {	// 一応ラッチ時は割り込みをセットしない
-				setsystimerevent(NEVENT_ABSOLUTE);
+				pit.intr[0] = 1;
+//				setsystimerevent(NEVENT_ABSOLUTE);
 			}
 		}
 		if (ch == 1) {

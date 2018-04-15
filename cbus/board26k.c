@@ -26,7 +26,6 @@ static void IOOUTCALL opn_o18a(UINT port, BYTE dat) {
 		if (opn.opnreg < 0x30) {
 			if (opn.opnreg == 0x28) {
 				if ((dat & 0x0f) < 3) {
-					sound_sync();
 					opngen_keyon(dat & 0x0f, dat);
 				}
 			}
@@ -48,10 +47,10 @@ static void IOOUTCALL opn_o18a(UINT port, BYTE dat) {
 static BYTE IOINPCALL opn_i188(UINT port) {
 
 	(void)port;
-#if 1
-	return(fmtimer.status | 0x7c);
-#else
+#if 1							// ドラッケンで未定義フラグ見てる　テスト終了
 	return(fmtimer.status);
+#else
+	return(fmtimer.status | 0x7c);
 #endif
 }
 

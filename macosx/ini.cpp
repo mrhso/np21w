@@ -334,9 +334,13 @@ static const char inifile[] = "np2.cfg";
 static const INITBL iniitem[] = {
 	{"np2title", INITYPE_STR,			np2oscfg.titles,
 													sizeof(np2oscfg.titles)},
+	{"WindposX", INITYPE_SINT32,	&np2oscfg.winx,			0},
+	{"WindposY", INITYPE_SINT32,	&np2oscfg.winy,			0},
+
+	{"pc_model", INITYPE_STR,		&np2cfg.model,
+													sizeof(np2cfg.model)},
 	{"clk_base", INITYPE_SINT32,	&np2cfg.baseclock,		0},
 	{"clk_mult", INITYPE_SINT32,	&np2cfg.multiple,		0},
-	{"pc_model", INITYPE_UINT8,		&np2cfg.model,			0},
 
 	{"DIPswtch", INITYPE_BYTEARG,	np2cfg.dipsw,			3},
 	{"MEMswtch", INITYPE_BYTEARG,	np2cfg.memsw,			8},
@@ -346,6 +350,7 @@ static const INITBL iniitem[] = {
 	{"HDD1FILE", INITYPE_STR,		np2cfg.hddfile[0],		MAX_PATH},
 	{"HDD2FILE", INITYPE_STR,		np2cfg.hddfile[1],		MAX_PATH},
 	{"fontfile", INITYPE_STR,		np2cfg.fontfile,		MAX_PATH},
+	{"biospath", INITYPE_STR,		np2cfg.biospath,		MAX_PATH},
 
 	{"SampleHz", INITYPE_UINT16,	&np2cfg.samplingrate,	0},
 	{"Latencys", INITYPE_UINT16,	&np2cfg.delayms,		0},
@@ -372,7 +377,8 @@ static const INITBL iniitem[] = {
 	{"Seek_Snd", INITYPE_BOOL,		&np2cfg.MOTOR,			0},
 	{"Seek_Vol", INITYPE_UINT8,		&np2cfg.MOTORVOL,		0},
 
-	{"F12_COPY", INITYPE_UINT8,		&np2oscfg.F12COPY,		0},
+	{"F11_bind", INITYPE_UINT8,		&np2oscfg.F11KEY,		0},
+	{"F12_bind", INITYPE_UINT8,		&np2oscfg.F12KEY,		0},
 	{"btnRAPID", INITYPE_BOOL,		&np2cfg.BTN_RAPID,		0},
 	{"btn_MODE", INITYPE_BOOL,		&np2cfg.BTN_MODE,		0},
 	{"MS_RAPID", INITYPE_BOOL,		&np2cfg.MOUSERAPID,		0},

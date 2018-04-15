@@ -11,6 +11,10 @@
 #include	"dialog.h"
 #include	"soundmng.h"
 #include	"fdefine.h"
+#include	"mackbd.h"
+#include	"mousemng.h"
+#include	"pccore.h"
+#include	"iocore.h"
 
 
 enum {
@@ -109,8 +113,10 @@ static const OSType subcommand[11] ={	'----',
 
 #define	BASENUMBER	4
 static const ControlID popup[2] = { {'pop1', 1}, {'pop2', 2} };
+static const ControlID imageid = {'back', 0};
 
 static DragReceiveHandlerUPP	dr;
+static DragTrackingHandlerUPP	tr;
 static bool	isPUMA;
 
 static void openpopup(HIPoint location);
@@ -177,14 +183,18 @@ static void setlist(ControlRef hwnd, const TOOLFDD *fdd, UINT sel) {
 #if 0
 	Rect	rc;
 	int		width;
-#endif
-	char	basedir[MAX_PATH];
-	UINT	i;
-const char	*p;
 	char	dir[MAX_PATH];
-const char	*q;
-    char	cfname[512];
+	char		basedir[MAX_PATH];
+#endif
     MenuHandle	menu;
+	UINT		i;
+    char		cfname[512];
+const char		*q;
+const char		*p;
+    CFStringRef	str;
+    SInt32		attr = kMenuItemAttrIconDisabled;
+    Str255		pname;
+    bool		success = false;
     
     GetBevelButtonMenuHandle(hwnd, &menu);
     while (MenuHasEnabledItems(menu)) {
@@ -193,21 +203,27 @@ const char	*q;
 #if 0
 	GetControlBounds(hwnd, &rc);
 	width = rc.right - rc.left - 6;			// border size?
-#endif
 	basedir[0] = '\0';
 	if (sel < fdd->cnt) {
 		milstr_ncpy(basedir, fdd->name[fdd->pos[sel]], sizeof(basedir));
 		file_cutname(basedir);
 	}
+#endif
 	for (i=0; i<fdd->cnt; i++) {
 		p = fdd->name[fdd->pos[i]];
-        if (getLongFileName(cfname, p)) {
-            q = cfname;
+        success = getLongFileName(cfname, p);
+        str = CFStringCreateWithCString(NULL, cfname, CFStringGetSystemEncoding());
+        if ((str) && success) {
+            if (file_attr(p) != FILEATTR_ARCHIVE) {
+                attr |= kMenuItemAttrDisabled;
+            }
+            AppendMenuItemTextWithCFString(menu, str, attr, NULL, NULL);
+            CFRelease(str);
         }
         else {
+#if 0
             milstr_ncpy(dir, p, sizeof(dir));
             file_cutname(dir);
-#if 0
             if (!file_cmpname(basedir, dir)) {
                 q = file_getname((char *)p);
             }
@@ -216,13 +232,13 @@ const char	*q;
             	q = dir;
             }
 #else
-                q = file_getname((char *)p);
+            q = file_getname((char *)p);
 #endif
-        }
-        AppendMenu(menu, "\pNot Available");
-        SetMenuItemTextWithCFString(menu, i+1, CFStringCreateWithCString(NULL,q,kCFStringEncodingUTF8));
-        if (file_attr(p)==FILEATTR_ARCHIVE) {
-            EnableMenuItem(menu, i+1);
+            mkstr255(pname, q);
+            AppendMenu(menu, pname);
+            if (file_attr(p)==FILEATTR_ARCHIVE) {
+                EnableMenuItem(menu, i+1);
+            }
         }
 		p += sizeof(fdd->name[0]);
 	}
@@ -343,6 +359,22 @@ static pascal OSStatus cfControlproc(EventHandlerCallRef myHandler, EventRef eve
     return err;
 }
 
+static PixPatHandle	portpat;
+
+static void setDragColor(GrafPtr window) {
+    GrafPtr		port;
+    RGBColor	color;
+    bool		portchanged;
+    
+    portchanged = QDSwapPort(window, &port);
+    GetThemeBrushAsColor(kThemeBrushDragHilite, 32, true, &color);
+    portpat = NewPixPat();
+    MakeRGBPat(portpat, &color);
+    PenPixPat(portpat);
+    PenSize(3, 3);
+    if (portchanged) QDSwapPort(port, NULL);
+}
+
 static void toolwincreate(WindowRef hWnd) {
 
 const SUBITEM	*p;
@@ -350,6 +382,8 @@ const SUBITEM	*p;
 	ControlRef	sub;
 const char		*cls;
 	UInt32		style;
+    
+    setDragColor(GetWindowPort(hWnd));
     
     ControlButtonContentInfo	info;
     info.contentType = kControlContentPictHandle;
@@ -450,6 +484,7 @@ static void toolwindestroy(void) {
 		DisposePixPat(toolwin.access[1]);
         KillPicture(toolwin.hbmp);
         toolwin.hbmp = NULL;
+        DisposePixPat(portpat);
 	}
 }
 
@@ -525,10 +560,12 @@ static pascal OSStatus cfWinproc(EventHandlerCallRef myHandler, EventRef event, 
                         Draw1Control(sub);
                     }
                 }
+                err=noErr;
                 break;
                 
             case kEventWindowFocusAcquired:
-                SelectWindow(hWndMain);
+                BringToFront(hWndMain);
+                err = noErr;
                 break;
                 
                 
@@ -536,13 +573,51 @@ static pascal OSStatus cfWinproc(EventHandlerCallRef myHandler, EventRef event, 
                 break;
         }
     }
-    else if (GetEventClass(event)==kEventClassKeyboard && GetEventKind(event)==kEventRawKeyDown) {
+    else if (GetEventClass(event)==kEventClassKeyboard) {
+        static	UInt32	backup = 0;
+        UInt32	whatHappened = GetEventKind(event);
+        UInt32 key;
+        GetEventParameter (event, kEventParamKeyCode, typeUInt32, NULL, sizeof(UInt32), NULL, &key);
         UInt32 modif;
         GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
-        if (modif & cmdKey) {
-            EventRecord	eve;
-            ConvertEventRefToEventRecord( event,&eve );
-            recieveCommand(MenuEvent(&eve));
+        switch (whatHappened)
+        {
+            case kEventRawKeyUp:
+                mackbd_keyup(key);
+                err = noErr;
+                break;
+            case kEventRawKeyRepeat:
+                mackbd_keydown(key);
+                err = noErr;
+                break;
+            case kEventRawKeyDown:
+                if (modif & cmdKey) {
+                    EventRecord	eve;
+                    ConvertEventRefToEventRecord( event,&eve );
+                    mousemng_disable(MOUSEPROC_MACUI);
+                    recieveCommand(MenuEvent(&eve));
+                    mousemng_enable(MOUSEPROC_MACUI);
+                }
+                else {
+                    mackbd_keydown(key);
+                }
+                err = noErr;
+                break;
+            case kEventRawKeyModifiersChanged:
+                if (modif & shiftKey) keystat_senddata(0x70);
+                else keystat_senddata(0x70 | 0x80);
+                if (modif & optionKey) keystat_senddata(0x73);
+                else keystat_senddata(0x73 | 0x80);
+                if (modif & controlKey) keystat_senddata(0x74);
+                else keystat_senddata(0x74 | 0x80);
+                if ((modif & alphaLock) != (backup & alphaLock)) {
+                    keystat_senddata(0x71);
+                    backup = modif;
+                }
+                err = noErr;
+                break;
+            default: 
+                break;             
         }
     }
 
@@ -550,13 +625,19 @@ static pascal OSStatus cfWinproc(EventHandlerCallRef myHandler, EventRef event, 
     return err;
 }
 
-OSErr setDropFile(FSSpec spec, int drv) {
-    char		fname[MAX_PATH];
+static int getTypeFromFSSpec(char* fname, FSSpec* spec) {
     int			ftype;
 
-    fsspec2path(&spec, fname, MAX_PATH);
+    fsspec2path(spec, fname, MAX_PATH);
     ftype = file_getftype(fname);
-    switch (ftype) {
+
+    return (ftype);
+}
+
+OSErr setDropFile(FSSpec spec, int drv) {
+    char	fname[MAX_PATH];
+    
+    switch (getTypeFromFSSpec(fname, &spec)) {
         case FTYPE_D88:
         case FTYPE_BETA:
             if (drv == -1) {
@@ -566,7 +647,7 @@ OSErr setDropFile(FSSpec spec, int drv) {
             toolwin_setfdd(drv, fname);
             break;
             
-        case FTYPE_TEXT:
+        case FTYPE_INI:
             strcpy(np2tool.skin, fname);
             skinchange(true);
             break;
@@ -582,13 +663,31 @@ OSErr setDropFile(FSSpec spec, int drv) {
     return(noErr);
 }
 
-static pascal OSErr DragReceiver( WindowRef theWindow, void *handlerRefCon, DragRef theDrag )
-{
+static OSErr getFSSpecFromDragItem(DragRef theDrag, HFSFlavor* aHFSFlavor) {
+	UInt16		numItems;
+	DragItemRef	ItemRef;
+    FlavorType	Type;
+    
+    CountDragItems( theDrag, &numItems );
+	if ( numItems != 1 ) {
+		return( -1 );
+    }
+	GetDragItemReferenceNumber( theDrag, 1, &ItemRef );
+    GetFlavorType( theDrag, ItemRef, 1, &Type );
+	if ( Type != flavorTypeHFS ) {
+        return( -1 );
+    }
+	Size dataSize = sizeof(HFSFlavor);
+	GetFlavorData( theDrag, ItemRef, flavorTypeHFS, aHFSFlavor, &dataSize, 0 );
+    return(noErr);
+}
+
+static SInt16 whichControl(DragRef theDrag, WindowRef theWindow) {
     SInt16		drv = -1;
     Point		pt;
+    int			i;
     ControlRef	popupref[2];
     Rect		bounds[2];
-    int			i;
 
     GetDragMouse(theDrag, &pt, NULL);
     GlobalToLocal(&pt);
@@ -600,28 +699,92 @@ static pascal OSErr DragReceiver( WindowRef theWindow, void *handlerRefCon, Drag
             break;
         }
     }
+    return(drv);
+}
 
-	UInt16 numItems;
-    CountDragItems( theDrag, &numItems );
-	if ( numItems != 1 )
-	{
-		return( -1 );
-    }
-
-	DragItemRef ItemRef;
-	GetDragItemReferenceNumber( theDrag, 1, &ItemRef );
+static OSErr DragTracker (DragTrackingMessage message, WindowRef theWindow, void * handlerRefCon, DragRef theDrag) {
+    SInt16		drv = -1;
+	HFSFlavor	aHFSFlavor;
+    RgnHandle	rgn = NULL;
+    char		fname[MAX_PATH];
+    ControlRef	targetControl;
+    GrafPtr		port;
+    bool		portchanged = false;
+    static bool	hilite = false;
+    Rect		bounds;
+    ControlRef	back;
     
-	FlavorType Type;
-	GetFlavorType( theDrag, ItemRef, 1, &Type );
-	if ( Type != flavorTypeHFS )
-	{
-        return( -1 );
+    if (message == kDragTrackingEnterHandler || message == kDragTrackingLeaveHandler) {
+        hilite = false;
+        return (noErr);
     }
-
-	HFSFlavor aHFSFlavor;
-	Size dataSize = sizeof(aHFSFlavor);
-	GetFlavorData( theDrag, ItemRef, flavorTypeHFS, &aHFSFlavor, &dataSize, 0 );
+    if (getFSSpecFromDragItem(theDrag, &aHFSFlavor) != noErr) {
+        if (hilite) {
+            GetControlByID(theWindow, &imageid, &back);
+            Draw1Control(back);
+            hilite = false;
+        }
+        return (-1);
+    }
+    if (message != kDragTrackingLeaveWindow) {
+        switch (getTypeFromFSSpec(fname, &aHFSFlavor.fileSpec)) {
+            case FTYPE_D88:
+            case FTYPE_BETA:
+                drv = whichControl(theDrag, theWindow);
+                if (drv == -1) {
+                    message = kDragTrackingLeaveWindow;
+                }
+                else {
+                    GetControlByID(theWindow, &popup[drv], &targetControl);
+                    GetControlBounds(targetControl, &bounds);
+                }
+                break;
             
+            case FTYPE_INI:
+            case FTYPE_THD:
+            case FTYPE_HDI:
+                GetWindowBounds(theWindow, kWindowContentRgn, &bounds);
+                OffsetRect(&bounds, -bounds.left, -bounds.top);
+                break;
+            
+            default:
+                return(noErr);
+        }
+    }
+    
+    portchanged = QDSwapPort(GetWindowPort(theWindow), &port);
+    if (message == kDragTrackingLeaveWindow && hilite) {
+        GetControlByID(theWindow, &imageid, &back);
+        Draw1Control(back);
+        hilite = false;
+    }
+    else {
+        rgn = NewRgn();
+        if (rgn) {
+            RectRgn(rgn, &bounds);
+            FrameRgn(rgn);
+            DisposeRgn(rgn);
+        }
+        hilite = true;
+    }
+    if (portchanged) QDSwapPort(port, NULL);
+
+    return(noErr);
+}
+   
+static pascal OSErr DragReceiver( WindowRef theWindow, void *handlerRefCon, DragRef theDrag )
+{
+    SInt16		drv = -1;
+	HFSFlavor aHFSFlavor;
+    ControlRef	back;
+
+    GetControlByID(theWindow, &imageid, &back);
+    Draw1Control(back);
+
+    if (getFSSpecFromDragItem(theDrag, &aHFSFlavor) != noErr) {
+        return (-1);
+    }
+    drv = whichControl(theDrag, theWindow);
 	return( setDropFile(aHFSFlavor.fileSpec, drv) );
 }
 
@@ -651,7 +814,9 @@ static WindowRef makeNibWindow (IBNibRef nibRef) {
         InstallWindowEventHandler (win, NewEventHandlerUPP(cfWinproc), GetEventTypeCount(list), list, (void *)win, &ref);
 
         dr = NewDragReceiveHandlerUPP((DragReceiveHandlerProcPtr)DragReceiver);
+        tr = NewDragTrackingHandlerUPP((DragTrackingHandlerProcPtr)DragTracker);
         InstallReceiveHandler( dr, win, NULL);
+        InstallTrackingHandler( tr, win, NULL);
     }
     return(win);
 }
@@ -757,7 +922,7 @@ static void openpopup(HIPoint location) {
     else {
         switch (sel) {
             case 1:
-                if(dialog_fileselect(fname, sizeof(fname), hWndMain)) {
+                if(dialog_fileselect(fname, sizeof(fname), hWndMain, OPEN_INI)) {
                     if (file_getftype(fname)==FTYPE_TEXT) {
                         strcpy(np2tool.skin, fname);
                         skinchange(true);
@@ -824,6 +989,7 @@ void toolwin_open(void) {
     info.contentType = kControlContentPictHandle;
     info.u.picture = hbmp;
     CreatePictureControl(hWnd, &bounds, &info, true, &image);
+    SetControlID(image, &imageid);
     InstallControlEventHandler (image, NewEventHandlerUPP(cfControlproc), GetEventTypeCount(list), list, (void *)hWnd, &ref);
     if (!isPUMA) {
         toolwincreate(hWnd);
@@ -881,6 +1047,7 @@ void toolwin_close(void) {
         }
 #endif
         RemoveReceiveHandler(dr, toolwin.hwnd);
+        RemoveTrackingHandler(tr, toolwin.hwnd);
         toolwindestroy();
         DisposeWindow(toolwin.hwnd);
         toolwin.hwnd = NULL;

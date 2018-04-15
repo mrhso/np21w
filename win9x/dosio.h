@@ -70,7 +70,7 @@ short file_dircreate(const char *path);
 
 											// カレントファイル操作
 void file_setcd(const char *exepath);
-TCHAR *file_getcd(const char *path);
+char *file_getcd(const char *path);
 FILEH file_open_c(const char *path);
 FILEH file_open_rb_c(const char *path);
 FILEH file_create_c(const char *path);
@@ -81,9 +81,9 @@ FILEFINDH file_find1st(const char *path, FILEFINDT *fft);
 BOOL file_findnext(FILEFINDH hdl, FILEFINDT *fft);
 void file_findclose(FILEFINDH hdl);
 
-#define	file_cpyname(a, b, c)	milstr_ncpy(a, b, c)
-#define	file_catname(a, b, c)	milstr_ncat(a, b, c)
-#define	file_cmpname(a, b)		milstr_cmp(a, b)
+#define	file_cpyname(a, b, c)	milsjis_ncpy(a, b, c)
+#define	file_catname(a, b, c)	milsjis_ncat(a, b, c)
+#define	file_cmpname(a, b)		milsjis_cmp(a, b)
 char *file_getname(char *path);
 void file_cutname(char *path);
 char *file_getext(char *path);

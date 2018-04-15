@@ -1,12 +1,11 @@
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void winkbd_keydown(WPARAM wParam, LPARAM lParam);
+void winkbd_keyup(WPARAM wParam, LPARAM lParam);
+void winkbd_resetf12(void);
 
-void winkeydown106(WPARAM wParam, LPARAM lParam);
-void winkeyup106(WPARAM wParam, LPARAM lParam);
-
-#ifdef __cplusplus
-}
+#if defined(WIN32_PLATFORM_PSPC)
+void winkbd_bindinit(void);
+void winkbd_bindcur(UINT type);
+void winkbd_bindbtn(UINT type);
 #endif
 

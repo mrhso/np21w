@@ -9,6 +9,35 @@
 
 #define		NC		0xff
 
+typedef struct {
+	BYTE	f11[4];
+	BYTE	f12[4];
+} BINDTBL;
+
+static const BINDTBL bindtbl = {
+						//   ÉJÉi  Stop  [ÅÅ]  NFER
+							{0x72, 0x60, 0x4d, 0x51},
+						//         Copy  [ÅC]  XFER
+							{NC,   0x61, 0x4f, 0x35}};
+
+void mackbd_resetf11(void) {
+
+	UINT	i;
+
+	for (i=1; i<(sizeof(bindtbl.f11)/sizeof(BYTE)); i++) {
+		keystat_forcerelease(bindtbl.f11[i]);
+	}
+}
+
+void mackbd_resetf12(void) {
+
+	UINT	i;
+
+	for (i=1; i<(sizeof(bindtbl.f12)/sizeof(BYTE)); i++) {
+		keystat_forcerelease(bindtbl.f12[i]);
+	}
+}
+
 
 #if TARGET_API_MAC_CARBON
 
@@ -22,7 +51,6 @@ typedef struct {
 } MACKBD;
 
 static	MACKBD		mackbd;
-
 
 static const BYTE keymac[128] = {
 			//	  Ç`,  Çr,  Çc,  Çe,  Çg,  Çf,  Çy,  Çw		; 0x00
@@ -50,7 +78,7 @@ static const BYTE keymac[128] = {
 			//	 [6], [7],    , [8], [9],  Åè,  ÅQ, [,]		; 0x58
 				0x48,0x42,  NC,0x43,0x44,0x0d,0x33,0x4f,
 			//	  F5,  F6,  F7,  F3,  F8,  F9,    , F11		; 0x60
-				0x66,0x67,0x68,0x64,0x69,0x6a,  NC,0x72,
+				0x66,0x67,0x68,0x64,0x69,0x6a,  NC,  NC,
 			//	    , F13,    , F14,    , F10,    , F12		; 0x68
 				  NC,  NC,  NC,  NC,  NC,0x6b,  NC,  NC,
 			//	    , F15, hlp, hom,  ru, del,  F4, end		; 0x70
@@ -133,32 +161,47 @@ void mackbd_callback(void) {
 	}
 }
 
-BOOL mackbd_keydown(int keycode) {
+BOOL mackbd_keydown(int keycode, BOOL cmd) {
 
-	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			keystat_senddata(0x61);
-			return(TRUE);
+	BYTE	data;
+
+	data = NC;
+	if (keycode == 0x67) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
-		else if (np2oscfg.F12COPY == 2) {
-			keystat_senddata(0x60);
-			return(TRUE);
-        }
 	}
+	else if (keycode == 0x6f) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+			data = bindtbl.f12[np2oscfg.F12KEY];
+		}
+	}
+	if (data != NC) {
+		keystat_senddata(data);
+		return(TRUE);
+	}
+	(void)cmd;
 	return(FALSE);
 }
 
 BOOL mackbd_keyup(int keycode) {
 
-	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			keystat_senddata(0x61 | 0x80);
-			return(TRUE);
+	BYTE	data;
+
+	data = NC;
+	if (keycode == 0x67) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
-		else if (np2oscfg.F12COPY == 2) {
-			keystat_senddata(0x60 | 0x80);
-			return(TRUE);
+	}
+	else if (keycode == 0x6f) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
+	}
+	if (data != NC) {
+		keystat_senddata(data | 0x80);
+		return(TRUE);
 	}
 	return(FALSE);
 }
@@ -224,13 +267,48 @@ static const BYTE keymac[128] = {
 			//	 [6], [7],    , [8], [9],  Åè,  ÅQ, [,]		; 0x58
 				0x48,0x42,  NC,0x43,0x44,0x0d,0x33,0x4f,
 			//	  F5,  F6,  F7,  F3,  F8,  F9,    , F11		; 0x60
-				0x66,0x67,0x68,0x64,0x69,0x6a,  NC,0x72,
+				0x66,0x67,0x68,0x64,0x69,0x6a,  NC,  NC,
 			//	    , F13,    , F14,    , F10,    , F12		; 0x68
 				  NC,  NC,  NC,  NC,  NC,0x6b,  NC,  NC,
 			//	    , F15, hlp, hom,  ru, del,  F4, end		; 0x70
 				  NC,  NC,0x3f,0x3e,0x37,0x39,0x65,0x3f,
 			//	  F2,  rd,  F1,  Å©,  Å®,  Å´,  Å™,    		; 0x78
 				0x63,0x36,0x62,0x3b,0x3c,0x3d,0x3a,  NC};
+
+// ó—åÁÉLÅ[âüâ∫
+static const BYTE keymac2[128] = {
+			//	  Ç`,  Çr,  Çc,  Çe,  Çg,  Çf,  Çy,  Çw		; 0x00
+				  NC,  NC,  NC,  NC,0x3f,  NC,  NC,  NC,
+			//	  Çb,  Çu,    ,  Ça,  Çp,  Çv,  Çd,  Çq		; 0x08
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	  Çx,  Çs,  ÇP,  ÇQ,  ÇR,  ÇS,  ÇU,  ÇT		; 0x10
+				  NC,  NC,0x62,0x63, 0x64,0x65,0x67,0x66,
+			//	  ÅO,  ÇX,  ÇV,  Å|,  ÇW,  ÇO,  Åm,  Çn 	; 0x18
+				  NC,0x6a,0x68,  NC,0x69,0x6b,  NC,  NC,
+			//	  Çt,  Åó,  Çh,  Ço, ret,  Çk,  Çi,  ÅF		; 0x20
+				  NC,  NC,  NC,  NC,  NC,0x3e,  NC,  NC,
+			//	  Çj,  ÅG,  Ån,  ÅC,  Å^,  Çm,  Çl,  ÅD		; 0x28
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	 TAB, SPC,    ,  BS,    , ESC,    , apl		; 0x30
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	    , [.],    , [*],    ,    , [+],    		; 0x40
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	    , [=], [0], [1], [2], [3], [4], [5]		; 0x50
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	 [6], [7],    , [8], [9],  Åè,  ÅQ, [,]		; 0x58
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	  F5,  F6,  F7,  F3,  F8,  F9,    , F11		; 0x60
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	    , F13,    , F14,    , F10,    , F12		; 0x68
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+			//	    , F15, hlp, hom,  ru, del,  F4, end		; 0x70
+				  NC,  NC,  NC,  NC,  NC,0x38,  NC,  NC,
+			//	  F2,  rd,  F1,  Å©,  Å®,  Å´,  Å™,    		; 0x78
+				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC};
 
 typedef struct {
 	UINT32	tick;
@@ -278,21 +356,28 @@ void mackbd_callback(void) {
 	}
 }
 
-BOOL mackbd_keydown(int keycode) {
+BOOL mackbd_keydown(int keycode, BOOL cmd) {
 
 	BYTE	data;
 
 	data = NC;
-	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			data = 0x61;
+	if (keycode == 0x67) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
-		else if (np2oscfg.F12COPY == 2) {
-			data = 0x60;
+	}
+	else if (keycode == 0x6f) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}
 	else if (keycode < 0x80) {
-		data = keymac[keycode];
+		if (!cmd) {
+			data = keymac[keycode];
+		}
+		else {
+			data = keymac2[keycode];
+		}
 	}
 	if (data != NC) {
 		keystat_senddata(data);
@@ -306,26 +391,33 @@ BOOL mackbd_keydown(int keycode) {
 BOOL mackbd_keyup(int keycode) {
 
 	BYTE	data;
+	BOOL	ret;
 
 	data = NC;
-	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			data = 0x61;
+	ret = FALSE;
+	if (keycode == 0x67) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
-		else if (np2oscfg.F12COPY == 2) {
-			data = 0x60;
+	}
+	else if (keycode == 0x6f) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}
 	else if (keycode < 0x80) {
 		data = keymac[keycode];
+		if (data != NC) {
+			keystat_senddata(data | 0x80);
+			ret = TRUE;
+		}
+		data = keymac2[keycode];
 	}
 	if (data != NC) {
 		keystat_senddata(data | 0x80);
-		return(TRUE);
+		ret = TRUE;
 	}
-	else {
-		return(FALSE);
-	}
+	return(ret);
 }
 
 void mackbd_activate(BOOL active) {
@@ -340,40 +432,3 @@ void mackbd_activate(BOOL active) {
 
 #endif
 
-
-#if 0
-// ó—åÁÉLÅ[âüâ∫
-static const BYTE keymac2[128] = {
-			//	  Ç`,  Çr,  Çc,  Çe,  Çg,  Çf,  Çy,  Çw		; 0x00
-				  NC,  NC,  NC,  NC,0x3f,  NC,  NC,  NC,
-			//	  Çb,  Çu,    ,  Ça,  Çp,  Çv,  Çd,  Çq		; 0x08
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	  Çx,  Çs,  ÇP,  ÇQ,  ÇR,  ÇS,  ÇU,  ÇT		; 0x10
-				  NC,  NC,0x62,0x63, 0x64,0x65,0x67,0x66,
-			//	  ÅO,  ÇX,  ÇV,  Å|,  ÇW,  ÇO,  Åm,  Çn 	; 0x18
-				  NC,0x6a,0x68,  NC,0x69,0x6b,  NC,  NC,
-			//	  Çt,  Åó,  Çh,  Ço, ret,  Çk,  Çi,  ÅF		; 0x20
-				  NC,  NC,  NC,  NC,  NC,0x3e,  NC,  NC,
-			//	  Çj,  ÅG,  Ån,  ÅC,  Å^,  Çm,  Çl,  ÅD		; 0x28
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	 TAB, SPC,    ,  BS,    , ESC,    , apl		; 0x30
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , [.],    , [*],    ,    , [+],    		; 0x40
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , [=], [0], [1], [2], [3], [4], [5]		; 0x50
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	 [6], [7],    , [8], [9],  Åè,  ÅQ, [,]		; 0x58
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	  F5,  F6,  F7,  F3,  F8,  F9,    , F11		; 0x60
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , F13,    , F14,    , F10,    , F12		; 0x68
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , F15, hlp, hom,  ru, del,  F4, end		; 0x70
-				  NC,  NC,  NC,  NC,  NC,0x38,  NC,  NC,
-			//	  F2,  rd,  F1,  Å©,  Å®,  Å´,  Å™,    		; 0x78
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC};
-#endif

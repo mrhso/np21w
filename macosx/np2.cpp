@@ -46,7 +46,7 @@
 // #define	OPENING_WAIT	1500
 
 
-		NP2OSCFG	np2oscfg = {"Neko Project IIx", 0, 2, 0, 0, 0, 0, 1, 0};
+		NP2OSCFG	np2oscfg = {"Neko Project IIx", -1, -1, 0, 2, 0, 0, 0, 0, 0, 1, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
@@ -93,18 +93,19 @@ pascal OSErr OpenAppleEventHandler(const AppleEvent *event, AppleEvent *reply,lo
 	DescType	rtype;
 	AEKeyword	key;
 	AEDescList	dlist;
+    OSErr		err = noErr;
         
 	if(!AEGetParamDesc(event,keyDirectObject,typeAEList,&dlist))	{
 		AECountItems( &dlist,&ct );
 		for( i=1;i<=ct;i++ )	{
             pp=&fsc;
 			if (!AEGetNthPtr( &dlist,i,typeFSS,&key,&rtype,(Ptr)pp,(long)sizeof(FSSpec),&len))	{
-                setDropFile(fsc, i-1);
+                err = setDropFile(fsc, i-1);
 			}
 		}
 		AEDisposeDesc( &dlist );
 	}
-	return( 0 );
+	return(err);
 }
 
 
@@ -337,66 +338,91 @@ static void HandleMenuChoice(long wParam) {
 		case IDM_KEY:
 			menu_setkey(0);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_JOY1:
 			menu_setkey(1);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_JOY2:
 			menu_setkey(2);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_MOUSEKEY:
 			menu_setkey(3);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XSHIFT:
 			menu_setxshift(np2cfg.XSHIFT ^ 1);
 			keystat_forcerelease(0x70);
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XCTRL:
 			menu_setxshift(np2cfg.XSHIFT ^ 2);
 			keystat_forcerelease(0x74);
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XGRPH:
 			menu_setxshift(np2cfg.XSHIFT ^ 4);
 			keystat_forcerelease(0x73);
+			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_F11KANA:
+			menu_setf11key(0);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F11STOP:
+			menu_setf11key(1);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F11EQU:
+			menu_setf11key(2);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F11NFER:
+			menu_setf11key(3);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12MOUSE:
-			menu_setf12copy(0);
+			menu_setf12key(0);
 			mackbd_resetf12();
-			update |= SYS_UPDATECFG;
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12COPY:
-			menu_setf12copy(1);
+			menu_setf12key(1);
 			mackbd_resetf12();
-			update |= SYS_UPDATECFG;
-			break;
-
-		case IDM_F12STOP:
-			menu_setf12copy(2);
-			mackbd_resetf12();
-			update |= SYS_UPDATECFG;
-			break;
-
-		case IDM_F12EQU:
-			menu_setf12copy(3);
-			mackbd_resetf12();
-			update |= SYS_UPDATECFG;
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12COMMA:
-			menu_setf12copy(4);
+			menu_setf12key(2);
 			mackbd_resetf12();
-			update |= SYS_UPDATECFG;
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F12XFER:
+			menu_setf12key(3);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_BEEPOFF:
@@ -648,6 +674,7 @@ int main(int argc, char *argv[]) {
 
     EventRef		theEvent;
     EventTargetRef	theTarget;
+    Rect			bounds;
 #ifdef OPENING_WAIT
 	UINT32		tick;
 #endif
@@ -681,7 +708,8 @@ int main(int argc, char *argv[]) {
 	menu_setframe(np2oscfg.DRAW_SKIP);
 	menu_setkey(0);
 	menu_setxshift(0);
-	menu_setf12copy(np2oscfg.F12COPY);
+	menu_setf11key(np2oscfg.F11KEY);
+	menu_setf12key(np2oscfg.F12KEY);
 	menu_setbeepvol(np2cfg.BEEP_VOL);
 	menu_setsound(np2cfg.SOUND_SW);
 	menu_setmotorflg(np2cfg.MOTOR);
@@ -798,6 +826,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+    
 	np2running = FALSE;
     menu_setrecording(true);
 
@@ -805,6 +834,13 @@ int main(int argc, char *argv[]) {
         toggleFullscreen();
     }
     
+	GetWindowBounds(hWndMain, kWindowGlobalPortRgn, &bounds);
+	if ((np2oscfg.winx != bounds.left) || (np2oscfg.winy != bounds.top)) {
+		np2oscfg.winx = bounds.left;
+		np2oscfg.winy = bounds.top;
+		sysmng_update(SYS_UPDATEOSCFG);
+	}
+
 	pccore_cfgupdate();
 
 #if defined(USE_RESUME)
@@ -902,7 +938,7 @@ static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef
                     result = noErr;
                     break;
                 case kEventMouseDown:
-                    if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                    if (buttonKind == kEventMouseButtonSecondary || modif & cmdKey) {
                         mousemng_buttonevent(MOUSEMNG_RIGHTDOWN);
                     }
                     else {
@@ -911,7 +947,7 @@ static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef
                     result=noErr;
                     break;
                 case kEventMouseUp:
-                    if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                    if (buttonKind == kEventMouseButtonSecondary || modif & cmdKey) {
                         mousemng_buttonevent(MOUSEMNG_RIGHTUP);
                     }
                     else if (buttonKind == kEventMouseButtonTertiary) {
@@ -1099,7 +1135,9 @@ static bool setupMainWindow(void) {
 	}
 	SizeWindow(hWndMain, 640, 400, TRUE);
 #endif
-
+    if (np2oscfg.winx != -1 && np2oscfg.winy != -1) {
+        MoveWindow(hWndMain, np2oscfg.winx, np2oscfg.winy, false);
+    }
     setUpCarbonEvent();
     if (backupwidth) scrnmng_setwidth(0, backupwidth);
     if (backupheight) scrnmng_setheight(0, backupheight);
@@ -1124,6 +1162,8 @@ static void toggleFullscreen(void) {
         backupheight = bounds.bottom - bounds.top;
         toolwin = np2oscfg.toolwin;
         toolwin_close();
+        np2oscfg.winx = bounds.left;
+        np2oscfg.winy = bounds.top;
         DisposeWindow(hWndMain);
         BeginFullScreen(&bkfullscreen, 0, &w, &h, &hWndMain, NULL, fullScreenAllowEvents);	
         DisableMenuItem(menu, IDM_ROLNORMAL);

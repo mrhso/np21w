@@ -59,7 +59,7 @@ void egcshift(void) {
 
 	BYTE	src8, dst8;
 
-	egc.remain = (egc.leng & 0xfff) + 1;
+	egc.remain = LOW12(egc.leng) + 1;
 	egc.func = (egc.sft >> 12) & 1;
 	if (!egc.func) {
 		egc.inptr = egc.buf;
@@ -701,7 +701,7 @@ static void shiftinput_decw(void) {
 }
 
 
-static void gdc_ope(UINT32 ad, UINT16 value, int func) {
+static void gdc_ope(UINT32 ad, REG16 value, int func) {
 
 	EGCQUAD	pat;
 	EGCQUAD	dst;
@@ -801,10 +801,10 @@ static void gdc_ope(UINT32 ad, UINT16 value, int func) {
 			break;
 		default:
 #if defined(BYTESEX_LITTLE)
-			data.w[0] = value;
-			data.w[1] = value;
-			data.w[2] = value;
-			data.w[3] = value;
+			data.w[0] = (UINT16)value;
+			data.w[1] = (UINT16)value;
+			data.w[2] = (UINT16)value;
+			data.w[3] = (UINT16)value;
 #else
 			data._b[0][0] = (BYTE)value;
 			data._b[0][1] = (BYTE)(value >> 8);
@@ -816,7 +816,7 @@ static void gdc_ope(UINT32 ad, UINT16 value, int func) {
 	}
 }
 
-BYTE MEMCALL egc_read(UINT32 addr) {
+REG8 MEMCALL egc_read(UINT32 addr) {
 
 	UINT32	ad;
 	UINT	ext;
@@ -859,12 +859,12 @@ BYTE MEMCALL egc_read(UINT32 addr) {
 }
 
 
-void MEMCALL egc_write(UINT32 addr, BYTE value) {
+void MEMCALL egc_write(UINT32 addr, REG8 value) {
 
 	UINT	ext;
-	UINT16	wvalue;
+	REG16	wvalue;
 
-	addr &= 0x7fff;
+	addr = LOW15(addr);
 	ext = EGCADDR(addr & 1);
 	if (!gdcs.access) {
 		gdcs.grphdisp |= 1;
@@ -882,7 +882,8 @@ void MEMCALL egc_write(UINT32 addr, BYTE value) {
 		egc.patreg._b[3][ext] = mem[addr + VRAM_E];
 	}
 
-	wvalue = (value << 8) | (value);							// ver0.28/pr4
+	value = (BYTE)value;
+	wvalue = (value << 8) + value;
 	if (!ext) {
 		gdc_ope(addr, wvalue, egc.func + 6);
 	}
@@ -909,7 +910,7 @@ void MEMCALL egc_write(UINT32 addr, BYTE value) {
 	}
 }
 
-UINT16 MEMCALL egc_read_w(UINT32 addr) {
+REG16 MEMCALL egc_read_w(UINT32 addr) {
 
 	UINT32	ad;
 
@@ -965,23 +966,23 @@ UINT16 MEMCALL egc_read_w(UINT32 addr) {
 		return(LOADINTELWORD(mem + addr));
 	}
 	else if (!(egc.sft & 0x1000)) {
-		UINT16 ret;
+		REG16 ret;
 		ret = egc_read(addr);
 		ret |= egc_read(addr+1) << 8;
 		return(ret);
 	}
 	else {
-		UINT16 ret;
+		REG16 ret;
 		ret = egc_read(addr+1) << 8;
 		ret |= egc_read(addr);
 		return(ret);
 	}
 }
 
-void MEMCALL egc_write_w(UINT32 addr, UINT16 value) {
+void MEMCALL egc_write_w(UINT32 addr, REG16 value) {
 
 	if (!(addr & 1)) {											// word access
-		addr &= 0x7ffe;
+		addr = LOW15(addr);
 		if (!gdcs.access) {
 			gdcs.grphdisp |= 1;
 			*(UINT16 *)(vramupdate + addr) |= 0x0101;
@@ -1018,12 +1019,12 @@ void MEMCALL egc_write_w(UINT32 addr, UINT16 value) {
 		}
 	}
 	else if (!(egc.sft & 0x1000)) {
-		egc_write(addr, (BYTE)value);
-		egc_write(addr+1, (BYTE)(value >> 8));
+		egc_write(addr, (REG8)value);
+		egc_write(addr+1, (REG8)(value >> 8));
 	}
 	else {
-		egc_write(addr+1, (BYTE)(value >> 8));
-		egc_write(addr, (BYTE)value);
+		egc_write(addr+1, (REG8)(value >> 8));
+		egc_write(addr, (REG8)value);
 	}
 }
 

@@ -209,11 +209,13 @@ void bios0x18(void) {
 //	TRACE_("int18", I286_AH);
 
 	sti_waiting ^= 1;
-	if (!sti_waiting) {					// 割込み許可の遊び
-		I286_IP--;
+	if (sti_waiting) {					// 割込み許可の遊び
 		I286_STI;
-		nevent_forceexit();
-		return;
+		if (PICEXISTINTR) {
+			I286_IP--;
+			nevent_forceexit();
+			return;
+		}
 	}
 
 	switch(I286_AH) {
@@ -357,20 +359,21 @@ void bios0x18(void) {
 				pos = I286_CX;
 				p = gdc.m.para + GDC_SCROLL + (I286_DH << 2);
 				while((i--) && (p < (gdc.m.para + GDC_SCROLL + 0x10))) {
-					tmp = i286_memword_read(I286_BX, pos);
-					tmp >>= 1;
-					STOREINTELWORD(p, tmp);
-					tmp = i286_memword_read(I286_BX, pos + 2);
+					REG16 t;
+					t = i286_memword_read(I286_BX, pos);
+					t >>= 1;
+					STOREINTELWORD(p, t);
+					t = i286_memword_read(I286_BX, pos + 2);
 					if (!(mem[MEMB_CRT_STS_FLAG] & 1)) {	// 25
-						tmp *= (16 * 16);
+						t *= (16 * 16);
 					}
 					else {									// 20
-						tmp *= (20 * 16);
+						t *= (20 * 16);
 					}
 					if (!(mem[MEMB_CRT_STS_FLAG] & 0x80)) {			// ver0.29
-						tmp >>= 1;
+						t >>= 1;
 					}
-					STOREINTELWORD(p + 2, tmp);
+					STOREINTELWORD(p + 2, t);
 					pos += 4;
 					p += 4;
 				}
@@ -437,7 +440,7 @@ void bios0x18(void) {
 				case 0x00:			// 8x8
 					i286_memword_write(I286_BX, I286_CX, 0x0101);
 					i286_memstr_write(I286_BX, I286_CX+2,
-										&font[0x82000 + (I286_DL << 3)], 8);
+								fontrom + 0x82000 + (I286_DL << 3), 8);
 					break;
 
 				case 0x28:			// 8x16 KANJI
@@ -446,21 +449,21 @@ void bios0x18(void) {
 				case 0x2b:
 					i286_memword_write(I286_BX, I286_CX, 0x0102);
 					i286_memstr_write(I286_BX, I286_CX+2,
-						&font[((I286_DL & 0x7f) << 12)
-								+ ((I286_DH - 0x20) << 4)], 16);
+								fontrom + ((I286_DL & 0x7f) << 12)
+										+ ((I286_DH - 0x20) << 4), 16);
 					break;
 
 				case 0x80:			// 8x16 ANK
 					i286_memword_write(I286_BX, I286_CX, 0x0102);
 					i286_memstr_write(I286_BX, I286_CX+2,
-									&font[0x80000 + (I286_DL << 4)], 16);
+								fontrom + 0x80000 + (I286_DL << 4), 16);
 					break;
 
 				default:
 					buf[0] = 0x02;
 					buf[1] = 0x02;
-					p = &font[((I286_DL & 0x7f) << 12)
-								+ (((I286_DH - 0x20) & 0x7f) << 4)];
+					p = fontrom + ((I286_DL & 0x7f) << 12)
+								+ (((I286_DH - 0x20) & 0x7f) << 4);
 					for (i=1; i<17; i++, p++) {
 						buf[i*2+0] = *p;
 						buf[i*2+1] = *(p+0x800);
@@ -491,8 +494,8 @@ void bios0x18(void) {
    		case 0x1a:						// ユーザー文字の定義
 			if ((I286_DH & 0x7e) == 0x76) {
 				i286_memstr_read(I286_BX, I286_CX+2, buf, 32);
-				p = &font[((I286_DL & 0x7f) << 12)
-								+ (((I286_DH - 0x20) & 0x7f) << 4)];
+				p = fontrom + ((I286_DL & 0x7f) << 12)
+							+ (((I286_DH - 0x20) & 0x7f) << 4);
 				for (i=0; i<16; i++, p++) {
 					*p = buf[i*2+0];
 					*(p+0x800) = buf[i*2+1];

@@ -1,10 +1,14 @@
 
 typedef struct {
 	char	titles[256];
+	
+	int		winx;
+	int		winy;
 	BYTE	NOWAIT;
 	BYTE	DRAW_SKIP;
 	BYTE	DISPCLK;
-	BYTE	F12COPY;
+	BYTE	F11KEY;
+	BYTE	F12KEY;
     
 	BYTE	MOUSE_SW;
 	BYTE	JOYPAD1;

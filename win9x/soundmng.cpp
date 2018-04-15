@@ -74,16 +74,13 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	UINT			samples;
 	DSBUFFERDESC	dsbdesc;
 	PCMWAVEFORMAT	pcmwf;
-#if defined(VERMOUTH_LIB)
-	UINT			num;
-#endif
 
 	if ((pDSound == NULL) ||
 		(rate != 11025) && (rate != 22050) && (rate != 44100)) {
 		goto stcre_err1;
 	}
-	if (ms < 50) {
-		ms = 50;
+	if (ms < 40) {
+		ms = 40;
 	}
 	else if (ms > 1000) {
 		ms = 1000;
@@ -118,10 +115,7 @@ UINT soundmng_create(UINT rate, UINT ms) {
 
 #if defined(VERMOUTH_LIB)
 	vermouth_module = midimod_create(rate);
-	for (num=0; num<128; num++) {
-		midimod_loadprogram(vermouth_module, num);
-		midimod_loadrhythm(vermouth_module, num);
-	}
+	midimod_loadall(vermouth_module);
 #endif
 	dsstreamevent = (BYTE)-1;
 	soundmng_reset();

@@ -46,6 +46,7 @@
 #include	"statsave.h"
 #include	"debugsub.h"
 #include	"keydisp.h"
+#include	"kdispwin.h"
 #include	"viewer.h"
 
 
@@ -92,8 +93,6 @@ static	WINLOCEX	smwlex;
 
 static const char np2help[] = "np2.chm";
 static const char np2flagext[] = "S%02d";
-static const char np2resumeext[] = "sav";
-
 
 
 static void winuienter(void) {
@@ -117,7 +116,7 @@ WINLOCEX np2_winlocexallwin(HWND base) {
 
 	list[0] = hWndMain;
 	list[1] = toolwin_gethwnd();
-	list[2] = keydisp_gethwnd();
+	list[2] = kdispwin_gethwnd();
 	for (i=0; i<3; i++) {
 		if (list[i] == base) {
 			list[i] = NULL;
@@ -147,7 +146,7 @@ static void changescreen(BYTE newmode) {
 	if (renewal) {
 		if (renewal & SCRNMODE_FULLSCREEN) {
 			toolwin_destroy();
-			keydisp_destroy();
+			kdispwin_destroy();
 		}
 		else if (renewal & SCRNMODE_ROTATEMASK) {
 			wlex = np2_winlocexallwin(hWndMain);
@@ -172,7 +171,7 @@ static void changescreen(BYTE newmode) {
 					toolwin_create();
 				}
 				if (np2oscfg.keydisp) {
-					keydisp_create();
+					kdispwin_create();
 				}
 			}
 		}
@@ -357,10 +356,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				case IDM_KEYDISP:
 					sysmenu_setkeydisp(np2oscfg.keydisp ^ 1);
 					if (np2oscfg.keydisp) {
-						keydisp_create();
+						kdispwin_create();
 					}
 					else {
-						keydisp_destroy();
+						kdispwin_destroy();
 					}
 					break;
 
@@ -422,7 +421,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					if (subwin) {
 						ShowWindow(subwin, SW_SHOWNOACTIVATE);
 					}
-					subwin = keydisp_gethwnd();
+					subwin = kdispwin_gethwnd();
 					if (subwin) {
 						ShowWindow(subwin, SW_SHOWNOACTIVATE);
 					}
@@ -603,61 +602,67 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				case IDM_KEY:
 					xmenu_setkey(0);
 					keystat_resetjoykey();
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_JOY1:
 					xmenu_setkey(1);
 					keystat_resetjoykey();
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_JOY2:
 					xmenu_setkey(2);
 					keystat_resetjoykey();
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_XSHIFT:
 					xmenu_setxshift(np2cfg.XSHIFT ^ 1);
 					keystat_forcerelease(0x70);
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_XCTRL:
 					xmenu_setxshift(np2cfg.XSHIFT ^ 2);
 					keystat_forcerelease(0x74);
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_XGRPH:
 					xmenu_setxshift(np2cfg.XSHIFT ^ 4);
 					keystat_forcerelease(0x73);
+					update |= SYS_UPDATECFG;
 					break;
 
 				case IDM_F12MOUSE:
 					xmenu_setf12copy(0);
 					winkbd_resetf12();
-					update |= SYS_UPDATECFG;
+					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12COPY:
 					xmenu_setf12copy(1);
 					winkbd_resetf12();
-					update |= SYS_UPDATECFG;
+					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12STOP:
 					xmenu_setf12copy(2);
 					winkbd_resetf12();
-					update |= SYS_UPDATECFG;
+					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12EQU:
 					xmenu_setf12copy(3);
 					winkbd_resetf12();
-					update |= SYS_UPDATECFG;
+					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_F12COMMA:
 					xmenu_setf12copy(4);
 					winkbd_resetf12();
-					update |= SYS_UPDATECFG;
+					update |= SYS_UPDATEOSCFG;
 					break;
 
 				case IDM_BEEPOFF:
@@ -715,7 +720,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					break;
 
 				case IDM_PC9801_118:
-					xmenu_setsound(8);
+					xmenu_setsound(0x08);
 					update |= SYS_UPDATECFG;
 					break;
 
@@ -1128,7 +1133,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				winuileave();
 			}
 			if (b) {
-				keydisp_destroy();
 				viewer_allclose();
 				DestroyWindow(hWnd);
 			}
@@ -1203,7 +1207,7 @@ static void framereset(UINT cnt) {
 
 	framecnt = 0;
 	scrnmng_dispclock();
-	keydisp_draw((BYTE)cnt);
+	kdispwin_draw((BYTE)cnt);
 	toolwin_draw((BYTE)cnt);
 	viewer_allreload(FALSE);
 	if (np2oscfg.DISPCLK & 3) {
@@ -1222,6 +1226,7 @@ static void processwait(UINT cnt) {
 	else {
 		Sleep(1);
 	}
+	soundmng_sync();
 }
 
 
@@ -1230,7 +1235,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	WNDCLASS	wc;
 	MSG			msg;
 	HMENU		hMenu;
-	HWND		hwndorg;
+	HWND		hWnd;
 	UINT		i;
 #ifdef OPENING_WAIT
 	UINT32		tick;
@@ -1244,16 +1249,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	np2arg_analize(lpszCmdLine);
 	initload();
 	toolwin_readini();
-	keydisp_readini();
+	kdispwin_readini();
 
 	rand_setseed((unsigned)time(NULL));
 
 	CopyMemory(szClassName, np2oscfg.winid, 3);
 
-	if ((hwndorg = FindWindow(szClassName, NULL)) != NULL) {
+	if ((hWnd = FindWindow(szClassName, NULL)) != NULL) {
 		sstpmsg_running();
-		ShowWindow(hwndorg, SW_RESTORE);
-		SetForegroundWindow(hwndorg);
+		ShowWindow(hWnd, SW_RESTORE);
+		SetForegroundWindow(hWnd);
 		dosio_term();
 		return(FALSE);
 	}
@@ -1295,7 +1300,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		}
 	}
 	toolwin_initapp(hInstance);
-	keydisp_initialize(hPreInst);
+	kdispwin_initialize(hPreInst);
 	viewer_init(hPreInst);										// ver0.30
 
 	hWndMain = CreateWindow(szClassName, np2oscfg.titles,
@@ -1303,6 +1308,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 						WS_THICKFRAME | WS_MINIMIZEBOX,
 						np2oscfg.winx, np2oscfg.winy, 640, 400,
 						NULL, NULL, hInstance, NULL);
+	hWnd = hWndMain;
 	scrnmng_initialize();
 
 	xmenu_setsound(np2cfg.SOUND_SW);
@@ -1326,8 +1332,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	xmenu_setsstp(np2oscfg.sstp);
 	xmenu_setmouse(np2oscfg.MOUSE_SW);
 
-	ShowWindow(hWndMain, nCmdShow);
-	UpdateWindow(hWndMain);
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
 
 #ifdef OPENING_WAIT
 	tick = GetTickCount();
@@ -1336,7 +1342,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	// ‚ß‚É‚ã[’Ç‰Á
 	if (np2oscfg.statsave) {
 		char buf[16];
-		hMenu = GetMenu(hWndMain);
+		hMenu = GetMenu(hWnd);
 		hStat = CreatePopupMenu();
 		for (i=0; i<STATSAVEMAX; i++) {
 			wsprintf(buf, "Save %d", i);
@@ -1350,11 +1356,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		InsertMenu(hMenu, 1, MF_BYPOSITION | MF_POPUP, (UINT)hStat, "S&tat");
 	}
 	sysmenu_initialize();
-	DrawMenuBar(hWndMain);
+	DrawMenuBar(hWnd);
 
 	// ver0.30
 	if (file_attr_c(np2help) == (short)-1) {
-		EnableMenuItem(GetMenu(hWndMain), IDM_HELP, MF_GRAYED);
+		EnableMenuItem(GetMenu(hWnd), IDM_HELP, MF_GRAYED);
 	}
 
 	sysmenu_settoolwin(np2oscfg.toolwin);
@@ -1375,7 +1381,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		scrnmode ^= SCRNMODE_FULLSCREEN;
 		if (scrnmng_create(scrnmode) != SUCCESS) {
 			if (sstpmsg_dxerror()) {
-				MessageBox(hWndMain, "Couldn't create DirectDraw Object",
+				MessageBox(hWnd, "Couldn't create DirectDraw Object",
 										np2oscfg.titles, MB_OK | MB_ICONSTOP);
 			}
 			return(FALSE);
@@ -1418,27 +1424,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 
 	pccore_reset();
 
-	if (!(scrnmode & SCRNMODE_FULLSCREEN)) {
-		if (np2oscfg.toolwin) {
-			toolwin_create();
-		}
-		if (np2oscfg.keydisp) {
-			keydisp_create();
-		}
-	}
-
 	np2opening = 0;
 
 	// ‚ê‚¶‚¤‚Þ
 	if (np2oscfg.resume) {
 		int		id;
 
-		id = flagload(np2resumeext, "Resume", FALSE);
+		id = flagload(str_sav, str_resume, FALSE);
 		if (id == IDYES) {
 			for (i=0; i<4; i++) np2arg.disk[i] = NULL;
 		}
 		else if (id == IDCANCEL) {
-			DestroyWindow(hWndMain);
+			DestroyWindow(hWnd);
 			mousemng_disable(MOUSEPROC_WINUI);
 			S98_trash();
 			pccore_term();
@@ -1460,13 +1457,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		}
 	}
 
+	if (!(scrnmode & SCRNMODE_FULLSCREEN)) {
+		if (np2oscfg.toolwin) {
+			toolwin_create();
+		}
+		if (np2oscfg.keydisp) {
+			kdispwin_create();
+		}
+	}
+
 	while(1) {
 		if (!np2stopemulate) {
 			if (PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE)) {
 				if (!GetMessage(&msg, NULL, 0, 0)) {
 					break;
 				}
-				if ((msg.hwnd != hWndMain) ||
+				if ((msg.hwnd != hWnd) ||
 					((msg.message != WM_SYSKEYDOWN) &&
 					(msg.message != WM_SYSKEYUP))) {
 					TranslateMessage(&msg);
@@ -1549,6 +1555,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		}
 	}
 	toolwin_destroy();
+	kdispwin_destroy();
 
 	pccore_cfgupdate();
 
@@ -1556,10 +1563,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	S98_trash();
 
 	if (np2oscfg.resume) {
-		flagsave(np2resumeext);
+		flagsave(str_sav);
 	}
 	else {
-		flagdelete(np2resumeext);
+		flagdelete(str_sav);
 	}
 
 #ifdef USE_ROMEO
@@ -1579,7 +1586,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
 		initsave();
 		toolwin_writeini();
-		keydisp_writeini();
+		kdispwin_writeini();
 	}
 
 	TRACETERM();

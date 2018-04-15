@@ -112,7 +112,7 @@ void pic_irq(void) {
 
 	int		i;
 	BYTE	bit;
-	char	pry;
+	SINT8	pry;
 	BYTE	irq;
 	BYTE	sirq;
 	BYTE	targetbit;
@@ -130,14 +130,14 @@ void pic_irq(void) {
 			pry = -1;
 		}
 		else {
-			pry = (char)p->pi[0].pry[p->pi[0].level[p->pi[0].levels - 1]];
+			pry = (SINT8)p->pi[0].pry[p->pi[0].level[p->pi[0].levels - 1]];
 		}
 		irq = 0xff;
 		targetbit = 0;
 		for (bit=1, i=0; bit; bit<<=1, i++) {
 			if ((p->pi[0].irr & bit) &&
 				(!((p->pi[0].imr | p->pi[0].isr) & bit))) {
-				if ((char)p->pi[0].pry[i] > pry) {
+				if ((SINT8)p->pi[0].pry[i] > pry) {
 					pry = p->pi[0].pry[i];
 					irq = (BYTE)i;
 					targetbit = bit;
@@ -152,7 +152,7 @@ void pic_irq(void) {
 			sirq = p->pi[1].icw[2] & 7;
 			bit = 1 << sirq;
 			if (!((p->pi[0].imr | p->pi[0].isr) & bit)) {
-				if ((char)p->pi[0].pry[sirq] > pry) {
+				if ((SINT8)p->pi[0].pry[sirq] > pry) {
 					irq = sirq;
 					targetbit = bit;
 				}
@@ -171,6 +171,7 @@ void pic_irq(void) {
 					nevent_reset(NEVENT_PICMASK);
 				}
 				i286_interrupt((BYTE)((p->pi[0].icw[1] & 0xf8) | irq));
+// TRACEOUT(("hardware-int %.2x", (p->pi[0].icw[1] & 0xf8) | irq));
 				return;
 			}
 			if ((!p->pi[0].levels) ||
@@ -183,13 +184,13 @@ void pic_irq(void) {
 			pry = -1;
 		}
 		else {
-			pry = (char)p->pi[1].pry[p->pi[1].level[p->pi[1].levels - 1]];
+			pry = (SINT8)p->pi[1].pry[p->pi[1].level[p->pi[1].levels - 1]];
 		}
 		targetbit = 0;
 		for (bit=1, i=0; bit; bit<<=1, i++) {
 			if ((p->pi[1].irr & bit) &&
 				(!((p->pi[1].imr | p->pi[1].isr) & bit))) {
-				if ((char)p->pi[1].pry[i] > pry) {
+				if ((SINT8)p->pi[1].pry[i] > pry) {
 					pry = p->pi[1].pry[i];
 					irq = (BYTE)i;
 					targetbit = bit;
@@ -211,7 +212,7 @@ void pic_irq(void) {
 					p->pi[0].irr &= ~(1 << sirq);
 					p->pi[0].level[p->pi[0].levels++] = sirq;
 				}
-// TRACEOUT(("hardware int %.2x", (p->pi[1].icw[1] & 0xf8) | irq));
+// TRACEOUT(("hardware-int %.2x", (p->pi[1].icw[1] & 0xf8) | irq));
 				i286_interrupt((BYTE)((p->pi[1].icw[1] & 0xf8) | irq));
 			}
 		}
@@ -337,6 +338,10 @@ static void IOOUTCALL pic_o00(UINT port, BYTE dat) {
 	}
 }
 
+#if defined(TRACE)
+extern int piccnt;
+#endif
+
 static void IOOUTCALL pic_o02(UINT port, BYTE dat) {
 
 	PICITEM		picp;
@@ -344,7 +349,22 @@ static void IOOUTCALL pic_o02(UINT port, BYTE dat) {
 //	TRACEOUT(("pic %x %x", port, dat));
 	picp = &pic.pi[(port >> 3) & 1];
 	if (!picp->writeicw) {
+#if 1	// マスクのセットだけなら nevent_forceexit()をコールしない
+		if ((isI286DI) || (pic.ext_irq) ||
+			((picp->imr & dat) == picp->imr)) {
+			picp->imr = dat;
+			return;
+		}
+		// リセットされたビットは割り込みある？
+		if (!(picp->irr & (picp->imr & (~dat)))) {
+			picp->imr = dat;
+			return;
+		}
+#endif
 		picp->imr = dat;
+#if defined(TRACE)
+		piccnt++;
+#endif
 	}
 	else {
 		picp->icw[picp->writeicw] = dat;

@@ -1,17 +1,22 @@
 #include	"compiler.h"
+#if defined(WIN32_PLATFORM_PSPC)
+#include	<gx.h>
+#endif
 #include	"np2.h"
-#include	"dosio.h"
 #include	"winkbd.h"
-#include	"memory.h"
 #include	"pccore.h"
 #include	"iocore.h"
 
 
 #define		NC		0xff
 
-static const BYTE key106[256] = {
+#if defined(WIN32_PLATFORM_PSPC)
+static BYTE key106[256] =
+#else
+static const BYTE key106[256] =
+#endif
 			//	    ,    ,    ,STOP,    ,    ,    ,    		; 0x00
-				  NC,  NC,  NC,0x60,  NC,  NC,  NC,  NC,
+		{		  NC,  NC,  NC,0x60,  NC,  NC,  NC,  NC,
 			//	  BS, TAB,    ,    , CLR, ENT,    ,    		; 0x08
 				0x0e,0x0f,  NC,  NC,  NC,0x1c,  NC,  NC,
 			//	 SFT,CTRL, ALT,PAUS,CAPS,KANA,    ,    		; 0x10
@@ -41,7 +46,7 @@ static const BYTE key106[256] = {
 			//	 f.1, f.2, f.3, f.4, f.5, f.6, f.7, f.8		; 0x70
 				0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,
 			//	 f.9, f10, f11, f12, f13, f14, f15, f16		; 0x78
-				0x6a,0x6b,  NC,0x7f,  NC,  NC,  NC,  NC,
+				0x6a,0x6b,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0x80
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0x88
@@ -75,9 +80,13 @@ static const BYTE key106[256] = {
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0xf8
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC};
 
-static const BYTE key106ext[256] = {
+#if defined(WIN32_PLATFORM_PSPC)
+static BYTE key106ext[256] =
+#else
+static const BYTE key106ext[256] =
+#endif
 			//	    ,    ,    ,STOP,    ,    ,    ,    		; 0x00
-				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
+		{		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	  BS, TAB,    ,    , CLR, ENT,    ,    		; 0x08
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	 SFT,CTRL, ALT,PAUS,CAPS,KANA,    ,    		; 0x10
@@ -141,24 +150,35 @@ static const BYTE key106ext[256] = {
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0xf8
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC};
 
+static const BYTE f12keys[] = {
+			0x61, 0x60, 0x4d, 0x4f};
 
-void winkeydown106(WPARAM wParam, LPARAM lParam) {			// ver0.28
+
+static BYTE getf12key(void) {
+
+	UINT	key;
+
+	key = np2oscfg.F12KEY - 1;
+	if (key < (sizeof(f12keys)/sizeof(BYTE))) {
+		return(f12keys[key]);
+	}
+	else {
+		return(NC);
+	}
+}
+
+void winkbd_keydown(WPARAM wParam, LPARAM lParam) {
 
 	BYTE	data;
 
-	data = key106[wParam & 0xff];
+	if (wParam != VK_F12) {
+		data = key106[wParam & 0xff];
+	}
+	else {
+		data = getf12key();
+	}
 	if (data != NC) {
-		if (data == 0x7f) {
-#if 0
-			if (np2oscfg.F12COPY == 1) {
-				data = 0x61;
-			}
-			else {
-				data = 0x60;
-			}
-#endif
-		}
-		else if ((!(lParam & 0x01000000)) &&
+		if ((!(lParam & 0x01000000)) &&
 				(key106ext[wParam & 0xff] != NC)) {			// ver0.28
 			keystat_senddata(0x70);							// PC/AT only!
 			data = key106ext[wParam & 0xff];
@@ -173,23 +193,18 @@ void winkeydown106(WPARAM wParam, LPARAM lParam) {			// ver0.28
 	}
 }
 
-void winkeyup106(WPARAM wParam, LPARAM lParam) {
+void winkbd_keyup(WPARAM wParam, LPARAM lParam) {
 
 	BYTE	data;
 
-	data = key106[wParam & 0xff];
+	if (wParam != VK_F12) {
+		data = key106[wParam & 0xff];
+	}
+	else {
+		data = getf12key();
+	}
 	if (data != NC) {
-		if (data == 0x7f) {
-#if 0
-			if (np2oscfg.F12COPY == 1) {
-				data = 0x61;
-			}
-			else {
-				data = 0x60;
-			}
-#endif
-		}
-		else if ((!(lParam & 0x01000000)) &&
+		if ((!(lParam & 0x01000000)) &&
 				(key106ext[wParam & 0xff] != NC)) {		// ver0.28
 			keystat_senddata(0x70 | 0x80);				// PC/AT only
 			data = key106ext[wParam & 0xff];
@@ -203,4 +218,130 @@ void winkeyup106(WPARAM wParam, LPARAM lParam) {
 		}
 	}
 }
+
+void winkbd_resetf12(void) {
+
+	UINT	i;
+
+	for (i=0; i<(sizeof(f12keys)/sizeof(BYTE)); i++) {
+		keystat_forcerelease(f12keys[i]);
+	}
+}
+
+
+// ---- PocketPC keys
+
+#if defined(WIN32_PLATFORM_PSPC)
+
+extern	GXKeyList	gx_keylist;
+
+typedef struct {
+	short	*ptr[4];
+} KEYADRS;
+
+typedef struct {
+	BYTE	key[4];
+} KEYSET;
+
+typedef struct {
+	KEYADRS	curadrs;
+	KEYADRS	btnadrs;
+	KEYSET	curset[2];
+	KEYSET	btnset[2];
+} PPCBTNTBL;
+
+typedef struct {
+	KEYSET	cur;
+	KEYSET	btn;
+} PPCBTNDEF;
+
+
+static const PPCBTNTBL ppcbtntbl = {
+			{&gx_keylist.vkUp, &gx_keylist.vkDown,
+			 &gx_keylist.vkLeft, &gx_keylist.vkRight},
+
+			{&gx_keylist.vkA, &gx_keylist.vkB,
+			 &gx_keylist.vkC, &gx_keylist.vkStart},
+
+			{{0x3a, 0x3d, 0x3b, 0x3c},			// cur
+			 {0x43, 0x4b, 0x46, 0x48}},			// tenkey
+
+			{{0x1c, 0x34,   NC,   NC},		// RET/SP
+			 {0x29, 0x2a,   NC,   NC}}};	// ZX
+
+static	PPCBTNDEF	ppcbtndef;
+
+static void getbind(KEYSET *bind, const BYTE *tbl, const KEYADRS *adrs) {
+
+	int		i;
+	int		key;
+
+	for (i=0; i<4; i++) {
+		key = (*adrs->ptr[i]) & 0xff;
+		bind->key[i] = tbl[key];
+	}
+}
+
+static void setbind(BYTE *tbl, const KEYSET *bind, const KEYADRS *adrs) {
+
+	int		i;
+	int		key;
+
+	for (i=0; i<4; i++) {
+		key = (*adrs->ptr[i]) & 0xff;
+		if (tbl[key] != NC) {
+			keystat_forcerelease(tbl[key]);
+		}
+		tbl[key] = bind->key[i];
+	}
+}
+
+void winkbd_bindinit(void) {
+
+	getbind(&ppcbtndef.cur, key106ext, &ppcbtntbl.curadrs);
+	getbind(&ppcbtndef.btn, key106, &ppcbtntbl.btnadrs);
+}
+
+void winkbd_bindcur(UINT type) {
+
+const KEYSET	*bind;
+
+	switch(type) {
+		case 0:
+		default:
+			bind = &ppcbtndef.cur;
+			break;
+
+		case 1:
+			bind = ppcbtntbl.curset + 0;
+			break;
+
+		case 2:
+			bind = ppcbtntbl.curset + 1;
+			break;
+	}
+	setbind(key106ext, bind, &ppcbtntbl.curadrs);
+}
+
+void winkbd_bindbtn(UINT type) {
+
+const KEYSET	*bind;
+
+	switch(type) {
+		case 0:
+		default:
+			bind = &ppcbtndef.btn;
+			break;
+
+		case 1:
+			bind = ppcbtntbl.btnset + 0;
+			break;
+
+		case 2:
+			bind = ppcbtntbl.btnset + 1;
+			break;
+	}
+	setbind(key106, bind, &ppcbtntbl.btnadrs);
+}
+#endif
 

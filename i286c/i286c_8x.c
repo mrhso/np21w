@@ -24,9 +24,12 @@ I286_8X _add_r8_i(BYTE *p) {
 I286_8X _or_r8_i(BYTE *p) {
 
 	UINT	src;
+	UINT	dst;
 
 	GET_PCBYTE(src)
-	ORBYTE((*p), src);
+	dst = *p;
+	ORBYTE(dst, src);
+	*p = (BYTE)dst;
 }
 
 I286_8X _adc_r8_i(BYTE *p) {
@@ -56,9 +59,12 @@ I286_8X _sbb_r8_i(BYTE *p) {
 I286_8X _and_r8_i(BYTE *p) {
 
 	UINT	src;
+	UINT	dst;
 
 	GET_PCBYTE(src)
-	ANDBYTE((*p), src);
+	dst = *p;
+	ANDBYTE(dst, src);
+	*p = (BYTE)dst;
 }
 
 I286_8X _sub_r8_i(BYTE *p) {
@@ -69,16 +75,19 @@ I286_8X _sub_r8_i(BYTE *p) {
 
 	GET_PCBYTE(src)
 	dst = *p;
-	BYTE_SUB(res, dst, src);
+	SUBBYTE(res, dst, src);
 	*p = (BYTE)res;
 }
 
 I286_8X _xor_r8_i(BYTE *p) {
 
 	UINT	src;
+	UINT	dst;
 
 	GET_PCBYTE(src)
-	BYTE_XOR((*p), src);
+	dst = *p;
+	XORBYTE(dst, src);
+	*p = (BYTE)dst;
 }
 
 I286_8X _cmp_r8_i(BYTE *p) {
@@ -89,7 +98,7 @@ I286_8X _cmp_r8_i(BYTE *p) {
 
 	GET_PCBYTE(src)
 	dst = *p;
-	BYTE_SUB(res, dst, src);
+	SUBBYTE(res, dst, src);
 }
 
 
@@ -104,7 +113,7 @@ I286_8X _add_ext8_i(UINT32 madr) {
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
 	ADDBYTE(res, dst, src);
-	i286_memorywrite(madr, (BYTE)res);
+	i286_memorywrite(madr, (REG8)res);
 }
 
 I286_8X _or_ext8_i(UINT32 madr) {
@@ -115,7 +124,7 @@ I286_8X _or_ext8_i(UINT32 madr) {
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
 	ORBYTE(dst, src);
-	i286_memorywrite(madr, (BYTE)dst);
+	i286_memorywrite(madr, (REG8)dst);
 }
 
 I286_8X _adc_ext8_i(UINT32 madr) {
@@ -127,7 +136,7 @@ I286_8X _adc_ext8_i(UINT32 madr) {
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
 	ADCBYTE(res, dst, src);
-	i286_memorywrite(madr, (BYTE)res);
+	i286_memorywrite(madr, (REG8)res);
 }
 
 I286_8X _sbb_ext8_i(UINT32 madr) {
@@ -139,7 +148,7 @@ I286_8X _sbb_ext8_i(UINT32 madr) {
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
 	SBBBYTE(res, dst, src);
-	i286_memorywrite(madr, (BYTE)res);
+	i286_memorywrite(madr, (REG8)res);
 }
 
 I286_8X _and_ext8_i(UINT32 madr) {
@@ -150,7 +159,7 @@ I286_8X _and_ext8_i(UINT32 madr) {
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
 	ANDBYTE(dst, src);
-	i286_memorywrite(madr, (BYTE)dst);
+	i286_memorywrite(madr, (REG8)dst);
 }
 
 I286_8X _sub_ext8_i(UINT32 madr) {
@@ -161,8 +170,8 @@ I286_8X _sub_ext8_i(UINT32 madr) {
 
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
-	BYTE_SUB(res, dst, src);
-	i286_memorywrite(madr, (BYTE)res);
+	SUBBYTE(res, dst, src);
+	i286_memorywrite(madr, (REG8)res);
 }
 
 I286_8X _xor_ext8_i(UINT32 madr) {
@@ -172,8 +181,8 @@ I286_8X _xor_ext8_i(UINT32 madr) {
 
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
-	BYTE_XOR(dst, src);
-	i286_memorywrite(madr, (BYTE)dst);
+	XORBYTE(dst, src);
+	i286_memorywrite(madr, (REG8)dst);
 }
 
 I286_8X _cmp_ext8_i(UINT32 madr) {
@@ -184,7 +193,7 @@ I286_8X _cmp_ext8_i(UINT32 madr) {
 
 	GET_PCBYTE(src)
 	dst = i286_memoryread(madr);
-	BYTE_SUB(res, dst, src);
+	SUBBYTE(res, dst, src);
 }
 
 
@@ -212,7 +221,11 @@ I286_8X _add_r16_i(UINT16 *p, UINT32 src) {
 
 I286_8X _or_r16_i(UINT16 *p, UINT32 src) {
 
-	ORWORD((*p), src);
+	UINT32	dst;
+
+	dst = *p;
+	ORWORD(dst, src);
+	*p = (UINT16)dst;
 }
 
 I286_8X _adc_r16_i(UINT16 *p, UINT32 src) {
@@ -237,7 +250,11 @@ I286_8X _sbb_r16_i(UINT16 *p, UINT32 src) {
 
 I286_8X _and_r16_i(UINT16 *p, UINT32 src) {
 
-	ANDWORD((*p), src);
+	UINT32	dst;
+
+	dst = *p;
+	ANDWORD(dst, src);
+	*p = (UINT16)dst;
 }
 
 I286_8X _sub_r16_i(UINT16 *p, UINT32 src) {
@@ -246,13 +263,17 @@ I286_8X _sub_r16_i(UINT16 *p, UINT32 src) {
 	UINT32	res;
 
 	dst = *p;
-	WORD_SUB(res, dst, src);
+	SUBWORD(res, dst, src);
 	*p = (UINT16)res;
 }
 
 I286_8X _xor_r16_i(UINT16 *p, UINT32 src) {
 
-	WORD_XOR((*p), src);
+	UINT32	dst;
+
+	dst = *p;
+	XORWORD(dst, src);
+	*p = (UINT16)dst;
 }
 
 I286_8X _cmp_r16_i(UINT16 *p, UINT32 src) {
@@ -261,7 +282,7 @@ I286_8X _cmp_r16_i(UINT16 *p, UINT32 src) {
 	UINT32	res;
 
 	dst = *p;
-	WORD_SUB(res, dst, src);
+	SUBWORD(res, dst, src);
 }
 
 
@@ -274,7 +295,7 @@ I286_8X _add_ext16_i(UINT32 madr, UINT32 src) {
 
 	dst = i286_memoryread_w(madr);
 	ADDWORD(res, dst, src);
-	i286_memorywrite_w(madr, (UINT16)res);
+	i286_memorywrite_w(madr, (REG16)res);
 }
 
 I286_8X _or_ext16_i(UINT32 madr, UINT32 src) {
@@ -283,7 +304,7 @@ I286_8X _or_ext16_i(UINT32 madr, UINT32 src) {
 
 	dst = i286_memoryread_w(madr);
 	ORWORD(dst, src);
-	i286_memorywrite_w(madr, (UINT16)dst);
+	i286_memorywrite_w(madr, (REG16)dst);
 }
 
 I286_8X _adc_ext16_i(UINT32 madr, UINT32 src) {
@@ -293,7 +314,7 @@ I286_8X _adc_ext16_i(UINT32 madr, UINT32 src) {
 
 	dst = i286_memoryread_w(madr);
 	ADCWORD(res, dst, src);
-	i286_memorywrite_w(madr, (UINT16)res);
+	i286_memorywrite_w(madr, (REG16)res);
 }
 
 I286_8X _sbb_ext16_i(UINT32 madr, UINT32 src) {
@@ -303,7 +324,7 @@ I286_8X _sbb_ext16_i(UINT32 madr, UINT32 src) {
 
 	dst = i286_memoryread_w(madr);
 	SBBWORD(res, dst, src);
-	i286_memorywrite_w(madr, (UINT16)res);
+	i286_memorywrite_w(madr, (REG16)res);
 }
 
 I286_8X _and_ext16_i(UINT32 madr, UINT32 src) {
@@ -312,7 +333,7 @@ I286_8X _and_ext16_i(UINT32 madr, UINT32 src) {
 
 	dst = i286_memoryread_w(madr);
 	ANDWORD(dst, src);
-	i286_memorywrite_w(madr, (UINT16)dst);
+	i286_memorywrite_w(madr, (REG16)dst);
 }
 
 I286_8X _sub_ext16_i(UINT32 madr, UINT32 src) {
@@ -321,8 +342,8 @@ I286_8X _sub_ext16_i(UINT32 madr, UINT32 src) {
 	UINT32	res;
 
 	dst = i286_memoryread_w(madr);
-	WORD_SUB(res, dst, src);
-	i286_memorywrite_w(madr, (UINT16)res);
+	SUBWORD(res, dst, src);
+	i286_memorywrite_w(madr, (REG16)res);
 }
 
 I286_8X _xor_ext16_i(UINT32 madr, UINT32 src) {
@@ -330,8 +351,8 @@ I286_8X _xor_ext16_i(UINT32 madr, UINT32 src) {
 	UINT32	dst;
 
 	dst = i286_memoryread_w(madr);
-	WORD_XOR(dst, src);
-	i286_memorywrite_w(madr, (UINT16)dst);
+	XORWORD(dst, src);
+	i286_memorywrite_w(madr, (REG16)dst);
 }
 
 I286_8X _cmp_ext16_i(UINT32 madr, UINT32 src) {
@@ -340,7 +361,7 @@ I286_8X _cmp_ext16_i(UINT32 madr, UINT32 src) {
 	UINT32	res;
 
 	dst = i286_memoryread_w(madr);
-	WORD_SUB(res, dst, src);
+	SUBWORD(res, dst, src);
 }
 
 

@@ -1,7 +1,10 @@
 
-#define	MIDI_GMONLY
+#if !defined(_WIN32_WCE) && !defined(SLZAURUS)
 #define	ENABLE_TREMOLO
 #define	ENABLE_VIRLATE
+#else
+#define	MIDI_GMONLY
+#endif
 
 struct _midimodule;
 typedef	struct _midimodule	_MIDIMOD;
@@ -67,7 +70,7 @@ struct _midictrl {
 	UINT		worksize;
 	int			level;
 	BYTE		status;
-	char		gain;
+	SINT8		gain;
 	BYTE		master;
 
 	MIDIMOD		module;
@@ -98,6 +101,8 @@ AEXTERN _MIDIMOD AEXPORT * midimod_create(UINT samprate);
 AEXTERN void AEXPORT midimod_destroy(MIDIMOD hdl);
 AEXTERN void AEXPORT midimod_loadprogram(MIDIMOD hdl, UINT num);
 AEXTERN void AEXPORT midimod_loadrhythm(MIDIMOD hdl, UINT num);
+AEXTERN void AEXPORT midimod_loadgm(MIDIMOD hdl);
+AEXTERN void AEXPORT midimod_loadall(MIDIMOD hdl);
 
 AEXTERN _MIDIHDL AEXPORT * midiout_create(MIDIMOD module, UINT worksize);
 AEXTERN void AEXPORT midiout_destroy(MIDIHDL hdl);

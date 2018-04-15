@@ -1,16 +1,24 @@
 #include	"compiler.h"
 #include	"gx.h"
 
+#if !defined(GX_DLL)
 
-#ifndef SIZE_QVGA
+#if defined(SIZE_QVGA)
+#if defined(SUPPORT_SOFTKBD)
 enum {
-	WINDOW_WIDTH	= 640,
-	WINDOW_HEIGHT	= 480
+	WINDOW_WIDTH	= 320,
+	WINDOW_HEIGHT	= 240
 };
 #else
 enum {
 	WINDOW_WIDTH	= 320,
-	WINDOW_HEIGHT	= 240
+	WINDOW_HEIGHT	= 200
+};
+#endif
+#else
+enum {
+	WINDOW_WIDTH	= 640,
+	WINDOW_HEIGHT	= 400
 };
 #endif
 
@@ -305,29 +313,37 @@ int GXSuspend(void) {
 
 	HWND	hTaskBar;
 
-	if (!(GXFlag & GX_WINDOW)) {
-		hTaskBar = FindWindow(taskbarclass, NULL);
-		if (hTaskBar) {
-			ShowWindow(hTaskBar, SW_SHOW);
+	if (gxhwnd) {
+		if (!(GXFlag & GX_WINDOW)) {
+			hTaskBar = FindWindow(taskbarclass, NULL);
+			if (hTaskBar) {
+				ShowWindow(hTaskBar, SW_SHOW);
+			}
 		}
+		return(1);
 	}
-	return(1);
+	else {
+		return(0);
+	}
 }
 
 int GXResume(void) {
 
 	HWND	hTaskBar;
 
-	if (!(GXFlag & GX_WINDOW)) {
-		hTaskBar = FindWindow(taskbarclass, NULL);
-		if (hTaskBar) {
-			ShowWindow(hTaskBar, SW_HIDE);
-		}
-		if (gxhwnd) {
+	if (gxhwnd) {
+		if (!(GXFlag & GX_WINDOW)) {
+			hTaskBar = FindWindow(taskbarclass, NULL);
+			if (hTaskBar) {
+				ShowWindow(hTaskBar, SW_HIDE);
+			}
 			MoveWindow(gxhwnd, 0, 0, GXWidth, GXHeight, TRUE);
 		}
+		return(1);
 	}
-	return(1);
+	else {
+		return(0);
+	}
 }
 
 int GXOpenInput(void) {
@@ -344,4 +360,6 @@ GXKeyList GXGetDefaultKeys(int iOptions) {
 
 	return(gxkl);
 }
+
+#endif
 

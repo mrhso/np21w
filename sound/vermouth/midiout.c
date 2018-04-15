@@ -2,8 +2,8 @@
 #include	"midiout.h"
 
 
-#define	MIDIOUT_VERSION		0x102
-#define	MIDIOUT_VERSTRING	"VERMOUTH 1.02"
+#define	MIDIOUT_VERSION		0x104
+#define	MIDIOUT_VERSTRING	"VERMOUTH 1.04"
 
 
 static const char vermouthver[] = MIDIOUT_VERSTRING;
@@ -888,7 +888,7 @@ void midiout_setgain(MIDIHDL hdl, int gain) {
 		else if (gain > 8) {
 			gain = 8;
 		}
-		hdl->gain = (char)gain;
+		hdl->gain = (SINT8)gain;
 		allvolupdate(hdl);
 	}
 }

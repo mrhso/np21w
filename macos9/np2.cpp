@@ -34,7 +34,7 @@
 #define	USE_RESUME
 
 
-		NP2OSCFG	np2oscfg = {100, 100, 0, 2, 0, 0,  0, 0, 0};
+		NP2OSCFG	np2oscfg = {100, 100, 0, 2, 0, 0,  0, 0, 0, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
@@ -123,7 +123,7 @@ static void MenuBarInit(void) {
 	SetItemCmd(hmenu, LoWord(IDM_FDD2EJECT), 'E');
 	SetMenuItemModifiers(hmenu, LoWord(IDM_FDD2EJECT), kMenuOptionModifier);
 	hmenu = GetMenuHandle(IDM_SASI2);
-	SetItemCmd(hmenu, LoWord(IDM_FDD2OPEN), 'O');
+	SetItemCmd(hmenu, LoWord(IDM_SASI2OPEN), 'O');
 	SetMenuItemModifiers(hmenu, LoWord(IDM_SASI2OPEN), kMenuOptionModifier);
 #else
 	EnableItem(GetMenuHandle(IDM_DEVICE), LoWord(IDM_MOUSE));
@@ -277,54 +277,79 @@ static void HandleMenuChoice(long wParam) {
 		case IDM_KEY:
 			menu_setkey(0);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_JOY1:
 			menu_setkey(1);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_JOY2:
 			menu_setkey(2);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_MOUSEKEY:
 			menu_setkey(3);
 			keystat_resetjoykey();
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XSHIFT:
 			menu_setxshift(np2cfg.XSHIFT ^ 1);
 			keystat_forcerelease(0x70);
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XCTRL:
 			menu_setxshift(np2cfg.XSHIFT ^ 2);
 			keystat_forcerelease(0x74);
+			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_XGRPH:
 			menu_setxshift(np2cfg.XSHIFT ^ 4);
 			keystat_forcerelease(0x73);
+			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_F11KANA:
+			menu_setf11key(0);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F11STOP:
+			menu_setf11key(1);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F11NFER:
+			menu_setf11key(3);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12MOUSE:
-			menu_setf12copy(0);
-			keystat_resetcopyhelp();
-			update |= SYS_UPDATECFG;
+			menu_setf12key(0);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12COPY:
-			menu_setf12copy(1);
-			keystat_resetcopyhelp();
-			update |= SYS_UPDATECFG;
+			menu_setf12key(1);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
-		case IDM_F12STOP:
-			menu_setf12copy(2);
-			keystat_resetcopyhelp();
-			update |= SYS_UPDATECFG;
+		case IDM_F12XFER:
+			menu_setf12key(3);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_BEEPOFF:
@@ -547,20 +572,29 @@ static void eventproc(EventRecord *event) {
 				break;
 			}
 #if !TARGET_API_MAC_CARBON
-			if ((keycode == 0x6f) && (np2oscfg.F12COPY == 0)) {
+			if ((keycode == 0x6f) && (np2oscfg.F12KEY == 0)) {
 				HandleMenuChoice(IDM_MOUSE);
 				break;
 			}
 #endif
 			if (event->modifiers & cmdKey) {
+#if !TARGET_API_MAC_CARBON
+				if (mackbd_keydown(keycode, TRUE)) {
+					break;
+				}
+#endif
 				soundmng_stop();
 				mousemng_disable(MOUSEPROC_MACUI);
+#if TARGET_API_MAC_CARBON
+				HandleMenuChoice(MenuEvent(event));
+#else
 				HandleMenuChoice(MenuKey(event->message & charCodeMask));
+#endif
 				mousemng_enable(MOUSEPROC_MACUI);
 				soundmng_play();
 			}
 			else {
-				mackbd_keydown(keycode);
+				mackbd_keydown(keycode, FALSE);
 			}
 			break;
 
@@ -684,7 +718,8 @@ int main(int argc, char *argv[]) {
 	menu_setframe(np2oscfg.DRAW_SKIP);
 	menu_setkey(0);
 	menu_setxshift(0);
-	menu_setf12copy(np2oscfg.F12COPY);
+	menu_setf11key(np2oscfg.F11KEY);
+	menu_setf12key(np2oscfg.F12KEY);
 	menu_setbeepvol(np2cfg.BEEP_VOL);
 	menu_setsound(np2cfg.SOUND_SW);
 	menu_setmotorflg(np2cfg.MOTOR);

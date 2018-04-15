@@ -5,7 +5,8 @@
 #include	"soundmng.h"
 #include	"sound.h"
 #if defined(VERMOUTH_LIB)
-#include	"vermouth.h"
+#include	"commng.h"
+#include	"cmver.h"
 #endif
 
 
@@ -29,11 +30,7 @@ static	DWORD		lasttick = 0;
 static	DWORD		retry = 0;
 static	UINT		currate = 22050;
 static	UINT		curms = 500;
-static	BYTE		playing;
-
-#if defined(VERMOUTH_LIB)
-		MIDIMOD		vermouth_module = NULL;
-#endif
+static	UINT		mute;
 
 static const DWORD capsfmt[] = {
 			WAVE_FORMAT_1S16, WAVE_FORMAT_2S16, WAVE_FORMAT_4S16};
@@ -56,7 +53,7 @@ const SINT32	*pcm;
 		if (whd->lpData) {
 			dst = (short *)whd->lpData;
 			pcm = NULL;
-			if (playing) {
+			if (!mute) {
 				pcm = sound_pcmlock();
 			}
 			if (pcm) {
@@ -84,7 +81,7 @@ const SINT32	*pcm;
 		if (((WAVEHDR *)dwParam1)->lpData) {
 			dst = (short *)((WAVEHDR *)dwParam1)->lpData;
 			pcm = NULL;
-			if (playing) {
+			if (!mute) {
 				pcm = sound_pcmlock();
 			}
 			if (pcm) {
@@ -114,6 +111,9 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	if (waveopened) {
 		return(0);
 	}
+
+	mute = 1 << SNDPROC_NP2;
+
 	switch(rate) {
 		case 11025:
 			type = 0;
@@ -180,44 +180,56 @@ UINT soundmng_create(UINT rate, UINT ms) {
 				waveOutWrite(w_ctrl.hwave, w_ctrl.wh + i, sizeof(WAVEHDR));
 			}
 #if defined(VERMOUTH_LIB)
-			vermouth_module = midimod_create(rate);
-			for (num=0; num<128; num++) {
-				midimod_loadprogram(vermouth_module, num);
-				midimod_loadrhythm(vermouth_module, num);
-			}
+			cmvermouth_load(rate);
 #endif
 			currate = rate;
 			curms = ms;
 			waveopened = TRUE;
+			TRACEOUT(("soundmng success."));
 			return(w_ctrl.samples);
 		}
 		_MFREE(w_ctrl.buffer);
+		TRACEOUT(("soundmng failure."));
 	}
 	return(0);
 }
 
 void soundmng_destroy(void) {
 
-	int		i;
-	int		retry = 10;
+#if defined(_WIN32_WCE)
+	OSVERSIONINFO	osvi;
+#endif
+	BOOL			hpc4;
+	int				i;
+	int				retry = 10;
 
 	if (waveopened) {
-#if (defined(WIN32_PLATFORM_PSPC)) || (!defined(ARM))
-		for (i=0; i<2; i++) {
-			waveOutUnprepareHeader(w_ctrl.hwave, w_ctrl.wh + i,
-															sizeof(WAVEHDR));
-			w_ctrl.wh[i].lpData = NULL;
-		}
-		waveOutPause(w_ctrl.hwave);
-		waveOutReset(w_ctrl.hwave);
+#if defined(_WIN32_WCE)
+		ZeroMemory(&osvi, sizeof(osvi));
+		osvi.dwOSVersionInfoSize = sizeof(osvi);
+		GetVersionEx(&osvi);
+		hpc4 = (osvi.dwMajorVersion >= 4);
 #else
-		waveOutReset(w_ctrl.hwave);
-		for (i=0; i<2; i++) {
-			waveOutUnprepareHeader(w_ctrl.hwave, w_ctrl.wh + i,
-															sizeof(WAVEHDR));
-			w_ctrl.wh[i].lpData = NULL;
-		}
+		hpc4 = FALSE;
 #endif
+		if (!hpc4) {
+			for (i=0; i<2; i++) {
+				waveOutUnprepareHeader(w_ctrl.hwave, w_ctrl.wh + i,
+															sizeof(WAVEHDR));
+				w_ctrl.wh[i].lpData = NULL;
+			}
+			waveOutPause(w_ctrl.hwave);
+			waveOutReset(w_ctrl.hwave);
+		}
+		else {
+		//	誰かシグマリ３でのマトモな開放方法教えてくだちい…
+		//	waveOutReset(w_ctrl.hwave);
+			for (i=0; i<2; i++) {
+				waveOutUnprepareHeader(w_ctrl.hwave, w_ctrl.wh + i,
+															sizeof(WAVEHDR));
+				w_ctrl.wh[i].lpData = NULL;
+			}
+		}
 		do {
 			if (waveOutClose(w_ctrl.hwave) == MMSYSERR_NOERROR) {
 				_HANDLE_REM(w_ctrl.hwave);
@@ -227,25 +239,25 @@ void soundmng_destroy(void) {
 		} while(--retry);
 		_MFREE(w_ctrl.buffer);
 #if defined(VERMOUTH_LIB)
-		midimod_destroy(vermouth_module);
-		vermouth_module = NULL;
+//		cmvermouth_unload();			// 終了時に unload
 #endif
 		waveopened = FALSE;
 	}
 }
 
-void soundmng_play(void) {
-
-	playing = TRUE;
-}
-
-void soundmng_stop(void) {
-
-	playing = FALSE;
-}
-
 
 // ----
+
+// WinCE版 … vermouthのロードに時間掛かるので
+void soundmng_initialize(void) {
+}
+
+void soundmng_deinitialize(void) {
+
+#if defined(VERMOUTH_LIB)
+	cmvermouth_unload();
+#endif
+}
 
 void soundmng_awake(void) {
 
@@ -263,5 +275,15 @@ void soundmng_awake(void) {
 			}
 		}
 	}
+}
+
+void soundmng_enable(UINT proc) {
+
+	mute &= ~(1 << proc);
+}
+
+void soundmng_disable(UINT proc) {
+
+	mute |= 1 << proc;
 }
 

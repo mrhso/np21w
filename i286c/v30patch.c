@@ -97,13 +97,13 @@ I286FN v30segprefix_es(void) {				// 26: es:
 
 	SS_FIX = ES_BASE;
 	DS_FIX = ES_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -114,13 +114,13 @@ I286FN v30segprefix_cs(void) {				// 2e: cs:
 
 	SS_FIX = CS_BASE;
 	DS_FIX = CS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -131,13 +131,13 @@ I286FN v30segprefix_ss(void) {				// 36: ss:
 
 	SS_FIX = SS_BASE;
 	DS_FIX = SS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -148,13 +148,13 @@ I286FN v30segprefix_ds(void) {				// 3e: ds:
 
 	SS_FIX = DS_BASE;
 	DS_FIX = DS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -174,11 +174,11 @@ I286FN v30mov_seg_ea(void) {				// 8E:	mov		segrem, EA
 	GET_PCBYTE(op);
 	if (op >= 0xc0) {
 		I286_WORKCLOCK(2);
-		tmp = *(reg16_b20[op]);
+		tmp = *(REG16_B20(op));
 	}
 	else {
 		I286_WORKCLOCK(5);
-		tmp = i286_memoryread_w(c_calc_ea_dst[op]());
+		tmp = i286_memoryread_w(CALC_EA(op));
 	}
 	switch(op & 0x18) {
 		case 0x00:			// es
@@ -232,11 +232,11 @@ I286FN v30shift_ea8_data8(void) {			// C0:	shift	EA8, DATA8
 	GET_PCBYTE(op)
 	if (op >= 0xc0) {
 		I286_WORKCLOCK(5);
-		out = reg8_b20[op];
+		out = REG8_B20(op);
 	}
 	else {
 		I286_WORKCLOCK(8);
-		madr = c_calc_ea_dst[op]();
+		madr = CALC_EA(op);
 		if (madr >= I286_MEMWRITEMAX) {
 			GET_PCBYTE(cl)
 			if ((op & 0x30) == 0x10) {		// rotate with carry
@@ -272,11 +272,11 @@ I286FN v30shift_ea16_data8(void) {			// C1:	shift	EA16, DATA8
 	GET_PCBYTE(op)
 	if (op >= 0xc0) {
 		I286_WORKCLOCK(5);
-		out = reg16_b20[op];
+		out = REG16_B20(op);
 	}
 	else {
 		I286_WORKCLOCK(8);
-		madr = c_calc_ea_dst[op]();
+		madr = CALC_EA(op);
 		if (INHIBIT_WORDP(madr)) {
 			GET_PCBYTE(cl);
 			if ((op & 0x30) == 0x10) {		// rotate with carry
@@ -312,11 +312,11 @@ I286FN v30shift_ea8_cl(void) {				// D2:	shift EA8, cl
 	GET_PCBYTE(op)
 	if (op >= 0xc0) {
 		I286_WORKCLOCK(5);
-		out = reg8_b20[op];
+		out = REG8_B20(op);
 	}
 	else {
 		I286_WORKCLOCK(8);
-		madr = c_calc_ea_dst[op]();
+		madr = CALC_EA(op);
 		if (madr >= I286_MEMWRITEMAX) {
 			cl = I286_CL;
 			I286_WORKCLOCK(cl);
@@ -352,11 +352,11 @@ I286FN v30shift_ea16_cl(void) {				// D3:	shift EA16, cl
 	GET_PCBYTE(op)
 	if (op >= 0xc0) {
 		I286_WORKCLOCK(5);
-		out = reg16_b20[op];
+		out = REG16_B20(op);
 	}
 	else {
 		I286_WORKCLOCK(8);
-		madr = c_calc_ea_dst[op]();
+		madr = CALC_EA(op);
 		if (INHIBIT_WORDP(madr)) {
 			cl = I286_CL;
 			I286_WORKCLOCK(cl);
@@ -402,23 +402,23 @@ I286FN v30_aad(void) {						// D5:	AAD
 	I286_AL += (BYTE)(I286_AH * 10);
 	I286_AH = 0;
 	I286_FLAGL &= ~(S_FLAG | Z_FLAG | P_FLAG);
-	I286_FLAGL |= szpcflag[I286_AL];
+	I286_FLAGL |= BYTESZPF(I286_AL);
 }
 
 I286FN v30_xlat(void) {						// D6:	xlat
 
 	I286_WORKCLOCK(5);
-	I286_AL = i286_memoryread(((I286_AL + I286_BX) & 0xffff) + DS_FIX);
+	I286_AL = i286_memoryread(LOW16(I286_AL + I286_BX) + DS_FIX);
 }
 
 I286FN v30_repne(void) {					// F2:	repne
 
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repne[op]();
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -427,12 +427,12 @@ I286FN v30_repne(void) {					// F2:	repne
 
 I286FN v30_repe(void) {						// F3:	repe
 
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repe[op]();
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -472,13 +472,13 @@ I286FN v30repe_segprefix_es(void) {
 
 	DS_FIX = ES_BASE;
 	SS_FIX = ES_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repe[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -489,13 +489,13 @@ I286FN v30repe_segprefix_cs(void) {
 
 	DS_FIX = CS_BASE;
 	SS_FIX = CS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repe[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -506,13 +506,13 @@ I286FN v30repe_segprefix_ss(void) {
 
 	DS_FIX = SS_BASE;
 	SS_FIX = SS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repe[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -523,13 +523,13 @@ I286FN v30repe_segprefix_ds(void) {
 
 	DS_FIX = DS_BASE;
 	SS_FIX = DS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repe[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -569,13 +569,13 @@ I286FN v30repne_segprefix_es(void) {
 
 	DS_FIX = ES_BASE;
 	SS_FIX = ES_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repne[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -586,13 +586,13 @@ I286FN v30repne_segprefix_cs(void) {
 
 	DS_FIX = CS_BASE;
 	SS_FIX = CS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repne[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -603,13 +603,13 @@ I286FN v30repne_segprefix_ss(void) {
 
 	DS_FIX = SS_BASE;
 	SS_FIX = SS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repne[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);
@@ -620,13 +620,13 @@ I286FN v30repne_segprefix_ds(void) {
 
 	DS_FIX = DS_BASE;
 	SS_FIX = DS_BASE;
-	i286reg.prefix++;
-	if (i286reg.prefix < MAX_PREFIX) {
+	i286core.s.prefix++;
+	if (i286core.s.prefix < MAX_PREFIX) {
 		UINT op;
 		GET_PCBYTE(op);
 		v30op_repne[op]();
 		REMOVE_PREFIX
-		i286reg.prefix = 0;
+		i286core.s.prefix = 0;
 	}
 	else {
 		INT_NUM(6, I286_IP);

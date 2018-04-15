@@ -230,39 +230,39 @@ const INITBL	*pterm;
 				break;
 
 			case INITYPE_SINT8:
-				SPRINTF(work, "%d", *((char *)p->value));
+				SPRINTF(work, str_d, *((char *)p->value));
 				break;
 
 			case INITYPE_SINT16:
-				SPRINTF(work, "%d", *((SINT16 *)p->value));
+				SPRINTF(work, str_d, *((SINT16 *)p->value));
 				break;
 
 			case INITYPE_SINT32:
-				SPRINTF(work, "%d", *((SINT32 *)p->value));
+				SPRINTF(work, str_d, *((SINT32 *)p->value));
 				break;
 
 			case INITYPE_UINT8:
-				SPRINTF(work, "%u", *((BYTE *)p->value));
+				SPRINTF(work, str_u, *((BYTE *)p->value));
 				break;
 
 			case INITYPE_UINT16:
-				SPRINTF(work, "%u", *((UINT16 *)p->value));
+				SPRINTF(work, str_u, *((UINT16 *)p->value));
 				break;
 
 			case INITYPE_UINT32:
-				SPRINTF(work, "%u", *((UINT32 *)p->value));
+				SPRINTF(work, str_u, *((UINT32 *)p->value));
 				break;
 
 			case INITYPE_HEX8:
-				SPRINTF(work, "%x", *((BYTE *)p->value));
+				SPRINTF(work, str_x, *((BYTE *)p->value));
 				break;
 
 			case INITYPE_HEX16:
-				SPRINTF(work, "%x", *((UINT16 *)p->value));
+				SPRINTF(work, str_x, *((UINT16 *)p->value));
 				break;
 
 			case INITYPE_HEX32:
-				SPRINTF(work, "%x", *((UINT32 *)p->value));
+				SPRINTF(work, str_x, *((UINT32 *)p->value));
 				break;
 
 			default:
@@ -287,9 +287,10 @@ static const char ini_title[] = "NekoProjectII";
 static const char inifile[] = "np2.cfg";
 
 static const INITBL iniitem[] = {
+	{"pc_model", INITYPE_STR,		&np2cfg.model,
+													sizeof(np2cfg.model)},
 	{"clk_base", INITYPE_SINT32,	&np2cfg.baseclock,		0},
 	{"clk_mult", INITYPE_SINT32,	&np2cfg.multiple,		0},
-	{"pc_model", INITYPE_UINT8,		&np2cfg.model,			0},
 
 	{"DIPswtch", INITYPE_BYTEARG,	np2cfg.dipsw,			3},
 	{"MEMswtch", INITYPE_BYTEARG,	np2cfg.memsw,			8},
@@ -298,6 +299,8 @@ static const INITBL iniitem[] = {
 
 	{"HDD1FILE", INITYPE_STR,		np2cfg.hddfile[0],		MAX_PATH},
 	{"HDD2FILE", INITYPE_STR,		np2cfg.hddfile[1],		MAX_PATH},
+	{"fontfile", INITYPE_STR,		np2cfg.fontfile,		MAX_PATH},
+	{"biospath", INITYPE_STR,		np2cfg.biospath,		MAX_PATH},
 
 	{"SampleHz", INITYPE_UINT16,	&np2cfg.samplingrate,	0},
 	{"Latencys", INITYPE_UINT16,	&np2cfg.delayms,		0},
@@ -332,8 +335,6 @@ static const INITBL iniitem[] = {
 	{"DispSync", INITYPE_BOOL,		&np2cfg.DISPSYNC,		0},
 	{"Real_Pal", INITYPE_BOOL,		&np2cfg.RASTER,			0},
 	{"RPal_tim", INITYPE_UINT8,		&np2cfg.realpal,		0},
-	{"s_NOWAIT", INITYPE_BOOL,		&np2oscfg.NOWAIT,		0},
-	{"SkpFrame", INITYPE_UINT8,		&np2oscfg.DRAW_SKIP,	0},
 	{"uPD72020", INITYPE_BOOL,		&np2cfg.uPD72020,		0},
 	{"GRCG_EGC", INITYPE_UINT8,		&np2cfg.grcg,			0},
 	{"color16b", INITYPE_BOOL,		&np2cfg.color16,		0},
@@ -346,7 +347,24 @@ static const INITBL iniitem[] = {
 	{"pc9861_s", INITYPE_BYTEARG,	np2cfg.pc9861sw,		3},
 	{"pc9861_j", INITYPE_BYTEARG,	np2cfg.pc9861jmp,		6},
 	{"calendar", INITYPE_BOOL,		&np2cfg.calendar,		0},
-	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0}};
+	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0},
+
+	// OSàÀë∂Å`
+	{"s_NOWAIT", INITYPE_BOOL,		&np2oscfg.NOWAIT,		0},
+	{"SkpFrame", INITYPE_UINT8,		&np2oscfg.DRAW_SKIP,	0},
+	{"F12_bind", INITYPE_UINT8,		&np2oscfg.F12KEY,		0},
+	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},
+
+#if !defined(GX_DLL)
+	{"WindposX", INITYPE_SINT32,	&np2oscfg.winx,			0},
+	{"WindposY", INITYPE_SINT32,	&np2oscfg.winy,			0},
+#endif
+#if defined(WIN32_PLATFORM_PSPC)
+	{"pbindcur", INITYPE_UINT8,		&np2oscfg.bindcur,		0},
+	{"pbindbtn", INITYPE_UINT8,		&np2oscfg.bindbtn,		0},
+#endif
+};
+
 
 #define	INIITEMS	(sizeof(iniitem) / sizeof(INITBL))
 

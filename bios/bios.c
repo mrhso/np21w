@@ -97,7 +97,7 @@ static void bios_reinitbyswitch(void) {
 	}
 	gdcs.textdisp |= GDCSCRN_EXT;
 
-	if ((np2cfg.model >= PCMODEL_VX) && (usesound & 0x7e)) {
+	if ((pc.model >= PCMODEL_VX) && (usesound & 0x7e)) {
 		iocore_out8(0x188, 0x27);
 		iocore_out8(0x18a, 0x3f);
 	}
@@ -135,6 +135,7 @@ static const UINT16 biosoffset[0x20] = {
 
 void bios_init(void) {
 
+	char	path[MAX_PATH];
 	FILEH	fh;
 	UINT	i;
 	UINT	pos;
@@ -143,7 +144,8 @@ void bios_init(void) {
 
 	// まぁDISK BASIC動くようになるからいいんじゃないですか？
 	// BASIC BIOSは 8086コードのように見えるけど…
-	fh = file_open_c(file_biosrom);
+	getbiospath(path, file_biosrom, sizeof(path));
+	fh = file_open_rb(path);
 	if (fh != FILEH_INVALID) {
 		if (file_read(fh, mem + 0x0e8000, 0x18000) == 0x18000) {
 			biosrom = TRUE;
@@ -153,8 +155,6 @@ void bios_init(void) {
 	if (!biosrom) {
 		CopyMemory(mem + 0x0e8000, nosyscode, sizeof(nosyscode));
 	}
-
-	itf.bank = 0;
 
 	// BIOS hookのアドレス変更
 	for (i=0; i<0x20; i++) {
@@ -238,7 +238,8 @@ static void bios_boot(void) {
 		I286_AL = 0x10;
 		mem[0x004f8] = 0xee;		// out	dx, al
 		mem[0x004f9] = 0xea;		// call	far
-		SETBIOSMEM32(0x004fa, 0xffff0000);
+		SETBIOSMEM16(0x004fa, 0x0000);
+		SETBIOSMEM16(0x004fc, 0xffff);
 	}
 	else {
 		I286_SP = GETBIOSMEM16(0x00404);
@@ -251,7 +252,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 
 	UINT16	bootseg;
 
-	if ((itf.bank) && (adrs >= 0xf8000) && (adrs < 0x100000)) {
+	if ((i286core.s.itfbank) && (adrs >= 0xf8000) && (adrs < 0x100000)) {
 		I286_IP--;
 		I286_REMCLOCK = -1;
 		return(1);
