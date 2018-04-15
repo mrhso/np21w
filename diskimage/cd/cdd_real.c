@@ -310,7 +310,7 @@ sxsiope_err1:
 }
 
 //	----
-//	イメージファイル内全トラックセクタ長2048byte用
+//	セクタ長取得用（でもREAD CAPACITYコマンドに返事してくれない場合があるような･･･）
 UINT32 readcapacity_SPTI(FILEH fh) {
 
 	CDINFO	cdinfo;

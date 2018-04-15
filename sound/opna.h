@@ -60,6 +60,10 @@ struct tagOpna
 	_PSGGEN psg;
 	_RHYTHM rhythm;
 	_ADPCM adpcm;
+#if defined(SUPPORT_FMGEN)
+	UINT8 usefmgen;
+	void* fmgen;
+#endif	/* SUPPORT_FMGEN */
 };
 
 typedef struct tagOpna OPNA;
@@ -88,6 +92,13 @@ REG8 opna_read3438ExtRegister(POPNA opna, UINT nAddress);
 
 int opna_sfsave(PCOPNA opna, STFLAGH sfh, const SFENTRY *tbl);
 int opna_sfload(POPNA opna, STFLAGH sfh, const SFENTRY *tbl);
+
+#if defined(SUPPORT_FMGEN)
+void opna_fmgen_setallvolumeFM_linear(int lvol);
+void opna_fmgen_setallvolumePSG_linear(int lvol);
+void opna_fmgen_setallvolumeADPCM_linear(int lvol);
+void opna_fmgen_setallvolumeRhythmTotal_linear(int lvol);
+#endif	/* SUPPORT_FMGEN */
 
 #ifdef __cplusplus
 }

@@ -83,6 +83,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 64, 64, 64, 64, 64,
 				1, 0x82, 0,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
+#if defined(SUPPORT_FMGEN)
+				0,
+#endif	/* SUPPORT_FMGEN */
 				3, 1, 80, 0, 0, 1,
 
 				0, {OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
@@ -307,6 +310,7 @@ void pccore_init(void) {
 	fddfile_initialize();
 
 #if !defined(DISABLE_SOUND)
+
 	fmboard_construct();
 	sound_init();
 #endif
