@@ -1116,6 +1116,13 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.SOUND_SW = 0x40;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
+			
+#if defined(SUPPORT_SOUND_SB16)
+		case IDM_SB16:
+			np2cfg.SOUND_SW = SOUNDID_SB16;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
+#endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
 		case IDM_PX1:

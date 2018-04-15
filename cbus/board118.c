@@ -20,8 +20,6 @@ static int opna_idx = 0;
 /* for OPL */
 
 #ifdef USE_MAME
-#ifdef SUPPORT_SOUND_SB16
-#include "boardsb16.h"
 static void *opl3;
 static int samplerate;
 static double oplfm_volume;
@@ -86,7 +84,6 @@ static REG8 IOINPCALL sb16_i28d2(UINT port) {
 	(void)port;
 	return YMF262Read(opl3, 0);
 }
-#endif
 #endif
 
 static void IOOUTCALL ymf_o188(UINT port, REG8 dat)
@@ -452,7 +449,7 @@ void board118_bind(void)
 	}else{
 		opna_bind(&g_opna[opna_idx]);
 		cbuscore_attachsndex(cs4231.port[4],ymf_o, ymf_i);
-#ifdef SUPPORT_SOUND_SB16
+		
 #ifdef USE_MAME
 		iocore_attachout(cs4231.port[9], sb16_o20d2);
 		iocore_attachinp(cs4231.port[9], sb16_i20d2);
@@ -460,37 +457,11 @@ void board118_bind(void)
 		iocore_attachout(cs4231.port[9]+2, sb16_o22d2);
 		iocore_attachout(cs4231.port[9]+3, sb16_o23d2);
 
-		//偽SB-16 mode
-		iocore_attachout(0x20d2, sb16_o20d2);//sb16 opl
-		iocore_attachinp(0x20d2, sb16_i20d2);//sb16 opl
-		iocore_attachout(0x21d2, sb16_o21d2);//sb16 opl
-		iocore_attachout(0x22d2, sb16_o22d2);//sb16 opl3
-		iocore_attachout(0x23d2, sb16_o23d2);//sb16 opl3
-		iocore_attachout(0x28d2, sb16_o28d2);//sb16 opl?
-		iocore_attachinp(0x28d2, sb16_i28d2);//sb16 opl
-		iocore_attachout(0x29d2, sb16_o29d2);//sb16 opl?
-
-		iocore_attachinp(0x81d2, sb98_i81d2);// sb16 midi port 以下３つはMSDRV4を騙すために必要
-		iocore_attachinp(0x2ad2, sb98_i2ad2);// DSP Read Data Port
-		iocore_attachinp(0x2ed2, sb98_i2ed2);// DSP Read Buffer Status (Bit 7)
 		if (!opl3) {
 			opl3 = YMF262Init(14400000, np2cfg.samplingrate);
 			samplerate = np2cfg.samplingrate;
 		}
 		sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm2);
-#else
-		iocore_attachout(0x20d2, ym_o1488);//sb16 opl
-		iocore_attachinp(0x20d2, ym_i1488);//sb16 opl
-		iocore_attachout(0x21d2, ym_o1489);//sb16 opl
-		iocore_attachout(0x22d2, ym_o148a);//sb16 opl3
-		iocore_attachout(0x23d2, ym_o148b);//sb16 opl3
-		iocore_attachout(0x28d2, ym_o1488);//sb16 opl?
-		iocore_attachinp(0x28d2, ym_i1488);//sb16 opl
-		iocore_attachout(0x29d2, ym_o1489);//sb16 opl?
-		iocore_attachinp(0x81d2, csctrl_i486);// sb16 midi port
-		iocore_attachinp(0x2ad2, sb98_i2ad2);// DSP Read Data Port
-		iocore_attachinp(0x2ed2, sb98_i2ed2);// DSP Read Buffer Status (Bit 7)
-#endif
 #else
 		iocore_attachout(cs4231.port[9], ym_o1488);
 		iocore_attachinp(cs4231.port[9], ym_i1488);
@@ -502,9 +473,9 @@ void board118_bind(void)
 		iocore_attachout(cs4231.port[1], ymf_oa460);
 		iocore_attachinp(cs4231.port[1], ymf_ia460);
 
-		iocore_attachout(cs4231.port[15],srnf_oa460);//SRN-Fは必要なときだけ使う
-		iocore_attachinp(cs4231.port[15],srnf_ia460);
-		srnf = 0x81;
+		//iocore_attachout(cs4231.port[15],srnf_oa460);//SRN-Fは必要なときだけ使う
+		//iocore_attachinp(cs4231.port[15],srnf_ia460);
+		//srnf = 0x81;
 
 		iocore_attachout(cs4231.port[14],csctrl_o148e);
 		iocore_attachinp(cs4231.port[14],csctrl_i148e);
