@@ -433,4 +433,5 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_MSRAPID, MF_BYCOMMAND | MFCHECK(np2cfg.MOUSERAPID));
 	
 	CheckMenuItem(hMenu, IDM_ITFWORK, MF_BYCOMMAND | MFCHECK(np2cfg.ITF_WORK));
+	CheckMenuItem(hMenu, IDM_TIMERFIX, MF_BYCOMMAND | MFCHECK(np2cfg.timerfix));
 }

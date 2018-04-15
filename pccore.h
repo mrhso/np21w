@@ -93,7 +93,7 @@ struct tagNP2Config
 	UINT8	davolume;
 	UINT8	modelnum;
 
-	UINT8	timeradj;
+	UINT8	timerfix;
 	
 	// リセット時とかあんまり参照されない奴
 	OEMCHAR	model[8];

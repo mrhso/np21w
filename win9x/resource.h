@@ -606,6 +606,7 @@
 #define IDM_ABOUT                       40713
 #define IDM_ITFWORK                     40714
 #define IDM_TXTSAVE                     40715
+#define IDM_TIMERFIX                    40716
 #define IDM_ALTENTER                    40721
 #define IDM_ALTF4                       40722
 #define IDM_SYSKHOOK                    40729

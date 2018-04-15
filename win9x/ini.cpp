@@ -583,7 +583,7 @@ static const PFTBL s_IniItems[] =
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
 	PFMAX("MODELNUM", PFTYPE_HEX8,		&np2cfg.modelnum,		255),
 	
-	PFVAL("TIMERADJ", PFTYPE_BOOL,		&np2cfg.timeradj),
+	PFVAL("TIMERFIX", PFTYPE_BOOL,		&np2cfg.timerfix),
 	
 	PFVAL("WINNTFIX", PFTYPE_BOOL,		&np2cfg.winntfix),
 

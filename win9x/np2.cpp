@@ -1270,6 +1270,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			update |= SYS_UPDATECFG;
 			break;
 			
+		case IDM_TIMERFIX:
+			np2cfg.timerfix= !np2cfg.timerfix;
+			update |= SYS_UPDATECFG;
+			break;
+			
 		case IDM_COPYPASTE_COPYTVRAM:
 			{
 				HGLOBAL hMem;
