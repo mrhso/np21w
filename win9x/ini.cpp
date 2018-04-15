@@ -497,6 +497,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("IDE_BIOS", PFTYPE_BOOL,		&np2cfg.idebios),  // ŽÀ‹@IDE BIOSŽg—p
 	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
 	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
+	PFVAL("IDEMWAIT", PFTYPE_UINT32,	&np2cfg.idemwait),
 #endif
 
 	PFVAL("SampleHz", PFTYPE_UINT32,	&np2cfg.samplingrate),
@@ -631,6 +632,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("windtype", PFTYPE_UINT8,		&np2oscfg.wintype),
 	PFVAL("toolwind", PFTYPE_BOOL,		&np2oscfg.toolwin),
 	PFVAL("keydispl", PFTYPE_BOOL,		&np2oscfg.keydisp),
+	PFVAL("skbdwind", PFTYPE_BOOL,		&np2oscfg.skbdwin),
 	PFVAL("jast_snd", PFTYPE_BOOL,		&np2oscfg.jastsnd),
 	PFVAL("useromeo", PFTYPE_BOOL,		&np2oscfg.useromeo),
 	PFVAL("thickfrm", PFTYPE_BOOL,		&np2oscfg.thickframe),

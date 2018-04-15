@@ -73,7 +73,8 @@ int dialog_readnpcfg(HWND hWnd)
 			}
 		}
 		if (b) {
-			loadNewINI(lpFilename);
+			unloadNP2INI();
+			loadNP2INI(lpFilename);
 			return 1;
 		}
 	}

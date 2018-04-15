@@ -56,7 +56,7 @@ static UINT8 rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 	int			nextupdate;
 	int			y;
 
-	TRACEOUT(("rasterdraw: maxy = %d", maxy));
+	//TRACEOUT(("rasterdraw: maxy = %d", maxy));
 	CopyMemory(pal, palevent.pal, sizeof(pal));
 	clk = maxy;
 	clk += 2;

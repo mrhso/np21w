@@ -1,9 +1,9 @@
 #include	"compiler.h"
 
-#if 0
+#if 1
 #undef	TRACEOUT
 #define	TRACEOUT(s)	(void)(s)
-#endif	/* 0 */
+#endif	/* 1 */
 
 // winでidentifyまでは取得に行くんだけどな…ってAnex86も同じか
 
@@ -18,6 +18,7 @@
 #include	"fdd/sxsi.h"
 #include	"sound.h"
 #include	"idebios.res"
+#include	"bios/biosmem.h"
 
 
 	IDEIO	ideio;
@@ -154,6 +155,7 @@ static void setintr(IDEDRV drv) {
 		TRACEOUT(("ideio: setintr()"));
 		ideio.bank[0] = ideio.bank[1] | 0x80;			// ????
 		pic_setirq(IDE_IRQ);
+		//mem[MEMB_DISK_INTH] |= 0x01; 
 	}
 }
 
@@ -165,18 +167,27 @@ static void setdintr(IDEDRV drv, UINT8 errno, UINT8 status, UINT32 delay) {
 		ideio.bank[0] = ideio.bank[1] | 0x80;           // ????
 		TRACEOUT(("ideio: reg setdintr()"));
 
-		// 指定した時間遅延
+		//// 指定した時間遅延（マイクロ秒）
+		//nevent_set(NEVENT_SASIIO, (pccore.realclock / 1000 / 1000) * delay, ideioint, NEVENT_ABSOLUTE);
+
+		// 指定した時間遅延（クロック数）
 		nevent_set(NEVENT_SASIIO, delay, ideioint, NEVENT_ABSOLUTE);
 	}
 }
 
 void ideioint(NEVENTITEM item) {
-
+	
+	IDEDRV	drv;
 	IDEDEV  dev;
 
 	//ドライブがあるか
 	dev = getidedev();
 	if (dev == NULL) {
+		return;
+	}
+
+	drv = getidedrv();
+	if (drv == NULL) {
 		return;
 	}
 
@@ -188,10 +199,11 @@ void ideioint(NEVENTITEM item) {
 		dev->drv[1].status &= ~IDESTAT_BSY;
 	}
 
-	//割り込み実行(割り込みはドライブ毎には指定できない仕様)
+	//割り込み実行//(割り込みはドライブ毎には指定できない仕様)
 	if(!(dev->drv[0].ctrl & IDECTRL_NIEN) || !(dev->drv[1].ctrl & IDECTRL_NIEN)){
 		TRACEOUT(("ideio: run setdintr()"));
 		pic_setirq(IDE_IRQ);
+		//mem[MEMB_DISK_INTH] |= 0x01; 
 	}
    (void)item;
 }
@@ -311,6 +323,7 @@ static void readsec(IDEDRV drv) {
 		if(ideio.rwait > 0){
 			drv->status |= IDESTAT_BSY;
 			setdintr(drv, 0, 0, ideio.rwait);
+			//mem[MEMB_DISK_INTH] &= ~0x01; 
 		}else{
 			setintr(drv);
 		}
@@ -323,6 +336,25 @@ read_err:
 	cmdabort(drv);
 }
 
+static void writeinit(IDEDRV drv) {
+	if (drv->device == IDETYPE_NONE) {
+		goto write_err;
+	}
+
+	drv->bufdir = IDEDIR_OUT;
+	drv->buftc = IDETC_TRANSFEREND;
+	drv->bufpos = 0;
+	drv->bufsize = 512;
+
+	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
+		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+		drv->error = 0;
+	}
+	return;
+
+write_err:
+	cmdabort(drv);
+}
 static void writesec(IDEDRV drv) {
 
 	if (drv->device == IDETYPE_NONE) {
@@ -337,13 +369,11 @@ static void writesec(IDEDRV drv) {
 	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
 		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 		drv->error = 0;
-		//setintr(drv);
-		if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
-			if(ideio.bios == IDETC_BIOS){
-				setdintr(drv, 0, 0, max(20000, ideio.wwait));
-			}else{
-				setdintr(drv, 0, 0, ideio.wwait);
-			}
+		setintr(drv);
+		if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
+			drv->status |= IDESTAT_BSY;
+			setdintr(drv, 0, 0, ideio.wwait);
+			//mem[MEMB_DISK_INTH] &= ~0x01; 
 		}else{
 			setintr(drv);
 		}
@@ -571,7 +601,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 			if (drv->device == IDETYPE_HDD) {
 				drv->mulcnt = 0;
 				drv->multhr = 1;
-				writesec(drv);
+				writeinit(drv);
 			}
 			else {
 				cmdabort(drv);
@@ -692,7 +722,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				drv->error = 0;
 				setintr(drv);
 			}
-			cmdabort(drv);
+			//cmdabort(drv);
 			break;
 			
 		case 0xe5:		// Check power mode
@@ -916,21 +946,8 @@ static REG8 IOINPCALL ideio_i64e(UINT port) {
 		if (!(drv->ctrl & IDECTRL_NIEN)) {
 			TRACEOUT(("ideio: resetirq"));
 			pic_resetirq(IDE_IRQ);
+			//mem[MEMB_DISK_INTH] &= ~0x01; 
 		}
-		//if (drv->device == IDETYPE_CDROM) { // test
-		//	static int tmp = 0;
-		//	REG8 ret = drv->status;
-		//	//drv->sc++;
-		//	//if(tmp){
-		//	//	tmp = 0;
-		//	//	drv->sc++;
-		//	//}else{
-		//	//	tmp = 1;
-		//	//	drv->sc--;
-		//	//}
-		//	ret = ret & ~IDESTAT_DSC;
-		//	return(ret);
-		//}
 		return(drv->status);
 	}
 	else {
@@ -948,20 +965,6 @@ static REG8 IOINPCALL ideio_i74c(UINT port) {
 	if (drv) {
 		TRACEOUT(("ideio alt status %.2x [%.4x:%.8x]",
 											drv->status, CPU_CS, CPU_EIP));
-		//if (drv->device == IDETYPE_CDROM) { // test
-		//	static int tmp = 0;
-		//	REG8 ret = drv->status;
-		//	//drv->sc++;
-		//	if(tmp){
-		//		tmp = 0;
-		//		drv->sc++;
-		//	}else{
-		//		tmp = 1;
-		//		drv->sc--;
-		//	}
-		//	//ret = ret & ~IDESTAT_DSC;
-		//	return(ret);
-		//}
 		return(drv->status);
 	}
 	else {
@@ -1032,7 +1035,7 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 		drv->bufpos += 2;
 		if (drv->bufpos >= drv->bufsize) {
 			drv->status &= ~IDESTAT_DRQ;
-			if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
+			if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
 				//割り込み前にポーリングされる問題の対策
 				dev->drv[0].status |= IDESTAT_BSY;
 				dev->drv[1].status |= IDESTAT_BSY;
@@ -1050,32 +1053,37 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						break;
 					}
 					drv->mulcnt++;
-					//incsec(drv);
+					incsec(drv);
 					drv->sc--;
-					//if (drv->sc) {
-					//	writesec(drv);
-					//}else{
-					//	setintr(drv);
-					//}
-					if (!drv->sc) {
-						//カウントが終わったらDRQを消す
-						drv->bufpos = 0;
-						drv->error = 0;
-						if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
-							if(ideio.bios == IDETC_BIOS){
-								setdintr(drv, 0, 0, max(20000, ideio.wwait));
-							}else{
-								setdintr(drv, 0, 0, ideio.wwait);
-							}
+					if (drv->sc) {
+						writesec(drv);
+					}else{
+						// 1セクタ書き込み完了
+						if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
+							drv->status |= IDESTAT_BSY;
+							setdintr(drv, 0, 0, ideio.rwait);
 						}else{
 							setintr(drv);
 						}
-						break;
 					}
+					//drv->mulcnt++;
+					//drv->sc--;
+					//if (!drv->sc) {
+					//	//カウントが終わったらDRQを消す
+					//	drv->bufpos = 0;
+					//	drv->error = 0;
+					//	if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
+					//		drv->status |= IDESTAT_BSY;
+					//		setdintr(drv, 0, 0, ideio.wwait);
+					//	}else{
+					//		setintr(drv);
+					//	}
+					//	break;
+					//}
 
-					//次セクタ書き込み準備
-					incsec(drv);
-					writesec(drv);
+					////次セクタ書き込み準備
+					//incsec(drv);
+					//writesec(drv);
 					break;
 
 				case 0xa0:
@@ -1117,6 +1125,9 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 					drv->sc--;
 					if (drv->sc) {
 						readsec(drv);
+					}else{
+						// ここには来ないはず
+						TRACEOUT(("ide-data read error?"));
 					}
 					break;
 
@@ -1300,6 +1311,15 @@ void ideio_reset(const NP2CFG *pConfig) {
 		CopyMemory(mem + 0xd8000, idebios, sizeof(idebios));
 		TRACEOUT(("use simulate ide.rom"));
 	}
+	
+	//if(ideio.bios == IDETC_BIOS){
+	//	if(ideio.wwait < ideio.mwait){
+	//		ideio.wwait = ideio.mwait;
+	//	}
+	//	if(ideio.rwait < ideio.mwait/4){
+	//		ideio.rwait = ideio.mwait/4;
+	//	}
+	//}
 
 	(void)pConfig;
 }

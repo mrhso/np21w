@@ -354,6 +354,7 @@
 #define IDS_GD5430_CX2                  30606
 #define IDS_GD5430_WAB                  30610
 #define IDS_GD5430_WSN                  30612
+#define IDS_GD5430_GA98NB               30620
 #define IDS_IDETYPE_NONE                30700
 #define IDS_IDETYPE_HDD                 30701
 #define IDS_IDETYPE_CDROM               30702

@@ -151,7 +151,8 @@ struct tagNP2Config
 	OEMCHAR	idecd[4][MAX_PATH];										// ver0.85w
 	UINT8	idebios;												// ver0.86w rev20
 	UINT32	iderwait; // IDE読み取りの割り込み遅延時間(clock)。  np21w ver0.86 rev19
-	UINT32	idewwait; // IDE書き込みの割り込み遅延時間(clock)。IDE BIOSがある場合は0にしても強制的に20000clock以上なります。  np21w ver0.86 rev18
+	UINT32	idewwait; // IDE書き込みの割り込み遅延時間(clock)。  np21w ver0.86 rev18
+	UINT32	idemwait; // IDE BIOSがある場合の割り込み遅延最小値  np21w ver0.86 rev26
 #else
 	OEMCHAR	sasihdd[2][MAX_PATH];									// ver0.74
 #endif

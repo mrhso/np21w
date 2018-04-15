@@ -541,6 +541,10 @@ void np2wab_bind(void)
 	np2wabwnd.multiwindow = np2wabcfg.multiwindow;
 	ga_threadmode = np2wabcfg.multithread;
 	
+	//// 画面消去
+	//BitBlt(np2wabwnd.hDCBuf , 0 , 0 , WAB_MAX_WIDTH , WAB_MAX_HEIGHT , NULL , 0 , 0 , BLACKNESS);
+	//scrnmng_blthdc(np2wabwnd.hDCBuf);
+	
 	// マルチスレッドモードならスレッド開始
 	if(ga_threadmode){
 		ga_hThread  = CreateThread(NULL , 0 , ga_ThreadFunc  , NULL , 0 , &dwID);

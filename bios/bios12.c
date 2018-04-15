@@ -65,7 +65,7 @@ void bios0x12(void) {
 			}
 			result = iocore_inp8(baseport+2);
 		}
-		mem[0x0055f] |= drvbit;
+		mem[MEMB_DISK_INTH] |= drvbit;
 	}
 }
 

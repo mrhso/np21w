@@ -168,6 +168,12 @@ LRESULT CSoftKeyboardWnd::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				sysmng_update(SYS_UPDATEOSCFG);
 			}
 			break;
+			
+		case WM_CLOSE:
+			np2oscfg.skbdwin = 0;
+			sysmng_update(SYS_UPDATEOSCFG);
+			DestroyWindow();
+			break;
 
 		case WM_DESTROY:
 			OnDestroy();

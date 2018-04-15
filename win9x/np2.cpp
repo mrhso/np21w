@@ -125,7 +125,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if !defined(_WIN64)
 						0,
 #endif
-						0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						FSCRNMOD_SAMEBPP | FSCRNMOD_SAMERES | FSCRNMOD_ASPECTFIX8,
 
 						CSoundMng::kDSound3, TEXT(""),
@@ -1435,11 +1435,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					else {
 						kdispwin_destroy();
 					}
+					update |= SYS_UPDATEOSCFG;
 					break;
 #endif
 #if defined(SUPPORT_SOFTKBD)
 				case IDM_SOFTKBD:
-					skbdwin_create();
+					np2oscfg.skbdwin = !np2oscfg.skbdwin;
+					if (np2oscfg.skbdwin) {
+						skbdwin_create();
+					}
+					else {
+						skbdwin_destroy();
+					}
+					update |= SYS_UPDATEOSCFG;
 					break;
 #endif
 #if defined(CPUCORE_IA32) && defined(SUPPORT_MEMDBG32)
@@ -2061,21 +2069,7 @@ static void processwait(UINT cnt) {
 	soundmng_sync();
 }
 
-// やっつけ感漂うINIファイル変更処理
-void loadNewINI(const OEMCHAR *fname){
-	HINSTANCE hInstance;
-	BOOL		xrollkey;
-	//WNDCLASS	wc;
-	HWND		hWnd;
-	DWORD		style;
-	int			i;
-
-	LPTSTR lpFilenameBuf = (LPTSTR)malloc((_tcslen(fname)+1)*sizeof(TCHAR));
-	_tcscpy(lpFilenameBuf, fname);
-
-	np2opening = 1;
-	hInstance = g_hInstance;
-
+void unloadNP2INI(){
 	// 旧INI片付け
 #ifdef HOOK_SYSKEY
 	UnhookWindowsHookEx(hHook);
@@ -2130,6 +2124,25 @@ void loadNewINI(const OEMCHAR *fname){
 #endif	// defined(SUPPORT_WAB)
 	skbdwin_deinitialize();
 
+	np2opening = 1;
+	
+	InvalidateRect( g_hWndMain, NULL, FALSE );
+	UpdateWindow( g_hWndMain );
+}
+void loadNP2INI(const OEMCHAR *fname){
+	HINSTANCE hInstance;
+	BOOL		xrollkey;
+	//WNDCLASS	wc;
+	HWND		hWnd;
+	DWORD		style;
+	int			i;
+#ifdef OPENING_WAIT
+	DWORD		tick;
+#endif
+	
+	LPTSTR lpFilenameBuf = (LPTSTR)malloc((_tcslen(fname)+1)*sizeof(TCHAR));
+	_tcscpy(lpFilenameBuf, fname);
+	hInstance = g_hInstance;
 
 	// 新INI読み込み
 	Np2Arg::GetInstance()->setiniFilename(lpFilenameBuf);
@@ -2264,8 +2277,6 @@ void loadNewINI(const OEMCHAR *fname){
 	while((GetTickCount() - tick) < OPENING_WAIT);
 #endif
 
-	scrndraw_redraw();
-	
 #ifdef SUPPORT_NET
 	//np2net_init();
 #endif
@@ -2280,8 +2291,6 @@ void loadNewINI(const OEMCHAR *fname){
 #endif
 
 	pccore_reset();
-
-	np2opening = 0;
 
 	// れじうむ
 #if defined(SUPPORT_RESUME)
@@ -2339,7 +2348,14 @@ void loadNewINI(const OEMCHAR *fname){
 		if (np2oscfg.keydisp) {
 			kdispwin_create();
 		}
+		if (np2oscfg.skbdwin) {
+			skbdwin_create();
+		}
 	}
+	
+	scrndraw_redraw();
+	
+	np2opening = 0;
 
 	sysmng_workclockreset();
 	sysmng_updatecaption(3);
@@ -2541,12 +2557,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	pccore_init();
 	S98_init();
 
-#ifdef OPENING_WAIT
-	while((GetTickCount() - tick) < OPENING_WAIT);
-#endif
-
-	scrndraw_redraw();
-	
 #ifdef SUPPORT_NET
 	np2net_init();
 #endif
@@ -2561,8 +2571,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 
 	pccore_reset();
-
-	np2opening = 0;
 
 	// れじうむ
 #if defined(SUPPORT_RESUME)
@@ -2599,6 +2607,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 			if (lpDisk)
 			{
 				diskdrv_readyfdd((REG8)i, lpDisk, 0);
+				toolwin_setfdd((REG8)i, lpDisk);
 			}
 		}
 	}
@@ -2609,9 +2618,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		if (lpDisk)
 		{
 			diskdrv_readyfdd((REG8)i, lpDisk, 0);
+			toolwin_setfdd((REG8)i, lpDisk);
 		}
 	}
 
+#ifdef OPENING_WAIT
+	while((GetTickCount() - tick) < OPENING_WAIT);
+#endif
+	np2opening = 0;
+
+	scrndraw_redraw();
+	
 	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
 		if (np2oscfg.toolwin) {
 			toolwin_create();
@@ -2619,10 +2636,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		if (np2oscfg.keydisp) {
 			kdispwin_create();
 		}
+		if (np2oscfg.skbdwin) {
+			skbdwin_create();
+		}
 	}
 
 	sysmng_workclockreset();
 	sysmng_updatecaption(3);
+	
 
 	while(1) {
 		if (!np2stopemulate) {
@@ -2692,7 +2713,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 						waitcnt = framecnt;
 					}
 				}
-				autoSendKey(); // 自動キー送信
+				if(autokey_sendbufferlen > 0) 
+					autoSendKey(); // 自動キー送信
 			}
 		}
 		else if ((np2stopemulate == 1) ||				// background sleep

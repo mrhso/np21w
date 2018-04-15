@@ -56,7 +56,7 @@ static const CComboData::Entry s_baseclock[] =
 };
 
 //! 倍率リスト
-static const UINT32 s_mulval[10] = {1, 2, 4, 5, 6, 8, 10, 12, 16, 20};
+static const UINT32 s_mulval[] = {1, 2, 4, 5, 6, 8, 10, 12, 16, 20, 24, 30, 36, 40, 42};
 
 //! クロック フォーマット
 static const TCHAR str_clockfmt[] = _T("%2u.%.4u");

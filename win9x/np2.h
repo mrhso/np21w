@@ -68,6 +68,7 @@ typedef struct {
 	UINT8	wintype;
 	UINT8	toolwin;
 	UINT8	keydisp;
+	UINT8	skbdwin;
 	UINT8	I286SAVE;
 	UINT8	hostdrv_write;
 	UINT8	jastsnd;
@@ -140,5 +141,6 @@ extern	OEMCHAR		bmpfilefolder[MAX_PATH];
 extern	OEMCHAR		npcfgfilefolder[MAX_PATH];
 
 void np2active_renewal(void);
-void loadNewINI(const OEMCHAR *fname);
+void unloadNP2INI();
+void loadNP2INI(const OEMCHAR *fname);
 
