@@ -1218,7 +1218,22 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.EXTMEM = 230;
 			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
 			break;
-
+			
+		case IDM_FPU80:
+			np2cfg.fpu_type = FPU_TYPE_SOFTFLOAT;
+			update |= SYS_UPDATECFG;
+			break;
+			
+		case IDM_FPU64:
+			np2cfg.fpu_type = FPU_TYPE_DOSBOX;
+			update |= SYS_UPDATECFG;
+			break;
+			
+		case IDM_FPU64INT:
+			np2cfg.fpu_type = FPU_TYPE_DOSBOX2;
+			update |= SYS_UPDATECFG;
+			break;
+			
 		case IDM_MOUSE:
 			mousemng_toggle(MOUSEPROC_SYSTEM);
 			np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
@@ -2513,15 +2528,6 @@ void loadNP2INI(const OEMCHAR *fname){
 	Np2Arg::GetInstance()->setiniFilename(lpFilenameBuf);
 
 	initload();
-#if defined(CPUCORE_IA32)
-//#ifdef UNICODE
-//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_vendor_o, -1, np2cfg.cpu_vendor, 12+1, NULL, NULL);
-//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_brandstring_o, -1, np2cfg.cpu_brandstring, 48+1, NULL, NULL);
-//#else
-//	strcpy(np2cfg.cpu_vendor, np2cfg.cpu_vendor_o);
-//	strcpy(np2cfg.cpu_brandstring, np2cfg.cpu_brandstring_o);
-//#endif
-#endif
 	toolwin_readini();
 	kdispwin_readini();
 	skbdwin_readini();
@@ -2782,15 +2788,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	file_setcd(modulefile);
 	Np2Arg::GetInstance()->Parse();
 	initload();
-#if defined(CPUCORE_IA32)
-//#ifdef UNICODE
-//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_vendor_o, -1, np2cfg.cpu_vendor, 12+1, NULL, NULL);
-//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_brandstring_o, -1, np2cfg.cpu_brandstring, 48+1, NULL, NULL);
-//#else
-//	strcpy(np2cfg.cpu_vendor, np2cfg.cpu_vendor_o);
-//	strcpy(np2cfg.cpu_brandstring, np2cfg.cpu_brandstring_o);
-//#endif
-#endif
 	toolwin_readini();
 	kdispwin_readini();
 	skbdwin_readini();

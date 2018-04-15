@@ -35,6 +35,9 @@
 #define IA32_CPU_CPU_H__
 
 #include "interface.h"
+#if defined(SUPPORT_FPU_SOFTFLOAT)
+#include "instructions/fpu/softfloat/softfloat.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -194,7 +197,8 @@ typedef struct {
 
 /* FPU */
 enum {
-	FPU_REG_NUM = 8
+	FPU_REG_NUM = 8,
+	XMM_REG_NUM = 8
 };
 
 typedef struct {
@@ -214,6 +218,10 @@ typedef struct {
 
 	FPU_PTR		inst; // ラスト命令ポインタレジスター
 	FPU_PTR		data; // ラストデータポインタレジスター
+	
+#ifdef USE_SSE
+	UINT32		mxcsr;
+#endif
 } FPU_REGS;
 
 #if 0
@@ -255,14 +263,17 @@ typedef enum {
 } FP_RND;
 
 typedef union {
-    double d;
+    floatx80 d;
+    double d64;
     struct {
         UINT32 lower;
         SINT32 upper;
+        SINT16 ext;
     } l;
     struct {
         UINT32 lower;
         UINT32 upper;
+        SINT16 ext;
     } ul;
     SINT64 ll;
 } FP_REG;
@@ -276,6 +287,36 @@ typedef struct {
     UINT32 d2;
 } FP_P_REG;
 
+typedef union {
+    struct {
+        UINT32 m1;
+        UINT32 m2;
+		UINT16 m3;
+    } ul32;
+    struct {
+        UINT32 m1;
+        UINT32 m2;
+		SINT16 m3;
+    } l32;
+    struct {
+		UINT64 m12;
+		UINT16 m3;
+    } ul64;
+    struct {
+		UINT64 m12;
+		SINT16 m3;
+    } l64;
+} FP_INT_REG;
+
+typedef union {
+    float f[4];
+    double d[2];
+    UINT8 ul8[16];
+    UINT16 ul16[8];
+    UINT32 ul32[4];
+    UINT64 ul64[2];
+} XMM_REG;
+
 typedef struct {
 #ifdef USE_FPU_ASM
 	unsigned int top;
@@ -285,14 +326,24 @@ typedef struct {
 	UINT8		pc;
 	UINT8		rc;
 	UINT8		dmy[1];
-
-#ifdef USE_FPU_ASM
-	FP_P_REG	p_reg[FPU_REG_NUM+1]; // R0 to R7	
-#else
+//
+//#if defined(USE_FPU_ASM)
+//	FP_P_REG	p_reg[FPU_REG_NUM+1]; // R0 to R7	
+//#else
 	FP_REG		reg[FPU_REG_NUM+1]; // R0 to R7	
-#endif
+//#endif
 	FP_TAG		tag[FPU_REG_NUM+1]; // R0 to R7
 	FP_RND		round;
+#ifdef SUPPORT_FPU_DOSBOX2 // XXX: 整数間だけ正確にするため用
+	FP_INT_REG	int_reg[FPU_REG_NUM+1];
+	UINT8		int_regvalid[FPU_REG_NUM+1];
+#endif
+#ifdef USE_SSE
+	XMM_REG		xmm_reg[XMM_REG_NUM+1]; // xmm0 to xmm7	
+#endif
+#ifdef USE_MMX
+	UINT8		mmxenable;
+#endif
 } FPU_STAT;
 
 #endif
@@ -340,6 +391,8 @@ typedef struct {
 	UINT32 cpu_stepping; // ステッピング
 	UINT32 cpu_feature; // 機能フラグ
 	char cpu_brandstring[64]; // ブランド名（48byte）
+	
+	UINT8 fpu_type; // FPU種類
 } I386CPUID;
 
 extern I386CORE		i386core;
@@ -887,6 +940,14 @@ void dbg_printf(const char *str, ...);
 #define	FPU_STAT_TOP		FPU_STAT.top
 #define	FPU_STAT_PC		FPU_STAT.pc
 #define	FPU_STAT_RC		FPU_STAT.rc
+
+/*
+ * SSE
+ */
+#ifdef USE_SSE
+#define	SSE_MXCSR		FPU_REGS.mxcsr
+#define	SSE_XMMREG(i)	FPU_STAT.xmm_reg[i]
+#endif
 
 #if 0
 #define	FPU_ST(i)		FPU_STAT.reg[((i) + FPU_STAT_TOP) & 7]

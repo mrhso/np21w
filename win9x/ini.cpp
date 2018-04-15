@@ -615,12 +615,14 @@ static const PFTBL s_IniItems[] =
 	PFMAX("SBEEPLEN", PFTYPE_UINT8,		&np2cfg.sbeeplen,		0), // ピポ音の長さ（0でデフォルト・4がNP2標準）
 	PFMAX("SBEEPADJ", PFTYPE_BOOL,		&np2cfg.sbeepadj,		0), // ピポ音の長さ自動調整
 	
-	//PFSTR("cpu_vend", PFTYPE_STR,		np2cfg.cpu_vendor_o),
+	PFSTR("cpu_vend", PFRO_STR,			np2cfg.cpu_vendor_o),
 	PFVAL("cpu_fami", PFTYPE_UINT32,	&np2cfg.cpu_family),
 	PFVAL("cpu_mode", PFTYPE_UINT32,	&np2cfg.cpu_model),
 	PFVAL("cpu_step", PFTYPE_UINT32,	&np2cfg.cpu_stepping),
 	PFVAL("cpu_feat", PFTYPE_HEX32,		&np2cfg.cpu_feature),
-	//PFSTR("cpu_bran", PFTYPE_STR,		np2cfg.cpu_brandstring_o),
+	PFSTR("cpu_bran", PFRO_STR,			np2cfg.cpu_brandstring_o),
+
+	PFMAX("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type,		0), // FPU種類
 
 
 	// OS依存？

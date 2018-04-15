@@ -569,14 +569,14 @@ void (*insttable_1byte[2][256])(void) = {
 		AAD,
 		SALC,				/* undoc(8086) */
 		XLAT,
-		ESC0,			/* D8 */
-		ESC1,
-		ESC2,
-		ESC3,
-		ESC4,
-		ESC5,
-		ESC6,
-		ESC7,
+		NOFPU_ESC0,			/* D8 */
+		NOFPU_ESC1,
+		NOFPU_ESC2,
+		NOFPU_ESC3,
+		NOFPU_ESC4,
+		NOFPU_ESC5,
+		NOFPU_ESC6,
+		NOFPU_ESC7,
 
 		LOOPNE_Jb,		/* E0 */
 		LOOPE_Jb,
@@ -844,14 +844,14 @@ void (*insttable_1byte[2][256])(void) = {
 		AAD,
 		SALC,				/* undoc(8086) */
 		XLAT,
-		ESC0,			/* D8 */
-		ESC1,
-		ESC2,
-		ESC3,
-		ESC4,
-		ESC5,
-		ESC6,
-		ESC7,
+		NOFPU_ESC0,			/* D8 */
+		NOFPU_ESC1,
+		NOFPU_ESC2,
+		NOFPU_ESC3,
+		NOFPU_ESC4,
+		NOFPU_ESC5,
+		NOFPU_ESC6,
+		NOFPU_ESC7,
 
 		LOOPNE_Jb,		/* E0 */
 		LOOPE_Jb,
@@ -1076,7 +1076,7 @@ void (*insttable_2byte[2][256])(void) = {
 		BTS_EwGw,
 		SHRD_EwGwIb,
 		SHRD_EwGwCL,
-		FPU_FXSAVERSTOR,
+		NOFPU_FPU_FXSAVERSTOR,
 		IMUL_GwEw,
 
 		CMPXCHG_EbGb,		/* B0 */
@@ -1351,7 +1351,7 @@ void (*insttable_2byte[2][256])(void) = {
 		BTS_EdGd,
 		SHRD_EdGdIb,
 		SHRD_EdGdCL,
-		FPU_FXSAVERSTOR,
+		NOFPU_FPU_FXSAVERSTOR,
 		IMUL_GdEd,
 
 		CMPXCHG_EbGb,		/* B0 */

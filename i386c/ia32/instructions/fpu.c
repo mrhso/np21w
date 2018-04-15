@@ -24,11 +24,124 @@
  */
 
 #include "compiler.h"
+#include "pccore.h"
 #include "ia32/cpu.h"
 #include "ia32/ia32.mcr"
+#include "ia32/inst_table.h"
 
 #include "ia32/instructions/fpu/fp.h"
 
+
+void
+fpu_initialize(void)
+{
+#if defined(USE_FPU)
+	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
+		switch(i386cpuid.fpu_type){
+#if defined(SUPPORT_FPU_DOSBOX)
+		case FPU_TYPE_DOSBOX:
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = DB_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = DB_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = DB_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = DB_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB_ESC7;
+			break;
+#endif
+#if defined(SUPPORT_FPU_DOSBOX2)
+		case FPU_TYPE_DOSBOX2:
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB2_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB2_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = DB2_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = DB2_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = DB2_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = DB2_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB2_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB2_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB2_ESC7;
+			break;
+#endif
+#if defined(SUPPORT_FPU_SOFTFLOAT)
+		case FPU_TYPE_SOFTFLOAT:
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = SF_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = SF_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = SF_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = SF_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = SF_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = SF_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = SF_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = SF_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = SF_ESC7;
+			break;
+#endif
+		default:
+#if defined(SUPPORT_FPU_SOFTFLOAT)
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = SF_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = SF_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = SF_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = SF_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = SF_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = SF_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = SF_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = SF_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = SF_ESC7;
+#elif defined(SUPPORT_FPU_DOSBOX)
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = DB_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = DB_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = DB_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = DB_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB_ESC7;
+#elif defined(SUPPORT_FPU_DOSBOX2)
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB2_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB2_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = DB2_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = DB2_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = DB2_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = DB2_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB2_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB2_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB2_ESC7;
+#else
+			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = NOFPU_FPU_FXSAVERSTOR;
+			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = NOFPU_ESC0;
+			insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = NOFPU_ESC1;
+			insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = NOFPU_ESC2;
+			insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = NOFPU_ESC3;
+			insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = NOFPU_ESC4;
+			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = NOFPU_ESC5;
+			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = NOFPU_ESC6;
+			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = NOFPU_ESC7;
+#endif
+			break;
+		}
+	}else{
+#endif
+		insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = NOFPU_FPU_FXSAVERSTOR;
+		insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = NOFPU_ESC0;
+		insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = NOFPU_ESC1;
+		insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = NOFPU_ESC2;
+		insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = NOFPU_ESC3;
+		insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = NOFPU_ESC4;
+		insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = NOFPU_ESC5;
+		insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = NOFPU_ESC6;
+		insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = NOFPU_ESC7;
+#if defined(USE_FPU)
+	}
+#endif
+}
+
+char *
+fpu_reg2str(void)
+{
+	return NULL;
+}
 
 void
 FWAIT(void)
@@ -42,7 +155,10 @@ FWAIT(void)
 	if ((CPU_CR0 & (CPU_CR0_MP|CPU_CR0_TS))==(CPU_CR0_MP|CPU_CR0_TS)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
-
-	fpu_fwait();
+	
+	// Check exception
+	if((FPU_STATUSWORD & ~FPU_CTRLWORD) & 0x3F){
+		EXCEPTION(MF_EXCEPTION, 0);
+	}
 #endif
 }

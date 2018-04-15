@@ -43,12 +43,12 @@
 
 /*
  * modified by SimK
- *   拡張倍精度浮動小数点ではなく倍精度浮動小数点で計算されるので実際のx87 FPUより精度が劣ります
+ *   整数値のロード・ストア限定で拡張倍精度浮動小数点相当の精度があります
  */
 
 #include "compiler.h"
 
-#if defined(USE_FPU) && defined(SUPPORT_FPU_DOSBOX)
+#if defined(USE_FPU) && defined(SUPPORT_FPU_DOSBOX2)
 
 #include <float.h>
 #include <math.h>
@@ -298,6 +298,7 @@ static void FPU_PUSH(double in){
 	//actually check if empty
 	FPU_STAT.tag[FPU_STAT_TOP] = TAG_Valid;
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = in;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 //	LOG(LOG_FPU,LOG_ERROR)("Pushed at %d  %g to the stack",newtop,in);
 	return;
 }
@@ -309,6 +310,7 @@ static void FPU_PREP_PUSH(void){
 
 static void FPU_FPOP(void){
 	FPU_STAT.tag[FPU_STAT_TOP] = TAG_Empty;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	//maybe set zero in it as well
 	FPU_STAT_TOP = ((FPU_STAT_TOP+1)&7);
 //	LOG(LOG_FPU,LOG_ERROR)("popped from %d  %g off the stack",top,fpu.regs[top].d64);
@@ -365,6 +367,33 @@ static void FPU_FLD80(UINT32 addr, UINT reg)
 	sign = (test.begin&0x8000)?1:0;
 	result.ll = (sign <<63)|(exp64final << 52)| mant64;
 
+	{
+		UINT64 tmp;
+		unsigned int shift;
+		shift = (63-exp64);
+		// 1.xxxを64bit整数表現できるかチェック
+		if(exp64 >= 0 && // 1未満なったらアウト
+			exp64 <= 63 && // 値が64bit整数で表現できない場合もアウト（とりあえず符号無しで判定）
+			((test.eind.ll >> shift) << shift)==test.eind.ll){ // 小数点以下の数がある場合もアウト
+			//tmp = ((((UINT64)test.eind.ll) >> 1) | QWORD_CONST(0x8000000000000000)) >> shift;
+			tmp = ((UINT64)test.eind.ll) >> shift;
+			if(sign==0 && tmp < QWORD_CONST(0x8000000000000000)){ // 符号付き（正）で表現できるか
+				FPU_STAT.int_reg[reg].ul64.m12 = tmp;
+				FPU_STAT.int_regvalid[reg] = 1;
+			}else if(sign==1 && tmp <= QWORD_CONST(0x8000000000000000)){ // 符号付き（負）で表現できるか
+				FPU_STAT.int_reg[reg].ul64.m12 = ((~tmp) + 1);
+				FPU_STAT.int_regvalid[reg] = 1;
+			}else{
+				FPU_STAT.int_regvalid[reg] = 0;
+			}
+		}else if((test.begin&0x7fff) == 0 && test.eind.ll == 0){ // 0の場合
+			FPU_STAT.int_reg[reg].ul64.m12 = 0;
+			FPU_STAT.int_regvalid[reg] = 1;
+		}else{
+			FPU_STAT.int_regvalid[reg] = 0;
+		}
+	}
+
 	if(test.eind.l.lower == 0 && (UINT32)test.eind.l.upper == (UINT32)0x80000000UL && (test.begin&0x7fff) == 0x7fff) {
 		//Detect INF and -INF (score 3.11 when drawing a slur.)
 		result.d64 = sign?-HUGE_VAL:HUGE_VAL;
@@ -399,6 +428,23 @@ static void FPU_ST80(UINT32 addr,UINT reg)
 	}
 	test.begin = ((SINT16)(sign80)<<15)| (SINT16)(exp80final);
 	test.eind.ll = mant80final;
+	if(FPU_STAT.int_regvalid[reg] && FPU_STAT.int_reg[reg].ul64.m12!=0){
+		UINT64 tmp;
+		if((SINT64)FPU_STAT.int_reg[reg].ul64.m12 < 0){
+			sign80 = 1;
+			tmp = (~(FPU_STAT.int_reg[reg].ul64.m12)) + 1;
+		}else{
+			sign80 = 0;
+			tmp = FPU_STAT.int_reg[reg].ul64.m12;
+		}
+		exp80final = BIAS80 + 63;
+		while(!(tmp & QWORD_CONST(0x8000000000000000))){
+			tmp = tmp << 1;
+			exp80final--;
+		}
+		test.begin = ((SINT16)(sign80)<<15)| (SINT16)(exp80final);
+		test.eind.ll = tmp;
+	}
 	fpu_memorywrite_d(addr,test.eind.l.lower);
 	fpu_memorywrite_d(addr+4,test.eind.l.upper);
 	fpu_memorywrite_w(addr+8,test.begin);
@@ -413,11 +459,13 @@ static void FPU_FLD_F32(UINT32 addr,UINT store_to) {
 	
 	blah.l = fpu_memoryread_d(addr);
 	FPU_STAT.reg[store_to].d64 = (double)(blah.f);
+	FPU_STAT.int_regvalid[store_to] = 0;
 }
 
 static void FPU_FLD_F64(UINT32 addr,UINT store_to) {
 	FPU_STAT.reg[store_to].l.lower = fpu_memoryread_d(addr);
 	FPU_STAT.reg[store_to].l.upper = fpu_memoryread_d(addr+4);
+	FPU_STAT.int_regvalid[store_to] = 0;
 }
 
 static void FPU_FLD_F80(UINT32 addr) {
@@ -429,6 +477,8 @@ static void FPU_FLD_I16(UINT32 addr,UINT store_to) {
 
 	blah = fpu_memoryread_w(addr);
 	FPU_STAT.reg[store_to].d64 = (double)(blah);
+	FPU_STAT.int_reg[store_to].ul64.m12 = (UINT64)((SINT64)blah);
+	FPU_STAT.int_regvalid[store_to] = 1;
 }
 
 static void FPU_FLD_I32(UINT32 addr,UINT store_to) {
@@ -436,6 +486,8 @@ static void FPU_FLD_I32(UINT32 addr,UINT store_to) {
 
 	blah = fpu_memoryread_d(addr);
 	FPU_STAT.reg[store_to].d64 = (double)(blah);
+	FPU_STAT.int_reg[store_to].ul64.m12 = (UINT64)((SINT64)blah);
+	FPU_STAT.int_regvalid[store_to] = 1;
 }
 
 static void FPU_FLD_I64(UINT32 addr,UINT store_to) {
@@ -444,6 +496,8 @@ static void FPU_FLD_I64(UINT32 addr,UINT store_to) {
 	blah.l.lower = fpu_memoryread_d(addr);
 	blah.l.upper = fpu_memoryread_d(addr+4);
 	FPU_STAT.reg[store_to].d64 = (double)(blah.ll);
+	FPU_STAT.int_reg[store_to].ul64.m12 = (UINT64)(blah.ll);
+	FPU_STAT.int_regvalid[store_to] = 1;
 }
 
 static void FPU_FBLD(UINT32 addr,UINT store_to) 
@@ -506,19 +560,33 @@ static void FPU_FST_F80(UINT32 addr) {
 }
 
 static void FPU_FST_I16(UINT32 addr) {
-	fpu_memorywrite_w(addr,(SINT16)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64)));
+	if(FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		fpu_memorywrite_w(addr,(SINT16)((SINT64)(FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12)));
+	}else{
+		fpu_memorywrite_w(addr,(SINT16)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64)));
+	}
 }
 
 static void FPU_FST_I32(UINT32 addr) {
-	fpu_memorywrite_d(addr,(SINT32)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64)));
+	if(FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		fpu_memorywrite_d(addr,(SINT32)((SINT64)(FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12)));
+	}else{
+		fpu_memorywrite_d(addr,(SINT32)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64)));
+	}
 }
 
 static void FPU_FST_I64(UINT32 addr) {
 	FP_REG blah;
 	
-	blah.ll = (SINT64)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64));
-	fpu_memorywrite_d(addr,blah.l.lower);
-	fpu_memorywrite_d(addr+4,blah.l.upper);
+	if(FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		blah.ll = (SINT64)FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12;
+		fpu_memorywrite_d(addr,blah.l.lower);
+		fpu_memorywrite_d(addr+4,blah.l.upper);
+	}else{
+		blah.ll = (SINT64)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64));
+		fpu_memorywrite_d(addr,blah.l.lower);
+		fpu_memorywrite_d(addr+4,blah.l.upper);
+	}
 }
 
 static void FPU_FBST(UINT32 addr) 
@@ -568,11 +636,28 @@ static void FPU_FADD(UINT op1, UINT op2){
 	//FPU_SET_D(was_not_normal || isdenormal(FPU_STAT.reg[op1].d64) || isdenormal(FPU_STAT.reg[op2].d64));
 	FPU_STAT.reg[op1].d64 += FPU_STAT.reg[op2].d64;
 	//flags and such :)
+	//if(FPU_STAT.int_regvalid[op1] && FPU_STAT.int_regvalid[op2]){
+	//	SINT64 v1 = (SINT64)FPU_STAT.int_reg[op1].ul64.m12;
+	//	SINT64 v2 = (SINT64)FPU_STAT.int_reg[op2].ul64.m12;
+	//	SINT64 v12 = v1+v2;
+	//	if((v1>=0 && v2<=0) || (v1<=0 && v2>=0)){ // 符号が異なればオーバーフローしない
+	//		FPU_STAT.int_reg[op1].ul64.m12 = (UINT64)v12;
+	//	}else if((v1>0 && v2>0) && v12 > 0){ // XXX: 正+正→正　多分処理系依存
+	//		FPU_STAT.int_reg[op1].ul64.m12 = (UINT64)v12;
+	//	}else if((v1<0 && v2<0) && v12 < 0){ // XXX: 負+負→負　多分処理系依存
+	//		FPU_STAT.int_reg[op1].ul64.m12 = (UINT64)v12;
+	//	}else{
+	//		FPU_STAT.int_regvalid[op1] = 0;
+	//	}
+	//}else{
+		FPU_STAT.int_regvalid[op1] = 0;
+	//}
 	return;
 }
 
 static void FPU_FSIN(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = sin(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_SET_C2(0);
 	//flags and such :)
 	return;
@@ -583,6 +668,7 @@ static void FPU_FSINCOS(void){
 
 	temp = FPU_STAT.reg[FPU_STAT_TOP].d64;
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = sin(temp);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_PUSH(cos(temp));
 	FPU_SET_C2(0);
 	//flags and such :)
@@ -591,6 +677,7 @@ static void FPU_FSINCOS(void){
 
 static void FPU_FCOS(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = cos(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_SET_C2(0);
 	//flags and such :)
 	return;
@@ -598,17 +685,20 @@ static void FPU_FCOS(void){
 
 static void FPU_FSQRT(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = sqrt(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	//flags and such :)
 	return;
 }
 static void FPU_FPATAN(void){
 	FPU_STAT.reg[FPU_ST(1)].d64 = atan2(FPU_STAT.reg[FPU_ST(1)].d64,FPU_STAT.reg[FPU_STAT_TOP].d64);
+	FPU_STAT.int_regvalid[FPU_ST(1)] = 0;
 	FPU_FPOP();
 	//flags and such :)
 	return;
 }
 static void FPU_FPTAN(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = tan(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_PUSH(1.0);
 	FPU_SET_C2(0);
 	//flags and such :)
@@ -620,6 +710,7 @@ static void FPU_FDIV(UINT st, UINT other){
 		return;
 	}
 	FPU_STAT.reg[st].d64= FPU_STAT.reg[st].d64/FPU_STAT.reg[other].d64;
+	FPU_STAT.int_regvalid[st] = 0;
 	//flags and such :)
 	return;
 }
@@ -630,24 +721,58 @@ static void FPU_FDIVR(UINT st, UINT other){
 		return;
 	}
 	FPU_STAT.reg[st].d64= FPU_STAT.reg[other].d64/FPU_STAT.reg[st].d64;
+	FPU_STAT.int_regvalid[st] = 0;
 	// flags and such :)
 	return;
 }
 
 static void FPU_FMUL(UINT st, UINT other){
 	FPU_STAT.reg[st].d64*=FPU_STAT.reg[other].d64;
+	FPU_STAT.int_regvalid[st] = 0;
 	//flags and such :)
 	return;
 }
 
 static void FPU_FSUB(UINT st, UINT other){
 	FPU_STAT.reg[st].d64 = FPU_STAT.reg[st].d64 - FPU_STAT.reg[other].d64;
+	//if(FPU_STAT.int_regvalid[st] && FPU_STAT.int_regvalid[other]){
+	//	SINT64 v1 = (SINT64)FPU_STAT.int_reg[st].ul64.m12;
+	//	SINT64 v2 = (SINT64)FPU_STAT.int_reg[other].ul64.m12;
+	//	SINT64 v12 = v1-v2;
+	//	if((v1>=0 && v2>=0) || (v1<=0 && v2<=0)){ // 符号が異なればオーバーフローしない
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else if((v1>0 && v2<0) && v12 > 0){ // XXX: 正+正→正　多分処理系依存
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else if((v1<0 && v2>0) && v12 < 0){ // XXX: 負+負→負　多分処理系依存
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else{
+	//		FPU_STAT.int_regvalid[st] = 0;
+	//	}
+	//}else{
+		FPU_STAT.int_regvalid[st] = 0;
+	//}
 	//flags and such :)
 	return;
 }
 
 static void FPU_FSUBR(UINT st, UINT other){
 	FPU_STAT.reg[st].d64 = FPU_STAT.reg[other].d64 - FPU_STAT.reg[st].d64;
+	//if(FPU_STAT.int_regvalid[st] && FPU_STAT.int_regvalid[other]){
+	//	SINT64 v1 = (SINT64)FPU_STAT.int_reg[other].ul64.m12;
+	//	SINT64 v2 = (SINT64)FPU_STAT.int_reg[st].ul64.m12;
+	//	SINT64 v12 = v1-v2;
+	//	if((v1>=0 && v2>=0) || (v1<=0 && v2<=0)){ // 符号が異なればオーバーフローしない
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else if((v1>0 && v2<0) && v12 > 0){ // 正+正→正　多分処理系依存
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else if((v1<0 && v2>0) && v12 < 0){ // 負+負→負　多分処理系依存
+	//		FPU_STAT.int_reg[st].ul64.m12 = (UINT64)v12;
+	//	}else{
+	//		FPU_STAT.int_regvalid[st] = 0;
+	//	}
+	//}else{
+		FPU_STAT.int_regvalid[st] = 0;
+	//}
 	//flags and such :)
 	return;
 }
@@ -655,6 +780,8 @@ static void FPU_FSUBR(UINT st, UINT other){
 static void FPU_FXCH(UINT st, UINT other){
 	FP_TAG tag; 
 	FP_REG reg;
+	UINT8 regvalid; 
+	FP_INT_REG intreg; 
 
 	tag = FPU_STAT.tag[other];
 	reg = FPU_STAT.reg[other];
@@ -662,11 +789,19 @@ static void FPU_FXCH(UINT st, UINT other){
 	FPU_STAT.reg[other] = FPU_STAT.reg[st];
 	FPU_STAT.tag[st] = tag;
 	FPU_STAT.reg[st] = reg;
+	regvalid = FPU_STAT.int_regvalid[other];
+	intreg = FPU_STAT.int_reg[other];
+	FPU_STAT.int_regvalid[other] = FPU_STAT.int_regvalid[st];
+	FPU_STAT.int_reg[other] = FPU_STAT.int_reg[st];
+	FPU_STAT.int_regvalid[st] = regvalid;
+	FPU_STAT.int_reg[st] = intreg;
 }
 
 static void FPU_FST(UINT st, UINT other){
 	FPU_STAT.tag[other] = FPU_STAT.tag[st];
 	FPU_STAT.reg[other] = FPU_STAT.reg[st];
+	FPU_STAT.int_regvalid[other] = FPU_STAT.int_regvalid[st];
+	FPU_STAT.int_reg[other] = FPU_STAT.int_reg[st];
 }
 
 static void FPU_FCOM(UINT st, UINT other){
@@ -737,24 +872,32 @@ static void FPU_FCMOVB(UINT st, UINT other){
 	if(CPU_FLAGL & C_FLAG){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVE(UINT st, UINT other){
 	if(CPU_FLAGL & Z_FLAG){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVBE(UINT st, UINT other){
 	if(CPU_FLAGL & (C_FLAG|Z_FLAG)){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVU(UINT st, UINT other){
 	if(CPU_FLAGL & P_FLAG){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 
@@ -762,24 +905,32 @@ static void FPU_FCMOVNB(UINT st, UINT other){
 	if(!(CPU_FLAGL & C_FLAG)){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVNE(UINT st, UINT other){
 	if(!(CPU_FLAGL & Z_FLAG)){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVNBE(UINT st, UINT other){
 	if(!(CPU_FLAGL & (C_FLAG|Z_FLAG))){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 static void FPU_FCMOVNU(UINT st, UINT other){
 	if(!(CPU_FLAGL & P_FLAG)){
 		FPU_STAT.tag[st] = FPU_STAT.tag[other];
 		FPU_STAT.reg[st] = FPU_STAT.reg[other];
+		FPU_STAT.int_regvalid[st] = FPU_STAT.int_regvalid[other];
+		FPU_STAT.int_reg[st] = FPU_STAT.int_reg[other];
 	}
 }
 
@@ -788,6 +939,12 @@ static void FPU_FRNDINT(void){
 
 	temp = (SINT64)(FROUND(FPU_STAT.reg[FPU_STAT_TOP].d64));
 	FPU_STAT.reg[FPU_STAT_TOP].d64=(double)(temp);
+	if(!FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		FPU_STAT.int_reg[FPU_STAT_TOP].l64.m12 = temp;
+		FPU_STAT.int_regvalid[FPU_STAT_TOP] = 1;
+	}else{
+		// 既に整数
+	}
 }
 
 static void FPU_FPREM(void){
@@ -802,6 +959,7 @@ static void FPU_FPREM(void){
 //	Real64 res=valtop - ressaved*valdiv; 
 //      res= fmod(valtop,valdiv);
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = valtop - ressaved*valdiv;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_SET_C0((UINT)(ressaved&4));
 	FPU_SET_C3((UINT)(ressaved&2));
 	FPU_SET_C1((UINT)(ressaved&1));
@@ -823,6 +981,7 @@ static void FPU_FPREM1(void){
 	else ressaved = (SINT64)(((((SINT64)(quotf))&1)!=0)?(quotf+1):(quotf));
 	
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = valtop - ressaved*valdiv;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_SET_C0((UINT)(ressaved&4));
 	FPU_SET_C3((UINT)(ressaved&2));
 	FPU_SET_C1((UINT)(ressaved&1));
@@ -855,23 +1014,27 @@ static void FPU_FXAM(void){
 
 static void FPU_F2XM1(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = pow(2.0,FPU_STAT.reg[FPU_STAT_TOP].d64) - 1;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	return;
 }
 
 static void FPU_FYL2X(void){
 	FPU_STAT.reg[FPU_ST(1)].d64*=log(FPU_STAT.reg[FPU_STAT_TOP].d64)/log((double)(2.0));
+	FPU_STAT.int_regvalid[FPU_ST(1)] = 0;
 	FPU_FPOP();
 	return;
 }
 
 static void FPU_FYL2XP1(void){
 	FPU_STAT.reg[FPU_ST(1)].d64*=log(FPU_STAT.reg[FPU_STAT_TOP].d64+1.0)/log((double)(2.0));
+	FPU_STAT.int_regvalid[FPU_ST(1)] = 0;
 	FPU_FPOP();
 	return;
 }
 
 static void FPU_FSCALE(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 *= pow(2.0,(double)((SINT64)(FPU_STAT.reg[FPU_ST(1)].d64)));
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	return; //2^x where x is chopped.
 }
 
@@ -970,8 +1133,13 @@ static void FPU_FXSAVE(UINT32 addr){
 		//FPU_ST80(addr+start,FPU_ST(i));
 		fpu_memorywrite_d(addr+start+0,FPU_STAT.reg[FPU_ST(i)].l.lower);
 		fpu_memorywrite_d(addr+start+4,FPU_STAT.reg[FPU_ST(i)].l.upper);
-		fpu_memorywrite_d(addr+start+8,0x0000ffff);
-		fpu_memorywrite_d(addr+start+12,0x00000000);
+		if(FPU_STAT.int_regvalid[FPU_ST(i)]){
+			fpu_memorywrite_d(addr+start+8,FPU_STAT.int_reg[FPU_ST(i)].ul32.m1);
+			fpu_memorywrite_d(addr+start+12,FPU_STAT.int_reg[FPU_ST(i)].ul32.m2);
+		}else{
+			fpu_memorywrite_d(addr+start+8,0x00000000);
+			fpu_memorywrite_d(addr+start+12,0x00000000);
+		}
 		start += 16;
 	}
 #ifdef USE_SSE
@@ -1002,6 +1170,13 @@ static void FPU_FXRSTOR(UINT32 addr){
 		//FPU_STAT.reg[FPU_ST(i)].d64 = FPU_FLD80(addr+start);
 		FPU_STAT.reg[FPU_ST(i)].l.lower = fpu_memoryread_d(addr+start+0);
 		FPU_STAT.reg[FPU_ST(i)].l.upper = fpu_memoryread_d(addr+start+4);
+		FPU_STAT.int_reg[FPU_ST(i)].ul32.m1 = fpu_memoryread_d(addr+start+8);
+		FPU_STAT.int_reg[FPU_ST(i)].ul32.m2 = fpu_memoryread_d(addr+start+12);
+		if(FPU_STAT.int_reg[FPU_ST(i)].ul64.m12){
+			FPU_STAT.int_regvalid[FPU_ST(i)] = 1;
+		}else{
+			FPU_STAT.int_regvalid[FPU_ST(i)] = 0;
+		}
 		start += 16;
 	}
 #ifdef USE_SSE
@@ -1014,7 +1189,7 @@ static void FPU_FXRSTOR(UINT32 addr){
 #endif
 }
 
-void DB_FPU_FXSAVERSTOR(void){
+void DB2_FPU_FXSAVERSTOR(void){
 	UINT32 op;
 	UINT idx, sub;
 	UINT32 maddr;
@@ -1053,15 +1228,31 @@ static void FPU_FXTRACT(void) {
 	exp80final = (exp80>>52) - BIAS64;
 	mant = test.d64 / (pow(2.0,(double)(exp80final)));
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = (double)(exp80final);
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 	FPU_PUSH(mant);
 }
 
 static void FPU_FCHS(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = -1.0*(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	if(FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		if(FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12 != QWORD_CONST(0x8000000000000000)){
+			FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12 = (~FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12) + 1; // 符号反転
+		}else{
+			FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
+		}
+	}
 }
 
 static void FPU_FABS(void){
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = fabs(FPU_STAT.reg[FPU_STAT_TOP].d64);
+	if(FPU_STAT.int_regvalid[FPU_STAT_TOP]){
+		if((QWORD_CONST(0x8000000000000000) & FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12)!=0 && 
+			    (FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12 != QWORD_CONST(0x8000000000000000))){
+			FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12 = (~FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12) + 1; // 符号反転
+		}else{
+			FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
+		}
+	}
 }
 
 static void FPU_FTST(void){
@@ -1072,37 +1263,45 @@ static void FPU_FTST(void){
 static void FPU_FLD1(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = 1.0;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDL2T(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = L2T;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDL2E(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = L2E;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDPI(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = PI;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDLG2(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = LG2;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDLN2(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = LN2;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 0;
 }
 
 static void FPU_FLDZ(void){
 	FPU_PREP_PUSH();
 	FPU_STAT.reg[FPU_STAT_TOP].d64 = 0.0;
 	FPU_STAT.tag[FPU_STAT_TOP] = TAG_Zero;
+	FPU_STAT.int_reg[FPU_STAT_TOP].ul64.m12 = 0;
+	FPU_STAT.int_regvalid[FPU_STAT_TOP] = 1;
 }
 
 
@@ -1141,6 +1340,7 @@ FPU_FINIT(void)
 	FPU_STAT_TOP=FPU_GET_TOP();
 	for(i=0;i<8;i++){
 		FPU_STAT.tag[i] = TAG_Empty;
+		FPU_STAT.int_regvalid[i] = 0;
 		// レジスタの内容は消してはいけない ver0.86 rev40
 		//FPU_STAT.reg[i].d64 = 0;
 		//FPU_STAT.reg[i].l.lower = 0;
@@ -1149,6 +1349,13 @@ FPU_FINIT(void)
 	}
 	FPU_STAT.tag[8] = TAG_Valid; // is only used by us
 }
+
+//char *
+//fpu_reg2str(void)
+//{
+//	return NULL;
+//}
+
 
 /*
  * FPU instruction
@@ -1207,7 +1414,7 @@ static void EA_TREE(UINT op)
 
 // d8
 void
-DB_ESC0(void)
+DB2_ESC0(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1266,7 +1473,7 @@ DB_ESC0(void)
 
 // d9
 void
-DB_ESC1(void)
+DB2_ESC1(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1528,7 +1735,7 @@ DB_ESC1(void)
 
 // da
 void
-DB_ESC2(void)
+DB2_ESC2(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1586,7 +1793,7 @@ DB_ESC2(void)
 
 // db
 void
-DB_ESC3(void)
+DB2_ESC3(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1707,7 +1914,7 @@ DB_ESC3(void)
 
 // dc
 void
-DB_ESC4(void)
+DB2_ESC4(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1768,7 +1975,7 @@ DB_ESC4(void)
 
 // dd
 void
-DB_ESC5(void)
+DB2_ESC5(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1865,7 +2072,7 @@ DB_ESC5(void)
 
 // de
 void
-DB_ESC6(void)
+DB2_ESC6(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
@@ -1937,7 +2144,7 @@ DB_ESC6(void)
 
 // df
 void
-DB_ESC7(void)
+DB2_ESC7(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;

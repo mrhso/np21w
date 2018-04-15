@@ -34,8 +34,6 @@
 
 #define CPU_MMXWORKCLOCK(a)	CPU_WORKCLOCK(8)
 
-static int mmxenable = 0; // XXX: 本当はFPU_STATあたりに入れるべき
-
 static INLINE void
 MMX_check_NM_EXCEPTION(){
 	// MMXなしならUD(無効オペコード例外)を発生させる
@@ -57,11 +55,15 @@ MMX_setTag(void)
 {
 	int i;
 	
-	if(!mmxenable){
-		mmxenable = 1;
+	if(!FPU_STAT.mmxenable){
+		FPU_STAT.mmxenable = 1;
 		//FPU_CTRLWORD = 0x27F;
 		for (i = 0; i < FPU_REG_NUM; i++) {
 			FPU_STAT.tag[i] = TAG_Valid;
+#ifdef SUPPORT_FPU_DOSBOX2
+			FPU_STAT.int_regvalid[i] = 0;
+#endif
+			FPU_STAT.reg[i].ul.ext = 0xffff;
 		}
 	}
 	FPU_STAT_TOP = 0;
@@ -97,7 +99,7 @@ MMX_EMMS(void)
 	FPU_STAT_TOP = 0;
 	FPU_STATUSWORD &= ~0x3800;
 	FPU_STATUSWORD |= (FPU_STAT_TOP&7)<<11;
-	mmxenable = 0;
+	FPU_STAT.mmxenable = 0;
 }
 
 // *********** MOV

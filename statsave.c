@@ -51,6 +51,9 @@
 #include "network/lgy98.h"
 #include "network/lgy98dev.h"
 #endif
+#if defined(CPUCORE_IA32)
+#include "ia32/instructions/fpu/fp.h"
+#endif
 
 #if defined(MACOS)
 #define	CRCONST		str_cr
@@ -1508,6 +1511,10 @@ const SFENTRY	*tblterm;
 	cbuscore_bind();
 	fmboard_bind();
 	
+#if defined(CPUCORE_IA32)
+	fpu_initialize();
+#endif
+
 #if defined(SUPPORT_NET)
 	np2net_reset(&np2cfg);
 	np2net_bind();
@@ -1547,7 +1554,7 @@ const SFENTRY	*tblterm;
 	np2wab.lastHeight = 0;
 	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
 #endif
-
+	
 	return(ret);
 }
 

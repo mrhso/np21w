@@ -636,6 +636,9 @@
 #define IDM_MEM646                      40669
 #define IDM_MEM1206                     40670
 #define IDM_MEM2306                     49671
+#define IDM_FPU80                       49680
+#define IDM_FPU64                       49681
+#define IDM_FPU64INT                    49682
 #define IDM_MOUSE                       40671
 #define IDM_SERIAL1                     40672
 #define IDM_MPUPC98                     40673

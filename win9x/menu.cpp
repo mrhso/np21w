@@ -393,6 +393,12 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_MEM646, MF_BYCOMMAND | MFCHECK(EXTMEM == 64));
 	CheckMenuItem(hMenu, IDM_MEM1206,MF_BYCOMMAND | MFCHECK(EXTMEM == 120));
 	CheckMenuItem(hMenu, IDM_MEM2306,MF_BYCOMMAND | MFCHECK(EXTMEM == 230));
+	
+	// Device-FPU
+	const UINT8 fputype = np2cfg.fpu_type;
+	CheckMenuItem(hMenu, IDM_FPU80, MF_BYCOMMAND | MFCHECK(fputype == FPU_TYPE_SOFTFLOAT));
+	CheckMenuItem(hMenu, IDM_FPU64,  MF_BYCOMMAND | MFCHECK(fputype == FPU_TYPE_DOSBOX));
+	CheckMenuItem(hMenu, IDM_FPU64INT,  MF_BYCOMMAND | MFCHECK(fputype == FPU_TYPE_DOSBOX2));
 
 	// Device
 	CheckMenuItem(hMenu, IDM_MOUSE, MF_BYCOMMAND | MFCHECK(np2oscfg.MOUSE_SW));

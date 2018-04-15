@@ -990,6 +990,12 @@ BEGIN
             MENUITEM "&120.6MB",                    IDM_MEM1206
             MENUITEM "&230.6MB",                    IDM_MEM2306
         END
+        POPUP "F&PU"
+        BEGIN
+            MENUITEM "80bit Extended Precision FPU (recommended)",IDM_FPU80
+            MENUITEM "64bit Double Precision FPU",  IDM_FPU64
+            MENUITEM "64bit Double Precision FPU + INT64 Load/Store", IDM_FPU64INT
+        END
         POPUP "&Mouse"
         BEGIN
             MENUITEM "&Mouse Capture",              IDM_MOUSE

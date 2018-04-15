@@ -989,6 +989,12 @@ BEGIN
             MENUITEM "&120.6MB",                    IDM_MEM1206
             MENUITEM "&230.6MB",                    IDM_MEM2306
         END
+        POPUP "F&PU"
+        BEGIN
+            MENUITEM "80bit拡張倍精度FPU (推奨)",IDM_FPU80
+            MENUITEM "64bit倍精度FPU",  IDM_FPU64
+            MENUITEM "64bit倍精度FPU + 80bit相当整数処理", IDM_FPU64INT
+        END
         POPUP "マウス(&M)"
         BEGIN
             MENUITEM "マウスキャプチャ(&M)",        IDM_MOUSE

@@ -274,6 +274,12 @@
     <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\mmx">
       <UniqueIdentifier>{ae731bcd-2e4a-42fe-b045-f5b1e97a7616}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\i386c\ia32\instructions\fpu\softfloat">
+      <UniqueIdentifier>{da27d676-cbee-458a-832c-935c0d556bc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat">
+      <UniqueIdentifier>{a75abfc2-c1e6-4d90-a883-3d16434e44d8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1266,11 +1272,17 @@
     <ClCompile Include="..\sound\mame\ymf262.c">
       <Filter>ソース ファイル\sound\mame</Filter>
     </ClCompile>
-    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox_asm.c">
-      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
-    </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\mmx\mmx.c">
       <Filter>ソース ファイル\i386c\ia32\instructions\mmx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_softfloat.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\softfloat\softfloat.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox2.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2242,6 +2254,18 @@
     </ClInclude>
     <ClInclude Include="..\i386c\ia32\instructions\mmx\mmx.h">
       <Filter>ヘッダー ファイル\i386c\ia32\instructions\mmx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\fpu\softfloat\softfloat.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\fpu\softfloat\softfloatdef.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\fpu\softfloat\softfloat-macros.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\fpu\softfloat\softfloat-specialize.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

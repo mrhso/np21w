@@ -59,6 +59,7 @@
 #endif
 #if defined(CPUCORE_IA32)
 #include	"ia32/cpu.h"
+#include	"ia32/instructions/fpu/fp.h"
 #else
 #define	CPU_VENDOR		"GenuineIntel"
 #define	CPU_FAMILY	2
@@ -134,7 +135,8 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				0, 0xff00, 
 				0, 0, 0,
-				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_BRAND_STRING
+				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_BRAND_STRING, OEMTEXT(""), OEMTEXT(""),
+				FPU_TYPE_SOFTFLOAT
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -461,12 +463,43 @@ void pccore_reset(void) {
 		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_NEKOPRO);
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_NEKOPRO);
 	}
+#if defined(CPUCORE_IA32)
+	if(_tcslen(np2cfg.cpu_vendor_o)!=0){
+		memset(np2cfg.cpu_vendor, 0, 12);
+#ifdef UNICODE
+		WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_vendor_o, -1, np2cfg.cpu_vendor, 12+1, NULL, NULL);
+#else
+		strcpy(np2cfg.cpu_vendor, np2cfg.cpu_vendor_o);
+#endif
+		// 字数が足りない時スペースで埋める
+		for(i=0;i<12;i++){
+			if(np2cfg.cpu_vendor[i] == '\0'){
+				np2cfg.cpu_vendor[i] = ' ';
+			}
+		}
+		np2cfg.cpu_vendor[12] = '\0';
+	}
+	if(_tcslen(np2cfg.cpu_brandstring_o)!=0){
+		memset(np2cfg.cpu_brandstring, 0, 48);
+#ifdef UNICODE
+		WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_brandstring_o, -1, np2cfg.cpu_brandstring, 48+1, NULL, NULL);
+#else
+		strcpy(np2cfg.cpu_brandstring, np2cfg.cpu_brandstring_o);
+#endif
+		// 最後に1文字スペースを入れる
+		strcat(np2cfg.cpu_brandstring, " ");
+	}
+#endif
 	strcpy(i386cpuid.cpu_vendor, np2cfg.cpu_vendor);
 	i386cpuid.cpu_family = np2cfg.cpu_family;
 	i386cpuid.cpu_model = np2cfg.cpu_model;
 	i386cpuid.cpu_stepping = np2cfg.cpu_stepping;
 	i386cpuid.cpu_feature = CPU_FEATURES & np2cfg.cpu_feature;
 	strcpy(i386cpuid.cpu_brandstring, np2cfg.cpu_brandstring);
+
+	// FPU種類を設定
+	i386cpuid.fpu_type = np2cfg.fpu_type;
+	fpu_initialize();
 #endif
 
 	pccore_set(&np2cfg);
