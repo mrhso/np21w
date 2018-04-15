@@ -469,6 +469,12 @@ static const PFTBL s_IniItems[] =
 	PFEXT("MEMswtch", PFTYPE_BIN,		np2cfg.memsw,			8),
 	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			244),
 	PFVAL("ITF_WORK", PFTYPE_BOOL,		&np2cfg.ITF_WORK),
+	
+	PFVAL("SVFDFILE", PFTYPE_BOOL,		&np2cfg.savefddfile),
+	PFSTR("FDD1FILE", PFTYPE_STR,		np2cfg.fddfile[0]),
+	PFSTR("FDD2FILE", PFTYPE_STR,		np2cfg.fddfile[1]),
+	PFSTR("FDD3FILE", PFTYPE_STR,		np2cfg.fddfile[2]),
+	PFSTR("FDD4FILE", PFTYPE_STR,		np2cfg.fddfile[3]),
 
 	PFSTR("HDD1FILE", PFTYPE_STR,		np2cfg.sasihdd[0]),
 	PFSTR("HDD2FILE", PFTYPE_STR,		np2cfg.sasihdd[1]),
@@ -485,6 +491,9 @@ static const PFTBL s_IniItems[] =
 	PFVAL("IDE2TYPE", PFTYPE_UINT8,		&np2cfg.idetype[1]),
 	PFVAL("IDE3TYPE", PFTYPE_UINT8,		&np2cfg.idetype[2]),
 	PFVAL("IDE4TYPE", PFTYPE_UINT8,		&np2cfg.idetype[3]),
+	PFVAL("IDE_BIOS", PFTYPE_BOOL,		&np2cfg.idebios),  // 実機IDE BIOS使用
+	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
+	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
 #endif
 
 	PFVAL("SampleHz", PFTYPE_UINT32,	&np2cfg.samplingrate),
@@ -563,11 +572,9 @@ static const PFTBL s_IniItems[] =
 #endif
 	
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
-	PFMAX("MODELNUM", PFTYPE_UINT8,		&np2cfg.modelnum,		255),
+	PFMAX("MODELNUM", PFTYPE_HEX8,		&np2cfg.modelnum,		255),
 	
 	PFVAL("TIMERADJ", PFTYPE_BOOL,		&np2cfg.timeradj),
-	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
-	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
 
 	// OS依存？
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),

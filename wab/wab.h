@@ -60,6 +60,9 @@ void np2wab_setRelayState(REG8 state);
 void np2wab_setScreenSize(int width, int height);
 void np2wab_setScreenSizeMT(int width, int height);
 
+void wabwin_readini();
+void wabwin_writeini();
+
 extern NP2WAB		np2wab;
 extern NP2WABCFG	np2wabcfg;
 extern NP2WABWND	np2wabwnd;

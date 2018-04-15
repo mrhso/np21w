@@ -70,7 +70,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
-				128, 0x00, 0, 0, 0,
+				128, 0x00, 0, 
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
@@ -81,10 +81,13 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				1, 0x82,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 				3, 1, 80, 0, 0,
+
+				0, {OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
 #if defined(SUPPORT_IDEIO)
 				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")}, 
 				{SXSIDEV_HDD, SXSIDEV_HDD, SXSIDEV_CDROM, SXSIDEV_HDD}, 
 				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
+				1, 0, 0,
 #else
 				{OEMTEXT(""), OEMTEXT("")},
 #endif
@@ -135,8 +138,8 @@ static int pccore_hrtimerThreadExit = 0;
 
 static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 	LARGE_INTEGER hrtmp = {0}; 
-	SYSTEMTIME hrtimertime;
-	UINT32 hrtimertimeuint;
+	//SYSTEMTIME hrtimertime;
+	//UINT32 hrtimertimeuint;
 	while (!pccore_hrtimerThreadExit) {
 		SINT64 times;
 		QueryPerformanceFrequency(&hrtimerfreq);

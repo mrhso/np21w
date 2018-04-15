@@ -481,7 +481,7 @@ BEGIN
     PUSHBUTTON      "Defaults",IDC_GD5430DEF,136,102,40,14
 END
 
-IDD_IDE DIALOGEX 0, 0, 195, 101
+IDD_IDE DIALOGEX 0, 0, 195, 156
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "IDE Configure"
 CLASS "np2dialog"
@@ -493,10 +493,19 @@ BEGIN
     LTEXT           "Slave",IDC_STATIC,8,56,29,8
     COMBOBOX        IDC_IDE1TYPE,40,24,64,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_IDE2TYPE,40,54,64,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_IDE3TYPE,118,24,64,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_IDE4TYPE,118,54,64,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "&OK",IDOK,92,75,44,14,WS_GROUP
-    PUSHBUTTON      "Cancel",IDCANCEL,140,75,44,14
+    COMBOBOX        IDC_IDE3TYPE,118,24,64,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_IDE4TYPE,118,54,64,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_IDERWAIT,80,78,34,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+	CONTROL			"", IDC_SPINIDERWAIT, "msctls_updown32", UDS_ALIGNRIGHT | UDS_ARROWKEYS, 114, 78, 10, 14
+    LTEXT           "Interrupt Delay(Read)",IDC_STATIC,8,80,70,8
+    LTEXT           "clock",IDC_STATIC,126,80,32,8
+    EDITTEXT        IDC_IDEWWAIT,80,98,34,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+	CONTROL			"", IDC_SPINIDEWWAIT, "msctls_updown32", UDS_ALIGNRIGHT | UDS_ARROWKEYS, 114, 98, 10, 14
+    LTEXT           "Interrupt Delay(Write)",IDC_STATIC,8,100,70,8
+    LTEXT           "clock",IDC_STATIC,126,100,32,8
+    CONTROL         "Use IDE BIOS",IDC_USEIDEBIOS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,120,200,10
+    DEFPUSHBUTTON   "&OK",IDOK,92,130,44,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,140,130,44,14
 END
 
 
@@ -791,6 +800,8 @@ BEGIN
         MENUITEM "&Configure...",               IDM_CONFIG
         MENUITEM "&New disk...",                IDM_NEWDISK
         MENUITEM "&Font...",                    IDM_CHANGEFONT
+        MENUITEM SEPARATOR
+        MENUITEM "&Save VM config...",          IDM_SAVEVMCFG
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       IDM_EXIT
     END
@@ -1386,6 +1397,9 @@ BEGIN
     IDS_TXTTITLE            "Save as text file"
     IDS_TXTEXT              "txt"
     IDS_TXTFILTER           "Text file (*.txt)|*.txt|"
+    IDS_CFGTITLE            "Save VM configuration file"
+    IDS_CFGEXT              "npcfg"
+    IDS_CFGFILTER           "Neko Project VM configuration file (*.npcfg)|*.npcfg|Neko Project II VM configuration file (*.np2cfg)|*.np2cfg|Neko Project 21 VM configuration file (*.np21cfg)|*.np21cfg|Neko Project 21/W VM configuration file (*.np21wcfg)|*.np21wcfg|"
 END
 
 STRINGTABLE

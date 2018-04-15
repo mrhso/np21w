@@ -1,6 +1,6 @@
 /**
- * @file	d_bmp.cpp
- * @brief	bmp dialog
+ * @file	d_txt.cpp
+ * @brief	txt dialog
  */
 
 #include "compiler.h"

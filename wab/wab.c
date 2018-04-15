@@ -65,7 +65,7 @@ static const PFTBL s_wabwndini[] =
 /**
  * 設定読み込み
  */
-static void wabwin_readini()
+void wabwin_readini()
 {
 	OEMCHAR szPath[MAX_PATH];
 
@@ -83,7 +83,7 @@ static void wabwin_readini()
 /**
  * 設定書き込み
  */
-static void wabwin_writeini()
+void wabwin_writeini()
 {
 	TCHAR szPath[MAX_PATH];
 	initgetfile(szPath, _countof(szPath));
@@ -391,8 +391,8 @@ void np2wab_init(HINSTANCE hInstance, HWND hWndMain)
 	WNDCLASSEX wcex = {0};
 	HDC hdc;
 
-	// 専用INIセクション読み取り
-	wabwin_readini();
+	//// 専用INIセクション読み取り
+	//wabwin_readini();
 	
 	// 後々要る物を保存しておく
 	ga_hInstance = hInstance;
@@ -503,7 +503,7 @@ void np2wab_shutdown()
 	// マルチスレッドモードなら先にスレッド処理を終了させる
 	ga_exitThread = 1;
 	ResumeThread(ga_hThread);
-	while(WaitForSingleObject(ga_hThread, 200)==WAIT_TIMEOUT){
+	while(WaitForSingleObject(ga_hThread, 500)==WAIT_TIMEOUT){
 		ResumeThread(ga_hThread);
 	}
 	ga_hThread = NULL;
@@ -516,8 +516,8 @@ void np2wab_shutdown()
 	DestroyWindow(np2wabwnd.hWndWAB);
 	np2wabwnd.hWndWAB = NULL;
 
-	// 専用INIセクション書き込み
-	wabwin_writeini();
+	//// 専用INIセクション書き込み
+	//wabwin_writeini();
 }
 
 // 内蔵ディスプレイ切り替えリレー状態を設定する。stateのbit0は外部ｱｸｾﾗ(=1)/内蔵ｱｸｾﾗ(=0)切替、bit1は内蔵ｱｸｾﾗ(=1)/98ｸﾞﾗﾌ(=0)切替。他は0。

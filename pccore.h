@@ -92,9 +92,6 @@ struct tagNP2Config
 
 	UINT8	timeradj;
 	
-	UINT32	iderwait; // IDE読み取りの割り込み遅延時間(clock)。  np21w ver0.86 rev19
-	UINT32	idewwait; // IDE書き込みの割り込み遅延時間(clock)。IDE BIOSがある場合は0にしても強制的に20000clock以上なります。  np21w ver0.86 rev18
-
 	// リセット時とかあんまり参照されない奴
 	OEMCHAR	model[8];
 	UINT	baseclock;
@@ -142,11 +139,17 @@ struct tagNP2Config
 	UINT8	MOTORVOL;
 	UINT8	PROTECTMEM;
 	UINT8	hdrvacc;
+	
+	UINT8	savefddfile;											// ver0.86w rev20
+	OEMCHAR	fddfile[4][MAX_PATH];									// ver0.86w rev20
 
 #if defined(SUPPORT_IDEIO)
 	OEMCHAR	sasihdd[4][MAX_PATH];									// ver0.86w
 	UINT8	idetype[4];												// ver0.86w
 	OEMCHAR	idecd[4][MAX_PATH];										// ver0.85w
+	UINT8	idebios;												// ver0.86w rev20
+	UINT32	iderwait; // IDE読み取りの割り込み遅延時間(clock)。  np21w ver0.86 rev19
+	UINT32	idewwait; // IDE書き込みの割り込み遅延時間(clock)。IDE BIOSがある場合は0にしても強制的に20000clock以上なります。  np21w ver0.86 rev18
 #else
 	OEMCHAR	sasihdd[2][MAX_PATH];									// ver0.74
 #endif

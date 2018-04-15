@@ -6,6 +6,7 @@
 #define IRT_MANIFEST                    24
 #define IDI_ICON1                       101
 #define IDI_ICON2                       102
+#define IDI_ICON3                       103
 #define IDD_CONFIG                      111
 #define IDD_NEWDISK                     121
 #define IDD_NEWHDDDISK                  122
@@ -247,6 +248,9 @@
 #define IDC_IDE4TYPE                    19103
 #define IDC_IDEWWAIT                    19104
 #define IDC_SPINIDEWWAIT				19105
+#define IDC_IDERWAIT                    19106
+#define IDC_SPINIDERWAIT				19107
+#define IDC_USEIDEBIOS					19108
 #define IDS_APP_NAME2                   30001
 #define IDS_APP_NAME21                  30002
 #define IDS_FILENAME_HELP               30003
@@ -387,6 +391,9 @@
 #define IDS_TXTTITLE                    31111
 #define IDS_TXTEXT                      31112
 #define IDS_TXTFILTER                   31113
+#define IDS_CFGTITLE                    31121
+#define IDS_CFGEXT                      31122
+#define IDS_CFGFILTER                   31123
 #define IDM_TOOLWIN                     40001
 #define IDM_KEYDISP                     40002
 #define IDM_SOFTKBD                     40003
@@ -411,6 +418,7 @@
 #define IDM_NEWDISK                     40103
 #define IDM_CHANGEFONT                  40104
 #define IDM_EXIT                        40105
+#define IDM_SAVEVMCFG                   40106
 #define IDM_FLAGSAVE                    40201
 #define IDM_FLAGSAVE0                   40201
 #define IDM_FLAGSAVE1                   40202

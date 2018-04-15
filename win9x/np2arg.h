@@ -20,6 +20,7 @@ public:
 	LPCTSTR disk(int nDrive) const;
 	LPCTSTR iniFilename() const;
 	bool fullscreen() const;
+	void setiniFilename(LPCTSTR newfile);
 
 private:
 	static Np2Arg sm_instance;		//!< 唯一のインスタンスです
@@ -67,3 +68,13 @@ inline bool Np2Arg::fullscreen() const
 {
 	return m_fFullscreen;
 }
+
+/**
+ * INI パスを得る
+ * @return INI パス
+ */
+inline void Np2Arg::setiniFilename(LPCTSTR newfile)
+{
+	m_lpIniFile = newfile;
+}
+

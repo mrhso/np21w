@@ -44,6 +44,8 @@ private:
 	CComboData m_cmbps;			//!< プライマリ スレーブ
 	CComboData m_cmbsm;			//!< セカンダリ マスタ
 	CComboData m_cmbss;			//!< セカンダリ スレーブ
+	CWndProc m_chkidebios;		//!< Use IDE BIOS
+	CWndProc m_nudrwait;		//!< 割り込み（書き込み）ディレイ
 	CWndProc m_nudwwait;		//!< 割り込み（書き込み）ディレイ
 };
 
@@ -90,9 +92,19 @@ BOOL CIdeDlg::OnInitDialog()
 	m_cmbss.Add(s_type, _countof(s_type));
 	m_cmbss.SetCurItemData(np2cfg.idetype[3]);
 	
+	m_nudrwait.SubclassDlgItem(IDC_IDERWAIT, this);
+	_stprintf(numbuf, _T("%d"), np2cfg.iderwait);
+	m_nudrwait.SetWindowTextW(numbuf);
+
 	m_nudwwait.SubclassDlgItem(IDC_IDEWWAIT, this);
 	_stprintf(numbuf, _T("%d"), np2cfg.idewwait);
 	m_nudwwait.SetWindowTextW(numbuf);
+	
+	m_chkidebios.SubclassDlgItem(IDC_USEIDEBIOS, this);
+	if(np2cfg.idebios)
+		m_chkidebios.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+	else
+		m_chkidebios.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 
 	m_cmbpm.SetFocus();
 
@@ -128,6 +140,15 @@ void CIdeDlg::OnOK()
 		np2cfg.idetype[3] = m_cmbss.GetCurItemData(np2cfg.idetype[3]);
 		update |= SYS_UPDATECFG | SYS_UPDATEHDD;
 	}
+	m_nudrwait.GetWindowTextW(numbuf, 30);
+	valtmp = _ttol(numbuf);
+	if (valtmp < 0) valtmp = 0;
+	if (valtmp > 10000000) valtmp = 10000000;
+	if (valtmp != np2cfg.iderwait)
+	{
+		np2cfg.iderwait = valtmp;
+		update |= SYS_UPDATECFG;
+	}
 	m_nudwwait.GetWindowTextW(numbuf, 30);
 	valtmp = _ttol(numbuf);
 	if (valtmp < 0) valtmp = 0;
@@ -137,6 +158,12 @@ void CIdeDlg::OnOK()
 		np2cfg.idewwait = valtmp;
 		update |= SYS_UPDATECFG;
 	}
+	if (np2cfg.idebios != (m_chkidebios.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0))
+	{
+		np2cfg.idebios = (m_chkidebios.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
+		update |= SYS_UPDATECFG;
+	}
+
 	sysmng_update(update);
 
 	CDlgProc::OnOK();
@@ -175,6 +202,26 @@ LRESULT CIdeDlg::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 	TCHAR numbuf[31];
 	switch(wParam)
 	{
+		case IDC_SPINIDERWAIT:
+			lpnud = (LPNMUPDOWN)lParam;
+			if(lpnud->hdr.code == UDN_DELTAPOS)
+			{
+				m_nudrwait.GetWindowTextW(numbuf, 30);
+				nudnum = _ttol(numbuf);
+				if(lpnud->iDelta > 0)
+				{
+					if(nudnum <= 0) nudnum = 0;
+					else nudnum--;
+				}
+				else if(lpnud->iDelta < 0)
+				{
+					if(nudnum >= 10000000) nudnum = 10000000;
+					else nudnum++;
+				}
+				_stprintf(numbuf, _T("%d"), nudnum);
+				m_nudrwait.SetWindowTextW(numbuf);
+			}
+			break;
 		case IDC_SPINIDEWWAIT:
 			lpnud = (LPNMUPDOWN)lParam;
 			if(lpnud->hdr.code == UDN_DELTAPOS)
@@ -194,6 +241,7 @@ LRESULT CIdeDlg::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				_stprintf(numbuf, _T("%d"), nudnum);
 				m_nudwwait.SetWindowTextW(numbuf);
 			}
+			break;
 	}
 
 	return CDlgProc::WindowProc(nMsg, wParam, lParam);

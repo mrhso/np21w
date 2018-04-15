@@ -219,6 +219,7 @@ void diskdrv_setfddex(REG8 drv, const OEMCHAR *fname, UINT ftype, int readonly)
 		fdd_eject(drv);
 		diskdrv_delay[drv] = 0;
 		diskdrv_fname[drv][0] = '\0';
+		np2cfg.fddfile[drv][0] = '\0';
 		fdc.stat[drv] = FDCRLT_AI | FDCRLT_NR | drv;
 		fdc_interrupt();
 
@@ -228,6 +229,7 @@ void diskdrv_setfddex(REG8 drv, const OEMCHAR *fname, UINT ftype, int readonly)
 			diskdrv_ftype[drv] = ftype;
 			diskdrv_ro[drv] = readonly;
 			file_cpyname(diskdrv_fname[drv], fname, NELEMENTS(diskdrv_fname[drv]));
+			file_cpyname(np2cfg.fddfile[drv], fname, NELEMENTS(np2cfg.fddfile[drv]));
 		}
 		sysmng_update(SYS_UPDATEFDD);
 	}

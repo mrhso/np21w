@@ -63,7 +63,7 @@ void Np2Arg::Parse()
 		else
 		{
 			LPCTSTR lpExt = ::file_getext(lpArg);
-			if (::file_cmpname(lpExt, TEXT("ini")) == 0)
+			if (::file_cmpname(lpExt, TEXT("ini")) == 0 || ::file_cmpname(lpExt, TEXT("npc")) == 0 || ::file_cmpname(lpExt, TEXT("npcfg")) == 0 || ::file_cmpname(lpExt, TEXT("np2cfg")) == 0 || ::file_cmpname(lpExt, TEXT("np21cfg")) == 0 || ::file_cmpname(lpExt, TEXT("np21wcfg")) == 0)
 			{
 				m_lpIniFile = lpArg;
 			}
@@ -76,10 +76,13 @@ void Np2Arg::Parse()
 	if(m_lpIniFile){ // np21w ver0.86 rev8
 		LPTSTR strbuf;
 		strbuf = (LPTSTR)calloc(500, sizeof(TCHAR));
-		//getcwd(pathname, 300);
-		GetCurrentDirectory(500, strbuf);
-		if(strbuf[_tcslen(strbuf)-1]!='\\'){
-			_tcscat(strbuf, _T("\\")); // XXX: Linuxとかだったらスラッシュじゃないと駄目だよね
+		if(!(_tcsstr(m_lpIniFile,_T(":"))!=NULL || (m_lpIniFile[0]=='\\'))){
+			// ファイル名のみの指定っぽかったら現在のディレクトリを結合
+			//getcwd(pathname, 300);
+			GetCurrentDirectory(500, strbuf);
+			if(strbuf[_tcslen(strbuf)-1]!='\\'){
+				_tcscat(strbuf, _T("\\")); // XXX: Linuxとかだったらスラッシュじゃないと駄目だよね？
+			}
 		}
 		_tcscat(strbuf, m_lpIniFile);
 		m_lpIniFile = strbuf;

@@ -198,6 +198,7 @@ const OEMCHAR	*p;
 	}
 	if (r == SUCCESS) {
 		file_cpyname(fdd->fname, fname, NELEMENTS(fdd->fname));
+		file_cpyname(np2cfg.fddfile[drv], fname, NELEMENTS(np2cfg.fddfile[drv]));
 		fdd->ftype = ftype;
 		fdd->ro = ro;
 	}
@@ -280,6 +281,7 @@ BRESULT fdd_seek_common(FDDFILE fdd) {
 
 	if ((CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
+		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
 		(fdc.ncn >= (fdd->inf.xdf.tracks >> 1))) {
 		return(FAILURE);
 	}
@@ -290,6 +292,7 @@ BRESULT fdd_seeksector_common(FDDFILE fdd) {
 
 	if ((CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
+		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
 		(fdc.treg[fdc.us] >= (fdd->inf.xdf.tracks >> 1))) {
 TRACEOUT(("fdd_seek_common FAILURE CTRL_FDMEDIA[%02x], DISKTYPE[%02x]", CTRL_FDMEDIA, fdd->inf.xdf.disktype));
 TRACEOUT(("fdd_seek_common FAILURE fdc.rpm[%02x], fdd->rpm[%02x]", fdc.rpm[fdc.us], fdd->inf.xdf.rpm));
@@ -315,6 +318,7 @@ BRESULT fdd_readid_common(FDDFILE fdd) {
 	fddlasterror = 0x00;
 	if ((!fdc.mf) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
+		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
 		(fdc.crcn >= fdd->inf.xdf.sectors)) {
 		fddlasterror = 0xe0;
 		return(FAILURE);

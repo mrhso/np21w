@@ -61,6 +61,8 @@
 
 #ifdef USE_FPU
 
+#define FPU_WORKCLOCK	6
+
 #define PI		3.14159265358979323846
 #define L2E		1.4426950408889634
 #define L2T		3.3219280948873623
@@ -1191,6 +1193,7 @@ ESC0(void)
 	UINT32 op, madr;
 	UINT idx, sub;
 
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU d8 %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1245,7 +1248,8 @@ ESC1(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
-
+	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU d9 %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1486,7 +1490,8 @@ ESC2(void)
 {
 	UINT32 op, madr;
 	UINT idx, sub;
-
+	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU da %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1525,6 +1530,7 @@ ESC3(void)
 	UINT32 op, madr;
 	UINT idx, sub;
 	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU db %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1612,6 +1618,7 @@ ESC4(void)
 	//	return;
 	//}
 	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU dc %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1673,7 +1680,8 @@ ESC5(void)
 	//	dummy_ESC5();
 	//	return;
 	//}
-
+	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU dd %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1757,6 +1765,7 @@ ESC6(void)
 	UINT32 op, madr;
 	UINT idx, sub;
 	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU de %.2x", op));
 	idx = (op >> 3) & 7;
@@ -1821,6 +1830,7 @@ ESC7(void)
 	UINT32 op, madr;
 	UINT idx, sub;
 	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE(op);
 	TRACEOUT(("use FPU df %.2x", op));
 	idx = (op >> 3) & 7;

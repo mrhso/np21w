@@ -97,10 +97,11 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[49] = 0x0200;		// support LBA
 		tmp[51] = 0x0200;
 		tmp[53] = 0x0001;
-		tmp[54] = sxsi->cylinders;
-		tmp[55] = sxsi->surfaces;
-		tmp[56] = sxsi->sectors;
 		size = sxsi->cylinders * sxsi->surfaces * sxsi->sectors;
+		tmp[54] = size / drv->surfaces / drv->sectors;//sxsi->cylinders;
+		tmp[55] = drv->surfaces;//sxsi->surfaces;
+		tmp[56] = drv->sectors;//sxsi->sectors;
+		size = (UINT32)tmp[54] * tmp[55] * tmp[56];
 		tmp[57] = (UINT16)size;
 		tmp[58] = (UINT16)(size >> 16);
 #if IDEIO_MULTIPLE_MAX > 0
@@ -1214,6 +1215,7 @@ static void devinit(IDEDRV drv, REG8 sxsidrv) {
 
 	ZeroMemory(drv, sizeof(_IDEDRV));
 	drv->sxsidrv = sxsidrv;
+	//drv->dr = 0xa0;
 	sxsi = sxsi_getptr(sxsidrv);
 	if ((sxsi != NULL) && (np2cfg.idetype[sxsidrv] == SXSIDEV_HDD) && 
 			(sxsi->devtype == SXSIDEV_HDD) && (sxsi->flag & SXSIFLAG_READY)) {
@@ -1261,23 +1263,27 @@ void ideio_reset(const NP2CFG *pConfig) {
 	ideio.wwait = np2cfg.idewwait;
 	ideio.bios = IDETC_NOBIOS;
 
-	_tcscpy(tmpbiosname, OEMTEXT("ide.rom"));
-	getbiospath(path, tmpbiosname, NELEMENTS(path));
-	fh = file_open_rb(path);
-	if (fh == FILEH_INVALID) {
-		_tcscpy(tmpbiosname, OEMTEXT("d8000.rom"));
+	if(np2cfg.idebios){
+		_tcscpy(tmpbiosname, OEMTEXT("ide.rom"));
 		getbiospath(path, tmpbiosname, NELEMENTS(path));
 		fh = file_open_rb(path);
-	}
-	if (fh == FILEH_INVALID) {
-		_tcscpy(tmpbiosname, OEMTEXT("bank3.bin"));
-		getbiospath(path, tmpbiosname, NELEMENTS(path));
-		fh = file_open_rb(path);
-	}
-	if (fh == FILEH_INVALID) {
-		_tcscpy(tmpbiosname, OEMTEXT("bios9821.rom"));
-		getbiospath(path, tmpbiosname, NELEMENTS(path));
-		fh = file_open_rb(path);
+		if (fh == FILEH_INVALID) {
+			_tcscpy(tmpbiosname, OEMTEXT("d8000.rom"));
+			getbiospath(path, tmpbiosname, NELEMENTS(path));
+			fh = file_open_rb(path);
+		}
+		if (fh == FILEH_INVALID) {
+			_tcscpy(tmpbiosname, OEMTEXT("bank3.bin"));
+			getbiospath(path, tmpbiosname, NELEMENTS(path));
+			fh = file_open_rb(path);
+		}
+		if (fh == FILEH_INVALID) {
+			_tcscpy(tmpbiosname, OEMTEXT("bios9821.rom"));
+			getbiospath(path, tmpbiosname, NELEMENTS(path));
+			fh = file_open_rb(path);
+		}
+	}else{
+		fh = FILEH_INVALID;
 	}
 	if (fh != FILEH_INVALID) {
 		// IDE BIOS
@@ -1294,6 +1300,7 @@ void ideio_reset(const NP2CFG *pConfig) {
 		CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
 		TRACEOUT(("use simulate ide.rom"));
 	}
+
 	(void)pConfig;
 }
 

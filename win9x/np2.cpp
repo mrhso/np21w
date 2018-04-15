@@ -359,7 +359,8 @@ void np2active_renewal(void) {										// ver0.30
 #if defined(SUPPORT_RESUME) || defined(SUPPORT_STATSAVE)
 static void getstatfilename(OEMCHAR *path, const OEMCHAR *ext, int size) {
 
-	file_cpyname(path, modulefile, size);
+	initgetfile(path, size);
+	//file_cpyname(path, modulefile, size);
 	file_cutext(path);
 	file_catname(path, str_dot, size);
 	file_catname(path, ext, size);
@@ -529,6 +530,12 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 		case IDM_CHANGEFONT:
 			winuienter();
 			dialog_font(hWnd);
+			winuileave();
+			break;
+			
+		case IDM_SAVEVMCFG:
+			winuienter();
+			dialog_writenpcfg(hWnd);
 			winuileave();
 			break;
 
@@ -1841,6 +1848,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	kdispwin_readini();
 	skbdwin_readini();
 	mdbgwin_readini();
+#if defined(SUPPORT_WAB)
+	wabwin_readini();
+#endif	// defined(SUPPORT_WAB)
 
 	rand_setseed((unsigned)time(NULL));
 
@@ -2043,7 +2053,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	}
 #endif
 
-//	リセットしてから… コマンドラインのディスク挿入。
+//	リセットしてから… 
+	// INIに記録されたディスクを挿入
+	if(np2cfg.savefddfile){
+		for (i = 0; i < 4; i++)
+		{
+			LPCTSTR lpDisk = np2cfg.fddfile[i];
+			if (lpDisk)
+			{
+				diskdrv_readyfdd((REG8)i, lpDisk, 0);
+			}
+		}
+	}
+	// コマンドラインのディスク挿入。
 	for (i = 0; i < 4; i++)
 	{
 		LPCTSTR lpDisk = Np2Arg::GetInstance()->disk(i);
@@ -2193,6 +2215,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		skbdwin_writeini();
 		mdbgwin_writeini();
 	}
+#if defined(SUPPORT_WAB)
+	wabwin_writeini();
+#endif	// defined(SUPPORT_WAB)
 	skbdwin_deinitialize();
 
 	UnloadExternalResource();
