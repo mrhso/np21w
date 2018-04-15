@@ -247,7 +247,7 @@ WINLOCEX np2_winlocexallwin(HWND base) {
 
 	UINT	i;
 	UINT	cnt;
-	HWND	list[5];
+	HWND	list[10];
 
 	cnt = 0;
 	list[cnt++] = g_hWndMain;
@@ -255,6 +255,9 @@ WINLOCEX np2_winlocexallwin(HWND base) {
 	list[cnt++] = kdispwin_gethwnd();
 	list[cnt++] = skbdwin_gethwnd();
 	list[cnt++] = mdbgwin_gethwnd();
+	if(FindWindow(OEMTEXT("Shell_TrayWnd"), NULL)){
+		list[cnt++] = FindWindow(OEMTEXT("Shell_TrayWnd"), NULL);
+	}
 	for (i=0; i<cnt; i++) {
 		if (list[i] == base) {
 			list[i] = NULL;

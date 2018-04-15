@@ -440,7 +440,11 @@ BRESULT iocore_build(void) {
 	}
 	sys->type = IOFUNC_SYS;
 	for (i=0; i<256; i++) {
+#ifdef SUPPORT_PC9821
 		if (!(i & (0x0c|(np2cfg.sysiomsk >> 8)))) { // PC-9821用 追加マスク(0x0c -> 0xff) np21w ver0.86 rev37
+#else
+		if (!(i & 0x0c)) {
+#endif
 			ioc->base[i] = sys;
 		}
 		else {
