@@ -16,7 +16,7 @@
 #if defined(SUPPORT_PX)
 #define OPNA_MAX	5
 #else	/* defined(SUPPORT_PX) */
-#define OPNA_MAX	2
+#define OPNA_MAX	3
 #endif	/* defined(SUPPORT_PX) */
 
 typedef struct {

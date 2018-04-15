@@ -254,7 +254,7 @@ void ne2000_send_packet(VLANClientState *vc1, const UINT8 *buf, int size)
     printf("vlan %d send:\n", vlan->id);
     hex_dump(stdout, buf, size);
 #endif
-	np2net.send_packet((UCHAR*)buf, size);
+	np2net.send_packet((UINT8*)buf, size);
     /*for(vc = vlan->first_client; vc != NULL; vc = vc->next) {
         if (vc != vc1 && !vc->link_down) {
             vc->fd_read(vc->opaque, buf, size);

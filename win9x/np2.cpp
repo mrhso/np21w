@@ -138,7 +138,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 8
+						0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 8, 0
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -1184,6 +1184,28 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			update |= SYS_UPDATECFG;
 			break;
 			
+		case IDM_MOUSENC:
+			np2oscfg.mouse_nc = !np2oscfg.mouse_nc;
+			if(np2oscfg.mouse_nc){
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+				if (np2oscfg.mouse_nc && np2oscfg.wintype != 0) {
+					// XXX: メニューが出せなくなって詰むのを回避（暫定）
+					if (!scrnmng_isfullscreen()) {
+						WINLOCEX	wlex;
+						np2oscfg.wintype = 0;
+						wlex = np2_winlocexallwin(hWnd);
+						winlocex_setholdwnd(wlex, hWnd);
+						np2class_windowtype(hWnd, np2oscfg.wintype);
+						winlocex_move(wlex);
+						winlocex_destroy(wlex);
+						sysmng_update(SYS_UPDATEOSCFG);
+					}
+				}
+			}else{
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
+			}
+			break;
+
 		case IDM_MOUSERAW:
 			np2oscfg.rawmouse = !np2oscfg.rawmouse;
 			mousemng_updateclip(); // キャプチャし直す
@@ -1489,6 +1511,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	UINT		update;
 	HWND		subwin;
 	WINLOCEX	wlex;
+
+	static int lastmx = -1;
+	static int lastmy = -1;
+	static int lastbtn = -1;
 
 	switch (msg) {
 		//	イメージファイルのＤ＆Ｄに対応(Kai1)
@@ -1860,6 +1886,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					SendMessage(hWnd, WM_CLOSE, 0, 0L);
 					break;
 				}
+				if (np2oscfg.mouse_nc && np2oscfg.wintype != 0) {
+					// XXX: メニューが出せなくなって詰むのを回避（暫定）
+					if (!scrnmng_isfullscreen()) {
+						np2oscfg.wintype = 0;
+						wlex = np2_winlocexallwin(hWnd);
+						winlocex_setholdwnd(wlex, hWnd);
+						np2class_windowtype(hWnd, np2oscfg.wintype);
+						winlocex_move(wlex);
+						winlocex_destroy(wlex);
+						sysmng_update(SYS_UPDATEOSCFG);
+						break;
+					}
+				}
 			}
 			winkbd_keydown(wParam, lParam);
 			break;
@@ -1873,6 +1912,43 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				POINT p;
 				if (GetCursorPos(&p)) {
 					scrnmng_fullscrnmenu(p.y);
+				}
+			}else{
+				if(np2oscfg.mouse_nc){
+					int x = LOWORD(lParam);
+					int y = HIWORD(lParam);
+					SINT16 dx, dy;
+					UINT8 btn;
+					btn = mousemng_getstat(&dx, &dy, 0);
+					if(lastmx == -1 || lastmy == -1){
+						lastmx = x;
+						lastmy = y;
+					}
+					if((x-lastmx) || (y-lastmy)){
+						RECT r;
+						int mouse_edge_sh_x = 100;
+						int mouse_edge_sh_y = 100;
+						GetClientRect(hWnd, &r);
+						mouse_edge_sh_x = (r.right-r.left)/8;
+						mouse_edge_sh_y = (r.bottom-r.top)/8;
+						dx += (x-lastmx);
+						dy += (y-lastmy);
+						// XXX: 端実験
+#define MOUSE_EDGE_ACM	4
+						if(x<mouse_edge_sh_x && dx < 0){
+							dx *= 1+(mouse_edge_sh_x - x)*MOUSE_EDGE_ACM/mouse_edge_sh_x;
+						}else if(r.right-mouse_edge_sh_x <= x && dx > 0){
+							dx *= 1+(mouse_edge_sh_x - (r.right-x))*MOUSE_EDGE_ACM/mouse_edge_sh_x;
+						}
+						if(y<mouse_edge_sh_y && dy < 0){
+							dy *= 1+(mouse_edge_sh_y - y)*MOUSE_EDGE_ACM/mouse_edge_sh_y;
+						}else if(r.bottom-mouse_edge_sh_y <= y && dy > 0){
+							dy *= 1+(mouse_edge_sh_y - (r.bottom-y))*MOUSE_EDGE_ACM/mouse_edge_sh_y;
+						}
+						mousemng_setstat(dx, dy, btn);
+						lastmx = x;
+						lastmy = y;
+					}
 				}
 			}
 			break;
@@ -1943,17 +2019,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_LBUTTONDBLCLK:
-			if (!scrnmng_isfullscreen()) {
-				np2oscfg.wintype++;
-				if (np2oscfg.wintype >= 3) {
-					np2oscfg.wintype = 0;
+			if(!np2oscfg.mouse_nc){
+				if (!scrnmng_isfullscreen()) {
+					np2oscfg.wintype++;
+					if (np2oscfg.wintype >= 3) {
+						np2oscfg.wintype = 0;
+					}
+					wlex = np2_winlocexallwin(hWnd);
+					winlocex_setholdwnd(wlex, hWnd);
+					np2class_windowtype(hWnd, np2oscfg.wintype);
+					winlocex_move(wlex);
+					winlocex_destroy(wlex);
+					sysmng_update(SYS_UPDATEOSCFG);
 				}
-				wlex = np2_winlocexallwin(hWnd);
-				winlocex_setholdwnd(wlex, hWnd);
-				np2class_windowtype(hWnd, np2oscfg.wintype);
-				winlocex_move(wlex);
-				winlocex_destroy(wlex);
-				sysmng_update(SYS_UPDATEOSCFG);
 			}
 			break;
 
@@ -2710,7 +2788,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	np2class_initialize(hInstance);
 	if (!hPrevInst) {
-		wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+		if(np2oscfg.mouse_nc){
+			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW;
+		}else{
+			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+		}
 		wc.lpfnWndProc = WndProc;
 		wc.cbClsExtra = 0;
 		wc.cbWndExtra = NP2GWLP_SIZE;

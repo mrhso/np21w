@@ -166,6 +166,7 @@ void nevent_set(NEVENTID id, SINT32 eventclock, NEVENTCB proc, NEVENTPOSITION ab
 	UINT i;
 
 //	TRACEOUT(("event %d - %xclocks", id, eventclock));
+
 	clk = CPU_BASECLOCK - CPU_REMCLOCK;
 	item = &g_nevent.item[id];
 	item->proc = proc;

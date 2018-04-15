@@ -589,6 +589,7 @@
 #define IDM_NETOPT                      40676
 #define IDM_WABOPT                      40677
 #define IDM_HOSTDRVOPT                  40678
+#define IDM_MOUSENC                     40689
 #define IDM_MOUSERAW                    40690
 #define IDM_MOUSE30X                    40691
 #define IDM_MOUSE20X                    40692

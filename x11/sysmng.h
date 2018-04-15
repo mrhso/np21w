@@ -3,7 +3,7 @@
 
 #include "toolwin.h"
 
-// �ǁ[�ł������ʒm�n
+// どーでもいい通知系
 
 G_BEGIN_DECLS
 
