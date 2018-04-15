@@ -2,11 +2,16 @@
 #if !defined(_WIN32_WCE) && !defined(SLZAURUS)
 #define	ENABLE_TREMOLO
 #define	ENABLE_VIRLATE
+#else
+#define	MIDI_GMONLY
+#endif
 #define	ENABLE_GSRX
 #define	PANPOT_REVA
 // #define	VOLUME_ACURVE
-#else
-#define	MIDI_GMONLY
+#define ENABLE_PORTB
+
+#ifndef VERMOUTHCL
+#define	VERMOUTHCL
 #endif
 
 struct _midimodule;
@@ -19,9 +24,11 @@ typedef	struct _midictrl	*MIDIHDL;
 
 enum {
 	MIDIOUT_SUCCESS		= 0,
-	MIDIOUT_FAILURE		= -1
+	MIDIOUT_FAILURE		= -1,
+	MIDIOUT_ABORT		= -2
 };
 
+#define	CHANNEL_MAX		16
 #define	VOICE_MAX		24
 
 #define	SAMP_SHIFT		12
@@ -52,13 +59,16 @@ enum {
 #define	MIDI_BANKS	128
 #endif
 
+
 #include	"midimod.h"
 #include	"midinst.h"
 #include	"midvoice.h"
 #include	"midtable.h"
 
+
 struct _midimodule {
 	UINT		samprate;
+	UINT		lockcount;
 	INSTRUMENT	*tone[MIDI_BANKS * 2];
 	TONECFG		tonecfg[MIDI_BANKS * 2];
 
@@ -67,7 +77,6 @@ struct _midimodule {
 	LISTARRAY	namelist;
 };
 
-
 struct _midictrl {
 	UINT		samprate;
 	UINT		worksize;
@@ -75,6 +84,7 @@ struct _midictrl {
 	UINT8		status;
 	SINT8		gain;
 	UINT8		master;
+	UINT8		moduleid;
 
 	MIDIMOD		module;
 	INSTRUMENT	*bank0[2];
@@ -82,38 +92,56 @@ struct _midictrl {
 	SINT32		*sampbuf;
 	SAMPLE		resampbuf;
 
-	_CHANNEL	channel[16];
+#if defined(ENABLE_PORTB)
+	MIDIHDL		portb;
+#endif	// defined(ENABLE_PORTB);
+
+	_CHANNEL	channel[CHANNEL_MAX];
 	_VOICE		voice[VOICE_MAX];
 };
 
-#ifndef VERMOUTH_OVL_EXPORTS
-#define	AEXTERN
-#define	AEXPORT
+struct _miditoneloadparam {
+	void	*userdata;
+	UINT	totaltones;
+	UINT	progress;
+	UINT	bank;
+	UINT	num;
+};
+
+
+#ifndef VERMOUTH_EXPORTS
+#define	VEXTERN
+#define	VEXPORT		VERMOUTHCL
 #else
-#define	AEXTERN		__declspec(dllexport)
-#define	AEXPORT		WINAPI
+#define	VEXTERN		__declspec(dllexport)
+#define	VEXPORT		WINAPI
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-AEXTERN UINT AEXPORT midiout_getver(OEMCHAR *string, int leng);
+VEXTERN UINT VEXPORT midiout_getver(char *string, int leng);
+VEXTERN _MIDIHDL * VEXPORT midiout_create(MIDIMOD mod, UINT worksize);
+VEXTERN void VEXPORT midiout_destroy(MIDIHDL hdl);
+VEXTERN void VEXPORT midiout_shortmsg(MIDIHDL hdl, UINT32 msg);
+VEXTERN void VEXPORT midiout_longmsg(MIDIHDL hdl, const UINT8 *msg, UINT size);
+VEXTERN const SINT32 * VEXPORT midiout_get(MIDIHDL hdl, UINT *samples);
+VEXTERN UINT VEXPORT midiout_get16(MIDIHDL hdl, SINT16 *pcm, UINT size);
+VEXTERN UINT VEXPORT midiout_get32(MIDIHDL hdl, SINT32 *pcm, UINT size);
+VEXTERN void VEXPORT midiout_setgain(MIDIHDL hdl, int gain);
+VEXTERN void VEXPORT midiout_setmoduleid(MIDIHDL hdl, UINT8 moduleid);
+VEXTERN void VEXPORT midiout_setportb(MIDIHDL hdl, MIDIHDL portb);
 
-AEXTERN _MIDIMOD AEXPORT * midimod_create(UINT samprate);
-AEXTERN void AEXPORT midimod_destroy(MIDIMOD hdl);
-AEXTERN void AEXPORT midimod_loadprogram(MIDIMOD hdl, UINT num);
-AEXTERN void AEXPORT midimod_loadrhythm(MIDIMOD hdl, UINT num);
-AEXTERN void AEXPORT midimod_loadgm(MIDIMOD hdl);
-AEXTERN void AEXPORT midimod_loadall(MIDIMOD hdl);
-
-AEXTERN _MIDIHDL AEXPORT * midiout_create(MIDIMOD module, UINT worksize);
-AEXTERN void AEXPORT midiout_destroy(MIDIHDL hdl);
-AEXTERN void AEXPORT midiout_shortmsg(MIDIHDL hdl, UINT32 msg);
-AEXTERN void AEXPORT midiout_longmsg(MIDIHDL hdl, const UINT8 *msg, UINT size);
-AEXTERN const SINT32 AEXPORT * midiout_get(MIDIHDL hdl, UINT *samples);
-AEXTERN UINT AEXPORT midiout_get32(MIDIHDL hdl, SINT32 *pcm, UINT size);
-AEXTERN void AEXPORT midiout_setgain(MIDIHDL hdl, int gain);
+VEXTERN _MIDIMOD * VEXPORT midimod_create(UINT samprate);
+VEXTERN void VEXPORT midimod_destroy(MIDIMOD mod);
+VEXTERN BRESULT VEXPORT midimod_cfgload(MIDIMOD mod, const OEMCHAR *filename);
+VEXTERN void VEXPORT midimod_loadprogram(MIDIMOD mod, UINT num);
+VEXTERN void VEXPORT midimod_loadrhythm(MIDIMOD mod, UINT num);
+VEXTERN void VEXPORT midimod_loadgm(MIDIMOD mod);
+VEXTERN void VEXPORT midimod_loadall(MIDIMOD mod);
+VEXTERN void VEXPORT midimod_loadallex(MIDIMOD mod, FNMIDIOUTLAEXCB cb,
+															void *userdata);
 
 #ifdef __cplusplus
 }

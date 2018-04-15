@@ -8,7 +8,6 @@
 #include	"parts.h"
 #include	"np2.h"
 #include	"np2arg.h"
-#include	"cputype.h"
 #include	"dosio.h"
 #include	"extromio.h"
 #include	"commng.h"
@@ -23,7 +22,6 @@
 #include	"winloc.h"
 #include	"sstp.h"
 #include	"sstpmsg.h"
-#include	"dclock.h"
 #include	"toolwin.h"
 #include	"juliet.h"
 #include	"np2class.h"
@@ -45,6 +43,12 @@
 #include	"debugsub.h"
 #include	"subwind.h"
 #include	"viewer.h"
+#if !defined(_WIN64)
+#include	"cputype.h"
+#endif
+#if defined(SUPPORT_DCLOCK)
+#include	"dclock.h"
+#endif
 
 
 #ifdef BETA_RELEASE
@@ -55,16 +59,14 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 		HWND		hWndMain;
 		HINSTANCE	hInst;
 		HINSTANCE	hPrev;
+#if !defined(_WIN64)
 		int			mmxflag;
+#endif
 		UINT8		np2break = 0;									// ver0.30
 		BOOL		winui_en;
 
 		NP2OSCFG	np2oscfg = {
-#if !defined(SUPPORT_PC9821)
-						OEMTEXT("Neko Project II"),
-#else
-						OEMTEXT("Neko Project 21"),
-#endif
+						OEMTEXT(PROJECTNAME) OEMTEXT(PROJECTSUBNAME),
 						OEMTEXT("NP2"),
 						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 1, 0, 0,
 						0, 0, KEY_UNKNOWN, 0,
@@ -94,10 +96,46 @@ static	int			np2quitmsg = 0;
 static	HMENU		hStat = NULL;
 static	UINT8		scrnmode;
 static	WINLOCEX	smwlex;
+static	HMODULE		resmod;
 
 static const OEMCHAR np2help[] = OEMTEXT("np2.chm");
 static const OEMCHAR np2flagext[] = OEMTEXT("S%02d");
+static const OEMCHAR np2resext[] = OEMTEXT(".%u");
 
+
+// ----
+
+static HINSTANCE loadextinst(HINSTANCE hInstance) {
+
+	OEMCHAR	path[MAX_PATH];
+	OEMCHAR	cpstr[16];
+	HMODULE dll;
+
+	file_cpyname(path, modulefile, NELEMENTS(path));
+	file_cutext(path);
+	OEMSPRINTF(cpstr, np2resext, GetOEMCP());
+	file_catname(path, cpstr, NELEMENTS(path));
+	dll = LoadLibrary(path);
+	resmod = dll;
+	if (dll != NULL) {
+		hInstance = (HINSTANCE)dll;
+	}
+	return(hInstance);
+}
+
+static void unloadextinst(void) {
+
+	HMODULE dll;
+
+	dll = resmod;
+	if (dll) {
+		resmod = 0;
+		FreeLibrary(dll);
+	}
+}
+
+
+// ----
 
 static void winuienter(void) {
 
@@ -337,9 +375,11 @@ static void np2popup(HWND hWnd, LPARAM lp) {
 
 static void np2cmd(HWND hWnd, UINT16 cmd) {
 
-	UINT	update;
-	BOOL	b;
+	HINSTANCE	hInst;
+	UINT		update;
+	BOOL		b;
 
+	hInst = GetWindowInst(hWnd);
 	update = 0;
 	switch(cmd) {
 		case IDM_RESET:
@@ -1091,7 +1131,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				BITMAP		bmp;
 				HDC			hmdc;
 				HBRUSH		hbrush;
-				hinst = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
+				hinst = GetWindowInst(hWnd);
 				GetClientRect(hWnd, &rect);
 				width = rect.right - rect.left;
 				height = rect.bottom - rect.top;
@@ -1228,6 +1268,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 															HTCAPTION, 0L));
 					}
 				}
+#if defined(SUPPORT_DCLOCK)
 				else {
 					POINT p;
 					if ((GetCursorPos(&p)) && (p.y >= 466)) {
@@ -1236,6 +1277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						dclock_reset();
 					}
 				}
+#endif
 				return(DefWindowProc(hWnd, msg, wParam, lParam));
 			}
 			break;
@@ -1257,6 +1299,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				if (!scrnmng_isfullscreen()) {
 					np2popup(hWnd, lParam);
 				}
+#if defined(SUPPORT_DCLOCK)
 				else {
 					POINT p;
 					if ((GetCursorPos(&p)) && (p.y >= 466) &&
@@ -1266,6 +1309,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						dclock_reset();
 					}
 				}
+#endif
 				return(DefWindowProc(hWnd, msg, wParam, lParam));
 			}
 			break;
@@ -1379,7 +1423,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 static void framereset(UINT cnt) {
 
 	framecnt = 0;
+#if defined(SUPPORT_DCLOCK)
 	scrnmng_dispclock();
+#endif
 	kdispwin_draw((UINT8)cnt);
 	skbdwin_process();
 	mdbgwin_process();
@@ -1403,7 +1449,6 @@ static void processwait(UINT cnt) {
 	}
 	soundmng_sync();
 }
-
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 										LPSTR lpszCmdLine, int nCmdShow) {
@@ -1443,10 +1488,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		return(FALSE);
 	}
 
-	hInst = hInstance;
+	hInst = loadextinst(hInstance);
 	hPrev = hPreInst;
+#if !defined(_WIN64)
 	mmxflag = (havemmx())?0:MMXFLAG_NOTSUPPORT;
 	mmxflag += (np2oscfg.disablemmx)?MMXFLAG_DISABLE:0;
+#endif
 	TRACEINIT();
 
 	xrollkey = (np2oscfg.xrollkey == 0);
@@ -1467,23 +1514,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	winkbd_setf12(np2oscfg.F12COPY);
 	keystat_initialize();
 
-	np2class_initialize(hInstance);
+	np2class_initialize(hInst);
 	if (!hPreInst) {
 		wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 		wc.lpfnWndProc = WndProc;
 		wc.cbClsExtra = 0;
 		wc.cbWndExtra = NP2GWL_SIZE;
-		wc.hInstance = hInstance;
-		wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+		wc.hInstance = hInst;
+		wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
 		wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAIN);
 		wc.lpszClassName = szClassName;
 		if (!RegisterClass(&wc)) {
+			unloadextinst();
+			TRACETERM();
+			dosio_term();
 			return(FALSE);
 		}
 	}
-	toolwin_initapp(hInstance);
+	toolwin_initapp(hInst);
 	kdispwin_initialize(hPreInst);
 	skbdwin_initialize(hPreInst);
 	mdbgwin_initialize(hPreInst);
@@ -1497,7 +1547,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	}
 	hWnd = CreateWindowEx(0, szClassName, np2oscfg.titles, style,
 						np2oscfg.winx, np2oscfg.winy, 640, 400,
-						NULL, NULL, hInstance, NULL);
+						NULL, NULL, hInst, NULL);
 	hWndMain = hWnd;
 	scrnmng_initialize();
 
@@ -1560,6 +1610,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 				MessageBox(hWnd, _T("Couldn't create DirectDraw Object"),
 										np2oscfg.titles, MB_OK | MB_ICONSTOP);
 			}
+			unloadextinst();
+			TRACETERM();
+			dosio_term();
 			return(FALSE);
 		}
 	}
@@ -1617,10 +1670,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			sstp_destruct();
 			soundmng_deinitialize();
 			scrnmng_destroy();
+			unloadextinst();
 			TRACETERM();
 			dosio_term();
 			viewer_term();
-			return(0);
+			return(FALSE);
 		}
 	}
 #endif
@@ -1659,7 +1713,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 					joymng_sync();
 					mousemng_sync();
 					pccore_exec(framecnt == 0);
+#if defined(SUPPORT_DCLOCK)
 					dclock_callback();
+#endif
 					if (np2oscfg.DRAW_SKIP) {		// nowait frame skip
 						framecnt++;
 						if (framecnt >= np2oscfg.DRAW_SKIP) {
@@ -1678,7 +1734,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 						joymng_sync();
 						mousemng_sync();
 						pccore_exec(framecnt == 0);
+#if defined(SUPPORT_DCLOCK)
 						dclock_callback();
+#endif
 						framecnt++;
 					}
 					else {
@@ -1691,7 +1749,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 						joymng_sync();
 						mousemng_sync();
 						pccore_exec(framecnt == 0);
+#if defined(SUPPORT_DCLOCK)
 						dclock_callback();
+#endif
 						framecnt++;
 						cnt = timing_getcount();
 						if (framecnt > cnt) {
@@ -1766,6 +1826,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		mdbgwin_writeini();
 	}
 	skbdwin_deinitialize();
+
+	unloadextinst();
 
 	TRACETERM();
 	_MEM_USED("report.txt");

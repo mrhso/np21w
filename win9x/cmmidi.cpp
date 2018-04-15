@@ -59,6 +59,7 @@ enum {
 	MIDI_TIMECODE		= 0xf1,
 	MIDI_SONGPOS		= 0xf2,
 	MIDI_SONGSELECT		= 0xf3,
+	MIDI_CABLESELECT	= 0xf5,
 	MIDI_TUNEREQUEST	= 0xf6,
 	MIDI_EOX			= 0xf7,
 	MIDI_TIMING			= 0xf8,
@@ -208,7 +209,7 @@ static UINT module2number(const OEMCHAR *module) {
 	UINT	i;
 
 	for (i=0; i<NELEMENTS(cmmidi_mdlname); i++) {
-		if (milstr_extendcmp(module, cmmidi_mdlname[i])) {
+		if (!milstr_extendcmp(module, cmmidi_mdlname[i])) {
 			break;
 		}
 	}
@@ -485,11 +486,12 @@ static UINT midiwrite(COMMNG self, UINT8 data) {
 							midi->midisyscnt = 2;
 							break;
 
-						case MIDI_TUNEREQUEST:
+						case MIDI_CABLESELECT:
 							midi->midictrl = MIDICTRL_SYSTEM;
 							midi->midisyscnt = 1;
 							break;
 
+//						case MIDI_TUNEREQUEST:
 //						case MIDI_EOX:
 						default:
 							return(1);

@@ -32,9 +32,10 @@ typedef struct {
 extern "C" {
 #endif
 
-BRESULT cfgfile_getfile(MIDIMOD mod, const OEMCHAR *filename,
+BRESULT VERMOUTHCL midimod_getfile(MIDIMOD mod, const OEMCHAR *filename,
 													OEMCHAR *path, int size);
-BRESULT cfgfile_load(MIDIMOD mod, const OEMCHAR *filename, int depth);
+void VERMOUTHCL midimod_lock(MIDIMOD mod);
+void VERMOUTHCL midimod_unlock(MIDIMOD mod);
 
 #ifdef __cplusplus
 }

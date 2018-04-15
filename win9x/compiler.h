@@ -1,4 +1,6 @@
 
+#pragma warning (disable: 4819)
+
 #define	_WIN32_IE	0x0200
 
 #include	<windows.h>
@@ -20,7 +22,7 @@
 #endif
 #define	OSLINEBREAK_CRLF
 
-#ifndef __GNUC__
+#if !defined(__GNUC__)
 typedef	signed int			SINT;
 typedef	signed char			SINT8;
 typedef	unsigned char		UINT8;
@@ -101,7 +103,10 @@ typedef	signed __int64		SINT64;
 #define	LABEL				__declspec(naked)
 #define	RELEASE(x) 			if (x) {(x)->Release(); (x) = NULL;}
 
+#if !defined(_WIN64)
 #define	OPNGENX86
+#endif
+
 #define	VERMOUTH_LIB
 #define	MT32SOUND_DLL
 #define	PARTSCALL	__fastcall
@@ -113,6 +118,7 @@ typedef	signed __int64		SINT64;
 #define	SOUNDCALL	__fastcall
 #define	VRAMCALL	__fastcall
 #define	SCRNCALL	__fastcall
+#define	VERMOUTHCL	__fastcall
 
 #if defined(OSLANG_SJIS)
 #define	SUPPORT_SJIS
@@ -144,7 +150,12 @@ typedef	signed __int64		SINT64;
 #define	SUPPORT_SASI
 #define	SUPPORT_SCSI
 #if defined(TRACE)
-	#define	SUPPORT_IDEIO
+#define	SUPPORT_IDEIO
+#endif
+#define SUPPORT_ARC
+#define SUPPORT_ZLIB
+#if !defined(_WIN64)
+#define	SUPPORT_DCLOCK
 #endif
 
 #define	SUPPORT_RESUME

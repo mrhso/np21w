@@ -3,6 +3,9 @@
 #include	"dosio.h"
 #include	"textfile.h"
 #include	"midiout.h"
+#if defined(SUPPORT_ARC)
+#include	"arc.h"
+#endif
 
 
 #define	CFG_MAXAMP		400
@@ -36,9 +39,10 @@ static const OEMCHAR str_env[] = OEMTEXT("env");
 static const OEMCHAR str_loop[] = OEMTEXT("loop");
 static const OEMCHAR str_tail[] = OEMTEXT("tail");
 static const OEMCHAR file_timiditycfg[] = OEMTEXT("timidity.cfg");
+static const OEMCHAR str_basedir[] = OEMTEXT("${basedir}");
 
 
-static void pathadd(MIDIMOD mod, const OEMCHAR *path) {
+static void VERMOUTHCL pathadd(MIDIMOD mod, const OEMCHAR *path) {
 
 	_PATHLIST	pl;
 	PATHLIST	p;
@@ -49,7 +53,10 @@ static void pathadd(MIDIMOD mod, const OEMCHAR *path) {
 		// separator change!
 		file_catname(pl.path, path, NELEMENTS(pl.path));
 		if (path[0]) {
-			file_setseparator(pl.path, NELEMENTS(pl.path));
+#if defined(SUPPORT_ARC)
+			if (milstr_chr(pl.path, '#') == NULL)
+#endif
+				file_setseparator(pl.path, NELEMENTS(pl.path));
 		}
 	}
 
@@ -67,11 +74,11 @@ static void pathadd(MIDIMOD mod, const OEMCHAR *path) {
 	}
 }
 
-static void pathaddex(MIDIMOD mod, const OEMCHAR *path) {
+static void VERMOUTHCL pathaddex(MIDIMOD mod, const OEMCHAR *path) {
 
 	OEMCHAR	_path[MAX_PATH];
 
-	if (milstr_memcmp(path, OEMTEXT("${basedir}"))) {
+	if (milstr_memcmp(path, str_basedir)) {
 		pathadd(mod, path);
 	}
 	else {
@@ -82,7 +89,7 @@ static void pathaddex(MIDIMOD mod, const OEMCHAR *path) {
 	}
 }
 
-static int cfggetarg(OEMCHAR *str, OEMCHAR *arg[], int maxarg) {
+static int VERMOUTHCL cfggetarg(OEMCHAR *str, OEMCHAR *arg[], int maxarg) {
 
 	int		ret;
 	BOOL	quot;
@@ -134,7 +141,7 @@ cga_done:
 	return(ret);
 }
 
-static OEMCHAR *seachr(const OEMCHAR *str, OEMCHAR sepa) {
+static OEMCHAR *VERMOUTHCL seachr(const OEMCHAR *str, OEMCHAR sepa) {
 
 	OEMCHAR	c;
 
@@ -156,7 +163,7 @@ enum {
 	VAL_SIGN	= 2
 };
 
-static BRESULT cfggetval(const OEMCHAR *str, int *val) {
+static BRESULT VERMOUTHCL cfggetval(const OEMCHAR *str, int *val) {
 
 	int		ret;
 	int		flag;
@@ -201,7 +208,8 @@ static BRESULT cfggetval(const OEMCHAR *str, int *val) {
 
 // ----
 
-static void settone(MIDIMOD mod, int bank, int argc, OEMCHAR *argv[]) {
+static void VERMOUTHCL settone(MIDIMOD mod, int bank, int argc,
+															OEMCHAR *argv[]) {
 
 	int		val;
 	TONECFG	tone;
@@ -325,7 +333,7 @@ static void settone(MIDIMOD mod, int bank, int argc, OEMCHAR *argv[]) {
 
 // ----
 
-BRESULT cfgfile_getfile(MIDIMOD mod, const OEMCHAR *filename,
+BRESULT VERMOUTHCL midimod_getfile(MIDIMOD mod, const OEMCHAR *filename,
 													OEMCHAR *path, int size) {
 
 	PATHLIST	p;
@@ -339,7 +347,11 @@ BRESULT cfgfile_getfile(MIDIMOD mod, const OEMCHAR *filename,
 	while(p) {
 		file_cpyname(path, p->path, size);
 		file_catname(path, filename, size);
+#if defined(SUPPORT_ARC)
+		attr = arcex_attr(path);
+#else
 		attr = file_attr(path);
+#endif
 		if (attr != -1) {
 			return(SUCCESS);
 		}
@@ -350,7 +362,8 @@ fpgf_exit:
 	return(FAILURE);
 }
 
-BRESULT cfgfile_load(MIDIMOD mod, const OEMCHAR *filename, int depth) {
+static BRESULT VERMOUTHCL cfgfile_load(MIDIMOD mod, const OEMCHAR *filename,
+																int depth) {
 
 	TEXTFILEH	tfh;
 	OEMCHAR		buf[1024];
@@ -364,7 +377,7 @@ BRESULT cfgfile_load(MIDIMOD mod, const OEMCHAR *filename, int depth) {
 	bank = -1;
 
 	if ((depth >= 16) ||
-		(cfgfile_getfile(mod, filename, buf, NELEMENTS(buf)) != SUCCESS)) {
+		(midimod_getfile(mod, filename, buf, NELEMENTS(buf)) != SUCCESS)) {
 		goto cfl_err;
 	}
 //	TRACEOUT(("open: %s", buf));
@@ -429,7 +442,7 @@ cfl_err:
 
 // ----
 
-MIDIMOD midimod_create(UINT samprate) {
+VEXTERN MIDIMOD VEXPORT midimod_create(UINT samprate) {
 
 	UINT	size;
 	MIDIMOD	ret;
@@ -448,7 +461,7 @@ MIDIMOD midimod_create(UINT samprate) {
 	ret->tone[1] = ret->tone[0] + 128;
 	ret->tonecfg[0] = (TONECFG)(ret->tone[1] + 128);
 	ret->tonecfg[1] = ret->tonecfg[0] + 128;
-	ret->pathtbl = listarray_new(sizeof(_PATHLIST), 64);
+	ret->pathtbl = listarray_new(sizeof(_PATHLIST), 16);
 	pathadd(ret, NULL);
 	pathadd(ret, file_getcd(str_null));
 	ret->namelist = listarray_new(MAX_NAME, 128);
@@ -461,6 +474,7 @@ MIDIMOD midimod_create(UINT samprate) {
 	if (r != SUCCESS) {
 		goto mmcre_err2;
 	}
+	midimod_lock(ret);
 	return(ret);
 
 mmcre_err2:
@@ -472,70 +486,114 @@ mmcre_err1:
 	return(NULL);
 }
 
-void midimod_destroy(MIDIMOD hdl) {
+void VERMOUTHCL midimod_lock(MIDIMOD mod) {
+
+	mod->lockcount++;
+}
+
+void VERMOUTHCL midimod_unlock(MIDIMOD mod) {
 
 	UINT	r;
 	TONECFG	bank;
 
-	if (hdl) {
-		r = 128;
-		do {
-			r--;
-			inst_bankfree(hdl, r);
-		} while(r > 0);
-		for (r=2; r<(MIDI_BANKS*2); r++) {
-			bank = hdl->tonecfg[r];
-			if (bank) {
-				_MFREE(bank);
-			}
+	if (!mod->lockcount) {
+		return;
+	}
+	mod->lockcount--;
+	if (mod->lockcount) {
+		return;
+	}
+
+	r = 128;
+	do {
+		r--;
+		inst_bankfree(mod, r);
+	} while(r > 0);
+	for (r=2; r<(MIDI_BANKS*2); r++) {
+		bank = mod->tonecfg[r];
+		if (bank) {
+			_MFREE(bank);
 		}
-		listarray_destroy(hdl->namelist);
-		listarray_destroy(hdl->pathtbl);
-		_MFREE(hdl);
+	}
+	listarray_destroy(mod->namelist);
+	listarray_destroy(mod->pathtbl);
+	_MFREE(mod);
+}
+
+VEXTERN void VEXPORT midimod_destroy(MIDIMOD mod) {
+
+	if (mod) {
+		midimod_unlock(mod);
 	}
 }
 
-void midimod_loadprogram(MIDIMOD hdl, UINT num) {
+VEXTERN BRESULT VEXPORT midimod_cfgload(MIDIMOD mod,
+												const OEMCHAR *filename) {
+
+	return(cfgfile_load(mod, filename, 0));
+}
+
+VEXTERN void VEXPORT midimod_loadprogram(MIDIMOD mod, UINT num) {
 
 	UINT	bank;
 
-	if (hdl != NULL) {
+	if (mod != NULL) {
 		bank = (num >> 8) & 0x7f;
 		num &= 0x7f;
-		if (inst_singleload(hdl, bank << 1, num) != MIDIOUT_SUCCESS) {
-			inst_singleload(hdl, 0, num);
+		if (inst_singleload(mod, bank << 1, num) != MIDIOUT_SUCCESS) {
+			inst_singleload(mod, 0, num);
 		}
 	}
 }
 
-void midimod_loadrhythm(MIDIMOD hdl, UINT num) {
+VEXTERN void VEXPORT midimod_loadrhythm(MIDIMOD mod, UINT num) {
 
 	UINT	bank;
 
-	if (hdl != NULL) {
+	if (mod != NULL) {
 		bank = (num >> 8) & 0x7f;
 		num &= 0x7f;
-		if (inst_singleload(hdl, (bank << 1) + 1, num) != MIDIOUT_SUCCESS) {
-			inst_singleload(hdl, 1, num);
+		if (inst_singleload(mod, (bank << 1) + 1, num) != MIDIOUT_SUCCESS) {
+			inst_singleload(mod, 1, num);
 		}
 	}
 }
 
-void midimod_loadgm(MIDIMOD hdl) {
+VEXTERN void VEXPORT midimod_loadgm(MIDIMOD mod) {
 
-	if (hdl) {
-		inst_bankload(hdl, 0);
-		inst_bankload(hdl, 1);
+	if (mod) {
+		inst_bankload(mod, 0);
+		inst_bankload(mod, 1);
 	}
 }
 
-void midimod_loadall(MIDIMOD hdl) {
+VEXTERN void VEXPORT midimod_loadall(MIDIMOD mod) {
 
 	UINT	b;
 
-	if (hdl) {
+	if (mod) {
 		for (b=0; b<(MIDI_BANKS*2); b++) {
-			inst_bankload(hdl, b);
+			inst_bankload(mod, b);
+		}
+	}
+}
+
+
+VEXTERN void VEXPORT midimod_loadallex(MIDIMOD mod, FNMIDIOUTLAEXCB cb,
+															void *userdata) {
+
+	MIDIOUTLAEXPARAM param;
+	UINT	b;
+
+	if (mod) {
+		ZeroMemory(&param, sizeof(param));
+		param.userdata = userdata;
+		for (b=0; b<(MIDI_BANKS*2); b++) {
+			param.totaltones += inst_gettones(mod, b);
+		}
+		for (b=0; b<(MIDI_BANKS*2); b++) {
+			param.bank = b;
+			inst_bankloadex(mod, b, cb, &param);
 		}
 	}
 }

@@ -1,4 +1,16 @@
 
+#if !defined(SUPPORT_PC9821)
+#define PROJECTNAME			"Neko Project II"
+#else
+#define PROJECTNAME			"Neko Project 21"
+#endif
+
+#if !defined(_WIN64)
+#define PROJECTSUBNAME		""
+#else
+#define PROJECTSUBNAME		" x64"
+#endif
+
 typedef struct {
 	UINT8	port;
 	UINT8	def_en;
@@ -51,7 +63,9 @@ typedef struct {
 
 	UINT8	resume;													// ver0.30
 	UINT8	statsave;
+#if !defined(_WIN64)
 	UINT8	disablemmx;
+#endif
 	UINT8	wintype;
 	UINT8	toolwin;
 	UINT8	keydisp;
@@ -121,9 +135,11 @@ extern	NP2OSCFG	np2oscfg;
 extern	HWND		hWndMain;
 extern	HINSTANCE	hInst;
 extern	HINSTANCE	hPrev;
-extern	int			mmxflag;
 extern	UINT8		np2break;
 extern	BOOL		winui_en;
+#if !defined(_WIN64)
+extern	int			mmxflag;
+#endif
 
 extern	OEMCHAR		modulefile[MAX_PATH];
 extern	OEMCHAR		fddfolder[MAX_PATH];

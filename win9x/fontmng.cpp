@@ -22,7 +22,12 @@ typedef struct {
 
 static const OEMCHAR deffontface[] = OEMTEXT("ÇlÇr ÉSÉVÉbÉN");
 static const OEMCHAR deffontface2[] = OEMTEXT("ÇlÇr ÇoÉSÉVÉbÉN");
+static const OEMCHAR edeffontface[] = OEMTEXT("MS Gothic");
+static const OEMCHAR edeffontface2[] = OEMTEXT("MS PGothic");
 
+static const OEMCHAR *deffont[4] = {
+	deffontface,	deffontface2,
+	edeffontface,	edeffontface2};
 
 void *fontmng_create(int size, UINT type, const OEMCHAR *fontface) {
 
@@ -35,7 +40,9 @@ void *fontmng_create(int size, UINT type, const OEMCHAR *fontface) {
 	int			fontwidth;
 	int			fontheight;
 	int			weight;
-	UINT		pitch;
+	int			deffontnum;
+	DWORD		pitch;
+	DWORD		charset;
 
 	if (size < 0) {
 		size *= -1;
@@ -103,11 +110,16 @@ void *fontmng_create(int size, UINT type, const OEMCHAR *fontface) {
 	weight = (type & FDAT_BOLD)?FW_BOLD:FW_REGULAR;
 	pitch = (type & FDAT_PROPORTIONAL)?VARIABLE_PITCH:FIXED_PITCH;
 	if (fontface == NULL) {
-		fontface = (type & FDAT_PROPORTIONAL)?deffontface2:deffontface;
+		deffontnum = (type & FDAT_PROPORTIONAL)?1:0;
+		if (GetOEMCP() != 932) {			// !Japanese
+			deffontnum += 2;
+		}
+		fontface = deffont[deffontnum];
 	}
+	charset = (type & FDAT_SHIFTJIS)?SHIFTJIS_CHARSET:DEFAULT_CHARSET;
 	ret->hfont = CreateFont(size, 0,
 						FW_DONTCARE, FW_DONTCARE, weight,
-						FALSE, FALSE, FALSE, SHIFTJIS_CHARSET,
+						FALSE, FALSE, FALSE, charset,
 						OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 						NONANTIALIASED_QUALITY, pitch, fontface);
 	ret->hfont = (HFONT)SelectObject(ret->hdcimage, ret->hfont);

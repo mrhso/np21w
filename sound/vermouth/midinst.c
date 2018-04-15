@@ -3,6 +3,22 @@
 #include	"midiout.h"
 
 
+#if defined(SUPPORT_ARC)
+#include	"arc.h"
+#define	_FILEH				ARCFH
+#define	_FILEH_INVALID		NULL
+#define _file_open			arcex_fileopen
+#define	_file_read			arc_fileread
+#define	_file_close			arc_fileclose
+#else
+#define	_FILEH				FILEH
+#define	_FILEH_INVALID		FILEH_INVALID
+#define _file_open			file_open
+#define	_file_read			file_read
+#define	_file_close			file_close
+#endif
+
+
 // GUS format references:  http://www.onicos.com/staff/iz/formats/guspat.html
 
 typedef struct {
@@ -58,7 +74,7 @@ typedef struct {
 } GUSWAVE;
 
 
-static void inst_destroy(INSTRUMENT inst);
+static void VERMOUTHCL inst_destroy(INSTRUMENT inst);
 
 
 // ---- resample
@@ -66,7 +82,8 @@ static void inst_destroy(INSTRUMENT inst);
 #define	BASEBITS	9
 #define	MIXBASE		(1 << BASEBITS)
 
-static SAMPLE downsamp(SAMPLE dst, SAMPLE src, int count, int mrate) {
+static SAMPLE VERMOUTHCL downsamp(SAMPLE dst, SAMPLE src, int count,
+																int mrate) {
 
 	int		rem;
 	SINT32	pcm;
@@ -93,7 +110,8 @@ static SAMPLE downsamp(SAMPLE dst, SAMPLE src, int count, int mrate) {
 	return(dst);
 }
 
-static SAMPLE upsamp(SAMPLE dst, SAMPLE src, int count, int mrate) {
+static SAMPLE VERMOUTHCL upsamp(SAMPLE dst, SAMPLE src, int count,
+																int mrate) {
 
 	int		rem;
 	SINT32	tmp;
@@ -124,7 +142,7 @@ static SAMPLE upsamp(SAMPLE dst, SAMPLE src, int count, int mrate) {
 	return(dst);
 }
 
-static void resample(MIDIMOD mod, INSTLAYER inst, int freq) {
+static void VERMOUTHCL resample(MIDIMOD mod, INSTLAYER inst, int freq) {
 
 	int		mrate;
 	int		orgcnt;
@@ -172,11 +190,11 @@ static const char sig_GF1PATCH110[] = "GF1PATCH110";
 static const char sig_ID000002[] = "ID#000002";
 static const char str_question6[] = "??????";
 
-static INSTRUMENT inst_create(MIDIMOD mod, TONECFG cfg) {
+static INSTRUMENT VERMOUTHCL inst_create(MIDIMOD mod, const _TONECFG *cfg) {
 
 	OEMCHAR		filename[MAX_PATH];
 	OEMCHAR		path[MAX_PATH];
-	FILEH		fh;
+	_FILEH		fh;
 	INSTRUMENT	ret;
 	GUSHEAD		head;
 	int			layers;
@@ -197,17 +215,17 @@ const UINT8		*d;
 	file_cpyname(filename, cfg->name, NELEMENTS(filename));
 	file_cutext(filename);
 	file_catname(filename, ext_pat, NELEMENTS(filename));
-	if (cfgfile_getfile(mod, filename, path, NELEMENTS(path)) != SUCCESS) {
+	if (midimod_getfile(mod, filename, path, NELEMENTS(path)) != SUCCESS) {
 		goto li_err1;
 	}
-	fh = file_open_rb(path);
-	if (fh == FILEH_INVALID) {
+	fh = _file_open(path);
+	if (fh == _FILEH_INVALID) {
 //		TRACEOUT(("not found: %s", path));
 		goto li_err1;
 	}
 
 	// head check
-	if ((file_read(fh, &head, sizeof(head)) != sizeof(head)) &&
+	if ((_file_read(fh, &head, sizeof(head)) != sizeof(head)) &&
 		(memcmp(head.sig, sig_GF1PATCH100, 12)) &&
 		(memcmp(head.sig, sig_GF1PATCH110, 12)) &&
 		(memcmp(head.id, sig_ID000002, 10)) &&
@@ -235,7 +253,7 @@ const UINT8		*d;
 	do {
 		UINT8 fractions;
 
-		if (file_read(fh, &wave, sizeof(wave)) != sizeof(wave)) {
+		if (_file_read(fh, &wave, sizeof(wave)) != sizeof(wave)) {
 			goto li_err3;
 		}
 		fractions = wave.fractions;
@@ -317,7 +335,7 @@ const UINT8		*d;
 			goto li_err3;
 		}
 		layer->data = dat;
-		if (file_read(fh, dat, layer->datasize) != (UINT)layer->datasize) {
+		if (_file_read(fh, dat, layer->datasize) != (UINT)layer->datasize) {
 			goto li_err3;
 		}
 		dat[cnt] = 0;
@@ -409,7 +427,7 @@ const UINT8		*d;
 		}
 
 		if ((ret->freq) && (!(wave.mode & MODE_LOOPING))) {
-			TRACEOUT(("resample: %s", cfg->name));
+//			TRACEOUT(("resample: %s", cfg->name));
 			resample(mod, layer, ret->freq);
 		}
 		if (cfg->flag & TONECFG_NOTAIL) {
@@ -420,20 +438,20 @@ const UINT8		*d;
 		layer++;
 	} while(--layers);
 
-	file_close(fh);
+	_file_close(fh);
 	return(ret);
 
 li_err3:
 	inst_destroy(ret);
 
 li_err2:
-	file_close(fh);
+	_file_close(fh);
 
 li_err1:
 	return(NULL);
 }
 
-static void inst_destroy(INSTRUMENT inst) {
+static void VERMOUTHCL inst_destroy(INSTRUMENT inst) {
 
 	int			layers;
 	INSTLAYER	layer;
@@ -451,11 +469,11 @@ static void inst_destroy(INSTRUMENT inst) {
 	}
 }
 
-int inst_singleload(MIDIMOD mod, UINT bank, UINT num) {
+int VERMOUTHCL inst_singleload(MIDIMOD mod, UINT bank, UINT num) {
 
 	INSTRUMENT	*inst;
 	INSTRUMENT	tone;
-	TONECFG		cfg;
+const _TONECFG	*cfg;
 
 	if (bank >= (MIDI_BANKS * 2)) {
 		return(MIDIOUT_FAILURE);
@@ -485,11 +503,17 @@ int inst_singleload(MIDIMOD mod, UINT bank, UINT num) {
 	return(MIDIOUT_SUCCESS);
 }
 
-int inst_bankload(MIDIMOD mod, UINT bank) {
+int VERMOUTHCL inst_bankload(MIDIMOD mod, UINT bank) {
+
+	return(inst_bankloadex(mod, bank, NULL, NULL));
+}
+
+int VERMOUTHCL inst_bankloadex(MIDIMOD mod, UINT bank,
+							FNMIDIOUTLAEXCB cb, MIDIOUTLAEXPARAM *param) {
 
 	INSTRUMENT	*inst;
 	INSTRUMENT	tone;
-	TONECFG		cfg;
+const _TONECFG	*cfg;
 	UINT		num;
 
 	if (bank >= (MIDI_BANKS * 2)) {
@@ -502,6 +526,15 @@ int inst_bankload(MIDIMOD mod, UINT bank) {
 	inst = mod->tone[bank];
 	for (num = 0; num<0x80; num++) {
 		if ((inst == NULL) || (inst[num] == NULL)) {
+			if ((cb != NULL) && (cfg[num].name != NULL)) {
+				if (param) {
+					param->progress++;
+					param->num = num;
+				}
+				if ((*cb)(param) != SUCCESS) {
+					return(MIDIOUT_ABORT);
+				}
+			}
 			tone = inst_create(mod, cfg + num);
 			if (tone) {
 //				TRACEOUT(("load %d %d", bank, num));
@@ -522,7 +555,7 @@ int inst_bankload(MIDIMOD mod, UINT bank) {
 	return(MIDIOUT_SUCCESS);
 }
 
-void inst_bankfree(MIDIMOD mod, UINT bank) {
+void VERMOUTHCL inst_bankfree(MIDIMOD mod, UINT bank) {
 
 	INSTRUMENT	*inst;
 	INSTRUMENT	*i;
@@ -548,3 +581,28 @@ void inst_bankfree(MIDIMOD mod, UINT bank) {
 	}
 }
 
+UINT VERMOUTHCL inst_gettones(MIDIMOD mod, UINT bank) {
+
+	INSTRUMENT	*inst;
+const _TONECFG	*cfg;
+	UINT		ret;
+	UINT		num;
+
+	if (bank >= (MIDI_BANKS * 2)) {
+		return(0);
+	}
+	cfg = mod->tonecfg[bank];
+	if (cfg == NULL) {
+		return(0);
+	}
+	inst = mod->tone[bank];
+	ret = 0;
+	for (num = 0; num<0x80; num++) {
+		if ((inst == NULL) || (inst[num] == NULL)) {
+			if (cfg[num].name != NULL) {
+				ret++;
+			}
+		}
+	}
+	return(ret);
+}
