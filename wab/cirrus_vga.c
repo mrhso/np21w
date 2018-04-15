@@ -49,7 +49,7 @@
 const uint8_t sr_mask[8] = {
     (uint8_t)~0xfc,
     (uint8_t)~0xc2,
-    (uint8_t)~0xf0,
+    (uint8_t)~0x00, // np21w ver0.86 rev29  (uint8_t)~0xf0,
     (uint8_t)~0xc0,
     (uint8_t)~0xf1,
     (uint8_t)~0xff,
@@ -1322,13 +1322,7 @@ static void cirrus_bitblt_start(CirrusVGAState * s)
     s->cirrus_blt_srcaddr = (s->gr[0x2c] | (s->gr[0x2d] << 8) | (s->gr[0x2e] << 16));
     s->cirrus_blt_mode = s->gr[0x30];
     blt_rop = s->gr[0x32];
-	if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN){
-		//s->cirrus_blt_mode = s->cirrus_blt_mode & ~CIRRUS_BLTMODE_COLOREXPAND;
-		//blt_rop = CIRRUS_ROP_SRC;
-		s->cirrus_blt_modeext = 0; //s->gr[0x33];  // ver0.86 rev8
-	}else{
-		s->cirrus_blt_modeext = 0; //s->gr[0x33];  // ver0.86 rev8
-	}
+	s->cirrus_blt_modeext = 0; //s->gr[0x33];  // ver0.86 rev8
 
 #ifdef DEBUG_BITBLT
     printf("rop=0x%02x mode=0x%02x modeext=0x%02x w=%d h=%d dpitch=%d spitch=%d daddr=0x%08x saddr=0x%08x writemask=0x%02x\n",
@@ -2372,17 +2366,25 @@ static void cirrus_mem_writeb_mode4and5_8bpp(CirrusVGAState * s,
 {
     int x;
     unsigned val = mem_value;
+    unsigned mask = s->sr[0x2];
     uint8_t *dst;
+	if(s->gr[0xb] & 0x04){
+	}else{
+		mask = 0xff;
+	}
 
     dst = s->vram_ptr + (offset &= s->cirrus_addr_mask);
     for (x = 0; x < 8; x++) {
-	if (val & 0x80) {
-	    *dst = s->cirrus_shadow_gr1;
-	} else if (mode == 5) {
-	    *dst = s->cirrus_shadow_gr0;
-	}
-	val <<= 1;
-	dst++;
+		if (mask & 0x80) {
+			if (val & 0x80) {
+				*dst = s->cirrus_shadow_gr1;
+			} else if (mode == 5) {
+				*dst = s->cirrus_shadow_gr0;
+			}
+		}
+		val <<= 1;
+		mask <<= 1;
+		dst++;
     }
     cpu_physical_memory_set_dirty(s->vram_offset + offset);
     cpu_physical_memory_set_dirty(s->vram_offset + offset + 7);
@@ -2395,19 +2397,32 @@ static void cirrus_mem_writeb_mode4and5_16bpp(CirrusVGAState * s,
 {
     int x;
     unsigned val = mem_value;
+    unsigned mask = s->sr[0x2];
     uint8_t *dst;
+	
+	if(s->gr[0xb] & 0x04){
+	}else{
+		mask = 0xffff;
+	}
+	if(s->gr[0xb] & 0x10){
+		// SR2 Doubling Enabled
+		mask |= mask << 8;
+	}
 
     dst = s->vram_ptr + (offset &= s->cirrus_addr_mask);
     for (x = 0; x < 8; x++) {
-	if (val & 0x80) {
-	    *dst = s->cirrus_shadow_gr1;
-	    *(dst + 1) = s->gr[0x11];
-	} else if (mode == 5) {
-	    *dst = s->cirrus_shadow_gr0;
-	    *(dst + 1) = s->gr[0x10];
-	}
-	val <<= 1;
-	dst += 2;
+		if (mask & 0x80) {
+			if (val & 0x80) {
+				*dst = s->cirrus_shadow_gr1;
+				*(dst + 1) = s->gr[0x11];
+			} else if (mode == 5) {
+				*dst = s->cirrus_shadow_gr0;
+				*(dst + 1) = s->gr[0x10];
+			}
+		}
+		val <<= 1;
+		mask <<= 1;
+		dst += 2;
     }
     cpu_physical_memory_set_dirty(s->vram_offset + offset);
     cpu_physical_memory_set_dirty(s->vram_offset + offset + 15);
