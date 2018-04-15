@@ -4427,7 +4427,7 @@ static REG8 IOINPCALL cirrusvga_iff82(UINT port) {
 
 // WAB, WSN—p
 int cirrusvga_wab_51e1 = 0xC2;
-int cirrusvga_wab_40e1 = 0x7a;
+int cirrusvga_wab_40e1 = 0x00;
 //int cirrusvga_wab_0fe1 = 0xC2;
 int cirrusvga_wab_46e8 = 0x18;
 static REG8 IOINPCALL cirrusvga_i51e1(UINT port) {
@@ -4449,6 +4449,9 @@ static REG8 IOINPCALL cirrusvga_i46e8(UINT port) {
 	//if(ga_relaystateint){
 	//	ga_VRAMWindowAddr = 0x00f00000;
 	//	ga_VRAMWindowAddr2 = 0xE0000;
+	//}else{
+	//	ga_VRAMWindowAddr = 0;
+	//	ga_VRAMWindowAddr2 = 0;
 	//}
 	return ret;
 }
@@ -4464,6 +4467,9 @@ static void IOOUTCALL cirrusvga_o40e1(UINT port, REG8 dat) {
 	//if(ga_relaystateint){
 	//	ga_VRAMWindowAddr = 0x00f00000;
 	//	ga_VRAMWindowAddr2 = 0xE0000;
+	//}else{
+	//	ga_VRAMWindowAddr = 0;
+	//	ga_VRAMWindowAddr2 = 0;
 	//}
 	(void)port;
 	(void)dat;
@@ -4633,6 +4639,8 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 		
 		ga_VRAMWindowAddr = 0;//(0x0F<<24);
 		ga_VRAMWindowAddr2 = 0;//(0xf20000);
+		//ga_VRAMWindowAddr = 0x00f00000;
+		//ga_VRAMWindowAddr2 = 0xE0000;
 	}
 //#define ADDR_SH2	0x0
 	

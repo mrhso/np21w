@@ -369,7 +369,7 @@ static void readsector(void) {
 
 	fdc.event = FDCEVENT_BUFSEND2;
 	fdc.bufp = 0;
-#if 1															// ver0.27 ??
+#if 0															// ver0.27 ??
 	fdc.status = FDCSTAT_NDM | FDCSTAT_CB;
 	if (!(fdc.ctrlreg & 0x10)) {
 		fdc.status |= FDCSTAT_RQM | FDCSTAT_DIO;

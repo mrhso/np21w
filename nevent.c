@@ -216,7 +216,7 @@ void nevent_set(NEVENTID id, SINT32 eventclock, NEVENTCB proc, NEVENTPOSITION ab
 
 void nevent_setbyms(NEVENTID id, SINT32 ms, NEVENTCB proc, NEVENTPOSITION absolute)
 {
-	nevent_set(id, (pccore.realclock / 1000) * ms, proc, absolute);
+	nevent_set(id, /*(pccore.realclock / 1000)*/50*1000 * ms, proc, absolute);
 }
 
 BOOL nevent_iswork(NEVENTID id)

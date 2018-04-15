@@ -185,7 +185,16 @@ const OEMCHAR	*p;
 			break;
 //
 		default:
-			r = FAILURE;
+			r = fdd_set_xdf(fdd, fdd_fn, fname, ro);
+			//	’Ç‰Á(Kai1)
+			if (r != SUCCESS) {
+				//	BKDSK(HDB)	BASIC 2HD‚©‚ÈH‚©‚ÈH
+				r = fdd_set_bkdsk(fdd, fdd_fn, fname, ro);
+				break;
+			}
+			//
+			break;
+			//r = FAILURE;
 	}
 	if (r == SUCCESS) {
 		file_cpyname(fdd->fname, fname, NELEMENTS(fdd->fname));

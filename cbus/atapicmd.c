@@ -338,7 +338,15 @@ static void atapi_cmd_read_capacity(IDEDRV drv) {
 	/* XXX */
 	UINT32 blklen = 2048; // drv->secsize;
 	UINT8 *b = drv->buf;
-	UINT32 totals = drv->nsectors;
+	SXSIDEV sxsi;
+	UINT32 totals;
+
+	sxsi = sxsi_getptr(drv->sxsidrv);
+	if ((sxsi == NULL) || (!(sxsi->flag & SXSIFLAG_READY) && drv->device != IDETYPE_CDROM)) {
+		senderror(drv);
+		return;
+	}
+	totals = sxsi->totals;
 
 	b[0] = (UINT8)(totals >> 24);
 	b[1] = (UINT8)(totals >> 16);
@@ -351,7 +359,7 @@ static void atapi_cmd_read_capacity(IDEDRV drv) {
 	
 	senddata(drv, 8, 8);
 
-	cmddone(drv);
+	//cmddone(drv);
 }
 
 // 0x28: READ(10)

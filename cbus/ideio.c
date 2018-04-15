@@ -919,6 +919,29 @@ static REG8 IOINPCALL ideio_i74e(UINT port) {
 	return ret;
 }
 
+static REG8 IOINPCALL ideio_i1e8e(UINT port) {
+    if((CPU_RAM_D000 & 0x1c00) == 0x1c00){
+        return(0x81);
+    }
+    return(0x80);
+}
+ 
+static void IOOUTCALL ideio_o1e8e(UINT port, REG8 dat) {
+    switch(dat){
+        case 0x00:
+        case 0x80:
+            TRACEOUT(("remove RAM on 0xDA000-DBFFF but ignore"));
+            //CPU_RAM_D000 |= 0x0000;
+            break;
+        case 0x81:
+            TRACEOUT(("connect RAM on 0xDA000-DBFFF"));
+            CPU_RAM_D000 |= 0x1c00;
+            break;
+        default:
+            break;
+    }
+}
+
 
 // ---- data
 
@@ -1269,6 +1292,9 @@ void ideio_bind(void) {
 		iocore_attachout(0x074e, ideio_o74e);
 		iocore_attachinp(0x074c, ideio_i74c);
 		iocore_attachinp(0x074e, ideio_i74e);
+
+		iocore_attachout(0x1e8e, ideio_o1e8e); // 一部IDE BIOSはこれがないと起動時にフリーズしたりシリンダ数が0になる
+		iocore_attachinp(0x1e8e, ideio_i1e8e); // 一部IDE BIOSはこれがないと起動時にフリーズしたりシリンダ数が0になる
 	}
 }
 

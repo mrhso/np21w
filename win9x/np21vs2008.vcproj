@@ -58,7 +58,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=".\;.\x86;..\;..\common;..\i386c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LGY98;SUPPORT_LARGE_HDD;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;TRACE;ALLOW_MULTIRUN"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -140,8 +140,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories=".\;.\x86;..\;..\common;..\i386c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -644,19 +645,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\fdd\fdd_d88.c"
-					>
-				</File>
-				<File
 					RelativePath="..\fdd\fdd_mtr.c"
-					>
-				</File>
-				<File
-					RelativePath="..\fdd\fdd_xdf.c"
-					>
-				</File>
-				<File
-					RelativePath="..\fdd\fddfile.c"
 					>
 				</File>
 				<File
@@ -893,7 +882,7 @@
 							Name="fpu"
 							>
 							<File
-								RelativePath="..\i386c\ia32\instructions\fpu\fpdummy.c"
+								RelativePath="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c"
 								>
 							</File>
 						</Filter>
@@ -1551,6 +1540,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\dialog\d_network.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\dialog\d_screen.cpp"
 						>
 					</File>
@@ -1564,6 +1557,10 @@
 					</File>
 					<File
 						RelativePath=".\dialog\d_soundlog.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dialog\d_wab.cpp"
 						>
 					</File>
 					<File
@@ -1873,14 +1870,14 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="video"
+				Name="wab"
 				>
 				<File
-					RelativePath="..\video\cirrus_vga.c"
+					RelativePath="..\wab\cirrus_vga.c"
 					>
 				</File>
 				<File
-					RelativePath="..\video\video.c"
+					RelativePath="..\wab\wab.c"
 					>
 				</File>
 			</Filter>
@@ -1895,6 +1892,78 @@
 					RelativePath="..\network\net.c"
 					>
 				</File>
+			</Filter>
+			<Filter
+				Name="diskimage"
+				>
+				<File
+					RelativePath="..\diskimage\cddfile.c"
+					>
+				</File>
+				<File
+					RelativePath="..\diskimage\fddfile.c"
+					>
+				</File>
+				<File
+					RelativePath="..\diskimage\img_strres.c"
+					>
+				</File>
+				<Filter
+					Name="cd"
+					>
+					<File
+						RelativePath="..\diskimage\cd\cdd_ccd.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_cue.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_iso.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_mds.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_nrg.c"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="fd"
+					>
+					<File
+						RelativePath="..\diskimage\fd\fdd_bkdsk.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_d88.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_dcp.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_nfd.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_vfdd.c"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_xdf.c"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="hd"
+					>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -2122,19 +2191,15 @@
 					>
 				</File>
 				<File
-					RelativePath="..\fdd\fdd_d88.h"
-					>
-				</File>
-				<File
 					RelativePath="..\fdd\fdd_mtr.h"
 					>
 				</File>
 				<File
-					RelativePath="..\fdd\fdd_xdf.h"
+					RelativePath="..\fdd\hdd_vhd.h"
 					>
 				</File>
 				<File
-					RelativePath="..\fdd\fddfile.h"
+					RelativePath="..\fdd\hdd_vpc.h"
 					>
 				</File>
 				<File
@@ -3123,26 +3188,30 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="video"
+				Name="wab"
 				>
 				<File
-					RelativePath="..\video\cirrus_vga.h"
+					RelativePath="..\wab\cirrus_vga.h"
 					>
 				</File>
 				<File
-					RelativePath="..\video\cirrus_vga_rop.h"
+					RelativePath="..\wab\cirrus_vga_extern.h"
 					>
 				</File>
 				<File
-					RelativePath="..\video\cirrus_vga_rop2.h"
+					RelativePath="..\wab\cirrus_vga_rop.h"
 					>
 				</File>
 				<File
-					RelativePath="..\video\vga_int.h"
+					RelativePath="..\wab\cirrus_vga_rop2.h"
 					>
 				</File>
 				<File
-					RelativePath="..\video\video.h"
+					RelativePath="..\wab\vga_int.h"
+					>
+				</File>
+				<File
+					RelativePath="..\wab\wab.h"
 					>
 				</File>
 			</Filter>
@@ -3161,6 +3230,98 @@
 					RelativePath="..\network\net.h"
 					>
 				</File>
+			</Filter>
+			<Filter
+				Name="diskimage"
+				>
+				<File
+					RelativePath="..\diskimage\cddfile.h"
+					>
+				</File>
+				<File
+					RelativePath="..\diskimage\fddfile.h"
+					>
+				</File>
+				<File
+					RelativePath="..\diskimage\img_common.h"
+					>
+				</File>
+				<File
+					RelativePath="..\diskimage\img_strres.h"
+					>
+				</File>
+				<Filter
+					Name="cd"
+					>
+					<File
+						RelativePath="..\diskimage\cd\cdd_ccd.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_cue.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_iso.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_mds.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\cd\cdd_nrg.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="fd"
+					>
+					<File
+						RelativePath="..\diskimage\fd\fdd_bkdsk.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_d88.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_dcp.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_head_d88.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_head_dcp.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_head_nfd.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_head_vfdd.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_nfd.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_vfdd.h"
+						>
+					</File>
+					<File
+						RelativePath="..\diskimage\fd\fdd_xdf.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="hd"
+					>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
