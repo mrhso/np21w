@@ -102,7 +102,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				OEMTEXT(""), 0,
 #endif
 #if defined(SUPPORT_LGY98)
-				0, 0x10D0, 5,
+				0, 0x10D0, 5, {0x00, 0x40, 0x26, 0x12, 0x34, 0x56},
 #endif
 #if defined(SUPPORT_WAB)
 				0,

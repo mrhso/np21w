@@ -567,6 +567,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USELGY98", PFTYPE_BOOL,		&np2cfg.uselgy98),
 	PFVAL("LGY98_IO", PFTYPE_UINT16,	&np2cfg.lgy98io),
 	PFVAL("LGY98IRQ", PFTYPE_UINT8,		&np2cfg.lgy98irq),
+	PFEXT("LGY98MAC", PFTYPE_BIN,		np2cfg.lgy98mac,		6),
 #endif
 #if defined(SUPPORT_WAB)
 	PFVAL("WAB_ANSW", PFTYPE_UINT8,		&np2cfg.wabasw),

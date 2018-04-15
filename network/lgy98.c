@@ -706,19 +706,200 @@ REG16 IOINPCALL lgy98_ib200_16(UINT addr) {
     return (REG16)ret;
 }
 
-//int lognum = 100;
+// XXX: 実機から拾った謎のシーケンス
+REG8 lgy98seq_base[] = {0xA,0x4,0xC,0x6,0xE,0x6,0xE,0x4}; // シーケンス共通部分？
+REG8 lgy98seq_mbase = 0; // シーケンス一致数(共通部分)
+REG8 lgy98seq_mbuf[64] = {0}; // シーケンス一致数
+REG8 lgy98seq_list[64][7] = { // シーケンスリスト
+	{0,0,0,0,0,0,1}, {0,0,0,0,0,1,3}, {0,0,0,0,1,2,1}, {0,0,0,0,1,3,3},
+	{0,0,0,1,2,0,1}, {0,0,0,1,2,1,3}, {0,0,0,1,3,2,1}, {0,0,0,1,3,3,3},
+	{0,0,1,2,0,0,1}, {0,0,1,2,0,1,3}, {0,0,1,2,1,2,1}, {0,0,1,2,1,3,3},
+	{0,0,1,3,2,0,1}, {0,0,1,3,2,1,3}, {0,0,1,3,3,2,1}, {0,0,1,3,3,3,3},
+	{0,1,2,0,0,0,1}, {0,1,2,0,0,1,3}, {0,1,2,0,1,2,1}, {0,1,2,0,1,3,3},
+	{0,1,2,1,2,0,1}, {0,1,2,1,2,1,3}, {0,1,2,1,3,2,1}, {0,1,2,1,3,3,3},
+	{0,1,3,2,0,0,1}, {0,1,3,2,0,1,3}, {0,1,3,2,1,2,1}, {0,1,3,2,1,3,3},
+	{0,1,3,3,2,0,1}, {0,1,3,3,2,1,3}, {0,1,3,3,3,2,1}, {0,1,3,3,3,3,3},
+	{1,2,0,0,0,0,1}, {1,2,0,0,0,1,3}, {1,2,0,0,1,2,1}, {1,2,0,0,1,3,3},
+	{1,2,0,1,2,0,1}, {1,2,0,1,2,1,3}, {1,2,0,1,3,2,1}, {1,2,0,1,3,3,3},
+	{1,2,1,2,0,0,1}, {1,2,1,2,0,1,3}, {1,2,1,2,1,2,1}, {1,2,1,2,1,3,3},
+	{1,2,1,3,2,0,1}, {1,2,1,3,2,1,3}, {1,2,1,3,3,2,1}, {1,2,1,3,3,3,3},
+	{1,3,2,0,0,0,1}, {1,3,2,0,0,1,3}, {1,3,2,0,1,2,1}, {1,3,2,0,1,3,3},
+	{1,3,2,1,2,0,1}, {1,3,2,1,2,1,3}, {1,3,2,1,3,2,1}, {1,3,2,1,3,3,3},
+	{1,3,3,2,0,0,1}, {1,3,3,2,0,1,3}, {1,3,3,2,1,2,1}, {1,3,3,2,1,3,3},
+	{1,3,3,3,2,0,1}, {1,3,3,3,2,1,3}, {1,3,3,3,3,2,1}, {1,3,3,3,3,3,3},
+};
+// IRQ -> 7出現INDEX
+/* 7出現位置メモ
+17 -> INT0(IRQ3)
+16 -> INT1(IRQ5)
+15 -> INT2(IRQ6) 指定不可
+14 -> INT3(IRQ9) 指定不可
+13 -> INT4(IRQ10,11) 指定不可
+12 -> INT5(IRQ12)
+11 -> INT6(IRQ13) 指定不可
+*/
+//                 IRQ   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+REG8 lgy98_IRQ2IDX[] = { 0,  0,  0, 16,  0, 15, 14,  0,  0,  0,  0,  0, 11,  0,  0,  0};
+#define LGY98_MAKERETCODE(a) ((a) ? 0x07 : 0x06)
+REG8 lgy98seq_retseq[17] = {0}; // 戻り値
+REG8 lgy98seq_retlist[64][17] = { // 戻り値リスト（ROM内容？？）
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+};
+REG8 lgy98_code2num(REG8 code1,REG8 code2){
+    switch ((code1<<8)|code2) {
+    case 0x0C04:
+		return 0;
+    case 0x0C06:
+		return 1;
+    case 0x0E04:
+		return 2;
+	case 0x0E06:
+		return 3;
+    }
+	return 0xff;
+}
+int lgy98seq_retidx = -1; // 戻り値リスト番号
+int lgy98seq_retpos = 0; // 戻り値リストの読み取り位置
+
+void lgy98_setromdata(){
+	// INT設定
+    memset(lgy98seq_retlist[6], 0, _countof(lgy98seq_retlist[0])); 
+	lgy98seq_retlist[6][lgy98_IRQ2IDX[lgy98.irq]] = 1;
+}
+void lgy98_setretseq(int index){
+	// 戻り値設定
+	lgy98seq_retidx = index;
+	lgy98seq_retpos = 0;
+	memcpy(lgy98seq_retseq, &(lgy98seq_retlist[lgy98seq_retidx]), _countof(lgy98seq_retseq));
+}
+
 static void IOOUTCALL lgy98_ob300_16(UINT port, REG8 dat) {
+	static REG8 codebuf[] = {0};
+	static REG8 codebufpos = 0;
 	LGY98 *s = &lgy98;
-	//TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
-	//TRACEOUT(("%d OUT &H%04X,%d", lognum, port, dat));
-	//lognum++;
-	//pic_resetirq(lgy98.irq);
-	/* Nothing to do */
+	TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
+    switch (port & 0x0f) {
+    case 0x0d:
+		if(lgy98seq_mbase < _countof(lgy98seq_base)){
+			if(dat == lgy98seq_base[lgy98seq_mbase]){
+				lgy98seq_mbase++;
+				if(lgy98seq_mbase ==_countof(lgy98seq_base)){
+					int i;
+					for(i=0;i<_countof(lgy98seq_mbuf);i++){
+						lgy98seq_mbuf[i] = 0; // 一致数カウンタ初期化
+					}
+					codebufpos = 0;
+				}
+			}else if(dat == lgy98seq_base[0]){
+				lgy98seq_mbase = 1;
+			}else{
+				lgy98seq_mbase = 0;
+			}
+		}else{
+			int mflag = 0;
+			int i;
+			if(codebufpos==0){
+				codebuf[codebufpos] = dat;
+				codebufpos++;
+			}else{
+				REG8 code;
+				codebuf[codebufpos] = dat;
+				code = lgy98_code2num(codebuf[0], codebuf[1]);
+				for(i=0;i<_countof(lgy98seq_mbuf);i++){
+					if(code == lgy98seq_list[i][lgy98seq_mbuf[i]]){
+						lgy98seq_mbuf[i]++;
+						if(lgy98seq_mbuf[i] ==_countof(lgy98seq_list[0])){
+							mflag = 0;
+							lgy98_setretseq(i);
+							break;
+						}else{
+							mflag = 1;
+						}
+					}else{
+						lgy98seq_mbuf[i] = 0;
+					}
+				}
+				if(!mflag){
+					// 完全一致または一致無し
+					if(dat == lgy98seq_base[0]){
+						lgy98seq_mbase = 1;
+					}else{
+						lgy98seq_mbase = 0;
+					}
+				}
+				codebufpos = 0;
+			}
+		}
+		break;
+    }
 	(void)port;
 	(void)dat;
 }
 static REG8 IOINPCALL lgy98_ib300_16(UINT port) {
-	//TRACEOUT(("LGY-98: inp %04X", port));
+	REG8 ret = 0xff;
 	//TRACEOUT(("%d A=INP(&H%04X)", lognum, port));
 	//lognum++;
 	//TRACEOUT(("%d PRINT #1 A", lognum));
@@ -726,31 +907,51 @@ static REG8 IOINPCALL lgy98_ib300_16(UINT port) {
 	//TRACEOUT(("%d PRINT #1", lognum));
 	//lognum++;
 	//pic_resetirq(lgy98.irq);
-    switch (port & 0x0f) {
-    case 0x0a:
-        return 0x00;
-    case 0x0b:
-        return 0x40;
-    case 0x0c:
-        return 0x26;
-    case 0x0d:
-        return 0x0b;
-    }
-    return 0xff;
+	switch (port & 0x0f) {
+	case 0x0a:
+		lgy98seq_mbase = 0;
+		lgy98seq_retidx = -1;
+		ret = 0x00;
+		break;
+	case 0x0b:
+		lgy98seq_mbase = 0;
+		lgy98seq_retidx = -1;
+		ret = 0x40;
+		break;
+	case 0x0c:
+		lgy98seq_mbase = 0;
+		lgy98seq_retidx = -1;
+		ret = 0x26;
+		break;
+	case 0x0d:
+		if(lgy98seq_retidx >= 0){
+			ret = LGY98_MAKERETCODE(lgy98seq_retseq[lgy98seq_retpos]);
+			lgy98seq_retpos++;
+			if(lgy98seq_retpos == _countof(lgy98seq_retseq)){
+				lgy98seq_retidx = -1;
+			}
+		}else{
+			ret = 0x0b;
+		}
+		break;
+	}
+	TRACEOUT(("LGY-98: inp %04X ret=%X", port, ret));
+    return ret;
 }
 static void IOOUTCALL lgy98_ob018(UINT port, REG8 dat) {
-	//TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
+	TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
 	//pic_resetirq(lgy98.irq);
 	/* Nothing to do */
 	(void)port;
 	(void)dat;
 }
 static REG8 IOINPCALL lgy98_ib018(UINT port) {
+	REG8 ret = 0x00;
 	LGY98 *s = &lgy98;
-	//TRACEOUT(("LGY-98: inp %04X reset", port));
+	TRACEOUT(("LGY-98: inp %04X reset", port));
 	//pic_resetirq(s->irq);
     ne2000_reset(s);
-	return 0;
+    return ret;
 }
 
 static VLANState np2net_vlan;
@@ -806,7 +1007,10 @@ static void lgy98_recieve_packet(const UINT8 *buf, int size)
 void lgy98_reset(const NP2CFG *pConfig){
 	UINT base = 0x10D0;
 	REG8 irq = 5;
-	REG8 macaddr[6] = {0x52, 0x54, 0x00, 0x12, 0x34, 0x56};
+	REG8 macaddr[6];
+
+	// MACアドレス
+	memcpy(macaddr, np2cfg.lgy98mac, 6);
 
 	np2net.recieve_packet = np2net_lgy98_default_recieve_packet;
 
@@ -878,6 +1082,10 @@ void lgy98_bind(void){
 
 	np2net.recieve_packet = lgy98_recieve_packet;
 	
+	lgy98seq_mbase = 0;
+	lgy98seq_retidx = -1;
+
+	lgy98_setromdata();
 }
 
 #endif	/* SUPPORT_LGY98 */

@@ -320,6 +320,15 @@ static const MEMFNF memfnf = {
 // ----
 REG8 MEMCALL memp_read8(UINT32 address) {
 	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (read8): %x ret %x", address, mem[address]));
+	//	}
+	//}
+
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);
 	}
@@ -393,6 +402,14 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 
 	REG16	ret;
 	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (read16): %x ret %x", address, mem[address]));
+	//	}
+	//}
 	if (address < (I286_MEMREADMAX - 1)) {
 		return(LOADINTELWORD(mem + address));
 	}
@@ -472,7 +489,15 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 
 	UINT32	pos;
 	UINT32	ret;
-
+	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (read32): %x ret %x", address, mem[address]));
+	//	}
+	//}
 	if (address < (I286_MEMREADMAX - 3)) {
 		return(LOADINTELDWORD(mem + address));
 	}
@@ -531,6 +556,14 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 
 void MEMCALL memp_write8(UINT32 address, REG8 value) {
 	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (write8): %x ret %x", address, mem[address]));
+	//	}
+	//}
 	if (address==0x0457) return; // XXX: IDE‚Ìƒf[ƒ^”j‰ó‰ñ”ð‚Ì‚½‚ß‚ÌŽb’è
 	if (address < I286_MEMWRITEMAX) {
 		mem[address] = (UINT8)value;
@@ -623,6 +656,14 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 void MEMCALL memp_write16(UINT32 address, REG16 value) {
 
 	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (write16): %x ret %x", address, mem[address]));
+	//	}
+	//}
 	if (address < (I286_MEMWRITEMAX - 1)) {
 		STOREINTELWORD(mem + address, value);
 	}
@@ -706,6 +747,14 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 
 	UINT32	pos;
 	
+	//if(0x400 <= address && address < 0x600){
+	//	switch(address){
+	//	case 0x58a:
+	//		break;
+	//	default:
+	//		TRACEOUT(("BDA (write32): %x ret %x", address, mem[address]));
+	//	}
+	//}
 	if (address < (I286_MEMWRITEMAX - 3)) {
 		STOREINTELDWORD(mem + address, value);
 		return;

@@ -171,6 +171,7 @@ struct tagNP2Config
 	UINT8	uselgy98;
 	UINT16	lgy98io;
 	UINT8	lgy98irq;
+	UINT8	lgy98mac[6];
 #endif
 #ifdef SUPPORT_WAB
 	UINT8	wabasw;
