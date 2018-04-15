@@ -343,7 +343,11 @@ const char		*set;
 
 // ----
 
+#if !defined(SUPPORT_PC9821)
 static const char ini_title[] = "NekoProjectII";
+#else
+static const char ini_title[] = "NekoProject21";
+#endif
 
 enum {
 	INIRO_STR			= INITYPE_STR + INIFLAG_RO,
@@ -506,6 +510,8 @@ static const INITBL iniitem[] = {
 	{"keydispl", INITYPE_BOOL,		&np2oscfg.keydisp,		0},
 	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
 	{"useromeo", INITYPE_BOOL,		&np2oscfg.useromeo,		0},		// ver0.74
+	{"thickfrm", INITYPE_BOOL,		&np2oscfg.thickframe,	0},		// ver0.77
+	{"xrollkey", INIRO_BOOL,		&np2oscfg.xrollkey,		0},		// ver0.78
 	{"I286SAVE", INIRO_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 

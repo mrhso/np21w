@@ -41,6 +41,7 @@ typedef struct {
 	BYTE	statsave;
 	BYTE	toolwin;
 	BYTE	keydisp;
+	BYTE	softkbd;
 	BYTE	hostdrv_write;
 	BYTE	jastsnd;
 	BYTE	I286SAVE;
@@ -107,7 +108,7 @@ void framereset(UINT cnt);
 void processwait(UINT cnt);
 int mainloop(void *);
 
-#if defined(__GNUC__) && (defined(i386) || defined(__i386__))
+#if defined(GCC_CPU_ARCH_IA32)
 extern int mmxflag;
 int havemmx(void);
 #endif

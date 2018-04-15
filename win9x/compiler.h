@@ -58,7 +58,11 @@ typedef signed __int64		SINT64;
 
 
 #define	GETTICK()			GetTickCount()
+#if defined(UNICODE)
+#define	SPRINTF				sprintf
+#else
 #define	SPRINTF				wsprintf
+#endif
 #define	__ASSERT(s)
 
 #define	LABEL				__declspec(naked)
@@ -99,6 +103,7 @@ typedef signed __int64		SINT64;
 #define	SUPPORT_HOSTDRV
 #define	SUPPORT_SASI
 #define	SUPPORT_SCSI
+// #define	SUPPORT_IDEIO
 
 #define	SUPPORT_RESUME
 #define	SUPPORT_STATSAVE	10

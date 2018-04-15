@@ -20,8 +20,6 @@
 
 #define	BIOS_SIMULATE
 
-	BOOL	biosrom = FALSE;
-
 static const char neccheck[] = "Copyright (C) 1983 by NEC Corporation";
 
 typedef struct {
@@ -195,6 +193,7 @@ static void bios_screeninit(void) {
 
 void bios_initialize(void) {
 
+	BOOL	biosrom;
 	char	path[MAX_PATH];
 	FILEH	fh;
 	UINT	i;
@@ -210,6 +209,7 @@ void bios_initialize(void) {
 	}
 	if (biosrom) {
 		TRACEOUT(("load bios.rom"));
+		pccore.rom |= PCROM_BIOS;
 		// PnP BIOS‚ð’×‚·
 		for (i=0; i<0x10000; i+=0x10) {
 			tmp = LOADINTELDWORD(mem + 0xf0000 + i);
@@ -350,6 +350,13 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			return(1);
 
 		case BIOS_BASE + BIOSOFST_INIT:		// ƒu[ƒg
+#if 1		// for RanceII
+			bios_memclear();
+#endif
+			bios_vectorset();
+#if 1
+			bios0x09_init();
+#endif
 			bios_reinitbyswitch();
 			bios_vectorset();
 			bios_screeninit();
@@ -393,7 +400,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 		case BIOS_BASE + BIOSOFST_CMT:
 			CPU_REMCLOCK -= 200;
 			bios0x1a_cmt();
-			return(1);
+			return(0);											// return(1);
 
 		case BIOS_BASE + BIOSOFST_PRT:
 			CPU_REMCLOCK -= 200;
@@ -455,19 +462,16 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			return(0);
 	}
 
-	if ((adrs >= 0xf9a00) && (adrs < 0x0f9a44)) {
-		if (!(adrs & 3)) {
-			CPU_REMCLOCK -= 500;
-			bios_lio((REG8)((adrs - 0xf9a00) >> 2));
+	if ((adrs >= 0xf9950) && (adrs <= 0x0f9990) && (!(adrs & 3))) {
+		CPU_REMCLOCK -= 500;
+		bios_lio((REG8)((adrs - 0xf9950) >> 2));
+	}
+	else if (adrs == 0xf9994) {
+		if (nevent_iswork(NEVENT_GDCSLAVE)) {
+			CPU_IP--;
+			CPU_REMCLOCK = -1;
+			return(1);
 		}
-		else {
-			if (nevent_iswork(NEVENT_GDCSLAVE)) {
-				CPU_IP--;
-				CPU_REMCLOCK = -1;
-				return(1);
-			}
-		}
-		return(0);
 	}
 	return(0);
 }

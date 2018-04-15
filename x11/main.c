@@ -48,6 +48,7 @@
 #include "toolwin.h"
 #include "viewer.h"
 #include "debugwin.h"
+#include "skbdwin.h"
 
 #include "commng.h"
 #include "fontmng.h"
@@ -101,7 +102,6 @@ sighandler(int signo)
 static struct option longopts[] = {
 	{ "config",		required_argument,	0,	'c' },
 	{ "timidity-config",	required_argument,	0,	'C' },
-	{ "shared-pixmap",	no_argument,		0,	'p' },
 #if defined(USE_SDL) || defined(USE_SYSMENU)
 	{ "ttfont",		required_argument,	0,	't' },
 #endif
@@ -120,7 +120,6 @@ usage(void)
 	printf("\t--help            [-h]        : print this message\n");
 	printf("\t--config          [-c] <file> : specify config file\n");
 	printf("\t--timidity-config [-C] <file> : specify timidity config file\n");
-	printf("\t--shared-pixmap   [-p]        : use MIT-SHM pixmap extention\n");
 #if defined(USE_SDL) || defined(USE_SYSMENU)
 	printf("\t--ttfont          [-t] <file> : specify TrueType font\n");
 #endif
@@ -175,10 +174,6 @@ main(int argc, char *argv[])
 				exit(1);
 			}
 			milstr_ncpy(fontfilename, optarg, sizeof(fontfilename));
-			break;
-
-		case 'p':
-			shared_pixmap_flag = TRUE;
 			break;
 
 		case 'h':
@@ -248,10 +243,11 @@ main(int argc, char *argv[])
 	initload();
 	toolwin_readini();
 	kdispwin_readini();
+	skbdwin_readini();
 
 	rand_setseed((SINT32)time(NULL));
 
-#if defined(__GNUC__) && (defined(i386) || defined(__i386__))
+#if defined(GCC_CPU_ARCH_IA32)
 	mmxflag = havemmx() ? 0 : MMXFLAG_NOTSUPPORT;
 	mmxflag += np2oscfg.disablemmx ? MMXFLAG_DISABLE : 0;
 #endif
@@ -265,6 +261,7 @@ main(int argc, char *argv[])
 
 	kdispwin_initialize();
 	viewer_init();
+	skbdwin_initialize();
 
 	toolkit_widget_create();
 	scrnmng_initialize();
@@ -324,6 +321,9 @@ main(int argc, char *argv[])
 		if (np2oscfg.keydisp) {
 			kdispwin_create();
 		}
+		if (np2oscfg.softkbd) {
+			skbdwin_create();
+		}
 	}
 
 	if (np2oscfg.resume) {
@@ -345,6 +345,7 @@ main(int argc, char *argv[])
 
 	kdispwin_destroy();
 	toolwin_destroy();
+	skbdwin_destroy();
 
 	pccore_cfgupdate();
 
@@ -374,7 +375,10 @@ fontmng_failure:
 		initsave();
 		toolwin_writeini();
 		kdispwin_writeini();
+		skbdwin_writeini();
 	}
+
+	skbdwin_deinitialize();
 
 	TRACETERM();
 	dosio_term();

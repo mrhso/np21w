@@ -1,3 +1,5 @@
+XCOMM $Id: config.tmpl,v 1.6 2004/06/17 14:36:33 monaka Exp $
+
 XCOMM
 XCOMM Sound
 XCOMM
@@ -23,9 +25,24 @@ XCOMM ESD_CONFIG= esd-config
 
 
 XCOMM
+XCOMM GUI Toolkit
+XCOMM
+
+XCOMM GTK+
+XCOMM
+XCOMM GTK_CONFIG= gtk-config		# for GTK+ 1.x
+XCOMM GTK_CONFIG= pkg-config gtk+-2.0	# for GTK+ 2.x
+#undef	USE_GTK2
+
+
+XCOMM
 XCOMM Misc.
 XCOMM
 
 XCOMM big-endian machine (Apple Macintosh, etc...)
 XCOMM
 #undef	BIGENDIAN
+
+XCOMM IA-32 CPU core
+XCOMM
+#undef	CPUCORE_IA32

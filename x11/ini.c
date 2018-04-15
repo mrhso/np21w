@@ -554,11 +554,12 @@ static const INITBL iniitem[] = {
 
 	{"e_resume", INITYPE_BOOL,	&np2oscfg.resume,	0},
 	{"STATSAVE", INIRO_BOOL,	&np2oscfg.statsave,	0},
-#if defined(__GNUC__) && (defined(i386) || defined(__i386__))
+#if defined(GCC_CPU_ARCH_IA32)
 	{"nousemmx", INITYPE_BOOL,	&np2oscfg.disablemmx,	0},
 #endif
 	{"toolwind", INITYPE_BOOL,	&np2oscfg.toolwin,	0},
 	{"keydispl", INITYPE_BOOL,	&np2oscfg.keydisp,	0},
+	{"soft_kbd", INITYPE_BOOL,	&np2oscfg.softkbd,	0},
 	{"jast_snd", INITYPE_BOOL,	&np2oscfg.jastsnd,	0},
 
 	{"sounddrv", INITYPE_SNDDRV,	&np2oscfg.snddrv,	0},

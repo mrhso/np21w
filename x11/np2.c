@@ -38,6 +38,7 @@
 #include "toolwin.h"
 #include "viewer.h"
 #include "debugwin.h"
+#include "skbdwin.h"
 
 #include "commng.h"
 #include "joymng.h"
@@ -86,6 +87,7 @@ NP2OSCFG np2oscfg = {
 	0,			/* statsave */
 	0,			/* toolwin */
 	0,			/* keydisp */
+	0,			/* softkbd */
 	0,			/* hostdrv_write */
 	0,			/* jastsnd */
 	0,			/* I286SAVE */
@@ -279,9 +281,10 @@ framereset(UINT cnt)
 	framecnt = 0;
 	scrnmng_dispclock();
 	kdispwin_draw((BYTE)cnt);
+	skbdwin_process();
+	debugwin_process();
 	toolwin_draw((BYTE)cnt);
 	viewer_allreload(FALSE);
-	debugwin_process();
 	if (np2oscfg.DISPCLK & 3) {
 		if (sysmng_workclockrenewal()) {
 			sysmng_updatecaption(3);
@@ -368,7 +371,7 @@ mainloop(void *p)
 	return TRUE;
 }
 
-#if defined(__GNUC__) && (defined(i386) || defined(__i386__))
+#if defined(GCC_CPU_ARCH_IA32)
 int mmxflag;
 
 int
@@ -399,4 +402,4 @@ havemmx(void)
 
 	return rv;
 }
-#endif
+#endif /* GCC_CPU_ARCH_IA32 */

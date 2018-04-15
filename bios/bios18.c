@@ -219,8 +219,8 @@ const BYTE	*p;
 			MEML_WRITESTR(seg, off + 2, p, 8);
 			break;
 
-		case 0x28:			// 8x16 KANJI
-		case 0x29:
+//		case 0x28:
+		case 0x29:			// 8x16 KANJI
 		case 0x2a:
 		case 0x2b:
 			size = 0x0102;
@@ -626,7 +626,8 @@ static void bios0x18_47(void) {
 		vect.ope = 0x20 + (ucw.GBDSP & 7);
 		vect.DC[0] = ucw.GBLNG1[0];
 		vect.DC[1] = ucw.GBLNG1[1];
-		data = LOADINTELWORD(ucw.GBLNG2) - 1;
+//		data = LOADINTELWORD(ucw.GBLNG2) - 1;
+		data = LOADINTELWORD(ucw.GBCIR) - 1;
 		STOREINTELWORD(vect.D, data);
 		data >>= 1;
 		STOREINTELWORD(vect.D2, data);

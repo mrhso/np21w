@@ -365,7 +365,10 @@ BOOL scrnmng_create(BYTE scrnmode) {
 	}
 	else {
 		scrnmng.flag = SCRNFLAG_HAVEEXTEND;
-		winstyle |= WS_SYSMENU | WS_THICKFRAME;
+		winstyle |= WS_SYSMENU;
+		if (np2oscfg.thickframe) {
+			winstyle |= WS_THICKFRAME;
+		}
 		if (np2oscfg.wintype < 2) {
 			winstyle |= WS_CAPTION;
 		}
@@ -388,7 +391,11 @@ BOOL scrnmng_create(BYTE scrnmode) {
 		ddraw2->SetCooperativeLevel(hWndMain,
 										DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
 		height = (np2oscfg.force400)?400:480;
+#if !defined(SUPPORT_PC9821)
 		bitcolor = (scrnmode & SCRNMODE_HIGHCOLOR)?16:8;
+#else
+		bitcolor = 16;
+#endif
 		if (ddraw2->SetDisplayMode(640, height, bitcolor, 0, 0) != DD_OK) {
 			goto scre_err;
 		}
@@ -478,7 +485,11 @@ BOOL scrnmng_create(BYTE scrnmode) {
 		}
 		bitcolor = ddpf.dwRGBBitCount;
 		if (bitcolor == 8) {
+#if !defined(SUPPORT_PC9821)
 			paletteinit();
+#else
+			goto scre_err;
+#endif
 		}
 		else if (bitcolor == 16) {
 			make16mask(ddpf.dwBBitMask, ddpf.dwRBitMask, ddpf.dwGBitMask);

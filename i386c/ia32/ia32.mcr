@@ -1,4 +1,4 @@
-/*	$Id: ia32.mcr,v 1.18 2004/03/23 15:29:34 monaka Exp $	*/
+/*	$Id: ia32.mcr,v 1.20 2004/06/15 13:50:13 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -37,8 +37,8 @@
 #define	__CBD(src)	((UINT32)((SINT8)(src)))
 #define	__CWDE(src)	((SINT16)(src))
 
-#define	PTR_TO_UINT32(p)	((UINT32)(unsigned long)(p))
-#define	UINT32_TO_PTR(v)	((void *)(unsigned long)(v))
+#define	PTR_TO_UINT32(p)	((UINT32)((unsigned long)(p)))
+#define	UINT32_TO_PTR(v)	((void *)((unsigned long)(v)))
 
 #define	SWAP_BYTE(p, q) \
 do { \
@@ -922,7 +922,7 @@ do { \
 #define	JMPNOP(clock, d) \
 do { \
 	CPU_WORKCLOCK(clock); \
-	CPU_PREFETCHQ_REMAIN -= (d); \
+	CPU_PREFETCHQ_REMAIN_SUB(d); \
 	ADD_EIP((d)); \
 } while (/*CONSTCOND*/ 0)
 #endif

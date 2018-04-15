@@ -59,6 +59,8 @@ typedef struct {
 	BYTE	hostdrv_write;
 	BYTE	jastsnd;
 	BYTE	useromeo;
+	BYTE	thickframe;
+	BYTE	xrollkey;
 } NP2OSCFG;
 
 
