@@ -135,6 +135,12 @@ struct tagNP2Config
 	UINT8	sndwssid;
 	UINT8	sndwssdma;
 	UINT8	sndwssirq;
+	
+#if defined(SUPPORT_SOUND_SB16)
+	UINT8	sndsb16io;
+	UINT8	sndsb16dma;
+	UINT8	sndsb16irq;
+#endif	/* SUPPORT_SOUND_SB16 */
 
 	UINT8	BEEP_VOL;
 	UINT8	vol14[6];

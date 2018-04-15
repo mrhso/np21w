@@ -29,6 +29,7 @@
 #define IDD_SNDFMGEN                    158
 #define IDD_SND118                      159
 #define IDD_SNDWSS                      160
+#define IDD_SNDSB16                     162
 #define IDD_CALENDAR                    161
 #define IDD_ABOUT                       171
 #define IDD_LGY98                       180
@@ -371,6 +372,13 @@
 #define IDS_50D0                        30426
 #define IDS_60D0                        30427
 #define IDS_70D0                        30428
+#define IDS_20D2						30430
+#define IDS_20D4                		30431
+#define IDS_20D6                		30432
+#define IDS_20D8                		30433
+#define IDS_20DA                		30434
+#define IDS_20DC                		30435
+#define IDS_20DE                		30436
 #define IDS_PARITY_NONE                 30501
 #define IDS_PARITY_ODD                  30502
 #define IDS_PARITY_EVEN                 30503

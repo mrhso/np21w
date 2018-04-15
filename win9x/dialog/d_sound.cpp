@@ -1267,6 +1267,187 @@ LRESULT SndOptWSSPage::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
+	
+#if defined(SUPPORT_SOUND_SB16)
+
+// ---- Sound Blaster 16(98)
+
+/**
+ * @brief SB16 ページ
+ */
+class SndOptSB16Page : public CPropPageProc
+{
+public:
+	SndOptSB16Page();
+	virtual ~SndOptSB16Page();
+
+protected:
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
+	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+	virtual LRESULT WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam);
+
+private:
+	UINT16 m_snd118io;				//!< IO設定値
+	UINT8 m_snd118dma;				//!< DMA設定値
+	UINT8 m_snd118irqf;				//!< IRQ設定値
+	CComboData m_cmbio;				//!< IO
+	CComboData m_cmbdma;			//!< DMA
+	CComboData m_cmbirqf;			//!< IRQ
+};
+
+//! SB16 I/O
+static const CComboData::Entry s_iosb16[] =
+{
+	{MAKEINTRESOURCE(IDS_20D2),		0xD2},
+	{MAKEINTRESOURCE(IDS_20D4),		0xD4},
+	{MAKEINTRESOURCE(IDS_20D6),		0xD6},
+	{MAKEINTRESOURCE(IDS_20D8),		0xD8},
+	{MAKEINTRESOURCE(IDS_20DA),		0xDA},
+	{MAKEINTRESOURCE(IDS_20DC),		0xDC},
+	{MAKEINTRESOURCE(IDS_20DE),		0xDE},
+};
+
+//! SB16 DMA
+static const CComboData::Entry s_dmasb16[] =
+{
+	{MAKEINTRESOURCE(IDS_DMA0),	0},
+	{MAKEINTRESOURCE(IDS_DMA3),	3},
+};
+
+//! SB16 INT
+static const CComboData::Entry s_intsb16[] =
+{
+	{MAKEINTRESOURCE(IDS_INT0IRQ3),		3},
+	{MAKEINTRESOURCE(IDS_INT1IRQ5),		5},
+	{MAKEINTRESOURCE(IDS_INT41IRQ10),	10},
+	{MAKEINTRESOURCE(IDS_INT5IRQ12),	12},
+};
+
+/**
+ * コンストラクタ
+ */
+SndOptSB16Page::SndOptSB16Page()
+	: CPropPageProc(IDD_SNDSB16)
+	, m_snd118io(0)
+	, m_snd118dma(0)
+	, m_snd118irqf(0)
+{
+}
+
+/**
+ * デストラクタ
+ */
+SndOptSB16Page::~SndOptSB16Page()
+{
+}
+
+/**
+ * このメソッドは WM_INITDIALOG のメッセージに応答して呼び出されます
+ * @retval TRUE 最初のコントロールに入力フォーカスを設定
+ * @retval FALSE 既に設定済
+ */
+BOOL SndOptSB16Page::OnInitDialog()
+{
+	m_snd118io = np2cfg.sndsb16io;
+	m_snd118dma = np2cfg.sndsb16dma;
+	m_snd118irqf = np2cfg.sndsb16irq;
+	
+	m_cmbio.SubclassDlgItem(IDC_SND118IO, this);
+	m_cmbio.Add(s_iosb16, _countof(s_iosb16));
+	
+	m_cmbdma.SubclassDlgItem(IDC_SND118DMA, this);
+	m_cmbdma.Add(s_dmasb16, _countof(s_dmasb16));
+	
+	m_cmbirqf.SubclassDlgItem(IDC_SND118INTF, this);
+	m_cmbirqf.Add(s_intsb16, _countof(s_intsb16));
+	
+	m_cmbio.SetCurItemData(m_snd118io);
+	m_cmbdma.SetCurItemData(m_snd118dma);
+	m_cmbirqf.SetCurItemData(m_snd118irqf);
+
+	m_cmbio.SetFocus();
+
+	return FALSE;
+}
+
+/**
+ * ユーザーが OK のボタン (IDOK ID がのボタン) をクリックすると呼び出されます
+ */
+void SndOptSB16Page::OnOK()
+{
+	if (np2cfg.sndsb16io != m_snd118io)
+	{
+		np2cfg.sndsb16io = m_snd118io;
+		::sysmng_update(SYS_UPDATECFG);
+	}
+	if (np2cfg.sndsb16dma != m_snd118dma)
+	{
+		np2cfg.sndsb16dma = m_snd118dma;
+		::sysmng_update(SYS_UPDATECFG);
+	}
+	if (np2cfg.sndsb16irq != m_snd118irqf)
+	{
+		np2cfg.sndsb16irq = m_snd118irqf;
+		::sysmng_update(SYS_UPDATECFG);
+	}
+}
+
+/**
+ * ユーザーがメニューの項目を選択したときに、フレームワークによって呼び出されます
+ * @param[in] wParam パラメタ
+ * @param[in] lParam パラメタ
+ * @retval TRUE アプリケーションがこのメッセージを処理した
+ */
+BOOL SndOptSB16Page::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+	switch (LOWORD(wParam))
+	{
+		case IDC_SND118IO:
+			m_snd118io = m_cmbio.GetCurItemData(0x0188);
+			return TRUE;
+
+		case IDC_SND118DMA:
+			m_snd118dma = m_cmbdma.GetCurItemData(3);
+			return TRUE;
+
+		case IDC_SND118INTF:
+			m_snd118irqf = m_cmbirqf.GetCurItemData(12);
+			return TRUE;
+
+		case IDC_SND118DEF:
+			// ボードデフォルト IO:D2 DMA:3 IRQ:5(INT1) 
+			m_snd118io = 0xd2;
+			m_snd118dma = 3;
+			m_snd118irqf = 5;
+			m_cmbio.SetCurItemData(m_snd118io);
+			m_cmbdma.SetCurItemData(m_snd118dma);
+			m_cmbirqf.SetCurItemData(m_snd118irqf);
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/**
+ * CWndProc オブジェクトの Windows プロシージャ (WindowProc) が用意されています
+ * @param[in] nMsg 処理される Windows メッセージを指定します
+ * @param[in] wParam メッセージの処理で使う付加情報を提供します。このパラメータの値はメッセージに依存します
+ * @param[in] lParam メッセージの処理で使う付加情報を提供します。このパラメータの値はメッセージに依存します
+ * @return メッセージに依存する値を返します
+ */
+LRESULT SndOptSB16Page::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMsg)
+	{
+		case WM_DRAWITEM:
+			return FALSE;
+	}
+	return CDlgProc::WindowProc(nMsg, wParam, lParam);
+}
+
+#endif	/* SUPPORT_SOUND_SB16 */
+
+
 
 // ---- Speak board
 
@@ -1758,6 +1939,11 @@ void dialog_sndopt(HWND hwndParent)
 	
 	SndOptWSSPage wss;
 	prop.AddPage(&wss);
+	
+#if defined(SUPPORT_SOUND_SB16)
+	SndOptSB16Page sb16;
+	prop.AddPage(&sb16);
+#endif	/* SUPPORT_SOUND_SB16 */
 
 	SndOptSpbPage spb;
 	prop.AddPage(&spb);
