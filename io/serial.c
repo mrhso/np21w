@@ -84,11 +84,13 @@ static const IOINP keybrdi41[2] = {
 					keyboard_i41,	keyboard_i43};
 
 
-void keyboard_reset(void) {
+void keyboard_reset(const NP2CFG *pConfig) {
 
 	ZeroMemory(&keybrd, sizeof(keybrd));
 	keybrd.data = 0xff;
 	keybrd.mode = 0x5e;
+
+	(void)pConfig;
 }
 
 void keyboard_bind(void) {
@@ -166,13 +168,13 @@ void rs232c_open(void) {
 
 void rs232c_callback(void) {
 
-	BOOL	interrupt;
+	BOOL	intr;
 
-	interrupt = FALSE;
+	intr = FALSE;
 	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c.data))) {
 		rs232c.result |= 2;
 		if (sysport.c & 1) {
-			interrupt = TRUE;
+			intr = TRUE;
 		}
 	}
 	else {
@@ -181,10 +183,10 @@ void rs232c_callback(void) {
 	if (sysport.c & 4) {
 		if (rs232c.send) {
 			rs232c.send = 0;
-			interrupt = TRUE;
+			intr = TRUE;
 		}
 	}
-	if (interrupt) {
+	if (intr) {
 		pic_setirq(4);
 	}
 }
@@ -308,7 +310,7 @@ static const IOOUT rs232co30[2] = {
 static const IOINP rs232ci30[2] = {
 					rs232c_i30,	rs232c_i32};
 
-void rs232c_reset(void) {
+void rs232c_reset(const NP2CFG *pConfig) {
 
 	commng_destroy(cm_rs232c);
 	cm_rs232c = NULL;
@@ -318,6 +320,8 @@ void rs232c_reset(void) {
 	rs232c.pos = 0;
 	rs232c.dummyinst = 0;
 	rs232c.mul = 10 * 16;
+
+	(void)pConfig;
 }
 
 void rs232c_bind(void) {

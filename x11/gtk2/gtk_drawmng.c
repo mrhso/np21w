@@ -1,5 +1,3 @@
-/*	$Id: gtk_drawmng.c,v 1.4 2005/03/12 12:36:57 monaka Exp $	*/
-
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
  * All rights reserved.
@@ -94,7 +92,7 @@ drawmng_create(void *parent, int width, int height)
 	}
 	bytes_per_pixel = fmt.bits_per_pixel / 8;
 
-	hdl->d.dest.x = hdl->d.dest.x = 0;
+	hdl->d.dest.x = hdl->d.dest.y = 0;
 	hdl->d.src.left = hdl->d.src.top = 0;
 	hdl->d.src.right = width;
 	hdl->d.src.bottom = height;
@@ -130,7 +128,7 @@ destroy:
 		GtkWidget *da = hdl->drawarea;
 		drawmng_release((DRAWMNG_HDL)hdl);
 		if (da) {
-			gtk_widget_unref(da);
+			g_object_unref(da);
 		}
 	}
 	return NULL;
@@ -145,10 +143,10 @@ drawmng_release(DRAWMNG_HDL dhdl)
 		while (hdl->d.drawing)
 			usleep(1);
 		if (hdl->backsurf) {
-			gdk_pixmap_unref(hdl->backsurf);
+			g_object_unref(hdl->backsurf);
 		}
 		if (hdl->surface) {
-			gdk_image_destroy(hdl->surface);
+			g_object_unref(hdl->surface);
 		}
 		_MFREE(hdl);
 	}
@@ -176,7 +174,11 @@ drawmng_surfunlock(DRAWMNG_HDL dhdl)
 	GdkGC *gc;
 
 	if (hdl) {
+#if GTK_MAJOR_VERSION > 2 || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION >= 18)
+		gc = hdl->drawarea->style->fg_gc[gtk_widget_get_state(hdl->drawarea)];
+#else
 		gc = hdl->drawarea->style->fg_gc[GTK_WIDGET_STATE(hdl->drawarea)];
+#endif
 		gdk_draw_image(hdl->backsurf, gc, hdl->surface,
 		    0, 0, 0, 0, hdl->d.width, hdl->d.height);
 		hdl->d.drawing = FALSE;
@@ -193,7 +195,11 @@ drawmng_blt(DRAWMNG_HDL dhdl, RECT_T *sr, POINT_T *dp)
 	int width, height;
 
 	if (hdl) {
+#if GTK_MAJOR_VERSION > 2 || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION >= 18)
+		gc = hdl->drawarea->style->fg_gc[gtk_widget_get_state(hdl->drawarea)];
+#else
 		gc = hdl->drawarea->style->fg_gc[GTK_WIDGET_STATE(hdl->drawarea)];
+#endif
 		if (sr || dp) {
 
 			if (sr) {
@@ -211,11 +217,11 @@ drawmng_blt(DRAWMNG_HDL dhdl, RECT_T *sr, POINT_T *dp)
 			width = r.right - p.x;
 			height = r.bottom - p.y;
 
-			gdk_draw_pixmap(hdl->drawarea->window, gc,
+			gdk_draw_drawable(hdl->drawarea->window, gc,
 			    hdl->backsurf,
 			    r.left, r.top, p.x, p.y, width, height);
 		} else {
-			gdk_draw_pixmap(hdl->drawarea->window, gc,
+			gdk_draw_drawable(hdl->drawarea->window, gc,
 			    hdl->backsurf,
 			    0, 0, 0, 0, hdl->d.width, hdl->d.height);
 		}
@@ -270,7 +276,7 @@ gtkdrawmng_getformat(GtkWidget *w, GtkWidget *pw, pixmap_format_t *fmtp)
 		break;
 
 	default:
-		fprintf(stderr, "No support visual class.\n");
+		g_printerr("No support visual class.\n");
 		return FALSE;
 	}
 
@@ -292,9 +298,9 @@ gtkdrawmng_getformat(GtkWidget *w, GtkWidget *pw, pixmap_format_t *fmtp)
 
 	default:
 		if (visual->depth < 8) {
-			fprintf(stderr, "Too few allocable color.\n");
+			g_printerr("Too few allocable color.\n");
 		}
-		fprintf(stderr, "No support depth.\n");
+		g_printerr("No support depth.\n");
 		return FALSE;
 	}
 

@@ -1,7 +1,5 @@
-/*	$Id: joymng.c,v 1.2 2004/07/26 15:53:26 monaka Exp $	*/
-
 /*-
- * Copyright (c) 2004 NONAKA Kimihiro <aw9k-nnk@asahi-net.or.jp>,
+ * Copyright (C) 2004 NONAKA Kimihiro <nonakap@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -13,17 +11,16 @@
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "compiler.h"
@@ -33,25 +30,35 @@
 #include "np2.h"
 
 #include "joymng.h"
-#include "joydrv/joydrv.h"
 
 static struct {
-	joydrv_handle_t	hdl;
+	void *hdl;
+	BOOL inited;
 
-	BYTE		pad1btn[NELEMENTS(np2oscfg.JOY1BTN)];
-	REG8		flag;
+	joymng_devinfo_t **devlist;
 
-	joydrv_handle_t	*devlist;
-	BOOL		inited;
+	BYTE pad1btn[NELEMENTS(np2oscfg.JOY1BTN)];
+	REG8 flag;
 } joyinfo = {
+	NULL,
+	FALSE,
+
 	NULL,
 
 	{ 0, },
 	0xff,
-
-	NULL,
-	FALSE,
 };
+
+typedef struct {
+	SINT16	axis[JOY_NAXIS];
+	BYTE	button[JOY_NBUTTON];
+} JOYINFO_T;
+
+static joymng_devinfo_t **joydrv_initialize(void);
+static void joydrv_terminate(void);
+static void *joydrv_open(const char *dev);
+static void joydrv_close(void *hdl);
+static BOOL joydrv_getstat(void *hdl, JOYINFO_T *ji);
 
 void
 joymng_initialize(void)
@@ -99,11 +106,11 @@ joymng_deinitialize(void)
 	np2oscfg.JOYPAD1 &= 1;
 }
 
-const joydrv_handle_t *
+joymng_devinfo_t **
 joymng_get_devinfo_list(void)
 {
 
-	return (const joydrv_handle_t *)joyinfo.devlist;
+	return joyinfo.devlist;
 }
 
 void
@@ -147,65 +154,219 @@ joymng_getstat(void)
 			}
 		}
 	}
+
 	return joyinfo.flag;
 }
 
-REG8
-joymng_getstat_with_map(UINT8 *axismap, UINT8 *btnmap)
+#if defined(USE_SDL_JOYSTICK)
+
+#include <SDL.h>
+#include <SDL_joystick.h>
+
+typedef struct {
+	joymng_devinfo_t	dev;
+	SDL_Joystick		*joyhdl;
+} joydrv_sdl_hdl_t;
+
+static joymng_devinfo_t **
+joydrv_initialize(void)
 {
-	JOYINFO_T ji;
+	char str[32];
+	joydrv_sdl_hdl_t *shdl;
+	joymng_devinfo_t **devlist = NULL;
+	size_t allocsize;
+	int ndrv = 0;
+	int rv;
+	int i, n;
+
+	rv = SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+	if (rv < 0) {
+		return NULL;
+	}
+
+	ndrv = SDL_NumJoysticks();
+	if (ndrv <= 0) {
+		goto sdl_err;
+	}
+
+	allocsize = sizeof(joymng_devinfo_t *) * (ndrv + 1);
+	devlist = _MALLOC(allocsize, "joy device list");
+	if (devlist == NULL) {
+		goto sdl_err;
+	}
+	memset(devlist, 0, allocsize);
+
+	for (n = 0, i = 0; i < ndrv; ++i) {
+		g_snprintf(str, sizeof(str), "%d", i);
+		devlist[n] = joydrv_open(str);
+		if (devlist[n] == NULL) {
+			continue;
+		}
+		shdl = (joydrv_sdl_hdl_t *)devlist[n];
+		SDL_JoystickClose(shdl->joyhdl);
+		shdl->joyhdl = NULL;
+		n++;
+	}
+	devlist[n] = NULL;
+
+	return devlist;
+
+sdl_err:
+	if (devlist) {
+		for (i = 0; i < ndrv; ++i) {
+			if (devlist[i]) {
+				joydrv_close(devlist[i]);
+			}
+		}
+		_MFREE(devlist);
+	}
+
+	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+
+	return NULL;
+}
+
+static void
+joydrv_terminate(void)
+{
+
+	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+}
+
+static void *
+joydrv_open(const char *dvname)
+{
+	joydrv_sdl_hdl_t *shdl = NULL;
+	joymng_devinfo_t *dev;
+	SDL_Joystick *joy = NULL;
+	char *endptr;
+	size_t allocsize;
+	long lval;
+	int drv;
+	int ndrv;
+	int naxis;
+	int nbutton;
 	int i;
-	REG8 joyflag;
 
-	if (joyinfo.hdl) {
-		if (joydrv_getstat_with_map(joyinfo.hdl, &ji, axismap, btnmap) == SUCCESS) {
-			joyflag = 0xff;
+	if (dvname == NULL) {
+		goto sdl_err;
+	}
 
-			/* X */
-			if (ji.axis[0] > 0x4000) {
-				joyflag &= ~JOY_RIGHT_BIT;
-			} else if (ji.axis[0] < -0x4000) {
-				joyflag &= ~JOY_LEFT_BIT;
-			}
+	errno = 0;
+	lval = strtol(dvname, &endptr, 10);
+	if (dvname[0] == '\0' || *endptr != '\0') {
+		goto sdl_err;
+	}
+	if (errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN)) {
+		goto sdl_err;
+	}
+	if (lval < 0 || lval > INT_MAX) {
+		goto sdl_err;
+	}
+	drv = (int)lval;
 
-			/* Y */
-			if (ji.axis[1] > 0x4000) {
-				joyflag &= ~JOY_DOWN_BIT;
-			} else if (ji.axis[1] < -0x4000) {
-				joyflag &= ~JOY_UP_BIT;
-			}
+	ndrv = SDL_NumJoysticks();
+	if (ndrv <= 0 || drv >= ndrv) {
+		goto sdl_err;
+	}
 
-			/* button */
-			for (i = 0; i < JOY_NBUTTON; ++i) {
-				if (ji.button[i]) {
-					joyflag &= joyinfo.pad1btn[i];
-				}
-			}
-			return joyflag;
+	joy = SDL_JoystickOpen(drv);
+	if (joy == NULL) {
+		goto sdl_err;
+	}
+
+	naxis = SDL_JoystickNumAxes(joy);
+	if (naxis < 2 || naxis >= 255) {
+		goto sdl_err;
+	}
+	nbutton = SDL_JoystickNumButtons(joy);
+	if (nbutton < 2 || nbutton >= 255) {
+		goto sdl_err;
+	}
+
+	allocsize = sizeof(joydrv_sdl_hdl_t);
+	shdl = _MALLOC(allocsize, "SDL joystick handle");
+	if (shdl == NULL) {
+		goto sdl_err;
+	}
+	memset(shdl, 0, allocsize);
+
+	shdl->joyhdl = joy;
+
+	dev = &shdl->dev;
+	dev->devindex = drv;
+	dev->devname = strdup(SDL_JoystickName(drv));
+	dev->naxis = naxis;
+	for (i = 0; i < JOY_NAXIS; ++i) {
+		if (np2oscfg.JOYAXISMAP[0][i] < naxis) {
+			dev->axis[i] = np2oscfg.JOYAXISMAP[0][i];
+		} else {
+			dev->axis[i] = JOY_AXIS_INVALID;
 		}
 	}
-	return 0xff;
-}
-
-void
-joymng_update(void)
-{
-
-	if (joyinfo.hdl) {
-		joydrv_update(joyinfo.hdl);
-	}
-}
-
-int
-joymng_update_task(void *p)
-{
-
-	UNUSED(p);
-
-	if (joyinfo.hdl) {
-		joydrv_update(joyinfo.hdl);
+	dev->nbutton = nbutton;
+	for (i = 0; i < JOY_NBUTTON; ++i) {
+		if (np2oscfg.JOYBTNMAP[0][i] < nbutton) {
+			dev->button[i] = np2oscfg.JOYBTNMAP[0][i];
+		} else {
+			dev->button[i] = JOY_BUTTON_INVALID;
+		}
 	}
 
-	return TRUE;
+	return shdl;
+
+sdl_err:
+	if (shdl) {
+		if (shdl->dev.devname) {
+			free(shdl->dev.devname);
+			shdl->dev.devname = NULL;
+		}
+		_MFREE(shdl);
+	}
+	if (joy) {
+		SDL_JoystickClose(joy);
+	}
+	return NULL;
 }
+
+static void
+joydrv_close(void *hdl)
+{
+	joydrv_sdl_hdl_t *shdl = (joydrv_sdl_hdl_t *)hdl;
+	joymng_devinfo_t *dev = &shdl->dev;
+	SDL_Joystick *joy = shdl->joyhdl;
+
+	if (joy) {
+		SDL_JoystickClose(joy);
+	}
+	if (dev->devname) {
+		free(dev->devname);
+		dev->devname = NULL;
+	}
+	_MFREE(shdl);
+}
+
+static BOOL
+joydrv_getstat(void *hdl, JOYINFO_T *ji)
+{
+	joydrv_sdl_hdl_t *shdl = (joydrv_sdl_hdl_t *)hdl;
+	joymng_devinfo_t *dev = &shdl->dev;
+	SDL_Joystick *joy = shdl->joyhdl;
+	int i;
+
+	SDL_JoystickUpdate();
+
+	for (i = 0; i < JOY_NAXIS; ++i) {
+		ji->axis[i] = (dev->axis[i] == JOY_AXIS_INVALID) ? 0 :
+		    SDL_JoystickGetAxis(joy, dev->axis[i]);
+	}
+	for (i = 0; i < JOY_NBUTTON; ++i) {
+		ji->button[i] = (dev->button[i] == JOY_BUTTON_INVALID) ? 0 :
+		    SDL_JoystickGetButton(joy, dev->button[i]);
+	}
+
+	return SUCCESS;
+}
+#endif	/* USE_SDL_JOYSTICK */
+
 #endif	/* SUPPORT_JOYSTICK */

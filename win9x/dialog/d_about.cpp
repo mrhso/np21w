@@ -1,7 +1,6 @@
 #include	"compiler.h"
 #include	"resource.h"
 #include	"np2.h"
-#include	"oemtext.h"
 #include	"np2class.h"
 #include	"dialog.h"
 #include	"dialogs.h"
@@ -10,99 +9,87 @@
 #include	"np2info.h"
 
 
-static	SIZE	aboutsize;
+static	SIZE	s_szAbout;
 
-static const OEMCHAR str_np2title[] = OEMTEXT(PROJECTNAME) \
-										OEMTEXT(PROJECTSUBNAME) \
-										OEMTEXT("  ");
-static const OEMCHAR np2infostr[] = OEMTEXT("CPU: %CPU% %CLOCK%\nMEM: %MEM1%\nGDC: %GDC%\n     %GDC2%\nTEXT: %TEXT%\nGRPH: %GRPH%\nSOUND: %EXSND%\n\nBIOS: %BIOS%\nRHYTHM: %RHYTHM%\n\nSCREEN: %DISP%");
+static const TCHAR str_np2title[] = TEXT(PROJECTNAME) \
+									TEXT(PROJECTSUBNAME) \
+									TEXT("  ");
+static const TCHAR np2infostr[] = TEXT("CPU: %CPU% %CLOCK%\nMEM: %MEM1%\nGDC: %GDC%\n     %GDC2%\nTEXT: %TEXT%\nGRPH: %GRPH%\nSOUND: %EXSND%\n\nBIOS: %BIOS%\nRHYTHM: %RHYTHM%\n\nSCREEN: %DISP%");
 
 
-static void about_init(HWND hWnd) {
-
-	OEMCHAR	work[128];
-	RECT	rectwindow;
-	RECT	rectclient;
+static void onInitDialog(HWND hWnd)
+{
+	TCHAR	szWork[128];
+	RECT	rect;
+	RECT	rectMore;
+	RECT	rectInfo;
+	int		nHeight;
 	POINT	pt;
-	RECT	parent;
 
-	milstr_ncpy(work, str_np2title, NELEMENTS(work));
-	milstr_ncat(work, np2version, NELEMENTS(work));
+	milstr_ncpy(szWork, str_np2title, NELEMENTS(szWork));
+	milstr_ncat(szWork, np2version, NELEMENTS(szWork));
 #if defined(NP2VER_WIN9X)
-	milstr_ncat(work, NP2VER_WIN9X, NELEMENTS(work));
+	milstr_ncat(szWork, NP2VER_WIN9X, NELEMENTS(szWork));
 #endif
-#if defined(OSLANG_UTF8)
-	TCHAR	tchr[128];
-	oemtotchar(tchr, NELEMENTS(tchr), work, -1);
-	SetDlgItemText(hWnd, IDC_NP2VER, tchr);
-#else
-	SetDlgItemText(hWnd, IDC_NP2VER, work);
-#endif
-	GetWindowRect(hWnd, &rectwindow);
-	GetClientRect(hWnd, &rectclient);
-	aboutsize.cx = rectwindow.right - rectwindow.left;
-	aboutsize.cy = rectwindow.bottom - rectwindow.top;
-	pt.x = 0;
-	pt.y = 0;
-	ClientToScreen(GetParent(hWnd), &pt);
-	GetClientRect(GetParent(hWnd), &parent);
-	np2class_move(hWnd,
-					pt.x + ((parent.right - parent.left - aboutsize.cx) / 2),
-					pt.y + ((parent.bottom - parent.top - aboutsize.cy) / 2),
-					aboutsize.cx,
-					aboutsize.cy + 60 - (rectclient.bottom - rectclient.top));
+	SetDlgItemText(hWnd, IDC_NP2VER, szWork);
+
+	GetWindowRect(hWnd, &rect);
+	s_szAbout.cx = rect.right - rect.left;
+	s_szAbout.cy = rect.bottom - rect.top;
+
+	if ((dlgs_getitemrect(hWnd, IDC_MORE, &rectMore)) &&
+		(dlgs_getitemrect(hWnd, IDC_NP2INFO, &rectInfo)))
+	{
+		nHeight = s_szAbout.cy - (rectInfo.bottom - rectMore.bottom);
+		GetClientRect(GetParent(hWnd), &rect);
+		pt.x = (rect.right - rect.left - s_szAbout.cx) / 2;
+		pt.y = (rect.bottom - rect.top - s_szAbout.cy) / 2;
+		ClientToScreen(GetParent(hWnd), &pt);
+		np2class_move(hWnd, pt.x, pt.y, s_szAbout.cx, nHeight);
+	}
 
 	SetFocus(GetDlgItem(hWnd, IDOK));
 }
 
-static void about_more(HWND hWnd) {
-
-	OEMCHAR	infostr[1024];
+static void onMore(HWND hWnd)
+{
+	TCHAR	szInfo[1024];
 	RECT	rect;
 
-	np2info(infostr, np2infostr, NELEMENTS(infostr), NULL);
-#if defined(OSLANG_UTF8)
-	TCHAR	tchr[1024];
-	oemtotchar(tchr, NELEMENTS(tchr), infostr, -1);
-	SetDlgItemText(hWnd, IDC_NP2INFO, tchr);
-#else
-	SetDlgItemText(hWnd, IDC_NP2INFO, infostr);
-#endif
+	np2info(szInfo, np2infostr, NELEMENTS(szInfo), NULL);
+	SetDlgItemText(hWnd, IDC_NP2INFO, szInfo);
 	EnableWindow(GetDlgItem(hWnd, IDC_MORE), FALSE);
 	GetWindowRect(hWnd, &rect);
-	np2class_move(hWnd, rect.left, rect.top, aboutsize.cx, aboutsize.cy);
+	np2class_move(hWnd, rect.left, rect.top, s_szAbout.cx, s_szAbout.cy);
 	SetFocus(GetDlgItem(hWnd, IDOK));
 }
 
-LRESULT CALLBACK AboutDialogProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
-
-	switch (msg) {
+LRESULT CALLBACK AboutDialogProc(HWND hWnd, UINT uMsg,
+												WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
 		case WM_INITDIALOG:
-			about_init(hWnd);
-			return(FALSE);
+			onInitDialog(hWnd);
+			break;
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch (LOWORD(wParam))
+			{
 				case IDOK:
 					EndDialog(hWnd, IDOK);
-					break;
+					return TRUE;
 
 				case IDC_MORE:
-					about_more(hWnd);
+					onMore(hWnd);
 					break;
-
-				default:
-					return(FALSE);
 			}
 			break;
 
 		case WM_CLOSE:
 			PostMessage(hWnd, WM_COMMAND, IDOK, 0);
 			break;
-
-		default:
-			return(FALSE);
 	}
-	return(TRUE);
+	return FALSE;
 }
 

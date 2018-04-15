@@ -1,7 +1,5 @@
-/*	$Id: gtk_main.c,v 1.2 2005/03/12 12:36:57 monaka Exp $	*/
-
 /*
- * Copyright (c) 2004 NONAKA Kimihiro <aw9k-nnk@asahi-net.or.jp>
+ * Copyright (c) 2004 NONAKA Kimihiro
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,44 +60,39 @@
 			 | GDK_LEAVE_NOTIFY_MASK	\
 			 | GDK_EXPOSURE_MASK)
 
-
+/*
+ - Signal: gboolean GtkWidget::destroy_event (GtkWidget *widget,
+          GdkEventAny *event, gpointer user_data)
+*/
 static gboolean
-destroy_evhandler(GtkWidget *w)
+destroy_evhandler(GtkWidget *w, GdkEventAny *ev, gpointer p)
 {
 
-	UNUSED(w);
-
 	toolkit_widget_quit();
+
 	return TRUE;
 }
 
 /*
- - Signal: gboolean GtkWidget::configure_event(GtkWidget *widget,
+ - Signal: gboolean GtkWidget::configure_event (GtkWidget *widget,
           GdkEventConfigure *event, gpointer user_data)
 */
 static gboolean
-configure_evhandler(GtkWidget *w, GdkEventConfigure *ev, gpointer user_data)
+configure_evhandler(GtkWidget *w, GdkEventConfigure *ev, gpointer p)
 {
-
-	UNUSED(ev);
-	UNUSED(user_data);
 
 	gdk_draw_rectangle(w->window, w->style->black_gc, TRUE,
 	    0, 0, w->allocation.width, w->allocation.height);
-
 	return TRUE;
 }
 
 /*
- - Signal: gboolean GtkWidget::expose_event(GtkWidget *widget,
+ - Signal: gboolean GtkWidget::expose_event (GtkWidget *widget,
           GdkEventExpose *event, gpointer user_data)
 */
 static gboolean
 expose_evhandler(GtkWidget *w, GdkEventExpose *ev, gpointer p)
 {
-
-	UNUSED(w);
-	UNUSED(p);
 
 	if (ev->count == 0) {
 		scrndraw_redraw();
@@ -115,10 +108,12 @@ static gboolean
 key_press_evhandler(GtkWidget *w, GdkEventKey *ev, gpointer p)
 {
 
-	UNUSED(w);
-	UNUSED(p);
-
-	if ((ev->keyval == GDK_F12) && (np2oscfg.F12KEY == 0))
+	if (ev->keyval == GDK_F11) {
+		if ((np2oscfg.F11KEY == 1) && (scrnmode & SCRNMODE_FULLSCREEN))
+			xmenu_toggle_menu();
+		else if (np2oscfg.F11KEY == 2)
+			xmenu_select_screen(scrnmode ^ SCRNMODE_FULLSCREEN);
+	} else if ((ev->keyval == GDK_F12) && (np2oscfg.F12KEY == 0))
 		xmenu_toggle_item(NULL, "mousemode", !np2oscfg.MOUSE_SW);
 	else
 		gtkkbd_keydown(ev->keyval);
@@ -133,9 +128,6 @@ static gboolean
 key_release_evhandler(GtkWidget *w, GdkEventKey *ev, gpointer p)
 {
 
-	UNUSED(w);
-	UNUSED(p);
-
 	if ((ev->keyval != GDK_F12) || (np2oscfg.F12KEY != 0))
 		gtkkbd_keyup(ev->keyval);
 	return TRUE;
@@ -148,9 +140,6 @@ key_release_evhandler(GtkWidget *w, GdkEventKey *ev, gpointer p)
 static gboolean
 button_press_evhandler(GtkWidget *w, GdkEventButton *ev, gpointer p)
 {
-
-	UNUSED(w);
-	UNUSED(p);
 
 	switch (ev->button) {
 	case 1:
@@ -176,9 +165,6 @@ static gboolean
 button_release_evhandler(GtkWidget *w, GdkEventButton *ev, gpointer p)
 {
 
-	UNUSED(w);
-	UNUSED(p);
-
 	switch (ev->button) {
 	case 1:
 		mouse_btn(MOUSE_LEFTUP);
@@ -194,10 +180,33 @@ button_release_evhandler(GtkWidget *w, GdkEventButton *ev, gpointer p)
 	return TRUE;
 }
 
+/*
+ - Signal: gboolean GtkWidget::motion_notify_event (GtkWidget *widget,
+          GdkEventMotion *event, gpointer user_data)
+*/
+static gboolean
+motion_notify_evhandler(GtkWidget *w, GdkEventMotion *ev, gpointer p)
+{
+
+	if ((scrnmode & SCRNMODE_FULLSCREEN) && (ev->y < 8.0))
+		xmenu_show();
+
+	return TRUE;
+}
+
 
 /*
  * misc
  */
+static gint
+main_loop_quit(gpointer p)
+{
+
+	scrnmng_fullscreen(0);
+
+	return 0;
+}
+
 static void
 set_icon_bitmap(GtkWidget *w)
 {
@@ -213,7 +222,7 @@ set_icon_bitmap(GtkWidget *w)
 /*
  * idle process
  */
-static int install_count = 0;
+static volatile int install_count = 0;
 static guint idle_id;
 
 void
@@ -221,7 +230,7 @@ install_idle_process(void)
 {
 
 	if (install_count++ == 0) {
-		idle_id = g_idle_add((GSourceFunc)mainloop, 0);
+		idle_id = g_idle_add((GSourceFunc)mainloop, NULL);
 		soundmng_play();
 	}
 }
@@ -240,13 +249,6 @@ uninstall_idle_process(void)
 /*
  * toolkit
  */
-const char *
-gui_gtk_get_toolkit(void)
-{
-
-	return "gtk";
-}
-
 BOOL
 gui_gtk_arginit(int *argcp, char ***argvp)
 {
@@ -275,9 +277,10 @@ gui_gtk_widget_create(void)
 	GtkWidget *main_vbox;
 	GtkWidget *menubar;
 	gchar *accel = NULL;
+	gint root_x, root_y;
 
 	main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_widget_set_double_buffered(GTK_WIDGET(main_window), FALSE);
+//	gtk_widget_set_double_buffered(GTK_WIDGET(main_window), FALSE);
 	gtk_window_set_resizable(GTK_WINDOW(main_window), FALSE);
 	gtk_window_set_title(GTK_WINDOW(main_window), np2oscfg.titles);
 	gtk_widget_add_events(main_window, EVENT_MASK);
@@ -291,7 +294,7 @@ gui_gtk_widget_create(void)
 	gtk_widget_show(menubar);
 
 	drawarea = gtk_drawing_area_new();
-	gtk_widget_set_double_buffered(GTK_WIDGET(drawarea), FALSE);
+//	gtk_widget_set_double_buffered(GTK_WIDGET(drawarea), FALSE);
 	gtk_widget_set_size_request(GTK_WIDGET(drawarea), 640, 400);
 	gtk_box_pack_end(GTK_BOX(main_vbox), drawarea, FALSE, TRUE, 0);
 	gtk_widget_show(drawarea);
@@ -305,30 +308,27 @@ gui_gtk_widget_create(void)
 	}
 
 	gtk_widget_realize(main_window);
+	gdk_window_get_origin(main_window->window, &root_x, &root_y);
+	gdk_window_reparent(main_window->window, NULL, root_x, root_y);
 	set_icon_bitmap(main_window);
 
 	g_signal_connect(GTK_OBJECT(main_window), "destroy", 
-	    GTK_SIGNAL_FUNC(destroy_evhandler), "WM destroy");
+	    G_CALLBACK(destroy_evhandler), (gpointer)"WM destroy");
 	g_signal_connect(GTK_OBJECT(main_window), "key_press_event",
-	    GTK_SIGNAL_FUNC(key_press_evhandler), NULL);
+	    G_CALLBACK(key_press_evhandler), NULL);
 	g_signal_connect(GTK_OBJECT(main_window), "key_release_event",
-	    GTK_SIGNAL_FUNC(key_release_evhandler), NULL);
+	    G_CALLBACK(key_release_evhandler), NULL);
 	g_signal_connect(GTK_OBJECT(main_window), "button_press_event",
-	    GTK_SIGNAL_FUNC(button_press_evhandler), NULL);
+	    G_CALLBACK(button_press_evhandler), NULL);
 	g_signal_connect(GTK_OBJECT(main_window), "button_release_event",
-	    GTK_SIGNAL_FUNC(button_release_evhandler), NULL);
+	    G_CALLBACK(button_release_evhandler), NULL);
+	g_signal_connect(GTK_OBJECT(main_window), "motion_notify_event",
+	    G_CALLBACK(motion_notify_evhandler), NULL);
 
 	g_signal_connect(GTK_OBJECT(drawarea), "configure_event",
-	    GTK_SIGNAL_FUNC(configure_evhandler), NULL);
+	    G_CALLBACK(configure_evhandler), NULL);
 	g_signal_connect(GTK_OBJECT(drawarea), "expose_event",
-	    GTK_SIGNAL_FUNC(expose_evhandler), NULL);
-}
-
-static void
-gui_gtk_terminate(void)
-{
-
-	/* Nothing to do */
+	    G_CALLBACK(expose_evhandler), NULL);
 }
 
 void
@@ -342,8 +342,8 @@ void
 gui_gtk_widget_mainloop(void)
 {
 
-
 	install_idle_process();
+	gtk_quit_add(1, main_loop_quit, NULL);
 	gtk_main();
 	uninstall_idle_process();
 }
@@ -372,23 +372,83 @@ gui_gtk_set_window_title(const char* str)
 	gtk_window_set_title(GTK_WINDOW(main_window), str);
 }
 
-void
-gui_gtk_messagebox(const char *title, const char *msg)
+int
+gui_gtk_msgbox(const char *title, const char *msg, UINT flags)
 {
+	GtkWidget *dialog;
+	GtkMessageType msgtype;
+	GtkButtonsType btntype;
+	int retval;
+	int rv;
 
-	g_message("%s:\n%s", title, msg);
+	uninstall_idle_process();
+
+	switch (flags & TK_MB_BTN_MASK) {
+	default:
+		btntype = GTK_BUTTONS_OK;
+		break;
+
+	case TK_MB_OK:
+		btntype = GTK_BUTTONS_OK;
+		break;
+
+	case TK_MB_CANCEL:
+		btntype = GTK_BUTTONS_CANCEL;
+		break;
+
+	case TK_MB_OKCANCEL:
+		btntype = GTK_BUTTONS_OK_CANCEL;
+		break;
+
+	case TK_MB_YESNO:
+		btntype = GTK_BUTTONS_YES_NO;
+		break;
+	}
+
+	if (flags & TK_MB_ICON_INFO) {
+		msgtype = GTK_MESSAGE_INFO;
+	} else if (flags & TK_MB_ICON_WARNING) {
+		msgtype = GTK_MESSAGE_WARNING;
+	} else if (flags & TK_MB_ICON_ERROR) {
+		msgtype = GTK_MESSAGE_ERROR;
+	} else if (flags & TK_MB_ICON_QUESTION) {
+		msgtype = GTK_MESSAGE_QUESTION;
+	} else {
+		msgtype = GTK_MESSAGE_OTHER;
+	}
+
+	dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
+	    GTK_DIALOG_DESTROY_WITH_PARENT|GTK_DIALOG_MODAL,
+	    msgtype, btntype, "%s", msg);
+	gtk_window_set_title(GTK_WINDOW(dialog), title);
+
+	gtk_widget_show_all(dialog);
+
+	rv = gtk_dialog_run(GTK_DIALOG(dialog));
+	switch (rv) {
+	case GTK_RESPONSE_OK:
+		retval = TK_MB_OK;
+		break;
+
+	case GTK_RESPONSE_CANCEL:
+		retval = TK_MB_CANCEL;
+		break;
+
+	case GTK_RESPONSE_YES:
+		retval = TK_MB_YES;
+		break;
+
+	case GTK_RESPONSE_NO:
+		retval = TK_MB_NO;
+		break;
+
+	default:
+		retval = 0;	/* XXX */
+		break;
+	}
+
+	gtk_widget_destroy(dialog);
+	install_idle_process();
+
+	return retval;
 }
-
-/* toolkit data */
-gui_toolkit_t gtk_toolkit = {
-	gui_gtk_get_toolkit,
-	gui_gtk_arginit,
-	gui_gtk_terminate,
-	gui_gtk_widget_create,
-	gui_gtk_widget_show,
-	gui_gtk_widget_mainloop,
-	gui_gtk_widget_quit,
-	gui_gtk_event_process,
-	gui_gtk_set_window_title,
-	gui_gtk_messagebox,
-};

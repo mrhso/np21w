@@ -3,7 +3,6 @@
 #include	"resource.h"
 #include	"np2.h"
 #include	"winloc.h"
-#include	"oemtext.h"
 #include	"dosio.h"
 #include	"soundmng.h"
 #include	"sysmng.h"
@@ -34,12 +33,7 @@ enum {
 	IDC_TOOLPOWER,
 	IDC_MAXITEMS,
 
-	IDC_BASE				= 3000,
-
-	IDM_SKINSEL				= 3100,
-	IDM_SKINDEF				= 3101,
-	IDM_SKINMRU				= 3102,
-	IDM_TOOLCLOSE			= IDM_SKINMRU + SKINMRU_MAX
+	IDC_BASE				= 3000
 };
 
 enum {
@@ -89,10 +83,8 @@ typedef struct {
 	SUBCLASSPROC	subproc[IDC_MAXITEMS];
 } TOOLWIN;
 
-enum {
-	GTWL_FOCUS		= NP2GWL_SIZE + 0,
-	GTWL_SIZE		= NP2GWL_SIZE + 4
-};
+#define	GTWLP_FOCUS		(NP2GWLP_SIZE + (0 * sizeof(LONG_PTR)))
+#define	GTWLP_SIZE		(NP2GWLP_SIZE + (1 * sizeof(LONG_PTR)))
 
 		NP2TOOL		np2tool;
 static	TOOLSKIN	toolskin;
@@ -149,19 +141,13 @@ static HBITMAP skinload(const OEMCHAR *path) {
 		milstr_ncpy(fname, path, NELEMENTS(fname));
 		file_cutname(fname);
 		file_catname(fname, toolskin.main, NELEMENTS(fname));
-#if defined(OSLANG_UTF8)
-		TCHAR tchr[MAX_PATH];
-		oemtotchar(tchr, NELEMENTS(tchr), fname, -1);
-#else
-		const TCHAR *tchr = fname;
-#endif
-		ret = (HBITMAP)LoadImage(hInst, tchr, IMAGE_BITMAP,
+		ret = (HBITMAP)LoadImage(g_hInstance, fname, IMAGE_BITMAP,
 													0, 0, LR_LOADFROMFILE);
 		if (ret != NULL) {
 			return(ret);
 		}
 	}
-	return(LoadBitmap(hInst, _T("NP2TOOL")));
+	return(LoadBitmap(g_hInstance, _T("NP2TOOL")));
 }
 
 
@@ -364,13 +350,7 @@ static LRESULT CALLBACK twsub(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	else if (msg == WM_DROPFILES) {
    	    files = DragQueryFile((HDROP)wp, (UINT)-1, NULL, 0);
 		if (files == 1) {
-#if defined(OSLANG_UTF8)
-			TCHAR tchr[MAX_PATH];
-			DragQueryFile((HDROP)wp, 0, tchr, NELEMENTS(tchr));
-			tchartooem(fname, NELEMENTS(fname), tchr, -1);
-#else
 			DragQueryFile((HDROP)wp, 0, fname, NELEMENTS(fname));
-#endif
 			if (idc == IDC_TOOLFDD1LIST) {
 				diskdrv_setfdd(0, fname, 0);
 				toolwin_setfdd(0, fname);
@@ -398,22 +378,16 @@ static LRESULT CALLBACK twsub(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		}
 	}
 	else if (msg == WM_SETFOCUS) {
-		SetWindowLong(GetParent(hWnd), GTWL_FOCUS, idc);
+		SetWindowLongPtr(GetParent(hWnd), GTWLP_FOCUS, idc);
 	}
 	return(CallWindowProc(toolwin.subproc[idc], hWnd, msg, wp, lp));
 }
 
 static void toolwincreate(HWND hWnd) {
 
-#if defined(OSLANG_UTF8)
-	TCHAR fontface[64];
-	oemtotchar(fontface, NELEMENTS(fontface), toolskin.font, -1);
-#else
-	const TCHAR *fontface = toolskin.font;
-#endif
 	toolwin.hfont = CreateFont(toolskin.fontsize, 0, 0, 0, 0, 0, 0, 0,
 					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-					DEFAULT_QUALITY, FIXED_PITCH, fontface);
+					DEFAULT_QUALITY, FIXED_PITCH, toolskin.font);
 	HDC hdc = GetDC(NULL);
 	toolwin.hdcfont = CreateCompatibleDC(hdc);
 	ReleaseDC(NULL, hdc);
@@ -451,21 +425,16 @@ static void toolwincreate(HWND hWnd) {
 				break;
 		}
 		if ((cls) && (p->width > 0) && (p->height > 0)) {
-#if defined(OSLANG_UTF8)
-			TCHAR ptext[64];
-			oemtotchar(ptext, NELEMENTS(ptext), p->text, -1);
-#else
-			const TCHAR *ptext = p->text;
-#endif
-			sub = CreateWindow(cls, ptext, WS_CHILD | WS_VISIBLE | style,
+			sub = CreateWindow(cls, p->text, WS_CHILD | WS_VISIBLE | style,
 							p->posx, p->posy, p->width, p->height,
-							hWnd, (HMENU)(i + IDC_BASE), hInst, NULL);
+							hWnd, (HMENU)(i + IDC_BASE), g_hInstance, NULL);
 		}
 		toolwin.sub[i] = sub;
 		toolwin.subproc[i] = NULL;
 		if (sub) {
-			toolwin.subproc[i] = GetWindowProc(sub);
-			SetWindowProc(sub, twsub);
+			toolwin.subproc[i] = (SUBCLASSPROC)GetWindowLongPtr(sub,
+															GWLP_WNDPROC);
+			SetWindowLongPtr(sub, GWLP_WNDPROC, (LONG_PTR)twsub);
 			SendMessage(sub, WM_SETFONT, (WPARAM)toolwin.hfont,
 														MAKELPARAM(TRUE, 0));
 		}
@@ -483,7 +452,7 @@ static void toolwincreate(HWND hWnd) {
 			break;
 		}
 	}
-	SetWindowLong(hWnd, GTWL_FOCUS, i);
+	SetWindowLongPtr(hWnd, GTWLP_FOCUS, i);
 }
 
 static void toolwindestroy(void) {
@@ -563,58 +532,116 @@ static void tooldrawbutton(HWND hWnd, UINT idc, LPDRAWITEMSTRUCT lpdis) {
 
 // ----
 
-static HMENU createskinmenu(void) {
-
-	HMENU		ret;
-	UINT		cnt;
-const OEMCHAR	*base;
-	UINT		flag;
-	OEMCHAR		*p;
+static void setSkinMruMenu(HMENU hMenu)
+{
+	HMENU		hmenuSub;
+const OEMCHAR	*pcszBase;
+	UINT		uCount;
+	OEMCHAR		*pszMru;
+const OEMCHAR	*pcszMruList[SKINMRU_MAX];
 	UINT		i;
+	UINT		uID[SKINMRU_MAX];
 	UINT		j;
-	UINT		id[SKINMRU_MAX];
-const OEMCHAR	*file[SKINMRU_MAX];
+	UINT		uFlag;
 
-	ret = CreatePopupMenu();
-	AppendMenu(ret, MF_STRING, IDM_SKINSEL, str_skinsel);
-	AppendMenu(ret, MF_SEPARATOR, 0, NULL);
+	for (i=0; i<SKINMRU_MAX; i++)
+	{
+		DeleteMenu(hMenu, IDM_TOOL_SKINMRU + i, MF_BYCOMMAND);
+	}
 
-	base = np2tool.skin;
-	flag = (base[0] == '\0')?MF_CHECKED:0;
-	AppendMenu(ret, MF_STRING + flag, IDM_SKINDEF, str_skindef);
-	for (cnt=0; cnt<SKINMRU_MAX; cnt++) {
-		p = np2tool.skinmru[cnt];
-		if (p[0] == '\0') {
+	if (!menu_searchmenu(hMenu, IDM_TOOL_SKINDEF, &hmenuSub, NULL))
+	{
+		return;
+	}
+
+	pcszBase = np2tool.skin;
+
+	CheckMenuItem(hMenu, IDM_TOOL_SKINDEF, MFCHECK(pcszBase[0] == '\0'));
+
+	for (uCount=0; uCount<SKINMRU_MAX; uCount++)
+	{
+		pszMru = np2tool.skinmru[uCount];
+		if (pszMru[0] == '\0')
+		{
 			break;
 		}
-		p = file_getname(p);
-		for (i=0; i<cnt; i++) {
-			if (file_cmpname(p, file[id[i]]) < 0) {
+		pszMru = file_getname(pszMru);
+		for (i=0; i<uCount; i++)
+		{
+			if (file_cmpname(pszMru, pcszMruList[uID[i]]) < 0)
+			{
 				break;
 			}
 		}
-		for (j=cnt; j>i; j--) {
-			id[j] = id[j-1];
+		for (j=uCount; j>i; j--)
+		{
+			uID[j] = uID[j-1];
 		}
-		id[i] = cnt;
-		file[cnt] = p;
+		uID[i] = uCount;
+		pcszMruList[uCount] = pszMru;
 	}
-	for (i=0; i<cnt; i++) {
-		j = id[i];
-		flag = (!file_cmpname(base, np2tool.skinmru[j]))?MF_CHECKED:0;
-#if defined(OSLANG_UTF8)
-		TCHAR path[MAX_PATH];
-		oemtotchar(path, NELEMENTS(path), file[j], -1);
-#else
-		const TCHAR *path = file[j];
-#endif
-		AppendMenu(ret, MF_STRING + flag, IDM_SKINMRU + j, path);
+
+	for (i=0; i<uCount; i++)
+	{
+		j = uID[i];
+		uFlag = MFCHECK(!file_cmpname(pcszBase, np2tool.skinmru[j]));
+		const TCHAR *szPath = pcszMruList[j];
+		AppendMenu(hmenuSub, MF_STRING + uFlag, IDM_TOOL_SKINMRU + j, pcszMruList[j]);
 	}
-	return(ret);
 }
 
-static void skinchange(HWND hWnd) {
+#if 0
+static HMENU createskinmenu(void)
+{
+	HMENU		hMenu;
+const OEMCHAR	*pcszBase;
+	UINT		uCount;
+	OEMCHAR		*pszMru;
+const OEMCHAR	*pcszMruList[SKINMRU_MAX];
+	UINT		i;
+	UINT		uID[SKINMRU_MAX];
+	UINT		j;
+	UINT		uFlag;
 
+	hMenu = LoadMenu(g_hInstance, MAKEINTRESOURCE(IDR_TOOLWIN));
+
+	pcszBase = np2tool.skin;
+
+	CheckMenuItem(hMenu, IDM_TOOL_SKINDEF, MFCHECK(pcszBase[0] == '\0'));
+	for (uCount=0; uCount<SKINMRU_MAX; uCount++)
+	{
+		pszMru = np2tool.skinmru[uCount];
+		if (pszMru[0] == '\0')
+		{
+			break;
+		}
+		pszMru = file_getname(pszMru);
+		for (i=0; i<uCount; i++)
+		{
+			if (!file_cmpname(pszMru, pcszMruList[uID[i]]))
+			{
+				break;
+			}
+		}
+		for (j=uCount; j>i; j--)
+		{
+			uID[j] = uID[j-1];
+		}
+		uID[i] = uCount;
+		pcszMruList[uCount] = pszMru;
+	}
+	for (i=0; i<uCount; i++)
+	{
+		j = uID[i];
+		uFlag = MFCHECK(!file_cmpname(pcszBase, np2tool.skinmru[j]));
+		AppendMenu(hMenu, MF_STRING + uFlag, IDM_TOOL_SKINMRU + j, pcszMruList[j]);
+	}
+	return hMenu;
+}
+#endif
+
+static void skinchange(HWND hWnd)
+{
 const OEMCHAR	*p;
 	UINT		i;
 	HBITMAP		hbmp;
@@ -635,14 +662,12 @@ const OEMCHAR	*p;
 		}
 		file_cpyname(np2tool.skinmru[0], p, NELEMENTS(np2tool.skinmru[0]));
 	}
-	ModifyMenu(np2class_gethmenu(hWnd), 0, MF_BYPOSITION | MF_POPUP,
-									(UINT)createskinmenu(), str_toolskin);
-	ModifyMenu(GetSystemMenu(hWnd, FALSE), 0, MF_BYPOSITION | MF_POPUP,
-									(UINT)createskinmenu(), str_toolskin);
+	setSkinMruMenu(np2class_gethmenu(hWnd));
+	setSkinMruMenu(GetSystemMenu(hWnd, FALSE));
 	DrawMenuBar(hWnd);
 	sysmng_update(SYS_UPDATEOSCFG);
 
-	wlex = np2_winlocexallwin(hWndMain);
+	wlex = np2_winlocexallwin(g_hWndMain);
 	winlocex_setholdwnd(wlex, hWnd);
 	toolwindestroy();
 	hbmp = skinload(np2tool.skin);
@@ -661,20 +686,19 @@ const OEMCHAR	*p;
 
 // ----
 
-static void openpopup(HWND hWnd, LPARAM lp) {
-
+static void openpopup(HWND hWnd, LPARAM lp)
+{
 	HMENU	hMenu;
-	HMENU	mainmenu;
 	POINT	pt;
 
 	hMenu = CreatePopupMenu();
-	if (!winui_en) {
-		mainmenu = np2class_gethmenu(hWndMain);
-		menu_addmenubar(hMenu, mainmenu);
+	if (!winui_en)
+	{
+		menu_addmenu(hMenu, 0, np2class_gethmenu(g_hWndMain), FALSE);
 	}
-	AppendMenu(hMenu, MF_POPUP, (UINT)createskinmenu(), str_toolskin);
-	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING, IDM_TOOLCLOSE, str_toolclose);
+	menu_addmenures(hMenu, -1, IDR_TOOLWIN, FALSE);
+	menu_addmenures(hMenu, -1, IDR_CLOSE, TRUE);
+	setSkinMruMenu(hMenu);
 	pt.x = LOWORD(lp);
 	pt.y = HIWORD(lp);
 	ClientToScreen(hWnd, &pt);
@@ -682,39 +706,49 @@ static void openpopup(HWND hWnd, LPARAM lp) {
 	DestroyMenu(hMenu);
 }
 
-static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+static void toolwin_oncreate(HWND hWnd)
+{
+	HMENU	hMenu;
+	int		nCount;
 
-	HMENU		hMenu;
+	np2class_wmcreate(hWnd);
+	setSkinMruMenu(np2class_gethmenu(hWnd));
+
+	hMenu = GetSystemMenu(hWnd, FALSE);
+	nCount = menu_addmenures(hMenu, 0, IDR_TOOLWIN, FALSE);
+	if (nCount)
+	{
+		InsertMenu(hMenu, nCount, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+		setSkinMruMenu(hMenu);
+	}
+
+	np2class_windowtype(hWnd, (np2tool.type & 1) << 1);
+	toolwincreate(hWnd);
+}
+
+static LRESULT CALLBACK twproc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
+{
 	BOOL		r;
 	UINT		idc;
 	WINLOCEX	wlex;
 
-	switch(msg) {
+	switch(uMsg) {
 		case WM_CREATE:
-			np2class_wmcreate(hWnd);
-			ModifyMenu(np2class_gethmenu(hWnd), 0, MF_BYPOSITION | MF_POPUP,
-									(UINT)createskinmenu(), str_toolskin);
-			hMenu = GetSystemMenu(hWnd, FALSE);
-			InsertMenu(hMenu, 0, MF_BYPOSITION | MF_POPUP,
-									(UINT)createskinmenu(), str_toolskin);
-			InsertMenu(hMenu, 1, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-
-			np2class_windowtype(hWnd, (np2tool.type & 1) << 1);
-			toolwincreate(hWnd);
+			toolwin_oncreate(hWnd);
 			break;
 
 		case WM_SYSCOMMAND:
 			switch(wp) {
-				case IDM_SKINSEL:
-				case IDM_SKINDEF:
-				case IDM_SKINMRU + 0:
-				case IDM_SKINMRU + 1:
-				case IDM_SKINMRU + 2:
-				case IDM_SKINMRU + 3:
+				case IDM_TOOL_SKINSEL:
+				case IDM_TOOL_SKINDEF:
+				case IDM_TOOL_SKINMRU + 0:
+				case IDM_TOOL_SKINMRU + 1:
+				case IDM_TOOL_SKINMRU + 2:
+				case IDM_TOOL_SKINMRU + 3:
 					return(SendMessage(hWnd, WM_COMMAND, wp, lp));
 
 				default:
-					return(DefWindowProc(hWnd, msg, wp, lp));
+					return(DefWindowProc(hWnd, uMsg, wp, lp));
 			}
 			break;
 
@@ -728,7 +762,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 				case IDC_BASE + IDC_TOOLFDD1BROWSE:
 					if (!winui_en) {
-						SendMessage(hWndMain, WM_COMMAND, IDM_FDD1OPEN, 0);
+						SendMessage(g_hWndMain, WM_COMMAND, IDM_FDD1OPEN, 0);
 					}
 					break;
 
@@ -745,7 +779,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 				case IDC_BASE + IDC_TOOLFDD2BROWSE:
 					if (!winui_en) {
-						SendMessage(hWndMain, WM_COMMAND, IDM_FDD2OPEN, 0);
+						SendMessage(g_hWndMain, WM_COMMAND, IDM_FDD2OPEN, 0);
 					}
 					break;
 
@@ -756,20 +790,20 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 				case IDC_BASE + IDC_TOOLRESET:
 					if (!winui_en) {
-						SendMessage(hWndMain, WM_COMMAND, IDM_RESET, 0);
-						SetForegroundWindow(hWndMain);
+						SendMessage(g_hWndMain, WM_COMMAND, IDM_RESET, 0);
+						SetForegroundWindow(g_hWndMain);
 					}
 					break;
 
 				case IDC_BASE + IDC_TOOLPOWER:
 					if (!winui_en) {
-						SendMessage(hWndMain, WM_CLOSE, 0, 0L);
+						SendMessage(g_hWndMain, WM_CLOSE, 0, 0L);
 					}
 					break;
 
-				case IDM_SKINSEL:
+				case IDM_TOOL_SKINSEL:
 					soundmng_disable(SNDPROC_TOOL);
-					r = dlgs_selectfile(hWnd, &skinui, np2tool.skin,
+					r = dlgs_openfile(hWnd, &fpSkin, np2tool.skin,
 											NELEMENTS(np2tool.skin), NULL);
 					soundmng_enable(SNDPROC_TOOL);
 					if (r) {
@@ -777,28 +811,28 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					}
 					break;
 
-				case IDM_SKINDEF:
+				case IDM_TOOL_SKINDEF:
 					np2tool.skin[0] = '\0';
 					skinchange(hWnd);
 					break;
 
-				case IDM_SKINMRU + 0:
-				case IDM_SKINMRU + 1:
-				case IDM_SKINMRU + 2:
-				case IDM_SKINMRU + 3:
+				case IDM_TOOL_SKINMRU + 0:
+				case IDM_TOOL_SKINMRU + 1:
+				case IDM_TOOL_SKINMRU + 2:
+				case IDM_TOOL_SKINMRU + 3:
 					file_cpyname(np2tool.skin,
-									np2tool.skinmru[LOWORD(wp) - IDM_SKINMRU],
-									NELEMENTS(np2tool.skin));
+							np2tool.skinmru[LOWORD(wp) - IDM_TOOL_SKINMRU],
+							NELEMENTS(np2tool.skin));
 					skinchange(hWnd);
 					break;
 
-				case IDM_TOOLCLOSE:
+				case IDM_CLOSE:
 					SendMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
 
 				default:
 					if (!winui_en) {
-						return(SendMessage(hWndMain, msg, wp, lp));
+						return(SendMessage(g_hWndMain, uMsg, wp, lp));
 					}
 					break;
 			}
@@ -806,26 +840,26 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 		case WM_KEYDOWN:						// TAB‚ð‰Ÿ‚µ‚½Žž‚É•œ‹A
 			if ((short)wp == VK_TAB) {
-				idc = GetWindowLong(hWnd, GTWL_FOCUS);
+				idc = (UINT)GetWindowLongPtr(hWnd, GTWLP_FOCUS);
 				if (idc < IDC_MAXITEMS) {
 					SetFocus(toolwin.sub[idc]);
 				}
 				return(0);
 			}
-			return(SendMessage(hWndMain, msg, wp, lp));
+			return(SendMessage(g_hWndMain, uMsg, wp, lp));
 
 		case WM_KEYUP:
 			if ((short)wp == VK_TAB) {
 				return(0);
 			}
-			return(SendMessage(hWndMain, msg, wp, lp));
+			return(SendMessage(g_hWndMain, uMsg, wp, lp));
 
 		case WM_PAINT:
 			toolwinpaint(hWnd);
 			break;
 
 		case WM_DRAWITEM:
-			tooldrawbutton(hWnd, wp, (LPDRAWITEMSTRUCT)lp);
+			tooldrawbutton(hWnd, (UINT)wp, (LPDRAWITEMSTRUCT)lp);
 			break;
 
 		case WM_ENTERMENULOOP:
@@ -887,7 +921,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 		case WM_LBUTTONDBLCLK:
 			np2tool.type ^= 1;
-			wlex = np2_winlocexallwin(hWndMain);
+			wlex = np2_winlocexallwin(g_hWndMain);
 			winlocex_setholdwnd(wlex, hWnd);
 			np2class_windowtype(hWnd, (np2tool.type & 1) << 1);
 			winlocex_move(wlex);
@@ -896,7 +930,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			break;
 
 		default:
-			return(DefWindowProc(hWnd, msg, wp, lp));
+			return(DefWindowProc(hWnd, uMsg, wp, lp));
 	}
 	return(0);
 }
@@ -908,7 +942,7 @@ BOOL toolwin_initapp(HINSTANCE hInstance) {
 	wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wc.lpfnWndProc = twproc;
 	wc.cbClsExtra = 0;
-	wc.cbWndExtra = GTWL_SIZE;
+	wc.cbWndExtra = GTWLP_SIZE;
 	wc.hInstance = hInstance;
 	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -918,10 +952,11 @@ BOOL toolwin_initapp(HINSTANCE hInstance) {
 	return(RegisterClass(&wc));
 }
 
-void toolwin_create(void) {
+void toolwin_create(HINSTANCE hInstance) {
 
 	HBITMAP	hbmp;
 	BITMAP	bmp;
+	TCHAR	szCaption[128];
 	HWND	hWnd;
 
 	if (toolwin.hwnd) {
@@ -934,11 +969,14 @@ void toolwin_create(void) {
 	}
 	GetObject(hbmp, sizeof(BITMAP), &bmp);
 	toolwin.hbmp = hbmp;
-	hWnd = CreateWindow(np2toolclass, np2tooltitle,
+
+	loadstringresource(LOWORD(IDS_CAPTION_TOOL),
+										szCaption, NELEMENTS(szCaption));
+	hWnd = CreateWindow(np2toolclass, szCaption,
 							WS_SYSMENU | WS_MINIMIZEBOX,
 							np2tool.posx, np2tool.posy,
 							bmp.bmWidth, bmp.bmHeight,
-							NULL, NULL, hInst, NULL);
+							NULL, NULL, hInstance, NULL);
 	winloc_setclientsize(hWnd, bmp.bmWidth, bmp.bmHeight);
 	toolwin.hwnd = hWnd;
 	if (hWnd == NULL) {
@@ -946,7 +984,7 @@ void toolwin_create(void) {
 	}
 	UpdateWindow(hWnd);
 	ShowWindow(hWnd, SW_SHOWNOACTIVATE);
-	SetForegroundWindow(hWndMain);
+	SetForegroundWindow(g_hWndMain);
 	return;
 
 twope_err2:
@@ -1008,7 +1046,7 @@ void toolwin_setfdd(UINT8 drv, const OEMCHAR *name) {
 		sub = toolwin.sub[fddlist[drv]];
 		if (sub) {
 			remakefddlist(sub, fdd);
-			SetForegroundWindow(hWndMain);
+			SetForegroundWindow(g_hWndMain);
 		}
 	}
 }

@@ -10,6 +10,9 @@
 #include	"boardx2.h"
 #include	"board118.h"
 #include	"boardspb.h"
+#if defined(SUPPORT_PX)
+#include	"boardpx.h"
+#endif	// defined(SUPPORT_PX)
 #include	"amd98.h"
 #include	"pcm86io.h"
 #include	"cs4231io.h"
@@ -34,6 +37,15 @@
 	_ADPCM		adpcm;
 	_PCM86		pcm86;
 	_CS4231		cs4231;
+
+#if defined(SUPPORT_PX)
+	OPN_T		opn2;
+	OPN_T		opn3;
+	_RHYTHM		rhythm2;
+	_RHYTHM		rhythm3;
+	_ADPCM		adpcm2;
+	_ADPCM		adpcm3;
+#endif	// defined(SUPPORT_PX)
 
 
 static void	(*extfn)(REG8 enable);
@@ -106,13 +118,13 @@ static void setfmregs(UINT8 *reg) {
 	FillMemory(reg + 0xb4, 0x04, 0xc0);
 }
 
-void fmboard_reset(UINT32 type) {
+void fmboard_reset(const NP2CFG *pConfig, UINT32 type) {
 
 	UINT8	cross;
 
 	soundrom_reset();
 	beep_reset();												// ver0.27a
-	cross = np2cfg.snd_x;										// ver0.30
+	cross = pConfig->snd_x;										// ver0.30
 
 	extfn = NULL;
 	ZeroMemory(&opn, sizeof(opn));
@@ -124,6 +136,26 @@ void fmboard_reset(UINT32 type) {
 	opn.channels = 3;
 	opn.adpcmmask = (UINT8)~(0x1c);
 
+#if defined(SUPPORT_PX)
+	ZeroMemory(&opn2, sizeof(opn2));
+	setfmregs(opn2.reg + 0x000);
+	setfmregs(opn2.reg + 0x100);
+	setfmregs(opn2.reg + 0x200);
+	setfmregs(opn2.reg + 0x300);
+	opn2.reg[0xff] = 0x01;
+	opn2.channels = 3;
+	opn2.adpcmmask = (UINT8)~(0x1c);
+
+	ZeroMemory(&opn3, sizeof(opn3));
+	setfmregs(opn3.reg + 0x000);
+	setfmregs(opn3.reg + 0x100);
+	setfmregs(opn3.reg + 0x200);
+	setfmregs(opn3.reg + 0x300);
+	opn3.reg[0xff] = 0x01;
+	opn3.channels = 3;
+	opn3.adpcmmask = (UINT8)~(0x1c);
+#endif	// defined(SUPPORT_PX)
+
 	ZeroMemory(&musicgen, sizeof(musicgen));
 	ZeroMemory(&amd98, sizeof(amd98));
 
@@ -133,48 +165,66 @@ void fmboard_reset(UINT32 type) {
 	psggen_reset(&psg2);
 	psggen_reset(&psg3);
 	rhythm_reset(&rhythm);
+#if defined(SUPPORT_PX)
+	rhythm_reset(&rhythm2);
+	rhythm_reset(&rhythm3);
+#endif	// defined(SUPPORT_PX)
 	adpcm_reset(&adpcm);
+#if defined(SUPPORT_PX)
+	adpcm_reset(&adpcm2);
+	adpcm_reset(&adpcm3);
+#endif	// defined(SUPPORT_PX)
 	pcm86_reset();
 	cs4231_reset();
 
 	switch(type) {
 		case 0x01:
-			board14_reset();
+			board14_reset(pConfig);
 			break;
 
 		case 0x02:
-			board26k_reset();
+			board26k_reset(pConfig);
 			break;
 
 		case 0x04:
-			board86_reset();
+			board86_reset(pConfig);
 			break;
 
 		case 0x06:
-			boardx2_reset();
+			boardx2_reset(pConfig);
 			break;
 
 		case 0x08:
-			board118_reset();
+			board118_reset(pConfig);
 			break;
 
 		case 0x14:
-			board86_reset();
+			board86_reset(pConfig);
 			break;
 
 		case 0x20:
-			boardspb_reset();
-			cross ^= np2cfg.spb_x;
+			boardspb_reset(pConfig);
+			cross ^= pConfig->spb_x;
 			break;
 
 		case 0x40:
-			boardspr_reset();
-			cross ^= np2cfg.spb_x;
+			boardspr_reset(pConfig);
+			cross ^= pConfig->spb_x;
 			break;
 
 		case 0x80:
-//			amd98_reset();
+//			amd98_reset(pConfig);
 			break;
+
+#if	defined(SUPPORT_PX)
+		case 0x30:
+			boardpx1_reset(pConfig);
+			break;
+
+		case 0x50:
+			boardpx2_reset(pConfig);
+			break;
+#endif	// defined(SUPPORT_PX)
 
 		default:
 			type = 0;
@@ -183,7 +233,7 @@ void fmboard_reset(UINT32 type) {
 	usesound = type;
 	soundmng_setreverse(cross);
 	keydisp_setfmboard(type);
-	opngen_setVR(np2cfg.spb_vrc, np2cfg.spb_vrl);
+	opngen_setVR(pConfig->spb_vrc, pConfig->spb_vrl);
 }
 
 void fmboard_bind(void) {
@@ -224,8 +274,18 @@ void fmboard_bind(void) {
 		case 0x80:
 			amd98_bind();
 			break;
+
+#if defined(SUPPORT_PX)
+		case 0x30:
+			boardpx1_bind();
+			break;
+
+		case 0x50:
+			boardpx2_bind();
+			break;
+#endif	// defined(SUPPORT_PX)
 	}
-	sound_streamregist(&beep, (SOUNDCB)beep_getpcm);
+	sound_streamregist(&g_beep, (SOUNDCB)beep_getpcm);
 }
 
 
@@ -261,4 +321,38 @@ const UINT8	*reg;
 	rhythm_setreg(rhy, 0x1c, reg[0x1c]);
 	rhythm_setreg(rhy, 0x1d, reg[0x1d]);
 }
+
+
+#if defined(SUPPORT_PX)
+void fmboard_fmrestore2(OPN_T* pOpn, REG8 chbase, UINT bank) {
+
+	REG8	i;
+const UINT8	*reg;
+
+	reg = pOpn->reg + (bank * 0x100);
+	for (i=0x30; i<0xa0; i++) {
+		opngen_setreg(chbase, i, reg[i]);
+	}
+	for (i=0xb7; i>=0xa0; i--) {
+		opngen_setreg(chbase, i, reg[i]);
+	}
+	for (i=0; i<3; i++) {
+		opngen_keyon(chbase + i, opngen.keyreg[chbase + i]);
+	}
+}
+
+void fmboard_rhyrestore2(OPN_T* pOpn, RHYTHM rhy, UINT bank) {
+
+const UINT8	*reg;
+
+	reg = pOpn->reg + (bank * 0x100);
+	rhythm_setreg(rhy, 0x11, reg[0x11]);
+	rhythm_setreg(rhy, 0x18, reg[0x18]);
+	rhythm_setreg(rhy, 0x19, reg[0x19]);
+	rhythm_setreg(rhy, 0x1a, reg[0x1a]);
+	rhythm_setreg(rhy, 0x1b, reg[0x1b]);
+	rhythm_setreg(rhy, 0x1c, reg[0x1c]);
+	rhythm_setreg(rhy, 0x1d, reg[0x1d]);
+}
+#endif	// defined(SUPPORT_PX)
 

@@ -1,18 +1,32 @@
-#include	"compiler.h"
-#include	<dsound.h>
-#include	"parts.h"
-#include	"wavefile.h"
-#include	"np2.h"
-#include	"soundmng.h"
-#include	"extromio.h"
-#include	"sound.h"
-#include	"juliet.h"
+/**
+ * @file	soundmng.cpp
+ * @brief	Sound Manager (DirectSound3)
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
+
+#include "compiler.h"
+#include <dsound.h>
+#include "parts.h"
+#include "wavefile.h"
+#include "np2.h"
+#include "soundmng.h"
+#include "misc\extrom.h"
+#include "sound.h"
+#if defined(SUPPORT_ROMEO)
+#include "ext\externalopna.h"
+#endif
 #if defined(VERMOUTH_LIB)
-#include	"vermouth.h"
+#include "vermouth.h"
 #endif
 #if defined(MT32SOUND_DLL)
-#include	"mt32snd.h"
+#include "mt32snd.h"
 #endif
+
+#if !defined(__GNUC__)
+#pragma comment(lib, "dsound.lib")
+#endif	// !defined(__GNUC__)
 
 #if defined(_M_IA64) || defined(_M_AMD64)
 #define	SOUNDBUFFERALIGN	(1 << 3)
@@ -61,14 +75,16 @@ static	void				(PARTSCALL *fnmix)(SINT16 *dst,
 
 // ---- directsound
 
-static BRESULT dsoundcreate(void) {
-
+static BRESULT dsoundcreate(HWND hWnd)
+{
 	// DirectSoundの初期化
 	if (FAILED(DirectSoundCreate(0, &pDSound, 0))) {
 		goto dscre_err;
 	}
-	if (FAILED(pDSound->SetCooperativeLevel(hWndMain, DSSCL_PRIORITY))) {
-		if (FAILED(pDSound->SetCooperativeLevel(hWndMain, DSSCL_NORMAL))) {
+	if (FAILED(pDSound->SetCooperativeLevel(hWnd, DSSCL_PRIORITY)))
+	{
+		if (FAILED(pDSound->SetCooperativeLevel(hWnd, DSSCL_NORMAL)))
+		{
 			goto dscre_err;
 		}
 	}
@@ -92,6 +108,7 @@ UINT soundmng_create(UINT rate, UINT ms) {
 		(rate != 11025) && (rate != 22050) && (rate != 44100)) {
 		goto stcre_err1;
 	}
+
 	if (ms < 40) {
 		ms = 40;
 	}
@@ -135,9 +152,11 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	vermouth_module = midimod_create(rate);
 	midimod_loadall(vermouth_module);
 #endif
+
 #if defined(MT32SOUND_DLL)
 	mt32sound_setrate(rate);
 #endif
+
 	dsstreamevent = (UINT8)-1;
 	return(samples);
 
@@ -195,7 +214,10 @@ static void streamenable(BOOL play) {
 			pDSData3->Stop();
 		}
 	}
-	juliet_YMF288Enable(play);
+
+#if defined(SUPPORT_ROMEO)
+	CExternalOpna::GetInstance()->Mute(!play);
+#endif
 }
 
 void soundmng_play(void) {
@@ -323,9 +345,14 @@ static void pcmstop(void) {
 	}
 }
 
-void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
-
-	EXTROMH				erh;
+/**
+ * PCM データ読み込み
+ * @param[in] num PCM 番号
+ * @param[in] lpFilename ファイル名
+ */
+void soundmng_pcmload(UINT num, LPCTSTR lpFilename)
+{
+	CExtRom				extrom;
 	RIFF_HEADER			riff;
 	BOOL				head;
 	WAVE_HEADER			whead;
@@ -343,11 +370,11 @@ void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 	if ((pDSound == NULL) || (num >= SOUND_MAXPCM)) {
 		goto smpl_err1;
 	}
-	erh = extromio_open(filename, type);
-	if (erh == NULL) {
+	if (!extrom.Open(lpFilename))
+	{
 		goto smpl_err1;
 	}
-	if ((extromio_read(erh, &riff, sizeof(riff)) != sizeof(riff)) ||
+	if ((extrom.Read(&riff, sizeof(riff)) != sizeof(riff)) ||
 		(riff.sig != WAVE_SIG('R','I','F','F')) ||
 		(riff.fmt != WAVE_SIG('W','A','V','E'))) {
 		goto smpl_err2;
@@ -355,13 +382,15 @@ void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 
 	head = FALSE;
 	while(1) {
-		if (extromio_read(erh, &whead, sizeof(whead)) != sizeof(whead)) {
+		if (extrom.Read(&whead, sizeof(whead)) != sizeof(whead))
+		{
 			goto smpl_err2;
 		}
 		size = LOADINTELDWORD(whead.size);
 		if (whead.sig == WAVE_SIG('f','m','t',' ')) {
 			if (size >= sizeof(info)) {
-				if (extromio_read(erh, &info, sizeof(info)) != sizeof(info)) {
+				if (extrom.Read(&info, sizeof(info)) != sizeof(info))
+				{
 					goto smpl_err2;
 				}
 				size -= sizeof(info);
@@ -372,7 +401,7 @@ void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 			break;
 		}
 		if (size) {
-			extromio_seek(erh, size, ERSEEK_CUR);
+			extrom.Seek(size, FILE_CURRENT);
 		}
 	}
 	if (!head) {
@@ -408,9 +437,10 @@ void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 									(LPVOID *)&blockptr2, &blocksize2, 0);
 	}
 	if (SUCCEEDED(hr)) {
-		extromio_read(erh, blockptr1, blocksize1);
-		if ((blockptr2) && (blocksize2)) {
-			extromio_read(erh, blockptr2, blocksize2);
+		extrom.Read(blockptr1, blocksize1);
+		if ((blockptr2) && (blocksize2))
+		{
+			extrom.Read(blockptr2, blocksize2);
 		}
 		dsbuf->Unlock(blockptr1, blocksize1, blockptr2, blocksize2);
 		pDSwave3[num] = dsbuf;
@@ -420,7 +450,6 @@ void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 	}
 
 smpl_err2:
-	extromio_close(erh);
 
 smpl_err1:
 	return;
@@ -466,7 +495,7 @@ void soundmng_pcmstop(UINT num) {
 
 BRESULT soundmng_initialize(void) {
 
-	if (dsoundcreate() != SUCCESS) {
+	if (dsoundcreate(g_hWndMain) != SUCCESS) {
 		goto smcre_err;
 	}
 	pcmcreate();

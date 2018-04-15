@@ -1,12 +1,24 @@
-#include	"compiler.h"
-#include	<commctrl.h>
-#include	"np2.h"
-#include	"scrnmng.h"
-#include	"sstp.h"
-#if defined(OSLANG_UTF8) || defined(OSLANG_UCS2)
-#include	"oemtext.h"
+/**
+ * @file	sstp.cpp
+ * @brief	Sakura Script Transfer Protocol handler
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
+
+#include "compiler.h"
+#include <winsock.h>
+#include <commctrl.h>
+#include "np2.h"
+#include "scrnmng.h"
+#include "sstp.h"
+#if defined(OSLANG_UCS2)
+#include "oemtext.h"
 #endif
 
+#if !defined(__GNUC__)
+#pragma comment(lib, "wsock32.lib")
+#endif	// !defined(__GNUC__)
 
 static	HWND		sstphwnd = NULL;
 static	int			sstp_stat = SSTP_READY;
@@ -58,7 +70,7 @@ BOOL sstp_send(const OEMCHAR *msg, void (*proc)(HWND hWnd, char *msg)) {
 		return(FAILURE);
 	}
 
-#if defined(OSLANG_UTF8) || defined(OSLANG_UCS2)
+#if defined(OSLANG_UCS2)
 	OEMCHAR	oem[0x1000];
 	OEMSPRINTF(oem, sendermes, msg);
 	oemtext_oemtosjis(sstpstr, NELEMENTS(sstpstr), oem, -1);
@@ -105,7 +117,7 @@ sstp_senderror:;
 void sstp_connect(void) {
 
 	if (hSocket != INVALID_SOCKET) {
-		send(hSocket, sstpstr, strlen(sstpstr), 0);
+		send(hSocket, sstpstr, (int)strlen(sstpstr), 0);
 	}
 }
 
@@ -201,14 +213,14 @@ BOOL sstp_sendonly(const OEMCHAR *msg) {
 			s_in.sin_port = htons(np2oscfg.sstpport);
 			if (connect(lSocket, (sockaddr *)&s_in, sizeof(s_in))
 															!= SOCKET_ERROR) {
-#if defined(OSLANG_UTF8) || defined(OSLANG_UCS2)
+#if defined(OSLANG_UCS2)
 				OEMCHAR	oem[0x1000];
 				OEMSPRINTF(oem, sendermes, msg);
 				oemtext_oemtosjis(msgstr, NELEMENTS(msgstr), oem, -1);
 #else
 				OEMSPRINTF(msgstr, sendermes, msg);
 #endif
-				send(lSocket, msgstr, strlen(msgstr), 0);
+				send(lSocket, msgstr, (int)strlen(msgstr), 0);
 				ret = SUCCESS;
 			}
 			closesocket(lSocket);

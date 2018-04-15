@@ -30,6 +30,8 @@ typedef struct {
 	int		winy;
 	UINT	paddingx;
 	UINT	paddingy;
+	UINT	fscrn_cx;
+	UINT	fscrn_cy;
 	UINT8	force400;
 	UINT8	WINSNAP;
 	UINT8	NOWAIT;
@@ -76,6 +78,7 @@ typedef struct {
 	UINT8	thickframe;
 	UINT8	xrollkey;
 	UINT8	fscrnbpp;
+	UINT8	fscrnmod;
 } NP2OSCFG;
 
 
@@ -90,30 +93,6 @@ enum {
 };
 
 enum {
-	IDM_TOOLWIN			= 20000,
-	IDM_KEYDISP			= 20001,
-	IDM_SOFTKBD			= 20002,
-	IDM_MEMDBG32		= 20003,
-	IDM_SCREENCENTER	= 20004,
-	IDM_SNAPENABLE		= 20005,
-	IDM_BACKGROUND		= 20006,
-	IDM_BGSOUND			= 20007,
-	IDM_TRACEONOFF		= 20008,
-	IDM_MEMORYDUMP		= 20009,
-	IDM_DEBUGUTY		= 20010,
-	IDM_VIEWER			= 20011,
-
-	IDM_SCRNMUL			= 20050,
-	IDM_SCRNMUL4		= (IDM_SCRNMUL + 4),
-	IDM_SCRNMUL6		= (IDM_SCRNMUL + 6),
-	IDM_SCRNMUL8		= (IDM_SCRNMUL + 8),
-	IDM_SCRNMUL10		= (IDM_SCRNMUL + 10),
-	IDM_SCRNMUL12		= (IDM_SCRNMUL + 12),
-	IDM_SCRNMUL16		= (IDM_SCRNMUL + 16),
-
-	IDM_FLAGSAVE		= 20100,
-	IDM_FLAGLOAD		= 20150,
-
 	WM_NP2CMD			= (WM_USER + 200),
 	WM_SSTP				= (WM_USER + 201)
 };
@@ -132,9 +111,9 @@ enum {
 
 
 extern	NP2OSCFG	np2oscfg;
-extern	HWND		hWndMain;
-extern	HINSTANCE	hInst;
-extern	HINSTANCE	hPrev;
+extern	HWND		g_hWndMain;
+extern	HINSTANCE	g_hInstance;
+extern	HINSTANCE	g_hPrevInst;
 extern	UINT8		np2break;
 extern	BOOL		winui_en;
 #if !defined(_WIN64)

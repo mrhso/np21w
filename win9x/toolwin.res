@@ -1,5 +1,4 @@
 
-static const TCHAR np2tooltitle[] = _T("NP2 tool");
 static const TCHAR np2toolclass[] = _T("np2-toolwin");
 
 static const OEMCHAR str_deffont[] = OEMTEXT("‚l‚r ‚oƒSƒVƒbƒN");
@@ -57,16 +56,11 @@ static const PFTBL skinini2[] = {
 
 // ----
 
-static const TCHAR str_skindef[] = _T("<&Base Skin>");
-static const TCHAR str_skinsel[] = _T("&Select Skin...");
-static const TCHAR str_toolskin[] = _T("&Skins");
-static const TCHAR str_toolclose[] = _T("&Close");
-
-static const TCHAR skinui_title[] = _T("Select skin file");
-static const TCHAR skinui_filter[] =								\
-					_T("ini files (*.ini)\0*.ini\0")				\
-					_T("text files (*.txt)\0*.txt\0")				\
-					_T("All files (*.*)\0*.*\0");
-static const TCHAR skinui_ext[] = _T("ini");
-static const FILESEL skinui = {skinui_title, skinui_ext, skinui_filter, 1};
+static const FSPARAM fpSkin = 
+{
+	MAKEINTRESOURCE(IDS_SKINTITLE),
+	MAKEINTRESOURCE(IDS_SKINEXT),
+	MAKEINTRESOURCE(IDS_SKINFILTER),
+	1
+};
 

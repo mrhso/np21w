@@ -42,14 +42,14 @@ static void IOOUTCALL sysp_o37(UINT port, REG8 dat) {
 static REG8 IOINPCALL sysp_i31(UINT port) {
 
 	(void)port;
-	return(np2cfg.dipsw[1]);
+	return(pccore.dipsw[1]);
 }
 
 static REG8 IOINPCALL sysp_i33(UINT port) {
 
 	REG8	ret;
 
-	ret = ((~np2cfg.dipsw[0]) & 1) << 3;
+	ret = ((~pccore.dipsw[0]) & 1) << 3;
 	ret |= rs232c_stat();
 	ret |= uPD4990.cdat;
 	(void)port;
@@ -71,10 +71,12 @@ static const IOOUT syspo31[4] = {
 static const IOINP syspi31[4] = {
 					sysp_i31,	sysp_i33,	sysp_i35,	NULL};
 
-void systemport_reset(void) {
+void systemport_reset(const NP2CFG *pConfig) {
 
 	sysport.c = 0xf9;
 	beep_oneventset();
+
+	(void)pConfig;
 }
 
 void systemport_bind(void) {

@@ -110,7 +110,7 @@ static void np2sysp_multiple(const void *arg1, long arg2) {
 
 static void np2sysp_hwreset(const void *arg1, long arg2) {
 
-	hardwarereset = TRUE;
+	pcstat.hardwarereset = TRUE;
 	(void)arg1;
 	(void)arg2;
 }
@@ -195,7 +195,7 @@ static BRESULT np2syspcmp(const char *p) {
 	int		len;
 	int		pos;
 
-	len = STRLEN(p);
+	len = (int)STRLEN(p);
 	if (!len) {
 		return(FAILURE);
 	}
@@ -275,9 +275,11 @@ static REG8 IOINPCALL np2sysp_i0e9(UINT port) {
 
 // ---- I/F
 
-void np2sysp_reset(void) {
+void np2sysp_reset(const NP2CFG *pConfig) {
 
 	ZeroMemory(&np2sysp, sizeof(np2sysp));
+
+	(void)pConfig;
 }
 
 void np2sysp_bind(void) {

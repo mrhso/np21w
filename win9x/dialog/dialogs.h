@@ -1,18 +1,33 @@
 
-typedef struct {
-const TCHAR	*title;
-const TCHAR	*ext;
-const TCHAR	*filter;
-	int		defindex;
-} FILESEL;
+struct tagFileSelectParam
+{
+	LPTSTR	lpszTitle;
+	LPTSTR	lpszDefExt;
+	LPTSTR	lpszFilter;
+	int		nFilterIndex;
+};
+typedef struct tagFileSelectParam		FSPARAM;
+typedef struct tagFileSelectParam		*PFSPARAM;
+typedef const struct tagFileSelectParam	*PCFSPARAM;
 
-extern const TCHAR str_nc[];
-extern const TCHAR str_int0[];
-extern const TCHAR str_int1[];
-extern const TCHAR str_int2[];
-extern const TCHAR str_int4[];
-extern const TCHAR str_int5[];
-extern const TCHAR str_int6[];
+struct tagCBParam
+{
+	LPCTSTR	lpcszString;
+	int		nItemData;
+};
+typedef struct tagCBParam		CBPARAM;
+typedef struct tagCBParam		*PCBPARAM;
+typedef const struct tagCBParam	*PCCBPARAM;
+
+struct tagCBNParam
+{
+	UINT	uValue;
+	int		nItemData;
+};
+typedef struct tagCBNParam			CBNPARAM;
+typedef struct tagCBNParam			*PCBNPARAM;
+typedef const struct tagCBNParam	*PCCBNPARAM;
+
 
 #define	SetDlgItemCheck(a, b, c)	\
 			SendDlgItemMessage((a), (b), BM_SETCHECK, (c), 0)
@@ -32,21 +47,27 @@ extern const TCHAR str_int6[];
 #define	SETLISTUINT32(a, b, c)		\
 			dlgs_setlistuint32((a), (b), (c), NELEMENTS((c)))
 
+void dlgs_enablebyautocheck(HWND hWnd, UINT uID, UINT uCheckID);
+void dlgs_disablebyautocheck(HWND hWnd, UINT uID, UINT uCheckID);
 
-BOOL dlgs_selectfile(HWND hWnd, const FILESEL *item,
-											OEMCHAR *path, UINT size, int *ro);
-BOOL dlgs_selectwritefile(HWND hWnd, const FILESEL *item,
-													OEMCHAR *path, UINT size);
-BOOL dlgs_selectwritenum(HWND hWnd, const FILESEL *item,
-													OEMCHAR *path, UINT size);
+BOOL dlgs_openfile(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize, int *puRO);
+BOOL dlgs_createfile(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize);
+BOOL dlgs_createfilenum(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize);
 
 void dlgs_browsemimpidef(HWND hWnd, UINT16 res);
 
 void dlgs_setliststr(HWND hWnd, UINT16 res, const TCHAR **item, UINT items);
 void dlgs_setlistuint32(HWND hWnd, UINT16 res, const UINT32 *item, UINT items);
 
-void dlgs_setlistmidiout(HWND hWnd, UINT16 res, const OEMCHAR *defname);
-void dlgs_setlistmidiin(HWND hWnd, UINT16 res, const OEMCHAR *defname);
+void dlgs_setcbitem(HWND hWnd, UINT uID, PCCBPARAM pcItem, UINT uItems);
+void dlgs_setcbnumber(HWND hWnd, UINT uID, PCCBNPARAM pcItem, UINT uItems);
+void dlgs_setcbcur(HWND hWnd, UINT uID, int nItemData);
+int dlgs_getcbcur(HWND hWnd, UINT uID, int nDefault);
+
+void dlgs_setlistmidiout(HWND hWnd, UINT16 res, LPCTSTR defname);
+void dlgs_setlistmidiin(HWND hWnd, UINT16 res, LPCTSTR defname);
 
 void dlgs_drawbmp(HDC hdc, UINT8 *bmp);
+
+BOOL dlgs_getitemrect(HWND hWnd, UINT uID, RECT *pRect);
 

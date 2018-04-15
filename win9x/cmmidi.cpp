@@ -1,18 +1,29 @@
-#include	"compiler.h"
-#include	"np2.h"
-#include	"mimpidef.h"
-#include	"commng.h"
+/**
+ * @file	cmmidi.cpp
+ * @brief	Communication port manager (MIDI)
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
+
+#include "compiler.h"
+#include "np2.h"
+#include "mimpidef.h"
+#include "commng.h"
 #if defined(VERMOUTH_LIB) || defined(MT32SOUND_DLL)
-#include	"sound.h"
+#include "sound.h"
 #endif
 #if defined(VERMOUTH_LIB)
-#include	"vermouth.h"
+#include "vermouth.h"
 #endif
 #if defined(MT32SOUND_DLL)
-#include	"mt32snd.h"
+#include "mt32snd.h"
 #endif
-#include	"keydisp.h"
+#include "keydisp.h"
 
+#if !defined(__GNUC__)
+#pragma comment(lib, "winmm.lib")
+#endif	// !defined(__GNUC__)
 
 #if defined(VERMOUTH_LIB)
 extern	MIDIMOD	vermouth_module;
@@ -24,19 +35,19 @@ extern	MIDIMOD	vermouth_module;
 #define MIDIOUTS3(a)		((*(UINT32 *)(a)) & 0xffffff)
 
 
-const OEMCHAR cmmidi_midimapper[] = OEMTEXT("MIDI MAPPER");
+const TCHAR cmmidi_midimapper[] = TEXT("MIDI MAPPER");
 #if defined(VERMOUTH_LIB)
-const OEMCHAR cmmidi_vermouth[] = OEMTEXT("VERMOUTH");
+const TCHAR cmmidi_vermouth[] = TEXT("VERMOUTH");
 #endif
 #if defined(MT32SOUND_DLL)
-const OEMCHAR cmmidi_mt32sound[] = OEMTEXT("MT32Sound");
+const TCHAR cmmidi_mt32sound[] = TEXT("MT32Sound");
 #endif
 
-const OEMCHAR *cmmidi_mdlname[12] = {
-		OEMTEXT("MT-32"),	OEMTEXT("CM-32L"),		OEMTEXT("CM-64"),
-		OEMTEXT("CM-300"),	OEMTEXT("CM-500(LA)"),	OEMTEXT("CM-500(GS)"),
-		OEMTEXT("SC-55"),	OEMTEXT("SC-88"),		OEMTEXT("LA"),
-		OEMTEXT("GM"),		OEMTEXT("GS"),			OEMTEXT("XG")};
+LPCTSTR cmmidi_mdlname[12] = {
+		TEXT("MT-32"),	TEXT("CM-32L"),		TEXT("CM-64"),
+		TEXT("CM-300"),	TEXT("CM-500(LA)"),	TEXT("CM-500(GS)"),
+		TEXT("SC-55"),	TEXT("SC-88"),		TEXT("LA"),
+		TEXT("GM"),		TEXT("GS"),			TEXT("XG")};
 
 enum {		MIDI_MT32 = 0,	MIDI_CM32L,		MIDI_CM64,
 			MIDI_CM300,		MIDI_CM500LA,	MIDI_CM500GS,
@@ -609,7 +620,7 @@ static UINT8 midigetstat(COMMNG self) {
 	return(0x00);
 }
 
-static long midimsg(COMMNG self, UINT msg, long param) {
+static INTPTR midimsg(COMMNG self, UINT msg, INTPTR param) {
 
 	CMMIDI	midi;
 	COMFLAG	flag;
@@ -640,7 +651,7 @@ static long midimsg(COMMNG self, UINT msg, long param) {
 				flag->ver = 0;
 				flag->param = 0;
 				CopyMemory(flag + 1, midi->mch, sizeof(midi->mch));
-				return((long)flag);
+				return((INTPTR)flag);
 			}
 			break;
 
@@ -746,8 +757,7 @@ void cmmidi_initailize(void) {
 	midictrlindex[32] = 1;
 }
 
-COMMNG cmmidi_create(const OEMCHAR *midiout, const OEMCHAR *midiin,
-													const OEMCHAR *module) {
+COMMNG cmmidi_create(LPCTSTR midiout, LPCTSTR midiin, LPCTSTR module) {
 
 	UINT		opened;
 	UINT		id;
@@ -772,7 +782,7 @@ COMMNG cmmidi_create(const OEMCHAR *midiout, const OEMCHAR *midiin,
 		}
 	}
 	if (getmidiinid(midiin, &id) == SUCCESS) {
-		if (midiInOpen(&hmidiin, id, (DWORD)hWndMain, 0, CALLBACK_WINDOW)
+		if (midiInOpen(&hmidiin, id, (DWORD)g_hWndMain, 0, CALLBACK_WINDOW)
 														== MMSYSERR_NOERROR) {
 			midiInReset(hmidiin);
 			opened |= CMMIDI_MIDIIN;

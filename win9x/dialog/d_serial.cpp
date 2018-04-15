@@ -1,39 +1,62 @@
-#include	"compiler.h"
-#include	<prsht.h>
-#include	"strres.h"
-#include	"resource.h"
-#include	"np2.h"
-#include	"dosio.h"
-#include	"commng.h"
-#include	"sysmng.h"
-#include	"np2class.h"
-#include	"dialog.h"
-#include	"dialogs.h"
-#include	"pccore.h"
-#include	"iocore.h"
-#include	"pc9861k.h"
-#include	"dipswbmp.h"
+/**
+ * @file	d_serial.cpp
+ * @brief	Serial configure dialog procedure
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
 
+#include "compiler.h"
+#include <prsht.h>
+#include "strres.h"
+#include "resource.h"
+#include "np2.h"
+#include "dosio.h"
+#include "commng.h"
+#include "sysmng.h"
+#include "np2class.h"
+#include "dialog.h"
+#include "dialogs.h"
+#include "pccore.h"
+#include "iocore.h"
+#include "pc9861k.h"
+#include "dipswbmp.h"
 
-static const TCHAR str_none[] = _T("NONE");
-static const TCHAR str_com1[] = _T("COM1");
-static const TCHAR str_com2[] = _T("COM2");
-static const TCHAR str_com3[] = _T("COM3");
-static const TCHAR str_com4[] = _T("COM4");
-static const TCHAR str_midi[] = _T("MIDI");
-static const TCHAR str_odd[] = _T("ODD");
-static const TCHAR str_even[] = _T("EVEN");
-static const TCHAR str_one[] = _T("1");
-static const TCHAR str_onehalf[] = _T("1.5");
-static const TCHAR str_two[] = _T("2");
+#if !defined(__GNUC__)
+#pragma comment(lib, "comctl32.lib")
+#endif	// !defined(__GNUC__)
 
-static const TCHAR *rsport[] = {str_none, str_com1, str_com2, str_com3,
-									str_com4, str_midi};
-static const UINT32 rscharsize[] = {5, 6, 7, 8};
-static const TCHAR *rsparity[] = {str_none, str_odd, str_even};
-static const TCHAR *rsstopbit[] = {str_one, str_onehalf, str_two};
+static const CBPARAM cpPort[] =
+{
+	{MAKEINTRESOURCE(IDS_NONCONNECT),	COMPORT_NONE},
+	{MAKEINTRESOURCE(IDS_COM1),			COMPORT_COM1},
+	{MAKEINTRESOURCE(IDS_COM2),			COMPORT_COM2},
+	{MAKEINTRESOURCE(IDS_COM3),			COMPORT_COM3},
+	{MAKEINTRESOURCE(IDS_COM4),			COMPORT_COM4},
+	{MAKEINTRESOURCE(IDS_MIDI),			COMPORT_MIDI},
+};
 
-static const TCHAR str_seropt[] = _T("Serial option");
+static const CBNPARAM cpChars[] =
+{
+	{5,	0x00},
+	{6,	0x04},
+	{7,	0x08},
+	{8,	0x0c},
+};
+
+static const CBPARAM cpParity[] =
+{
+    {MAKEINTRESOURCE(IDS_PARITY_NONE),	0x00},
+    {MAKEINTRESOURCE(IDS_PARITY_ODD),	0x20},
+	{MAKEINTRESOURCE(IDS_PARITY_EVEN),	0x30},
+};
+
+static const CBPARAM cpSBit[] =
+{
+    {MAKEINTRESOURCE(IDS_1),			0x40},
+    {MAKEINTRESOURCE(IDS_1HALF),		0x80},
+	{MAKEINTRESOURCE(IDS_2),			0xc0},
+};
 
 
 #ifdef __cplusplus
@@ -49,10 +72,12 @@ extern	COMMNG	cm_pc9861ch2;
 
 enum {
 	ID_PORT		= 0,
+
 	ID_SPEED,
 	ID_CHARS,
 	ID_PARITY,
 	ID_SBIT,
+
 	ID_MMAP,
 	ID_MMDL,
 	ID_DEFE,
@@ -141,6 +166,53 @@ static void dlgcom_items(HWND hWnd, const DLGCOM_P *m, UINT r) {
 }
 
 
+static void setChars(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0x0c);
+}
+
+static UINT8 getChars(HWND hWnd, UINT uID, UINT8 cDefault)
+{
+	return dlgs_getcbcur(hWnd, uID, cDefault & 0x0c);
+}
+
+
+static void setParity(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	cValue = cValue & 0x30;
+	if (!(cValue & 0x20))
+	{
+		cValue = 0;
+	}
+	dlgs_setcbcur(hWnd, uID, cValue);
+}
+
+static UINT8 getParity(HWND hWnd, UINT uID, UINT8 cDefault)
+{
+	return dlgs_getcbcur(hWnd, uID, cDefault & 0x30);
+}
+
+
+static void setStopBit(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	cValue = cValue & 0xc0;
+	if (!cValue)
+	{
+		cValue = 0x40;
+	}
+	dlgs_setcbcur(hWnd, uID, cValue);
+}
+
+static UINT8 getStopBit(HWND hWnd, UINT uID, UINT8 cDefault)
+{
+	return dlgs_getcbcur(hWnd, uID, cDefault & 0xc0);
+}
+
+
+
+
+
+
 static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 								WPARAM wp, LPARAM lp, const DLGCOM_P *m) {
 
@@ -148,9 +220,9 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 	UINT8	b;
 	LRESULT	r;
 	union {
-		OEMCHAR	mmap[MAXPNAMELEN];
-		OEMCHAR	mmdl[64];
-		OEMCHAR	mdef[MAX_PATH];
+		TCHAR	mmap[MAXPNAMELEN];
+		TCHAR	mmdl[64];
+		TCHAR	mdef[MAX_PATH];
 	} str;
 	COMCFG	*cfg;
 	UINT	update;
@@ -159,11 +231,13 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 	switch (msg) {
 		case WM_INITDIALOG:
 			cfg = m->cfg;
-			SETLISTSTR(hWnd, m->idc[ID_PORT], rsport);
+			dlgs_setcbitem(hWnd, m->idc[ID_PORT], cpPort, NELEMENTS(cpPort));
 			SETLISTUINT32(hWnd, m->idc[ID_SPEED], cmserial_speed);
-			SETLISTUINT32(hWnd, m->idc[ID_CHARS], rscharsize);
-			SETLISTSTR(hWnd, m->idc[ID_PARITY], rsparity);
-			SETLISTSTR(hWnd, m->idc[ID_SBIT], rsstopbit);
+			dlgs_setcbnumber(hWnd, m->idc[ID_CHARS],
+											cpChars, NELEMENTS(cpChars));
+			dlgs_setcbitem(hWnd, m->idc[ID_PARITY],
+											cpParity, NELEMENTS(cpParity));
+			dlgs_setcbitem(hWnd, m->idc[ID_SBIT], cpSBit, NELEMENTS(cpSBit));
 			for (d=0; d<(NELEMENTS(cmserial_speed) - 1); d++) {
 				if (cmserial_speed[d] >= cfg->speed) {
 					break;
@@ -174,22 +248,10 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 
 			b = cfg->param;
 			d = (b >> 2) & 3;
-			SendDlgItemMessage(hWnd, m->idc[ID_CHARS],
-										CB_SETCURSEL, (WPARAM)d, (LPARAM)0);
-			if (b & 0x10) {
-				d = ((b >> 5) & 1) + 1;
-			}
-			else {
-				d = 0;
-			}
-			SendDlgItemMessage(hWnd, m->idc[ID_PARITY],
-										CB_SETCURSEL, (WPARAM)d, (LPARAM)0);
-			d = (b >> 6) & 3;
-			if (d) {
-				d--;
-			}
-			SendDlgItemMessage(hWnd, m->idc[ID_SBIT],
-										CB_SETCURSEL, (WPARAM)d, (LPARAM)0);
+
+			setChars(hWnd, m->idc[ID_CHARS], b);
+			setParity(hWnd, m->idc[ID_PARITY], b);
+			setStopBit(hWnd, m->idc[ID_SBIT], b);
 
 			dlgs_setlistmidiout(hWnd, m->idc[ID_MMAP], cfg->mout);
 			SETLISTSTR(hWnd, m->idc[ID_MMDL], cmmidi_mdlname);
@@ -198,43 +260,37 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 			SetDlgItemText(hWnd, m->idc[ID_DEFF], cfg->def);
 
 			d = cfg->port;
-			if (d >= NELEMENTS(rsport)) {
+			if (d >= NELEMENTS(cpPort))
+			{
 				d = 0;
 			}
-			SendDlgItemMessage(hWnd, m->idc[ID_PORT],
-								CB_SETCURSEL, (WPARAM)d, (LPARAM)0);
-
+			dlgs_setcbcur(hWnd, m->idc[ID_PORT], d);
 			dlgcom_items(hWnd, m, d);
 			return(TRUE);
 
 		case WM_COMMAND:
-			if (LOWORD(wp) == m->idc[ID_PORT]) {
-				r = SendDlgItemMessage(hWnd, m->idc[ID_PORT],
-										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
-				if (r != CB_ERR) {
-					dlgcom_items(hWnd, m, (UINT)r);
-				}
+			if (LOWORD(wp) == m->idc[ID_PORT])
+			{
+				dlgcom_items(hWnd, m,
+						dlgs_getcbcur(hWnd, m->idc[ID_PORT], COMPORT_NONE));
 			}
-			else if (LOWORD(wp) == m->idc[ID_DEFB]) {
+			else if (LOWORD(wp) == m->idc[ID_DEFB])
+			{
 				dlgs_browsemimpidef(hWnd, m->idc[ID_DEFF]);
 			}
 			break;
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY)
+			{
 				cfg = m->cfg;
 				update = 0;
-				r = SendDlgItemMessage(hWnd, m->idc[ID_PORT],
-										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
-				if (r != CB_ERR) {
-					if ((UINT)r >= NELEMENTS(rsport)) {
-						r = 0;
-					}
-					if (cfg->port != (UINT8)r) {
-						cfg->port = (UINT8)r;
-						update |= SYS_UPDATEOSCFG;
-						update |= m->update;
-					}
+				r = dlgs_getcbcur(hWnd, m->idc[ID_PORT], COMPORT_NONE);
+				if (cfg->port != (UINT8)r)
+				{
+					cfg->port = (UINT8)r;
+					update |= SYS_UPDATEOSCFG;
+					update |= m->update;
 				}
 				r = SendDlgItemMessage(hWnd, m->idc[ID_SPEED],
 										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
@@ -250,24 +306,10 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 				}
 
 				b = 0;
-				r = SendDlgItemMessage(hWnd, m->idc[ID_CHARS],
-										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
-				if (r != CB_ERR) {
-					b |= (UINT8)(((UINT)r & 3) << 2);
-				}
-				r = SendDlgItemMessage(hWnd, m->idc[ID_PARITY],
-										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
-				if (r != CB_ERR) {
-					if ((UINT)r) {
-						b |= 0x10;
-						b |= (UINT8)((((UINT)r - 1) & 1) << 5);
-					}
-				}
-				r = SendDlgItemMessage(hWnd, m->idc[ID_SBIT],
-										CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
-				if (r != CB_ERR) {
-					b |= (UINT8)((((UINT)r + 1) & 3) << 6);
-				}
+				b |= getChars(hWnd, m->idc[ID_CHARS], cfg->param);
+				b |= getParity(hWnd, m->idc[ID_PARITY], cfg->param);
+				b |= getStopBit(hWnd, m->idc[ID_SBIT], cfg->param);
+
 				if (cfg->param != b) {
 					cfg->param = b;
 					update |= SYS_UPDATEOSCFG;
@@ -300,7 +342,7 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 					milstr_ncpy(cfg->def, str.mdef, NELEMENTS(cfg->def));
 					update |= SYS_UPDATEOSCFG;
 					if (cm) {
-						cm->msg(cm, COMMSG_MIMPIDEFFILE, (long)str.mdef);
+						cm->msg(cm, COMMSG_MIMPIDEFFILE, (INTPTR)str.mdef);
 					}
 				}
 				sysmng_update(update);
@@ -367,110 +409,134 @@ enum {
 	PC9861J4_Y		= 7
 };
 
-static const UINT32 pc9861kint1[] = {0, 1, 2, 3};
-static const UINT32 pc9861kint2[] = {0, 4, 5, 6};
+static const CBNPARAM cpInt1[] =
+{
+	{0,	0x00},
+	{1,	0x02},
+	{2,	0x01},
+	{3,	0x03},
+};
 
-static const TCHAR sync0[] = _T("Start-Stop");
-static const TCHAR sync1[] = _T("ST1");
-static const TCHAR sync2[] = _T("ST2");
-static const TCHAR sync3[] = _T("RD-Sync");
-static const TCHAR *pc9861sync[] = {sync0, sync1, sync2, sync3};
+static const CBNPARAM cpInt2[] =
+{
+	{0,	0x00},
+	{4,	0x08},
+	{5,	0x04},
+	{6,	0x0c},
+};
 
-static const UINT pc9861d2sync[] = {1, 2, 3, 0};
-static const UINT pc9861d2int[] = {0, 2, 1, 3};
+static const CBPARAM cpSync[] =
+{
+	{MAKEINTRESOURCE(IDS_SYNC),		0x03},
+	{MAKEINTRESOURCE(IDS_ASYNC),	0x00},
+	{MAKEINTRESOURCE(IDS_ASYNC16X),	0x01},
+	{MAKEINTRESOURCE(IDS_ASYNC64X),	0x02},
+};
 
+static void pc9861setspeed(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMode;
+	UINT	uSpeed;
 
-static void pc9861getspeed(HWND hWnd, const PC9861MODE_T *m) {
-
-	LRESULT	r;
-	UINT8	mode;
-
-	mode = *(m->dip_mode);
-	r = SendDlgItemMessage(hWnd, m->idc_speed, CB_GETCURSEL, 0, 0);
-	if (r != CB_ERR) {
-		UINT speed = r;
-		if (speed > (NELEMENTS(pc9861k_speed) - 1)) {
-			speed = NELEMENTS(pc9861k_speed) - 1;
+	cMode = *(m->dip_mode);
+	uSpeed = (((~cMode) >> 2) & 0x0f) + 1;
+	if (cMode)
+	{
+		if (uSpeed > 4)
+		{
+			uSpeed -= 4;
 		}
-		if (mode & 2) {
-			speed += 3;
-		}
-		else {
-			if (speed) {
-				speed--;
-			}
-		}
-		mode &= 3;
-		mode |= ((~speed) & 0x0f) << 2;
-		*(m->dip_mode) = mode;
-	}
-}
-
-static void pc9861getint(HWND hWnd, const PC9861MODE_T *m) {
-
-	LRESULT	r;
-	UINT	i;
-
-	r = SendDlgItemMessage(hWnd, m->idc_int, CB_GETCURSEL, 0, 0);
-	if (r != CB_ERR) {
-		for (i=0; i<NELEMENTS(pc9861d2int); i++) {
-			if (pc9861d2int[i] == (UINT)(r & 3)) {
-				*(m->dip_int) &= ~(0x03 << (m->sft_int));
-				*(m->dip_int) |= (UINT8)(i << (m->sft_int));
-				break;
-			}
+		else
+		{
+			uSpeed = 0;
 		}
 	}
-}
-
-static void pc9861getmode(HWND hWnd, const PC9861MODE_T *m) {
-
-	LRESULT	r;
-	UINT8	i;
-
-	r = SendDlgItemMessage(hWnd, m->idc_mode, CB_GETCURSEL, 0, 0);
-	if (r != CB_ERR) {
-		for (i=0; i<NELEMENTS(pc9861d2sync); i++) {
-			if (pc9861d2sync[i] == (UINT)(r & 3)) {
-				*(m->dip_mode) &= (~3);
-				*(m->dip_mode) |= i;
-				break;
-			}
-		}
-	}
-}
-
-static void pc9861setmode(HWND hWnd, const PC9861MODE_T *m) {
-
-	UINT	speed;
-	UINT	mode;
-	UINT	intnum;
-	UINT8	modedip;
-
-	modedip = *(m->dip_mode);
-	speed = (((~modedip) >> 2) & 0x0f) + 1;
-	if (modedip & 0x02) {
-		if (speed > 4) {
-			speed -= 4;
-		}
-		else {
-			speed = 0;
-		}
-	}
-	if (speed > (NELEMENTS(pc9861k_speed) - 1)) {
-		speed = NELEMENTS(pc9861k_speed) - 1;
+	if (uSpeed > (NELEMENTS(pc9861k_speed) - 1))
+	{
+		uSpeed = NELEMENTS(pc9861k_speed) - 1;
 	}
 
 	SendDlgItemMessage(hWnd, m->idc_speed,
-								CB_SETCURSEL, (WPARAM)speed, (LPARAM)0);
+								CB_SETCURSEL, (WPARAM)uSpeed, (LPARAM)0);
+}
 
-	mode = pc9861d2sync[modedip & 3];
-	SendDlgItemMessage(hWnd, m->idc_mode,
-								CB_SETCURSEL, (WPARAM)mode, (LPARAM)0);
+static void pc9861getspeed(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMode;
+	LRESULT	r;
+	UINT	uSpeed;
 
-	intnum = pc9861d2int[((*(m->dip_int)) >> (m->sft_int)) & 3];
-	SendDlgItemMessage(hWnd, m->idc_int,
-								CB_SETCURSEL, (WPARAM)intnum, (LPARAM)0);
+	cMode = *(m->dip_mode);
+	r = SendDlgItemMessage(hWnd, m->idc_speed, CB_GETCURSEL, 0, 0);
+	if (r != CB_ERR)
+	{
+		uSpeed = (UINT)r;
+		if (uSpeed > (NELEMENTS(pc9861k_speed) - 1))
+		{
+			uSpeed = NELEMENTS(pc9861k_speed) - 1;
+		}
+		if (cMode & 2)
+		{
+			uSpeed += 3;
+		}
+		else
+		{
+			if (uSpeed)
+			{
+				uSpeed--;
+			}
+		}
+		cMode &= 3;
+		cMode |= ((~uSpeed) & 0x0f) << 2;
+		*(m->dip_mode) = cMode;
+	}
+}
+
+static void pc9861setsync(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMode;
+
+	cMode = *(m->dip_mode);
+	dlgs_setcbcur(hWnd, m->idc_mode, cMode & 0x03);
+}
+
+static void pc9861getsync(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMode;
+	UINT8	cNewMode;
+
+	cMode = *(m->dip_mode);
+	cNewMode = (UINT8)dlgs_getcbcur(hWnd, m->idc_mode, cMode & 0x03);
+	*(m->dip_mode) = (UINT8)((cMode & (~3)) | cNewMode);
+}
+
+static void pc9861setint(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMask;
+	UINT8	cMode;
+
+	cMask = 3 << (m->sft_int);
+	cMode = *(m->dip_int);
+	dlgs_setcbcur(hWnd, m->idc_int, cMode & cMask);
+}
+
+static void pc9861getint(HWND hWnd, const PC9861MODE_T *m)
+{
+	UINT8	cMask;
+	UINT8	cMode;
+	UINT8	cNewMode;
+
+	cMask = 3 << (m->sft_int);
+	cMode = *(m->dip_int);
+	cNewMode = (UINT8)dlgs_getcbcur(hWnd, m->idc_int, cMode & cMask);
+	*(m->dip_int) = (cMode & (~cMask)) | cNewMode;
+}
+
+static void pc9861setmode(HWND hWnd, const PC9861MODE_T *m)
+{
+	pc9861setspeed(hWnd, m);
+	pc9861setint(hWnd, m);
+	pc9861setsync(hWnd, m);
 }
 
 static void pc9861cmddipsw(HWND hWnd) {
@@ -494,8 +560,8 @@ static void pc9861cmddipsw(HWND hWnd) {
 		}
 		else if ((p.x >= 10) && (p.x < 14)) {		// S2
 			pc9861_s[1] ^= (1 << (p.x - 10));
-			pc9861setmode(hWnd, pc9861mode);
-			pc9861setmode(hWnd, pc9861mode+1);
+			pc9861setint(hWnd, pc9861mode);
+			pc9861setint(hWnd, pc9861mode+1);
 		}
 		else if ((p.x >= 17) && (p.x < 23)) {		// S3
 			pc9861_s[2] ^= (1 << (p.x - 17));
@@ -543,10 +609,10 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 			CopyMemory(pc9861_j, np2cfg.pc9861jmp, 6);
 			SETLISTUINT32(hWnd, IDC_CH1SPEED, pc9861k_speed);
 			SETLISTUINT32(hWnd, IDC_CH2SPEED, pc9861k_speed);
-			SETLISTUINT32(hWnd, IDC_CH1INT, pc9861kint1);
-			SETLISTUINT32(hWnd, IDC_CH2INT, pc9861kint2);
-			SETLISTSTR(hWnd, IDC_CH1MODE, pc9861sync);
-			SETLISTSTR(hWnd, IDC_CH2MODE, pc9861sync);
+			dlgs_setcbnumber(hWnd, IDC_CH1INT, cpInt1, NELEMENTS(cpInt1));
+			dlgs_setcbnumber(hWnd, IDC_CH2INT, cpInt2, NELEMENTS(cpInt2));
+			dlgs_setcbitem(hWnd, IDC_CH1MODE, cpSync, NELEMENTS(cpSync));
+			dlgs_setcbitem(hWnd, IDC_CH2MODE, cpSync, NELEMENTS(cpSync));
 
 			SendDlgItemMessage(hWnd, IDC_PC9861E, BM_GETCHECK,
 												np2cfg.pc9861enable & 1, 0);
@@ -562,32 +628,32 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 			switch (LOWORD(wp)) {
 				case IDC_CH1SPEED:
 					pc9861getspeed(hWnd, pc9861mode);
-					pc9861setmode(hWnd, pc9861mode);
+					pc9861setspeed(hWnd, pc9861mode);
 					break;
 
 				case IDC_CH1INT:
 					pc9861getint(hWnd, pc9861mode);
-					pc9861setmode(hWnd, pc9861mode);
+					pc9861setint(hWnd, pc9861mode);
 					break;
 
 				case IDC_CH1MODE:
-					pc9861getmode(hWnd, pc9861mode);
-					pc9861setmode(hWnd, pc9861mode);
+					pc9861getsync(hWnd, pc9861mode);
+					pc9861setsync(hWnd, pc9861mode);
 					break;
 
 				case IDC_CH2SPEED:
 					pc9861getspeed(hWnd, pc9861mode+1);
-					pc9861setmode(hWnd, pc9861mode+1);
+					pc9861setspeed(hWnd, pc9861mode+1);
 					break;
 
 				case IDC_CH2INT:
 					pc9861getint(hWnd, pc9861mode+1);
-					pc9861setmode(hWnd, pc9861mode+1);
+					pc9861setint(hWnd, pc9861mode+1);
 					break;
 
 				case IDC_CH2MODE:
-					pc9861getmode(hWnd, pc9861mode+1);
-					pc9861setmode(hWnd, pc9861mode+1);
+					pc9861getsync(hWnd, pc9861mode+1);
+					pc9861setsync(hWnd, pc9861mode+1);
 					break;
 
 				case IDC_PC9861DIP:
@@ -634,19 +700,20 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 
 // --------------------------------------------------------------------------
 
-void dialog_serial(HWND hWnd) {
-
-	HINSTANCE		hinst;
+void dialog_serial(HWND hWnd)
+{
+	HINSTANCE		hInstance;
 	PROPSHEETPAGE	psp;
 	PROPSHEETHEADER	psh;
 	HPROPSHEETPAGE	hpsp[4];
+	TCHAR			szTitle[128];
 
-	hinst = GetWindowInst(hWnd);
+	hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
 	ZeroMemory(&psp, sizeof(psp));
 	psp.dwSize = sizeof(PROPSHEETPAGE);
 	psp.dwFlags = PSP_DEFAULT;
-	psp.hInstance = hinst;
+	psp.hInstance = hInstance;
 
 	psp.pszTemplate = MAKEINTRESOURCE(IDD_SERIAL1);
 	psp.pfnDlgProc = (DLGPROC)Com1Proc;
@@ -664,15 +731,17 @@ void dialog_serial(HWND hWnd) {
 	psp.pfnDlgProc = (DLGPROC)Com3Proc;
 	hpsp[3] = CreatePropertySheetPage(&psp);
 
+	loadstringresource(IDS_SERIALOPTION, szTitle, NELEMENTS(szTitle));
+
 	ZeroMemory(&psh, sizeof(psh));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_NOAPPLYNOW | PSH_USEHICON | PSH_USECALLBACK;
 	psh.hwndParent = hWnd;
-	psh.hInstance = hinst;
-	psh.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(IDI_ICON2));
+	psh.hInstance = hInstance;
+	psh.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	psh.nPages = 4;
 	psh.phpage = hpsp;
-	psh.pszCaption = str_seropt;
+	psh.pszCaption = szTitle;
 	psh.pfnCallback = np2class_propetysheet;
 	PropertySheet(&psh);
 	InvalidateRect(hWnd, NULL, TRUE);

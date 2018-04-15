@@ -13,15 +13,17 @@
 
 
 typedef struct {
-	UINT	addr;
-	UINT	addr2;
-	UINT8	data;
+	UINT8	addr1l;
+	UINT8	addr1h;
+	UINT8	addr2l;
+	UINT8	addr2h;
+	UINT8	data1;
 	UINT8	data2;
 	UINT16	base;
 	UINT8	adpcmmask;
 	UINT8	channels;
 	UINT8	extend;
-	UINT8	_padding;
+	UINT8	_padding2;
 	UINT8	reg[0x400];
 } OPN_T;
 
@@ -65,17 +67,30 @@ extern	_CS4231		cs4231;
 #define	psg2	__psg[1]
 #define	psg3	__psg[2]
 
+#if defined(SUPPORT_PX)
+extern	OPN_T		opn2;
+extern	OPN_T		opn3;
+extern	_RHYTHM		rhythm2;
+extern	_RHYTHM		rhythm3;
+extern	_ADPCM		adpcm2;
+extern	_ADPCM		adpcm3;
+#endif	// defined(SUPPORT_PX)
 
 REG8 fmboard_getjoy(PSGGEN psg);
 
 void fmboard_extreg(void (*ext)(REG8 enable));
 void fmboard_extenable(REG8 enable);
 
-void fmboard_reset(UINT32 type);
+void fmboard_reset(const NP2CFG *pConfig, UINT32 type);
 void fmboard_bind(void);
 
 void fmboard_fmrestore(REG8 chbase, UINT bank);
 void fmboard_rhyrestore(RHYTHM rhy, UINT bank);
+
+#if defined(SUPPORT_PX)
+void fmboard_fmrestore2(OPN_T* pOpn, REG8 chbase, UINT bank);
+void fmboard_rhyrestore2(OPN_T* pOpn, RHYTHM rhy, UINT bank);
+#endif	// defined(SUPPORT_PX)
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,3 @@
-/*	$Id: ia32.c,v 1.19 2005/03/16 06:05:18 yui Exp $	*/
-
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
  * All rights reserved.
@@ -132,70 +130,64 @@ ia32_setemm(UINT frame, UINT32 addr) {
 
 
 /*
- * •‚°º•…¡´∞‹
+ * „É¢„Éº„ÉâÈÅ∑Áßª
  */
-void FASTCALL
+void CPUCALL
 change_pm(BOOL onoff)
 {
-	int i;
 
 	if (onoff) {
-		for (i = 0; i < CPU_SEGREG_NUM; i++) {
-			CPU_STAT_SREG(i).valid = 1;
-			CPU_STAT_SREG(i).dpl = 0;
-		}
-		VERBOSE(("Entering to Protected-Mode..."));
+		VERBOSE(("change_pm: Entering to Protected-Mode..."));
 	} else {
-		VERBOSE(("Leaveing from Protected-Mode..."));
+		VERBOSE(("change_pm: Leaveing from Protected-Mode..."));
 	}
 
 	CPU_INST_OP32 = CPU_INST_AS32 =
 	    CPU_STATSAVE.cpu_inst_default.op_32 = 
 	    CPU_STATSAVE.cpu_inst_default.as_32 = 0;
 	CPU_STAT_SS32 = 0;
-	CPU_SET_CPL(0);
+	set_cpl(0);
 	CPU_STAT_PM = onoff;
 }
 
-void FASTCALL
+void CPUCALL
 change_pg(BOOL onoff)
 {
 
 	if (onoff) {
-		VERBOSE(("Entering to Paging-Mode..."));
+		VERBOSE(("change_pg: Entering to Paging-Mode..."));
 	} else {
-		VERBOSE(("Leaveing from Paging-Mode..."));
+		VERBOSE(("change_pg: Leaveing from Paging-Mode..."));
 	}
+
 	CPU_STAT_PAGING = onoff;
 }
 
-void FASTCALL
+void CPUCALL
 change_vm(BOOL onoff)
 {
 	int i;
 
 	CPU_STAT_VM86 = onoff;
 	if (onoff) {
+		VERBOSE(("change_vm: Entering to Virtual-8086-Mode..."));
 		for (i = 0; i < CPU_SEGREG_NUM; i++) {
-			CPU_STAT_SREGLIMIT(i) = 0xffff;
-			CPU_SET_SEGREG(i, CPU_REGS_SREG(i));
+			LOAD_SEGREG(i, CPU_REGS_SREG(i));
 		}
 		CPU_INST_OP32 = CPU_INST_AS32 =
 		    CPU_STATSAVE.cpu_inst_default.op_32 =
 		    CPU_STATSAVE.cpu_inst_default.as_32 = 0;
 		CPU_STAT_SS32 = 0;
-		CPU_SET_CPL(3);
-		VERBOSE(("Entering to Virtual-8086-Mode..."));
+		set_cpl(3);
 	} else {
-		VERBOSE(("Leaveing from Virtual-8086-Mode..."));
+		VERBOSE(("change_vm: Leaveing from Virtual-8086-Mode..."));
 	}
 }
 
-#if !defined(IA32_DONT_USE_SET_EFLAGS_FUNCTION)
 /*
  * flags
  */
-static void
+static void CPUCALL
 modify_eflags(UINT32 new_flags, UINT32 mask)
 {
 	UINT32 orig = CPU_EFLAG;
@@ -217,7 +209,7 @@ modify_eflags(UINT32 new_flags, UINT32 mask)
 	}
 }
 
-void
+void CPUCALL
 set_flags(UINT16 new_flags, UINT16 mask)
 {
 
@@ -226,7 +218,7 @@ set_flags(UINT16 new_flags, UINT16 mask)
 	modify_eflags(new_flags, mask);
 }
 
-void
+void CPUCALL
 set_eflags(UINT32 new_flags, UINT32 mask)
 {
 
@@ -235,4 +227,29 @@ set_eflags(UINT32 new_flags, UINT32 mask)
 	mask |= AC_FLAG|ID_FLAG;
 	modify_eflags(new_flags, mask);
 }
-#endif	/* !IA32_DONT_USE_SET_EFLAGS_FUNCTION */
+
+/*
+ * CR3 (Page Directory Entry base physical address)
+ */
+void CPUCALL
+set_cr3(UINT32 new_cr3)
+{
+
+	VERBOSE(("set_CR3: old = %08x, new = 0x%08x", CPU_CR3, new_cr3));
+
+	CPU_CR3 = new_cr3 & CPU_CR3_MASK;
+	CPU_STAT_PDE_BASE = CPU_CR3 & CPU_CR3_PD_MASK;
+	tlb_flush(0);
+}
+
+/*
+ * CPL (Current Privilege Level)
+ */
+void CPUCALL
+set_cpl(int new_cpl)
+{
+	int cpl = new_cpl & 3;
+
+	CPU_STAT_CPL = (UINT8)cpl;
+	CPU_STAT_USER_MODE = (cpl == 3) ? CPU_MODE_USER : CPU_MODE_SUPERVISER;
+}

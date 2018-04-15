@@ -145,11 +145,11 @@ void rs232ctimer(NEVENTITEM item) {
 
 static UINT getcount(const _PITCH *pitch) {
 
-	SINT32	clock;
+	SINT32	clk;
 
 	switch(pitch->ch) {
 		case 0:
-			clock = nevent_getremain(NEVENT_ITIMER);
+			clk = nevent_getremain(NEVENT_ITIMER);
 			break;
 
 		case 1:
@@ -164,24 +164,24 @@ static UINT getcount(const _PITCH *pitch) {
 					return(pitch->value & (~1));
 #endif
 			}
-			clock = nevent_getremain(NEVENT_BEEP);
+			clk = nevent_getremain(NEVENT_BEEP);
 #if defined(BEEPCOUNTEREX)
-			if (clock >= 0) {
-				clock /= pccore.multiple;
+			if (clk >= 0) {
+				clk /= pccore.multiple;
 				if (pitch->value > 2) {
-					clock %= pitch->value;
+					clk %= pitch->value;
 				}
 				else {
-					clock = LOW16(clock);
+					clk = LOW16(clk);
 				}
-				return(clock);
+				return(clk);
 			}
 #else
 			break;
 #endif
 
 		case 2:
-			clock = nevent_getremain(NEVENT_RS232C);
+			clk = nevent_getremain(NEVENT_RS232C);
 			break;
 
 #if !defined(DISABLE_SOUND)
@@ -190,11 +190,11 @@ static UINT getcount(const _PITCH *pitch) {
 #endif
 
 		default:
-			clock = 0;
+			clk = 0;
 			break;
 	}
-	if (clock > 0) {
-		return(clock / pccore.multiple);
+	if (clk > 0) {
+		return(clk / pccore.multiple);
 	}
 	return(0);
 }
@@ -412,7 +412,7 @@ static const IOOUT pito71[4] = {
 static const IOINP piti71[4] = {
 					pit_i71,	pit_i71,	pit_i71,	NULL};
 
-void itimer_reset(void) {
+void itimer_reset(const NP2CFG *pConfig) {
 
 	UINT16	beepcnt;
 
@@ -436,6 +436,8 @@ void itimer_reset(void) {
 	beep_lheventset(1);												// ver0.79
 	beep_hzset(beepcnt);
 //	setrs232cevent(0, NEVENT_ABSOLUTE);
+
+	(void)pConfig;
 }
 
 void itimer_bind(void) {

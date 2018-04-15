@@ -63,7 +63,7 @@ static const IOINP crtci70[8] = {
 
 void crtc_biosreset(void) {
 
-	if (!(np2cfg.dipsw[0] & 0x01)) {
+	if (!(pccore.dipsw[0] & 0x01)) {
 		crtc.reg.pl = 0;
 		crtc.reg.bl = 0x0f;
 		crtc.reg.cl = 0x10;
@@ -85,14 +85,14 @@ void crtc_biosreset(void) {
 	MEMM_VRAM(vramop.operate);
 }
 
-void crtc_reset(void) {
+void crtc_reset(const NP2CFG *pConfig) {
 
 	ZeroMemory(&grcg, sizeof(grcg));
 	ZeroMemory(&crtc, sizeof(crtc));
 #if defined(SUPPORT_PC9821)
 	grcg.chip = 3;							// PC-9821は EGC必須
 #else
-	grcg.chip = np2cfg.grcg & 3;			// GRCG動作のコピー
+	grcg.chip = pConfig->grcg & 3;			// GRCG動作のコピー
 #endif
 	crtc_biosreset();
 }

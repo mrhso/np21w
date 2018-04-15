@@ -8,7 +8,7 @@ LISTARRAY listarray_new(size_t listsize, UINT maxitems) {
 
 	listsize = (listsize + 3) & (~3);
 	dwSize = sizeof(_LISTARRAY);
-	dwSize += listsize * maxitems;
+	dwSize += (UINT)(listsize * maxitems);
 
 #ifdef TRACE
 	{
@@ -114,7 +114,7 @@ UINT listarray_getpos(LISTARRAY laHandle, void *vpItem) {
 	while(laHandle) {
 		UINT8 *p = (UINT8 *)(laHandle + 1);
 		for (i=0; i<laHandle->items; i++) {
-			if ((long)p == (long)vpItem) {
+			if (p == vpItem) {
 				return(pos + i);
 			}
 			p += laHandle->listsize;

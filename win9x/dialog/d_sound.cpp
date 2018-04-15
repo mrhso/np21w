@@ -1,52 +1,84 @@
-#include	"compiler.h"
-#include	<commctrl.h>
-#include	<prsht.h>
-#include	"strres.h"
-#include	"resource.h"
-#include	"np2.h"
-#include	"oemtext.h"
-#include	"dosio.h"
-#include	"joymng.h"
-#include	"sysmng.h"
-#include	"menu.h"
-#include	"np2class.h"
-#include	"dialog.h"
-#include	"dialogs.h"
-#include	"pccore.h"
-#include	"iocore.h"
-#include	"sound.h"
-#include	"fmboard.h"
-#include	"s98.h"
-#include	"dipswbmp.h"
+/**
+ * @file	d_sound.cpp
+ * @brief	Sound configure dialog procedure
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
 
+#include "compiler.h"
+#include <commctrl.h>
+#include <prsht.h>
+#include "strres.h"
+#include "resource.h"
+#include "np2.h"
+#include "dosio.h"
+#include "joymng.h"
+#include "sysmng.h"
+#include "menu.h"
+#include "np2class.h"
+#include "dialog.h"
+#include "dialogs.h"
+#include "pccore.h"
+#include "iocore.h"
+#include "sound.h"
+#include "fmboard.h"
+#include "s98.h"
+#include "dipswbmp.h"
+#include "recvideo.h"
 
-static const TCHAR str_0088[] = _T("0088");
-static const TCHAR str_0188[] = _T("0188");
-static const TCHAR str_0288[] = _T("0288");
-static const TCHAR str_0388[] = _T("0388");
-static const TCHAR str_c8000[] = _T("C8000");
-static const TCHAR str_cc000[] = _T("CC000");
-static const TCHAR str_d0000[] = _T("D0000");
-static const TCHAR str_d4000[] = _T("D4000");
-static const TCHAR str_n0x[] = _T("0x");
-static const TCHAR str_n1x[] = _T("1x");
-static const TCHAR str_n2x[] = _T("2x");
-static const TCHAR str_n3x[] = _T("3x");
-static const TCHAR str_n4x[] = _T("4x");
-static const TCHAR str_n5x[] = _T("5x");
-static const TCHAR str_n6x[] = _T("6x");
-static const TCHAR str_n7x[] = _T("7x");
-static const TCHAR *sndioport[4] =
-						{str_0088, str_0188, str_0288, str_0388};
-static const TCHAR *sndinterrupt[4] =
-						{str_int0, str_int4, str_int5, str_int6};
-static const TCHAR *sndromaddr[5] =
-						{str_c8000, str_cc000, str_d0000, str_d4000, str_nc};
-static const TCHAR *sndid[8] =
-						{str_n0x, str_n1x, str_n2x, str_n3x,
-						 str_n4x, str_n5x, str_n6x, str_n7x};
+#if !defined(__GNUC__)
+#pragma comment(lib, "comctl32.lib")
+#endif	// !defined(__GNUC__)
 
-static const TCHAR str_sndopt[] = _T("Sound board option");
+static const CBPARAM cpIO26[] =
+{
+	{MAKEINTRESOURCE(IDS_0088),		0x00},
+	{MAKEINTRESOURCE(IDS_0188),		0x10},
+};
+
+static const CBPARAM cpIO86[] =
+{
+	{MAKEINTRESOURCE(IDS_0188),		0x01},
+	{MAKEINTRESOURCE(IDS_0288),		0x00},
+};
+
+static const CBPARAM cpInt26[] =
+{
+	{MAKEINTRESOURCE(IDS_INT0),		0x00},
+	{MAKEINTRESOURCE(IDS_INT41),	0x80},
+	{MAKEINTRESOURCE(IDS_INT5),		0xc0},
+	{MAKEINTRESOURCE(IDS_INT6),		0x40},
+};
+
+static const CBPARAM cpInt86[] =
+{
+	{MAKEINTRESOURCE(IDS_INT0),		0x00},
+	{MAKEINTRESOURCE(IDS_INT41),	0x08},
+	{MAKEINTRESOURCE(IDS_INT5),		0x0c},
+	{MAKEINTRESOURCE(IDS_INT6),		0x04},
+};
+
+static const CBPARAM cpAddr[] =
+{
+	{MAKEINTRESOURCE(IDS_C8000),		0x00},
+	{MAKEINTRESOURCE(IDS_CC000),		0x01},
+	{MAKEINTRESOURCE(IDS_D0000),		0x02},
+	{MAKEINTRESOURCE(IDS_D4000),		0x03},
+	{MAKEINTRESOURCE(IDS_NONCONNECT),	0x04},
+};
+
+static const CBPARAM cpID[] =
+{
+	{MAKEINTRESOURCE(IDS_0X),	0xe0},
+	{MAKEINTRESOURCE(IDS_1X),	0xc0},
+	{MAKEINTRESOURCE(IDS_2X),	0xa0},
+	{MAKEINTRESOURCE(IDS_3X),	0x80},
+	{MAKEINTRESOURCE(IDS_4X),	0x60},
+	{MAKEINTRESOURCE(IDS_5X),	0x40},
+	{MAKEINTRESOURCE(IDS_6X),	0x20},
+	{MAKEINTRESOURCE(IDS_7X),	0x00},
+};
 
 
 typedef struct {
@@ -61,7 +93,7 @@ static void slidersetvaluestr(HWND hWnd, const SLIDERTBL *item, UINT8 value) {
 
 	TCHAR	work[32];
 
-	wsprintf(work, tchar_d, value);
+	wsprintf(work, str_d, value);
 	SetDlgItemText(hWnd, item->resstr, work);
 }
 
@@ -233,73 +265,51 @@ static LRESULT CALLBACK Snd14optDlgProc(HWND hWnd, UINT msg,
 
 // ---- 26K, SPB jumper
 
-static const UINT snd26paranum[4] = {0, 3, 1, 2};
-
-static void setsnd26iopara(HWND hWnd, UINT8 value) {
-
-	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)((value >> 4) & 1), (LPARAM)0);
+static void setsnd26io(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0x10);
 }
 
-static UINT8 getsnd26io(HWND hWnd, UINT16 res) {
-
-	TCHAR	work[8];
-
-	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
-	return((UINT8)((work[1] == '1')?0x10:0x00));
+static UINT8 getsnd26io(HWND hWnd, UINT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0x10);
 }
 
-static void setsnd26intpara(HWND hWnd, UINT8 value) {
-
-	SendMessage(hWnd, CB_SETCURSEL,
-						(WPARAM)snd26paranum[(value >> 6) & 3], (LPARAM)0);
+static void setsnd26int(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0xc0);
 }
 
-static UINT8 getsnd26int(HWND hWnd, UINT16 res) {
-
-	TCHAR	work[8];
-
-	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
-	switch(work[3]) {
-		case '0':
-			return(0x00);
-
-		case '4':
-			return(0x80);
-
-		case '6':
-			return(0x40);
-	}
-	return(0xc0);
+static UINT8 getsnd26int(HWND hWnd, UINT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0xc0);
 }
 
-static void setsnd26rompara(HWND hWnd, UINT8 value) {
+static void setsnd26rom(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	UINT	uParam;
 
-	int		para;
-
-	para = value & 7;
-	if (para > 4) {
-		para = 4;
-	}
-	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)para, (LPARAM)0);
+	uParam = cValue & 0x07;
+	uParam = min(uParam, 0x04);
+	dlgs_setcbcur(hWnd, uID, uParam);
 }
 
-static UINT8 getsnd26rom(HWND hWnd, UINT16 res) {
-
-	TCHAR	work[8];
-	UINT32	adrs;
-
-	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
-	adrs = ((UINT32)miltchar_solveHEX(work) - 0xc8000) >> 14;
-	if (adrs < 4) {
-		return((UINT8)adrs);
-	}
-	return(4);
+static UINT8 getsnd26rom(HWND hWnd, UINT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0x04);
 }
 
 
 // ---- PC-9801-26
 
 static	UINT8	snd26 = 0;
+
+static void snd26set(HWND hWnd, UINT8 cValue)
+{
+	setsnd26io(hWnd, IDC_SND26IO, cValue);
+	setsnd26int(hWnd, IDC_SND26INT, cValue);
+	setsnd26rom(hWnd, IDC_SND26ROM, cValue);
+}
 
 static void set26jmp(HWND hWnd, UINT8 value, UINT8 bit) {
 
@@ -335,7 +345,7 @@ static void snd26cmdjmp(HWND hWnd) {
 		if ((snd26 ^ b) & 7) {
 			snd26 &= ~0x07;
 			snd26 |= b;
-			setsnd26rompara(GetDlgItem(hWnd, IDC_SND26ROM), b);
+			setsnd26rom(hWnd, IDC_SND26ROM, b);
 			redraw = TRUE;
 		}
 	}
@@ -357,7 +367,7 @@ static void snd26cmdjmp(HWND hWnd) {
 		}
 		if (snd26 != b) {
 			snd26 = b;
-			setsnd26intpara(GetDlgItem(hWnd, IDC_SND26INT), b);
+			setsnd26int(hWnd, IDC_SND26INT, b);
 			redraw = TRUE;
 		}
 	}
@@ -366,7 +376,7 @@ static void snd26cmdjmp(HWND hWnd) {
 		if ((snd26 ^ b) & 0x10) {
 			snd26 &= ~0x10;
 			snd26 |= b;
-			setsnd26iopara(GetDlgItem(hWnd, IDC_SND26IO), b);
+			setsnd26io(hWnd, IDC_SND26IO, b);
 			redraw = TRUE;
 		}
 	}
@@ -383,12 +393,10 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 	switch(msg) {
 		case WM_INITDIALOG:
 			snd26 = np2cfg.snd26opt;
-			SETnLISTSTR(hWnd, IDC_SND26IO, sndioport, 2);
-			setsnd26iopara(GetDlgItem(hWnd, IDC_SND26IO), snd26);
-			SETLISTSTR(hWnd, IDC_SND26INT, sndinterrupt);
-			setsnd26intpara(GetDlgItem(hWnd, IDC_SND26INT), snd26);
-			SETLISTSTR(hWnd, IDC_SND26ROM, sndromaddr);
-			setsnd26rompara(GetDlgItem(hWnd, IDC_SND26ROM), snd26);
+			dlgs_setcbitem(hWnd, IDC_SND26IO, cpIO26, NELEMENTS(cpIO26));
+			dlgs_setcbitem(hWnd, IDC_SND26INT, cpInt26, NELEMENTS(cpInt26));
+			dlgs_setcbitem(hWnd, IDC_SND26ROM, cpAddr, NELEMENTS(cpAddr));
+			snd26set(hWnd, snd26);
 			sub = GetDlgItem(hWnd, IDC_SND26JMP);
 			SetWindowLong(sub, GWL_STYLE, SS_OWNERDRAW +
 							(GetWindowLong(sub, GWL_STYLE) & (~SS_TYPEMASK)));
@@ -410,9 +418,7 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 
 				case IDC_SND26DEF:
 					snd26 = 0xd1;
-					setsnd26iopara(GetDlgItem(hWnd, IDC_SND26IO), snd26);
-					setsnd26intpara(GetDlgItem(hWnd, IDC_SND26INT), snd26);
-					setsnd26rompara(GetDlgItem(hWnd, IDC_SND26ROM), snd26);
+					snd26set(hWnd, snd26);
 					InvalidateRect(GetDlgItem(hWnd, IDC_SND26JMP), NULL, TRUE);
 					break;
 
@@ -437,7 +443,7 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 				dlgs_drawbmp(((LPDRAWITEMSTRUCT)lp)->hDC,
 												dipswbmp_getsnd26(snd26));
 			}
-			return(FALSE);
+			break;
 	}
 	return(FALSE);
 }
@@ -447,57 +453,34 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 
 static	UINT8	snd86 = 0;
 
-static const UINT snd86paranum[4] = {0, 1, 3, 2};
-
-
-static void setsnd86iopara(HWND hWnd, UINT8 value) {
-
-	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)((~value) & 1), (LPARAM)0);
+static void setsnd86io(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0x01);
 }
 
-static UINT8 getsnd86io(HWND hWnd, UINT16 res) {
-
-	TCHAR	work[8];
-
-	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
-	return((UINT8)((work[1] == '1')?0x01:0x00));
+static UINT8 getsnd86io(HWND hWnd, UINT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0x01);
 }
 
-static void setsnd86intpara(HWND hWnd, UINT8 value) {
-
-	SendMessage(hWnd, CB_SETCURSEL,
-						(WPARAM)snd86paranum[(value >> 2) & 3], (LPARAM)0);
+static void setsnd86int(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0x0c);
 }
 
-static UINT8 getsnd86int(HWND hWnd) {
-
-	TCHAR	work[8];
-
-	GetWindowText(hWnd, work, NELEMENTS(work));
-	switch(work[3]) {
-		case '0':
-			return(0x00);
-
-		case '4':
-			return(0x04);
-
-		case '6':
-			return(0x08);
-	}
-	return(0x0c);
+static UINT8 getsnd86int(HWND hWnd, INT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0x0c);
 }
 
-static void setsnd86idpara(HWND hWnd, UINT8 value) {
-
-	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)(((~value) >> 5) & 7), (LPARAM)0);
+static void setsnd86id(HWND hWnd, UINT uID, UINT8 cValue)
+{
+	dlgs_setcbcur(hWnd, uID, cValue & 0xe0);
 }
 
-static UINT8 getsnd86id(HWND hWnd) {
-
-	TCHAR	work[8];
-
-	GetWindowText(hWnd, work, NELEMENTS(work));
-	return((~work[0] & 7) << 5);
+static UINT8 getsnd86id(HWND hWnd, UINT uID)
+{
+	return dlgs_getcbcur(hWnd, uID, 0x00);
 }
 
 static void set86jmp(HWND hWnd, UINT8 value, UINT8 bit) {
@@ -530,7 +513,7 @@ static void snd86cmddipsw(HWND hWnd) {
 	snd86 ^= (1 << p.x);
 	switch(p.x) {
 		case 0:
-			setsnd86iopara(GetDlgItem(hWnd, IDC_SND86IO), snd86);
+			setsnd86io(hWnd, IDC_SND86IO, snd86);
 			break;
 
 		case 1:
@@ -539,7 +522,7 @@ static void snd86cmddipsw(HWND hWnd) {
 
 		case 2:
 		case 3:
-			setsnd86intpara(GetDlgItem(hWnd, IDC_SND86INTA), snd86);
+			setsnd86int(hWnd, IDC_SND86INTA, snd86);
 			break;
 
 		case 4:
@@ -549,7 +532,7 @@ static void snd86cmddipsw(HWND hWnd) {
 		case 5:
 		case 6:
 		case 7:
-			setsnd86idpara(GetDlgItem(hWnd, IDC_SND86ID), snd86);
+			setsnd86id(hWnd, IDC_SND86ID, snd86);
 			break;
 	}
 	InvalidateRect(GetDlgItem(hWnd, IDC_SND86DIP), NULL, TRUE);
@@ -563,13 +546,13 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 	switch(msg) {
 		case WM_INITDIALOG:
 			snd86 = np2cfg.snd86opt;
-			SETnLISTSTR(hWnd, IDC_SND86IO, sndioport+1, 2);
-			setsnd86iopara(GetDlgItem(hWnd, IDC_SND86IO), snd86);
+			dlgs_setcbitem(hWnd, IDC_SND86IO, cpIO86, NELEMENTS(cpIO86));
+			setsnd86io(hWnd, IDC_SND86IO, snd86);
 			SetDlgItemCheck(hWnd, IDC_SND86INT, snd86 & 0x10);
-			SETLISTSTR(hWnd, IDC_SND86INTA, sndinterrupt);
-			setsnd86intpara(GetDlgItem(hWnd, IDC_SND86INTA), snd86);
-			SETLISTSTR(hWnd, IDC_SND86ID, sndid);
-			setsnd86idpara(GetDlgItem(hWnd, IDC_SND86ID), snd86);
+			dlgs_setcbitem(hWnd, IDC_SND86INTA, cpInt86, NELEMENTS(cpInt86));
+			setsnd86int(hWnd, IDC_SND86INTA, snd86);
+			dlgs_setcbitem(hWnd, IDC_SND86ID, cpID, NELEMENTS(cpID));
+			setsnd86id(hWnd, IDC_SND86ID, snd86);
 			SetDlgItemCheck(hWnd, IDC_SND86ROM, snd86 & 2);
 
 			sub = GetDlgItem(hWnd, IDC_SND86DIP);
@@ -582,31 +565,33 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 				case IDC_SND86IO:
 					set86jmp(hWnd, getsnd86io(hWnd, IDC_SND86IO), 0x01);
 					break;
+
 				case IDC_SND86INT:
 					set86jmp(hWnd,
 							(GetDlgItemCheck(hWnd, IDC_SND86INT))?0x10:0x00,
 																		0x10);
 					break;
+
 				case IDC_SND86INTA:
-					set86jmp(hWnd,
-						getsnd86int(GetDlgItem(hWnd, IDC_SND86INTA)), 0x0c);
+					set86jmp(hWnd, getsnd86int(hWnd, IDC_SND86INTA), 0x0c);
 					break;
+
 				case IDC_SND86ROM:
 					set86jmp(hWnd,
 							(GetDlgItemCheck(hWnd, IDC_SND86ROM))?0x02:0x00,
 																		0x02);
 					break;
+
 				case IDC_SND86ID:
-					set86jmp(hWnd,
-						getsnd86id(GetDlgItem(hWnd, IDC_SND86ID)), 0xe0);
+					set86jmp(hWnd, getsnd86id(hWnd, IDC_SND86ID), 0xe0);
 					break;
 
 				case IDC_SND86DEF:
 					snd86 = 0x7f;
-					setsnd86iopara(GetDlgItem(hWnd, IDC_SND86IO), snd86);
+					setsnd86io(hWnd, IDC_SND86IO, snd86);
 					SetDlgItemCheck(hWnd, IDC_SND86INT, TRUE);
-					setsnd86intpara(GetDlgItem(hWnd, IDC_SND86INTA), snd86);
-					setsnd86idpara(GetDlgItem(hWnd, IDC_SND86ID), snd86);
+					setsnd86int(hWnd, IDC_SND86INTA, snd86);
+					setsnd86id(hWnd, IDC_SND86ID, snd86);
 					SetDlgItemCheck(hWnd, IDC_SND86ROM, TRUE);
 					InvalidateRect(GetDlgItem(hWnd, IDC_SND86DIP), NULL, TRUE);
 					break;
@@ -649,17 +634,18 @@ static void setspbVRch(HWND hWnd) {
 	SetDlgItemCheck(hWnd, IDC_SPBVRR, spbvrc & 2);
 }
 
-static void spbcreate(HWND hWnd) {
-
+static void spbcreate(HWND hWnd)
+{
 	HWND	sub;
 
 	spb = np2cfg.spbopt;
-	SETnLISTSTR(hWnd, IDC_SPBIO, sndioport, 2);
-	setsnd26iopara(GetDlgItem(hWnd, IDC_SPBIO), spb);
-	SETLISTSTR(hWnd, IDC_SPBINT, sndinterrupt);
-	setsnd26intpara(GetDlgItem(hWnd, IDC_SPBINT), spb);
-	SETLISTSTR(hWnd, IDC_SPBROM, sndromaddr);
-	setsnd26rompara(GetDlgItem(hWnd, IDC_SPBROM), spb);
+
+	dlgs_setcbitem(hWnd, IDC_SPBIO, cpIO26, NELEMENTS(cpIO26));
+	setsnd26io(hWnd, IDC_SPBIO, spb);
+	dlgs_setcbitem(hWnd, IDC_SPBINT, cpInt26, NELEMENTS(cpInt26));
+	setsnd26int(hWnd, IDC_SPBINT, spb);
+	dlgs_setcbitem(hWnd, IDC_SPBROM, cpAddr, NELEMENTS(cpAddr));
+	setsnd26rom(hWnd, IDC_SPBROM, spb);
 	spbvrc = np2cfg.spb_vrc;								// ver0.30
 	setspbVRch(hWnd);
 	SendDlgItemMessage(hWnd, IDC_SPBVRLEVEL, TBM_SETRANGE, TRUE,
@@ -711,7 +697,7 @@ static void spbcmdjmp(HWND hWnd) {
 		}
 		if (spb != b) {
 			spb = b;
-			setsnd26intpara(GetDlgItem(hWnd, IDC_SPBINT), b);
+			setsnd26int(hWnd, IDC_SPBINT, b);
 			redraw = TRUE;
 		}
 	}
@@ -724,7 +710,7 @@ static void spbcmdjmp(HWND hWnd) {
 		if ((spb ^ b) & 0x10) {
 			spb &= ~0x10;
 			spb |= b;
-			setsnd26iopara(GetDlgItem(hWnd, IDC_SPBIO), b);
+			setsnd26io(hWnd, IDC_SPBIO, b);
 			redraw = TRUE;
 		}
 	}
@@ -733,7 +719,7 @@ static void spbcmdjmp(HWND hWnd) {
 		if ((spb ^ b) & 7) {
 			spb &= ~0x07;
 			spb |= b;
-			setsnd26rompara(GetDlgItem(hWnd, IDC_SPBROM), b);
+			setsnd26rom(hWnd, IDC_SPBROM, b);
 			redraw = TRUE;
 		}
 	}
@@ -796,9 +782,9 @@ static LRESULT CALLBACK SPBoptDlgProc(HWND hWnd, UINT msg,
 
 				case IDC_SPBDEF:
 					spb = 0xd1;
-					setsnd26iopara(GetDlgItem(hWnd, IDC_SPBIO), spb);
-					setsnd26intpara(GetDlgItem(hWnd, IDC_SPBINT), spb);
-					setsnd26rompara(GetDlgItem(hWnd, IDC_SPBROM), spb);
+					setsnd26io(hWnd, IDC_SPBIO, spb);
+					setsnd26int(hWnd, IDC_SPBINT, spb);
+					setsnd26rom(hWnd, IDC_SPBROM, spb);
 					spbvrc = 0;
 					setspbVRch(hWnd);
 					InvalidateRect(GetDlgItem(hWnd, IDC_SPBJMP), NULL, TRUE);
@@ -939,19 +925,20 @@ static LRESULT CALLBACK PAD1optDlgProc(HWND hWnd, UINT msg,
 
 // ----
 
-void dialog_sndopt(HWND hWnd) {
-
-	HINSTANCE		hinst;
+void dialog_sndopt(HWND hWnd)
+{
+	HINSTANCE		hInstance;
 	PROPSHEETPAGE	psp;
 	PROPSHEETHEADER	psh;
 	HPROPSHEETPAGE	hpsp[6];
+	TCHAR			szTitle[128];
 
-	hinst = GetWindowInst(hWnd);
+	hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
 	ZeroMemory(&psp, sizeof(psp));
 	psp.dwSize = sizeof(PROPSHEETPAGE);
 	psp.dwFlags = PSP_DEFAULT;
-	psp.hInstance = hinst;
+	psp.hInstance = hInstance;
 
 	psp.pszTemplate = MAKEINTRESOURCE(IDD_SNDMIX);
 	psp.pfnDlgProc = (DLGPROC)SndmixDlgProc;
@@ -977,15 +964,17 @@ void dialog_sndopt(HWND hWnd) {
 	psp.pfnDlgProc = (DLGPROC)PAD1optDlgProc;
 	hpsp[5] = CreatePropertySheetPage(&psp);
 
+	loadstringresource(IDS_SOUNDOPTION, szTitle, NELEMENTS(szTitle));
+
 	ZeroMemory(&psh, sizeof(psh));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_NOAPPLYNOW | PSH_USEHICON | PSH_USECALLBACK;
 	psh.hwndParent = hWnd;
-	psh.hInstance = hinst;
-	psh.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(IDI_ICON2));
+	psh.hInstance = hInstance;
+	psh.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	psh.nPages = 6;
 	psh.phpage = hpsp;
-	psh.pszCaption = str_sndopt;
+	psh.pszCaption = szTitle;
 	psh.pfnCallback = np2class_propetysheet;
 	PropertySheet(&psh);
 	InvalidateRect(hWnd, NULL, TRUE);
@@ -995,59 +984,84 @@ void dialog_sndopt(HWND hWnd) {
 // ----
 
 #if defined(SUPPORT_S98)
-static const OEMCHAR s98ui_file[] = OEMTEXT("NP2_%04d.S98");
-static const TCHAR s98ui_title[] = _T("Save as S98 log");
-static const TCHAR s98ui_ext[] = _T("s98");
-static const TCHAR s98ui_filter[] = _T("S98 log (*.s98)\0*.s98\0");
-static const FILESEL s98ui = {s98ui_title, s98ui_ext, s98ui_filter, 1};
 
-void dialog_s98(HWND hWnd) {
+static const FSPARAM fpS98 =
+{
+	MAKEINTRESOURCE(IDS_S98TITLE),
+	MAKEINTRESOURCE(IDS_S98EXT),
+	MAKEINTRESOURCE(IDS_S98FILTER),
+	1
+};
+static const TCHAR szS98File[] = TEXT("NP2_####.S98");
 
-	BOOL	check;
-	OEMCHAR	path[MAX_PATH];
+void dialog_s98(HWND hWnd)
+{
+	BOOL	bCheck;
+	TCHAR	szPath[MAX_PATH];
 
 	S98_close();
-	check = FALSE;
-	file_cpyname(path, bmpfilefolder, NELEMENTS(path));
-	file_cutname(path);
-	file_catname(path, s98ui_file, NELEMENTS(path));
-	if ((dlgs_selectwritenum(hWnd, &s98ui, path, NELEMENTS(path))) &&
-		(S98_open(path) == SUCCESS)) {
-		file_cpyname(bmpfilefolder, path, NELEMENTS(bmpfilefolder));
+	bCheck = FALSE;
+	file_cpyname(szPath, bmpfilefolder, NELEMENTS(szPath));
+	file_cutname(szPath);
+	file_catname(szPath, szS98File, NELEMENTS(szPath));
+	if ((dlgs_createfilenum(hWnd, &fpS98, szPath, NELEMENTS(szPath))) &&
+		(S98_open(szPath) == SUCCESS))
+	{
+		file_cpyname(bmpfilefolder, szPath, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
-		check = TRUE;
+		bCheck = TRUE;
 	}
-	xmenu_sets98logging(check);
+	xmenu_sets98logging(bCheck);
 }
-#endif
+#endif	// defined(SUPPORT_S98)
 
 
 // ----
 
 #if defined(SUPPORT_WAVEREC)
-static const OEMCHAR wrui_file[] = OEMTEXT("NP2_%04d.WAV");
-static const TCHAR wrui_title[] = _T("Save as Sound");
-static const TCHAR wrui_ext[] = _T("WAV");
-static const TCHAR wrui_filter[] = _T("Wave files (*.wav)\0*.wav\0");
-static const FILESEL wrui = {wrui_title, wrui_ext, wrui_filter, 1};
 
-void dialog_waverec(HWND hWnd) {
+static const FSPARAM fpWave =
+{
+	MAKEINTRESOURCE(IDS_WAVETITLE),
+	MAKEINTRESOURCE(IDS_WAVEEXT),
+	MAKEINTRESOURCE(IDS_WAVEFILTER),
+	1
+};
+static const TCHAR szWaveFile[] = TEXT("NP2_####.WAV");
 
-	UINT8	check;
-	OEMCHAR	path[MAX_PATH];
+void dialog_waverec(HWND hWnd)
+{
+#if defined(SUPPORT_RECVIDEO)
+	const bool bShiftDown = (::GetKeyState(VK_SHIFT) < 0);
+	recvideo_close();
+#endif	// defined(SUPPORT_RECVIDEO)
 
-	check = FALSE;
 	sound_recstop();
-	file_cpyname(path, bmpfilefolder, NELEMENTS(path));
-	file_cutname(path);
-	file_catname(path, wrui_file, NELEMENTS(path));
-	if ((dlgs_selectwritenum(hWnd, &wrui, path, NELEMENTS(path))) &&
-		(sound_recstart(path) == SUCCESS)) {
-		file_cpyname(bmpfilefolder, path, NELEMENTS(bmpfilefolder));
+
+	TCHAR szPath[MAX_PATH];
+	file_cpyname(szPath, bmpfilefolder, NELEMENTS(szPath));
+	file_cutname(szPath);
+	file_catname(szPath, szWaveFile, NELEMENTS(szPath));
+
+	UINT8 bCheck = FALSE;
+	if ((dlgs_createfilenum(hWnd, &fpWave, szPath, NELEMENTS(szPath))) &&
+		(sound_recstart(szPath) == SUCCESS))
+	{
+		file_cpyname(bmpfilefolder, szPath, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
-		check = TRUE;
+		bCheck = TRUE;
 	}
-	xmenu_setwaverec(check);
+
+#if defined(SUPPORT_RECVIDEO)
+	if (bShiftDown)
+	{
+		file_cutext(szPath);
+		file_catname(szPath, _T(".avi"), NELEMENTS(szPath));
+		recvideo_open(hWnd, szPath);
+	}
+#endif	// defined(SUPPORT_RECVIDEO)
+
+	xmenu_setwaverec(bCheck);
 }
-#endif
+#endif	// defined(SUPPORT_WAVEREC)
 

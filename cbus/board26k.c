@@ -10,8 +10,8 @@
 
 static void IOOUTCALL opn_o188(UINT port, REG8 dat) {
 
-	opn.addr = dat;
-	opn.data = dat;
+	opn.addr1l = dat;
+	opn.data1 = dat;
 	(void)port;
 }
 
@@ -19,8 +19,8 @@ static void IOOUTCALL opn_o18a(UINT port, REG8 dat) {
 
 	UINT	addr;
 
-	opn.data = dat;
-	addr = opn.addr;
+	opn.data1 = dat;
+	addr = opn.addr1l;
 	S98_put(NORMAL2608, addr, dat);
 	if (addr < 0x10) {
 		if (addr != 0x0e) {
@@ -59,7 +59,7 @@ static REG8 IOINPCALL opn_i18a(UINT port) {
 
 	UINT	addr;
 
-	addr = opn.addr;
+	addr = opn.addr1l;
 	if (addr == 0x0e) {
 		return(fmboard_getjoy(&psg1));
 	}
@@ -67,7 +67,7 @@ static REG8 IOINPCALL opn_i18a(UINT port) {
 		return(psggen_getreg(&psg1, addr));
 	}
 	(void)port;
-	return(opn.data);
+	return(opn.data1);
 }
 
 
@@ -80,12 +80,12 @@ static const IOINP opn_i[4] = {
 			opn_i188,	opn_i18a,	NULL,		NULL};
 
 
-void board26k_reset(void) {
+void board26k_reset(const NP2CFG *pConfig) {
 
 	opngen_setcfg(3, 0);
-	fmtimer_reset(np2cfg.snd26opt & 0xc0);
-	soundrom_loadex(np2cfg.snd26opt & 7, OEMTEXT("26"));
-	opn.base = (np2cfg.snd26opt & 0x10)?0x000:0x100;
+	fmtimer_reset(pConfig->snd26opt & 0xc0);
+	soundrom_loadex(pConfig->snd26opt & 7, OEMTEXT("26"));
+	opn.base = (pConfig->snd26opt & 0x10)?0x000:0x100;
 }
 
 void board26k_bind(void) {

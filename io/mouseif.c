@@ -30,11 +30,11 @@ void mouseif_sync(void) {
 
 static void calc_mousexy(void) {
 
-	UINT32	clock;
+	UINT32	clk;
 	SINT32	diff;
 
-	clock = CPU_CLOCK + CPU_BASECLOCK + CPU_REMCLOCK;
-	diff = clock - mouseif.lastc;
+	clk = CPU_CLOCK + CPU_BASECLOCK + CPU_REMCLOCK;
+	diff = clk - mouseif.lastc;
 	if (diff >= 2000) {
 		SINT32 dx;
 		SINT32 dy;
@@ -238,8 +238,8 @@ static REG8 IOINPCALL mouseif_i7fdd(UINT port) {
 	if (mode & uPD8255_PORTCL) {
 		ret &= 0xf0;
 		ret |= 0x08;
-		ret |= (np2cfg.dipsw[2] >> 5) & 0x04;
-		ret |= ((~np2cfg.dipsw[0]) >> 4) & 0x03;
+		ret |= (pccore.dipsw[2] >> 5) & 0x04;
+		ret |= ((~pccore.dipsw[0]) >> 4) & 0x03;
 	}
 	(void)port;
 	return(ret);
@@ -254,7 +254,7 @@ static void IOOUTCALL mouseif_obfdb(UINT port, REG8 dat) {
 
 // ---- I/F
 
-void mouseif_reset(void) {
+void mouseif_reset(const NP2CFG *pConfig) {
 
 	ZeroMemory(&mouseif, sizeof(mouseif));
 	mouseif.upd8255.porta = 0x00;
@@ -265,6 +265,8 @@ void mouseif_reset(void) {
 	mouseif.moveclock = pccore.realclock / 56400;
 	mouseif.latch_x = -1;
 	mouseif.latch_y = -1;
+
+	(void)pConfig;
 }
 
 void mouseif_bind(void) {

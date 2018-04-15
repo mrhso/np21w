@@ -93,7 +93,7 @@ void gdc_setanalogpal(int color, int rgb, REG8 value) {
 				event = palevent.event + palevent.events;
 				event->clock = nevent.item[NEVENT_FLAMES].clock -
 											(CPU_BASECLOCK - CPU_REMCLOCK);
-				event->color = (color * sizeof(RGB32)) + rgb;
+				event->color = (UINT16)((color * sizeof(RGB32)) + rgb);
 				event->value = (UINT8)value;
 				palevent.events++;
 			}
@@ -274,7 +274,7 @@ void gdc_work(int id) {
 				case CMD_START:
 				case CMD_SYNC_ON:
 					(*dispflag) |= GDCSCRN_ENABLE | GDCSCRN_ALLDRAW2;
-					screenupdate |= 2;
+					pcstat.screenupdate |= 2;
 					break;
 
 				case CMD_STOP_:
@@ -282,7 +282,7 @@ void gdc_work(int id) {
 				case CMD_SYNC_OFF:
 					(*dispflag) &= (~GDCSCRN_ENABLE);
 //					(*dispflag) |= GDCSCRN_ALLDRAW2;
-					screenupdate |= 2;
+					pcstat.screenupdate |= 2;
 					break;
 
 				case CMD_VECTE:
@@ -479,7 +479,7 @@ static void IOOUTCALL gdc_o68(UINT port, REG8 dat) {
 			gdc_restorekacmode();
 		}
 		else if (bit == 0x80) {
-			screenupdate |= 2;
+			pcstat.screenupdate |= 2;
 		}
 		gdcs.msw_accessable = gdc.mode1 & 0x40;
 	}
@@ -706,7 +706,7 @@ static void IOOUTCALL gdc_oa4(UINT port, REG8 dat) {
 
 	if ((gdcs.disp ^ dat) & 1) {
 		gdcs.disp = dat & 1;
-		screenupdate |= 2;
+		pcstat.screenupdate |= 2;
 	}
 	(void)port;
 }
@@ -1052,7 +1052,7 @@ void gdc_biosreset(void) {
 	UINT8	*pal;
 #endif
 
-	if (!(np2cfg.dipsw[0] & 0x01)) {
+	if (!(pccore.dipsw[0] & 0x01)) {
 		gdc.mode1 = 0x98;
 		gdc.m.para[GDC_CSRFORM + 0] = 0x0f;
 		gdc.m.para[GDC_CSRFORM + 1] = 0xc0;
@@ -1070,7 +1070,7 @@ void gdc_biosreset(void) {
 		CopyMemory(gdc.m.para + GDC_SYNC, defsyncm15, 8);
 		CopyMemory(gdc.s.para + GDC_SYNC, defsyncs15, 8);
 	}
-	if (np2cfg.dipsw[0] & 0x80) {
+	if (pccore.dipsw[0] & 0x80) {
 		gdc.s.para[GDC_SYNC] = 0x16;
 	}
 	gdc_vectreset(&gdc.m);
@@ -1126,25 +1126,26 @@ void gdc_biosreset(void) {
 	gdcs.textdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
 	gdcs.grphdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
 	gdcs.palchange = GDCSCRN_REDRAW;
-	screenupdate |= 2;
+	pcstat.screenupdate |= 2;
 }
 
-void gdc_reset(void) {
+void gdc_reset(const NP2CFG *pConfig) {
 
 	ZeroMemory(&gdc, sizeof(gdc));
 	ZeroMemory(&gdcs, sizeof(gdcs));
 
-#if defined(SUPPORT_PC9821)
-	gdc.display |= (1 << GDCDISP_ANALOG);
-#else
-	if (np2cfg.color16 & 1) {
+#if !defined(SUPPORT_PC9821)
+	if (pConfig->color16 & 1)
+#endif
+	{
 		gdc.display |= (1 << GDCDISP_ANALOG);
 	}
-#endif
-	if (!(np2cfg.dipsw[0] & 0x04)) {			// dipsw1-3 on
+	if (!(pccore.dipsw[0] & 0x04)) {			// dipsw1-3 on
 		gdc.display |= (1 << GDCDISP_PLAZMA2);
 	}
 	gdc_biosreset();
+
+	(void)pConfig;
 }
 
 void gdc_bind(void) {

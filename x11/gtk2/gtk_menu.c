@@ -1,7 +1,5 @@
-/*	$Id: gtk_menu.c,v 1.4 2005/03/05 15:01:03 monaka Exp $	*/
-
 /*
- * Copyright (c) 2004 NONAKA Kimihiro (aw9k-nnk@asahi-net.or.jp)
+ * Copyright (c) 2004-2013 NONAKA Kimihiro
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +58,9 @@
 #include "gtk2/gtk_menu.h"
 #include "gtk2/gtk_keyboard.h"
 
+#ifndef	NSTATSAVE
+#define	NSTATSAVE	10
+#endif
 
 /* normal */
 static void cb_bmpsave(GtkAction *action, gpointer user_data);
@@ -79,6 +80,10 @@ static void cb_reset(GtkAction *action, gpointer user_data);
 static void cb_sasiopen(GtkAction *action, gpointer user_data);
 static void cb_sasiremove(GtkAction *action, gpointer user_data);
 #endif
+#if defined(SUPPORT_STATSAVE)
+static void cb_statsave(GtkAction *action, gpointer user_data);
+static void cb_statload(GtkAction *action, gpointer user_data);
+#endif
 
 static void cb_dialog(GtkAction *action, gpointer user_data);
 static void cb_radio(GtkRadioAction *action, GtkRadioAction *current, gpointer user_data);
@@ -91,6 +96,7 @@ static GtkActionEntry menu_entries[] = {
 { "ScreenMenu",   NULL, "Screen",   NULL, NULL, NULL },
 { "DeviceMenu",   NULL, "Device",   NULL, NULL, NULL },
 { "OtherMenu",    NULL, "Other",    NULL, NULL, NULL },
+{ "StatMenu",     NULL, "Stat",     NULL, NULL, NULL },
 
 /* Submenu */
 { "Drive1Menu",   NULL, "Drive_1",   NULL, NULL, NULL },
@@ -108,6 +114,7 @@ static GtkActionEntry menu_entries[] = {
 { "SASI1Menu",    NULL, "SASI-_1",   NULL, NULL, NULL },
 { "SASI2Menu",    NULL, "SASI-_2",   NULL, NULL, NULL },
 #endif
+{ "ScrnSizeMenu", NULL, "Size",      NULL, NULL, NULL },
 { "SoundMenu",    NULL, "_Sound",    NULL, NULL, NULL },
 
 /* MenuItem */
@@ -146,6 +153,28 @@ static GtkActionEntry menu_entries[] = {
 { "serialopt",   NULL, "Se_rial option...", NULL, NULL, G_CALLBACK(cb_dialog) },
 { "soundopt",    NULL, "So_und option...",  NULL, NULL, G_CALLBACK(cb_dialog) },
 { "reset",       NULL, "_Reset",            NULL, NULL, G_CALLBACK(cb_reset) },
+#if defined(SUPPORT_STATSAVE)
+{ "stat00save",  NULL, "Save 0",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat01save",  NULL, "Save 1",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat02save",  NULL, "Save 2",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat03save",  NULL, "Save 3",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat04save",  NULL, "Save 4",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat05save",  NULL, "Save 5",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat06save",  NULL, "Save 6",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat07save",  NULL, "Save 7",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat08save",  NULL, "Save 8",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat09save",  NULL, "Save 9",            NULL, NULL, G_CALLBACK(cb_statsave), },
+{ "stat00load",  NULL, "Load 0",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat01load",  NULL, "Load 1",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat02load",  NULL, "Load 2",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat03load",  NULL, "Load 3",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat04load",  NULL, "Load 4",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat05load",  NULL, "Load 5",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat06load",  NULL, "Load 6",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat07load",  NULL, "Load 7",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat08load",  NULL, "Load 8",            NULL, NULL, G_CALLBACK(cb_statload), },
+{ "stat09load",  NULL, "Load 9",            NULL, NULL, G_CALLBACK(cb_statload), },
+#endif
 };
 static const guint n_menu_entries = G_N_ELEMENTS(menu_entries);
 
@@ -208,10 +237,18 @@ static GtkRadioActionEntry joykey_entries[] = {
 };
 static const guint n_joykey_entries = G_N_ELEMENTS(joykey_entries);
 
+static GtkRadioActionEntry f11key_entries[] = {
+{ "f11none", NULL, "F11 = None",        NULL, NULL, 0 },
+{ "f11menu", NULL, "F11 = Menu toggle", NULL, NULL, 1 },
+{ "f11fscr", NULL, "F11 = Full Screen", NULL, NULL, 2 },
+};
+static const guint n_f11key_entries = G_N_ELEMENTS(f11key_entries);
+
 static GtkRadioActionEntry f12key_entries[] = {
 { "f12mouse", NULL, "F12 = _Mouse",     NULL, NULL, 0 },
 { "f12copy",  NULL, "F12 = Co_py",      NULL, NULL, 1 },
 { "f12stop",  NULL, "F12 = S_top",      NULL, NULL, 2 },
+{ "f12help",  NULL, "F12 = _Help",      NULL, NULL, 7 },
 { "f12equal", NULL, "F12 = tenkey [=]", NULL, NULL, 4 },
 { "f12comma", NULL, "F12 = tenkey [,]", NULL, NULL, 3 },
 };
@@ -263,13 +300,25 @@ static GtkRadioActionEntry rotate_entries[] = {
 };
 static const guint n_rotate_entries = G_N_ELEMENTS(rotate_entries);
 
+static GtkRadioActionEntry screensize_entries[] = {
+{ "320x200",  NULL, "320x200",  NULL, NULL, 4 },
+{ "480x300",  NULL, "480x300",  NULL, NULL, 6 },
+{ "640x400",  NULL, "640x400",  NULL, NULL, 8 },
+{ "800x500",  NULL, "800x500",  NULL, NULL, 10 },
+{ "960x600",  NULL, "960x600",  NULL, NULL, 12 },
+{ "1280x800", NULL, "1280x800", NULL, NULL, 16 },
+};
+static const guint n_screensize_entries = G_N_ELEMENTS(screensize_entries);
+
 static void cb_beepvol(gint idx);
+static void cb_f11key(gint idx);
 static void cb_f12key(gint idx);
 static void cb_framerate(gint idx);
 static void cb_joykey(gint idx);
 static void cb_memory(gint idx);
 static void cb_rotate(gint idx);
 static void cb_screenmode(gint idx);
+static void cb_screensize(gint idx);
 static void cb_soundboard(gint idx);
 
 static const struct {
@@ -278,12 +327,14 @@ static const struct {
 	void			(*func)(gint idx);
 } radiomenu_entries[] = {
 	{ beepvol_entries, G_N_ELEMENTS(beepvol_entries), cb_beepvol },
+	{ f11key_entries, G_N_ELEMENTS(f11key_entries), cb_f11key },
 	{ f12key_entries, G_N_ELEMENTS(f12key_entries), cb_f12key },
 	{ framerate_entries, G_N_ELEMENTS(framerate_entries), cb_framerate },
 	{ joykey_entries, G_N_ELEMENTS(joykey_entries), cb_joykey },
 	{ memory_entries, G_N_ELEMENTS(memory_entries), cb_memory },
 	{ rotate_entries, G_N_ELEMENTS(rotate_entries), cb_rotate },
 	{ screenmode_entries, G_N_ELEMENTS(screenmode_entries), cb_screenmode },
+	{ screensize_entries, G_N_ELEMENTS(screensize_entries), cb_screensize },
 	{ soundboard_entries, G_N_ELEMENTS(soundboard_entries), cb_soundboard },
 };
 static const guint n_radiomenu_entries = G_N_ELEMENTS(radiomenu_entries);
@@ -298,10 +349,13 @@ static const gchar *ui_info =
 "   <menuitem action='configure'/>\n"
 "   <menuitem action='newdisk'/>\n"
 "   <menuitem action='font'/>\n"
-"   <menuitem action='configure'/>\n"
 "   <separator/>\n"
 "   <menuitem action='exit'/>\n"
 "  </menu>\n"
+#if defined(SUPPORT_STATSAVE)
+"  <menu name='Stat' action='StatMenu'>\n"
+"  </menu>\n"
+#endif
 "  <menu name='FDD' action='FDDMenu'>\n"
 "  </menu>\n"
 "  <menu name='HardDisk' action='HardDiskMenu'>\n"
@@ -340,11 +394,22 @@ static const gchar *ui_info =
 "   <menuitem action='dispvsync'/>\n"
 "   <menuitem action='realpalettes'/>\n"
 "   <menuitem action='nowait'/>\n"
-"   <menuitem name='framerate' action='autoframe'/>\n"
+"   <menuitem action='autoframe'/>\n"
 "   <menuitem action='fullframe'/>\n"
 "   <menuitem action='1/2 frame'/>\n"
 "   <menuitem action='1/3 frame'/>\n"
 "   <menuitem action='1/4 frame'/>\n"
+#if defined(SUPPORT_SCREENSIZE)
+"   <separator/>\n"
+"   <menu name='Size' action='ScrnSizeMenu'>\n"
+"    <menuitem action='320x200'/>\n"
+"    <menuitem action='480x300'/>\n"
+"    <menuitem action='640x400'/>\n"
+"    <menuitem action='800x500'/>\n"
+"    <menuitem action='960x600'/>\n"
+"    <menuitem action='1280x800'/>\n"
+"   </menu>\n"
+#endif
 "   <separator/>\n"
 "   <menuitem action='screenopt'/>\n"
 "  </menu>\n"
@@ -358,9 +423,14 @@ static const gchar *ui_info =
 "    <menuitem action='xctrlkey'/>\n"
 "    <menuitem action='xgrphkey'/>\n"
 "    <separator/>\n"
+"    <menuitem action='f11none'/>\n"
+"    <menuitem action='f11menu'/>\n"
+"    <menuitem action='f11fscr'/>\n"
+"    <separator/>\n"
 "    <menuitem action='f12mouse'/>\n"
 "    <menuitem action='f12copy'/>\n"
 "    <menuitem action='f12stop'/>\n"
+"    <menuitem action='f12help'/>\n"
 "    <menuitem action='f12equal'/>\n"
 "    <menuitem action='f12comma'/>\n"
 "   </menu>\n"
@@ -474,6 +544,8 @@ xmenu_select_item_by_index(MENU_HDL hdl, GtkRadioActionEntry *entry, guint nentr
 
 #define	xmenu_select_beepvol(v) \
 	xmenu_select_item_by_index(NULL, beepvol_entries, n_beepvol_entries, v);
+#define	xmenu_select_f11key(v) \
+	xmenu_select_item_by_index(NULL, f11key_entries, n_f11key_entries, v);
 #define	xmenu_select_f12key(v) \
 	xmenu_select_item_by_index(NULL, f12key_entries, n_f12key_entries, v);
 #define	xmenu_select_framerate(v) \
@@ -486,6 +558,8 @@ xmenu_select_item_by_index(MENU_HDL hdl, GtkRadioActionEntry *entry, guint nentr
 	xmenu_select_item_by_index(NULL, rotate_entries, n_rotate_entries, v);
 #define	xmenu_select_screenmode(v) \
 	xmenu_select_item_by_index(NULL, screenmode_entries, n_screenmode_entries, v);
+#define	xmenu_select_screensize(v) \
+	xmenu_select_item_by_index(NULL, screensize_entries, n_screensize_entries, v);
 #define	xmenu_select_soundboard(v) \
 	xmenu_select_item_by_index(NULL, soundboard_entries, n_soundboard_entries, v);
 
@@ -505,9 +579,6 @@ cb_bmpsave(GtkAction *action, gpointer user_data)
 	SCRNBMP bmp = NULL;
 	FILEH fh;
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	uninstall_idle_process();
 
 	bmp = scrnbmp();
@@ -522,11 +593,18 @@ cb_bmpsave(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
+#if GTK_MAJOR_VERSION > 2 || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION >= 8)
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog),
+	    TRUE);
+#endif
+	if (strlen(bmpfilefolder) == 0) {
+		g_strlcpy(bmpfilefolder, modulefile, sizeof(bmpfilefolder));
+		file_cutname(bmpfilefolder);
+	}
 	utf8 = g_filename_to_utf8(bmpfilefolder, -1, NULL, NULL, NULL);
 	if (utf8) {
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), utf8);
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
 		g_free(utf8);
 	}
 
@@ -551,6 +629,12 @@ cb_bmpsave(GtkAction *action, gpointer user_data)
 	if (utf8) {
 		path = g_filename_from_utf8(utf8, -1, NULL, NULL, NULL);
 		if (path) {
+			gchar *ext = file_getext(path);
+			if (strlen(ext) != 3 || file_cmpname(ext, "bmp")) {
+				gchar *tmp = g_strjoin(".", path, "bmp", NULL);
+				g_free(path);
+				path = tmp;
+			}
 			file_cpyname(bmpfilefolder, path, sizeof(bmpfilefolder));
 			sysmng_update(SYS_UPDATEOSCFG);
 			fh = file_create(path);
@@ -579,9 +663,6 @@ cb_change_font(GtkAction *action, gpointer user_data)
 	gchar *utf8, *path;
 	struct stat sb;
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	uninstall_idle_process();
 
 	dialog = gtk_file_chooser_dialog_new("Open a font file",
@@ -592,8 +673,7 @@ cb_change_font(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
 	utf8 = g_filename_to_utf8(np2cfg.fontfile, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
@@ -645,8 +725,6 @@ cb_diskeject(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	guint drive;
 
-	UNUSED(user_data);
-
 	/* name = "disk?eject" */
 	if ((strlen(name) >= 5) && (g_ascii_isdigit(name[4]))) {
 		drive = g_ascii_digit_value(name[4]) - 1;
@@ -667,8 +745,6 @@ cb_diskopen(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	guint drive;
 
-	UNUSED(user_data);
-
 	if ((strlen(name) < 5) || (!g_ascii_isdigit(name[4])))
 		return;
 	drive = g_ascii_digit_value(name[4]) - 1;
@@ -683,8 +759,7 @@ cb_diskopen(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
 	utf8 = g_filename_to_utf8(fddfolder, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
@@ -710,6 +785,7 @@ cb_diskopen(GtkAction *action, gpointer user_data)
 		gtk_file_filter_add_pattern(filter, "*.2[hH][dD]");
 		gtk_file_filter_add_pattern(filter, "*.[fF][dD][iI]");
 		gtk_file_filter_add_pattern(filter, "*.[fF][sS]");
+		gtk_file_filter_add_pattern(filter, "*.[fF][lL][pP]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
 	filter = gtk_file_filter_new();
@@ -726,6 +802,7 @@ cb_diskopen(GtkAction *action, gpointer user_data)
 		gtk_file_filter_add_pattern(filter, "*.2[hH][dD]");
 		gtk_file_filter_add_pattern(filter, "*.[fF][dD][iI]");
 		gtk_file_filter_add_pattern(filter, "*.[fF][sS]");
+		gtk_file_filter_add_pattern(filter, "*.[fF][lL][pP]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -770,8 +847,6 @@ cb_ataopen(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	guint channel, drive;
 
-	UNUSED(user_data);
-
 	/* "ata??open" */
 	if ((strlen(name) < 5)
 	 || (!g_ascii_isdigit(name[3]))
@@ -794,8 +869,7 @@ cb_ataopen(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
 	utf8 = g_filename_to_utf8(hddfolder, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
@@ -811,6 +885,8 @@ cb_ataopen(GtkAction *action, gpointer user_data)
 	filter = gtk_file_filter_new();
 	if (filter) {
 		gtk_file_filter_set_name(filter, "IDE disk image files");
+		gtk_file_filter_add_pattern(filter, "*.[tT][hH][dD]");
+		gtk_file_filter_add_pattern(filter, "*.[hH][dD][iI]");
 		gtk_file_filter_add_pattern(filter, "*.[nN][hH][dD]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
@@ -845,8 +921,6 @@ cb_ataremove(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(GTK_ACTION(action));
 	guint channel, drive;
 
-	UNUSED(user_data);
-
 	/* "ata??open" */
 	if ((strlen(name) < 5)
 	 || (!g_ascii_isdigit(name[3]))
@@ -871,9 +945,6 @@ cb_atapiopen(GtkAction *action, gpointer user_data)
 	gchar *utf8, *path;
 	struct stat sb;
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	uninstall_idle_process();
 
 	dialog = gtk_file_chooser_dialog_new("Open a ATAPI CD-ROM image",
@@ -884,8 +955,7 @@ cb_atapiopen(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
 	utf8 = g_filename_to_utf8(hddfolder, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
@@ -939,9 +1009,6 @@ static void
 cb_atapiremove(GtkAction *action, gpointer user_data)
 {
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	sxsi_devclose(0x02);
 }
 #endif	/* SUPPORT_IDEIO */
@@ -949,9 +1016,6 @@ cb_atapiremove(GtkAction *action, gpointer user_data)
 static void
 cb_midipanic(GtkAction *action, gpointer user_data)
 {
-
-	UNUSED(action);
-	UNUSED(user_data);
 
 	rs232c_midipanic();
 	mpu98ii_midipanic();
@@ -981,9 +1045,6 @@ cb_newdisk(GtkAction *action, gpointer user_data)
 	int kind;
 	int i;
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	uninstall_idle_process();
 
 	dialog = gtk_file_chooser_dialog_new("Create new disk image file",
@@ -994,8 +1055,15 @@ cb_newdisk(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
+#if GTK_MAJOR_VERSION > 2 || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION >= 8)
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog),
+	    TRUE);
+#endif
+	if (strlen(fddfolder) == 0) {
+		g_strlcpy(fddfolder, modulefile, sizeof(fddfolder));
+		file_cutname(fddfolder);
+	}
 	utf8 = g_filename_to_utf8(fddfolder, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), utf8);
@@ -1009,7 +1077,7 @@ cb_newdisk(GtkAction *action, gpointer user_data)
 
 	filter[0] = gtk_file_filter_new();
 	if (filter[0]) {
-		gtk_file_filter_set_name(filter[0], "D88 floppy disk image");
+		gtk_file_filter_set_name(filter[0], "D88 floppy disk image (*.d88,*.d98,*.88d,*.98d)");
 		gtk_file_filter_add_pattern(filter[0], "*.[dD]88");
 		gtk_file_filter_add_pattern(filter[0], "*.88[dD]");
 		gtk_file_filter_add_pattern(filter[0], "*.[dD]98");
@@ -1018,29 +1086,26 @@ cb_newdisk(GtkAction *action, gpointer user_data)
 	}
 	filter[1] = gtk_file_filter_new();
 	if (filter[1]) {
-		gtk_file_filter_set_name(filter[1], "Anex86 hard disk image files");
+		gtk_file_filter_set_name(filter[1], "Anex86 hard disk image (*.hdi)");
 		gtk_file_filter_add_pattern(filter[1], "*.[hH][dD][iI]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter[1]);
 	}
 	filter[2] = gtk_file_filter_new();
 	if (filter[2]) {
-		gtk_file_filter_set_name(filter[2], "T98 hard disk image files");
+		gtk_file_filter_set_name(filter[2], "T98 hard disk image (*.thd)");
 		gtk_file_filter_add_pattern(filter[2], "*.[tT][hH][dD]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter[2]);
 	}
 	filter[3] = gtk_file_filter_new();
 	if (filter[3]) {
-		gtk_file_filter_set_name(filter[3], "T98-Next hard disk image files");
+		gtk_file_filter_set_name(filter[3], "T98-Next hard disk image (*.nhd)");
 		gtk_file_filter_add_pattern(filter[3], "*.[nN][hH][dD]");
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter[3]);
 	}
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter[0]);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_OK) {
-		gtk_widget_destroy(dialog);
-		install_idle_process();
-		return;
-	}
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_OK)
+		goto end;
 
 	utf8 = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 	if (utf8 == NULL)
@@ -1064,7 +1129,7 @@ cb_newdisk(GtkAction *action, gpointer user_data)
 		for (i = 0; i < NELEMENTS(filter); i++) {
 			if (f == filter[i]) {
 				kind = i;
-				tmp = g_strjoin(".", path, extname[i]);
+				tmp = g_strjoin(".", path, extname[i], NULL);
 				if (tmp) {
 					g_free(path);
 					path = tmp;
@@ -1106,9 +1171,6 @@ static void
 cb_reset(GtkAction *action, gpointer user_data)
 {
 
-	UNUSED(action);
-	UNUSED(user_data);
-
 	pccore_cfgupdate();
 	pccore_reset();
 }
@@ -1124,8 +1186,6 @@ cb_sasiopen(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	guint drive;
 
-	UNUSED(user_data);
-
 	if ((strlen(name) < 5) || (!g_ascii_isdigit(name[4])))
 		return;
 	drive = g_ascii_digit_value(name[4]) - 1;
@@ -1140,8 +1200,7 @@ cb_sasiopen(GtkAction *action, gpointer user_data)
 	if (dialog == NULL)
 		goto end;
 
-	g_object_set(G_OBJECT(dialog), "show-hidden", TRUE, NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), TRUE);
 	utf8 = g_filename_to_utf8(hddfolder, -1, NULL, NULL, NULL);
 	if (utf8) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), utf8);
@@ -1193,8 +1252,6 @@ cb_sasiremove(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(GTK_ACTION(action));
 	guint drive;
 
-	UNUSED(user_data);
-
 	/* name = "sasi?eject" */
 	if ((strlen(name) >= 5) && (g_ascii_isdigit(name[4]))) {
 		drive = g_ascii_digit_value(name[4]) - 1;
@@ -1205,12 +1262,48 @@ cb_sasiremove(GtkAction *action, gpointer user_data)
 }
 #endif	/* !SUPPORT_IDEIO */
 
+#if defined(SUPPORT_STATSAVE)
+static void
+cb_statsave(GtkAction *action, gpointer user_data)
+{
+	const gchar *name = gtk_action_get_name(GTK_ACTION(action));
+	char ext[4];
+	guint n;
+
+	/* name = "stat??save" */
+	if ((strlen(name) >= 6)
+	 && (g_ascii_isdigit(name[4]))
+	 && (g_ascii_isdigit(name[5]))) {
+		n = g_ascii_digit_value(name[4]) * 10;
+		n += g_ascii_digit_value(name[5]);
+		g_snprintf(ext, sizeof(ext), np2flagext, n);
+		flagsave(ext);
+	}
+}
+
+static void
+cb_statload(GtkAction *action, gpointer user_data)
+{
+	const gchar *name = gtk_action_get_name(GTK_ACTION(action));
+	char ext[4];
+	guint n;
+
+	/* name = "stat??load" */
+	if ((strlen(name) >= 6)
+	 && (g_ascii_isdigit(name[4]))
+	 && (g_ascii_isdigit(name[5]))) {
+		n = g_ascii_digit_value(name[4]) * 10;
+		n += g_ascii_digit_value(name[5]);
+		g_snprintf(ext, sizeof(ext), np2flagext, n);
+		flagload(ext, "Status Load", TRUE);
+	}
+}
+#endif
+
 static void
 cb_dialog(GtkAction *action, gpointer user_data)
 {
 	const gchar *name = gtk_action_get_name(action);
-
-	UNUSED(user_data);
 
 	if (g_ascii_strcasecmp(name, "configure") == 0) {
 		create_configure_dialog();
@@ -1238,8 +1331,6 @@ cb_clockdisp(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2oscfg.DISPCLK & 1) ^ (b ? 1 : 0);
 	if (f) {
 		np2oscfg.DISPCLK ^= 1;
@@ -1255,8 +1346,6 @@ cb_dispvsync(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.DISPSYNC ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2cfg.DISPSYNC = !np2cfg.DISPSYNC;
@@ -1269,8 +1358,6 @@ cb_framedisp(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2oscfg.DISPCLK & 2) ^ (b ? 2 : 0);
 	if (f) {
@@ -1287,8 +1374,6 @@ cb_jastsound(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2oscfg.jastsnd ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2oscfg.jastsnd = !np2oscfg.jastsnd;
@@ -1301,8 +1386,6 @@ cb_joyrapid(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2cfg.BTN_RAPID ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
@@ -1317,8 +1400,6 @@ cb_joyreverse(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.BTN_MODE ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2cfg.BTN_MODE = !np2cfg.BTN_MODE;
@@ -1331,8 +1412,6 @@ cb_keydisplay(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2oscfg.keydisp ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
@@ -1352,8 +1431,6 @@ cb_mousemode(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2oscfg.MOUSE_SW ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		mouse_running(MOUSE_XOR);
@@ -1368,8 +1445,6 @@ cb_mouserapid(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.MOUSERAPID ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2cfg.MOUSERAPID = !np2cfg.MOUSERAPID;
@@ -1383,8 +1458,6 @@ cb_nowait(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2oscfg.NOWAIT ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2oscfg.NOWAIT = !np2oscfg.NOWAIT;
@@ -1397,8 +1470,6 @@ cb_realpalettes(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2cfg.RASTER ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
@@ -1414,8 +1485,6 @@ cb_s98logging(GtkToggleAction *action, gpointer user_data)
 	char work2[64];
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (s98logging ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
@@ -1438,8 +1507,6 @@ cb_seeksound(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.MOTOR ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2cfg.MOTOR = !np2cfg.MOTOR;
@@ -1452,8 +1519,6 @@ cb_softkeyboard(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2oscfg.softkbd ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
@@ -1473,8 +1538,6 @@ cb_toolwindow(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2oscfg.toolwin ? 1 : 0) ^ (b ? 1 : 0);
 	if (f) {
 		np2oscfg.toolwin = !np2oscfg.toolwin;
@@ -1493,8 +1556,6 @@ cb_xctrlkey(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.XSHIFT & 2) ^ (b ? 2 : 0);
 	if (f) {
 		np2cfg.XSHIFT ^= 2;
@@ -1509,8 +1570,6 @@ cb_xgrphkey(GtkToggleAction *action, gpointer user_data)
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
 
-	UNUSED(user_data);
-
 	f = (np2cfg.XSHIFT & 4) ^ (b ? 4 : 0);
 	if (f) {
 		np2cfg.XSHIFT ^= 4;
@@ -1524,8 +1583,6 @@ cb_xshiftkey(GtkToggleAction *action, gpointer user_data)
 {
 	gboolean b = gtk_toggle_action_get_active(action);
 	gboolean f;
-
-	UNUSED(user_data);
 
 	f = (np2cfg.XSHIFT & 1) ^ (b ? 1 : 0);
 	if (f) {
@@ -1553,6 +1610,22 @@ cb_beepvol(gint idx)
 		np2cfg.BEEP_VOL = value;
 		beep_setvol(value);
 		sysmng_update(SYS_UPDATECFG);
+	}
+}
+
+static void
+cb_f11key(gint idx)
+{
+	guint value;
+
+	if (idx >= 0) {
+		value = f11key_entries[idx].value;
+	} else {
+		value = np2oscfg_default.F11KEY;
+	}
+	if (np2oscfg.F11KEY != value) {
+		np2oscfg.F11KEY = value;
+		sysmng_update(SYS_UPDATEOSCFG);
 	}
 }
 
@@ -1649,6 +1722,19 @@ cb_screenmode(gint idx)
 }
 
 static void
+cb_screensize(gint idx)
+{
+	guint value;
+
+	if (idx >= 0) {
+		value = screensize_entries[idx].value;
+	} else {
+		value = 0;
+	}
+	scrnmng_setmultiple(value);
+}
+
+static void
 cb_soundboard(gint idx)
 {
 	guint value;
@@ -1667,11 +1753,9 @@ cb_soundboard(gint idx)
 static void
 cb_radio(GtkRadioAction *action, GtkRadioAction *current, gpointer user_data)
 {
-	guint value = (guint)gtk_radio_action_get_current_value(action);
+	gint value = gtk_radio_action_get_current_value(action);
 	guint menu_idx = (guint)GPOINTER_TO_INT(user_data);
 	gint i;
-
-	UNUSED(current);	/* emitted item */
 
 	if (menu_idx < n_radiomenu_entries) {
 		for (i = 0; i < radiomenu_entries[menu_idx].count; i++) {
@@ -1691,10 +1775,107 @@ cb_radio(GtkRadioAction *action, GtkRadioAction *current, gpointer user_data)
 /*
  * create menubar
  */
+static GtkWidget *menubar;
+static guint menubar_timerid;
+
+#define	EVENT_MASK	(GDK_ENTER_NOTIFY_MASK|GDK_LEAVE_NOTIFY_MASK)
+
+static gboolean
+menubar_timeout(gpointer p)
+{
+
+	if (menubar_timerid) {
+		g_source_remove(menubar_timerid);
+		menubar_timerid = 0;
+	}
+
+	if (scrnmode & SCRNMODE_FULLSCREEN) {
+		xmenu_hide();
+	}
+
+	return TRUE;
+}
+
+/*
+ - Signal: gboolean GtkWidget::enter_notify_event (GtkWidget *widget,
+          GdkEventCrossing *event, gpointer user_data)
+*/
+static gboolean
+enter_notify_evhandler(GtkWidget *w, GdkEventCrossing *ev, gpointer p)
+{
+
+	if (menubar_timerid) {
+		g_source_remove(menubar_timerid);
+		menubar_timerid = 0;
+	}
+
+	return TRUE;
+}
+
+/*
+ - Signal: gboolean GtkWidget::leave_notify_event (GtkWidget *widget,
+          GdkEventCrossing *event, gpointer user_data)
+*/
+static gboolean
+leave_notify_evhandler(GtkWidget *w, GdkEventCrossing *ev, gpointer p)
+{
+
+	if (menubar_timerid) {
+		g_source_remove(menubar_timerid);
+		menubar_timerid = 0;
+	}
+
+	if (scrnmode & SCRNMODE_FULLSCREEN) {
+		menubar_timerid = g_timeout_add(1000, menubar_timeout, NULL);
+	}
+
+	return TRUE;
+}
+
+#if defined(SUPPORT_STATSAVE)
+static void
+create_menu_statsave(GtkUIManager *ui_manager, int num)
+{
+	char *name, *action;
+	guint id;
+	int i;
+
+	if (num <= 0)
+		return;
+
+	/* Save %d */
+	for (i = 0; i < num; i++) {
+		id = gtk_ui_manager_new_merge_id(ui_manager);
+		name = g_strdup_printf("Save %d", i);
+		action = g_strdup_printf("stat%02dsave", i);
+		gtk_ui_manager_add_ui(ui_manager, id, "/MainMenu/Stat",
+		    name, action, GTK_UI_MANAGER_MENUITEM, FALSE);
+		g_free(action);
+		g_free(name);
+	}
+
+	/* separator */
+	id = gtk_ui_manager_new_merge_id(ui_manager);
+	gtk_ui_manager_add_ui(ui_manager, id, "/MainMenu/Stat",
+	    "", "", GTK_UI_MANAGER_SEPARATOR, FALSE);
+
+	/* Load %d */
+	for (i = 0; i < num; i++) {
+		id = gtk_ui_manager_new_merge_id(ui_manager);
+		name = g_strdup_printf("Load %d", i);
+		action = g_strdup_printf("stat%02dload", i);
+		gtk_ui_manager_add_ui(ui_manager, id, "/MainMenu/Stat",
+		    name, action, GTK_UI_MANAGER_MENUITEM, FALSE);
+		g_free(action);
+		g_free(name);
+	}
+}
+#endif
+
 static void
 equip_fddrive(GtkUIManager *ui_manager, guint no)
 {
-	char path[32], name[32], action[32];
+	char *path, *name, *action;
 	guint id;
 
 	if (no >= 4)
@@ -1702,29 +1883,37 @@ equip_fddrive(GtkUIManager *ui_manager, guint no)
 	no++;
 
 	id = gtk_ui_manager_new_merge_id(ui_manager);
-	g_snprintf(name, sizeof(name), "Drive%d", no);
-	g_snprintf(action, sizeof(action), "Drive%dMenu", no);
+	name = g_strdup_printf("Drive%d", no);
+	action = g_strdup_printf("Drive%dMenu", no);
 	gtk_ui_manager_add_ui(ui_manager, id,
 	    "/MainMenu/FDD", name, action, GTK_UI_MANAGER_MENU, FALSE);
+	g_free(action);
+	g_free(name);
 
-	g_snprintf(path, sizeof(path), "/MainMenu/FDD/Drive%d", no);
-	id = gtk_ui_manager_new_merge_id(ui_manager);
-	g_snprintf(name, sizeof(name), "Drive%dOpen", no);
-	g_snprintf(action, sizeof(action), "disk%dopen", no);
-	gtk_ui_manager_add_ui(ui_manager, id,
-	    path, name, action, GTK_UI_MANAGER_MENUITEM, FALSE);
+	path = g_strdup_printf("/MainMenu/FDD/Drive%d", no);
 
 	id = gtk_ui_manager_new_merge_id(ui_manager);
-	g_snprintf(name, sizeof(name), "Drive%dEject", no);
-	g_snprintf(action, sizeof(action), "disk%deject", no);
+	name = g_strdup_printf("Drive%dOpen", no);
+	action = g_strdup_printf("disk%dopen", no);
 	gtk_ui_manager_add_ui(ui_manager, id,
 	    path, name, action, GTK_UI_MANAGER_MENUITEM, FALSE);
+	g_free(action);
+	g_free(name);
+
+	id = gtk_ui_manager_new_merge_id(ui_manager);
+	name = g_strdup_printf("Drive%dEject", no);
+	action = g_strdup_printf("disk%deject", no);
+	gtk_ui_manager_add_ui(ui_manager, id,
+	    path, name, action, GTK_UI_MANAGER_MENUITEM, FALSE);
+	g_free(action);
+	g_free(name);
+
+	g_free(path);
 }
 
 GtkWidget *
 create_menu(void)
 {
-	GtkWidget *menubar;
 	GError *err = NULL;
 	gint rv;
 	guint i;
@@ -1755,6 +1944,19 @@ create_menu(void)
 		return NULL;
 	}
 
+#if defined(SUPPORT_STATSAVE)
+	if (np2oscfg.statsave) {
+		create_menu_statsave(menu_hdl.ui_manager, NSTATSAVE);
+	}
+#endif
+	if (np2cfg.fddequip) {
+		for (i = 0; i < 4; i++) {
+			if (np2cfg.fddequip & (1 << i)) {
+				equip_fddrive(menu_hdl.ui_manager, i);
+			}
+		}
+	}
+
 	xmenu_toggle_item(NULL, "dispvsync", np2cfg.DISPSYNC);
 	xmenu_toggle_item(NULL, "joyrapid", np2cfg.BTN_RAPID);
 	xmenu_toggle_item(NULL, "joyreverse", np2cfg.BTN_MODE);
@@ -1775,22 +1977,61 @@ create_menu(void)
 	xmenu_toggle_item(NULL, "toolwindow", np2oscfg.toolwin);
 
 	xmenu_select_beepvol(np2cfg.BEEP_VOL);
+	xmenu_select_f11key(np2oscfg.F11KEY);
 	xmenu_select_f12key(np2oscfg.F12KEY);
 	xmenu_select_framerate(np2oscfg.DRAW_SKIP);
 	xmenu_select_joykey(np2cfg.KEY_MODE);
 	xmenu_select_memory(np2cfg.EXTMEM);
 	xmenu_select_rotate(scrnmode & SCRNMODE_ROTATEMASK);
 	xmenu_select_screenmode(scrnmode & SCRNMODE_FULLSCREEN);
+	xmenu_select_screensize(SCREEN_DEFMUL);
 	xmenu_select_soundboard(np2cfg.SOUND_SW);
 
-	if (np2cfg.fddequip) {
-		for (i = 0; i < 4; i++) {
-			if (np2cfg.fddequip & (1 << i)) {
-				equip_fddrive(menu_hdl.ui_manager, i);
-			}
-		}
-	}
-
 	menubar = gtk_ui_manager_get_widget(menu_hdl.ui_manager, "/MainMenu");
+
+	gtk_widget_add_events(menubar, EVENT_MASK);
+	g_signal_connect(GTK_OBJECT(menubar), "enter_notify_event",
+	            G_CALLBACK(enter_notify_evhandler), NULL);
+	g_signal_connect(GTK_OBJECT(menubar), "leave_notify_event",
+	            G_CALLBACK(leave_notify_evhandler), NULL);
+
 	return menubar;
+}
+
+void
+xmenu_hide(void)
+{
+
+	gtk_widget_hide(menubar);
+}
+
+void
+xmenu_show(void)
+{
+
+	gtk_widget_show(menubar);
+}
+
+void
+xmenu_toggle_menu(void)
+{
+
+	if (
+#if GTK_MAJOR_VERSION > 2 || (GTK_MAJOR_VERSION == 2 && GTK_MINOR_VERSION >= 18)
+	    gtk_widget_get_visible(menubar)
+#else
+	    GTK_WIDGET_VISIBLE(menubar)
+#endif
+	)
+		xmenu_hide();
+	else
+		xmenu_show();
+}
+
+void
+xmenu_select_screen(UINT8 mode)
+{
+
+	xmenu_select_rotate(mode & SCRNMODE_ROTATEMASK);
+	xmenu_select_screenmode(mode & SCRNMODE_FULLSCREEN);
 }

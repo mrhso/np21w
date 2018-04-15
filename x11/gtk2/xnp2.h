@@ -1,5 +1,3 @@
-/*	$Id: xnp2.h,v 1.3 2005/03/12 12:36:57 monaka Exp $	*/
-
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
  * All rights reserved.
@@ -31,9 +29,7 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+G_BEGIN_DECLS
 
 extern GtkWidget *main_window;
 extern GtkWidget *drawarea;
@@ -47,12 +43,13 @@ typedef struct {
 void install_idle_process(void);
 void uninstall_idle_process(void);
 
-void gdk_window_set_pointer(GdkWindow *w, gint x, gint y);
 void gtk_scale_set_default_values(GtkScale *scale);
-int gdk_window_get_pixmap_format(GdkWindow *w, GdkVisual *visual, pixmap_format_t *fmtp);
+void gdk_window_set_pointer(GdkWindow *w, gint x, gint y);
+gboolean gdk_window_get_pixmap_format(GdkWindow *w, GdkVisual *visual, pixmap_format_t *fmtp);
+gboolean gtk_window_init_fullscreen(GtkWidget *widget);
+void gtk_window_fullscreen_mode(GtkWidget *widget);
+void gtk_window_restore_mode(GtkWidget *widget);
 
-#ifdef __cplusplus
-}
-#endif
+G_END_DECLS
 
 #endif /* NP2_GTK2_XNP2_H__ */

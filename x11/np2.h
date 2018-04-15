@@ -1,7 +1,11 @@
 #ifndef	NP2_X11_NP2_H__
 #define	NP2_X11_NP2_H__
 
+#include <signal.h>
+
 #include "joymng.h"
+
+G_BEGIN_DECLS
 
 typedef struct {
 	BYTE	port;
@@ -52,16 +56,16 @@ typedef struct {
 	BYTE	I286SAVE;
 
 	BYTE	snddrv;
-	char	audiodev[MAX_PATH];
 	char	MIDIDEV[2][MAX_PATH];
 	UINT32	MIDIWAIT;
 
 	BYTE	mouse_move_ratio;
 
-	char	toolkit[32];
-
 	BYTE	disablemmx;
-	BYTE	shared_pixmap;
+	BYTE	drawinterp;
+	BYTE	F11KEY;
+
+	BYTE	cfgreadonly;
 } NP2OSCFG;
 
 
@@ -78,14 +82,18 @@ enum {
 	MMXFLAG_NOTSUPPORT	= 2
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+enum {
+	INTERP_NEAREST		= 0,
+	INTERP_TILES		= 1,
+	INTERP_BILINEAR		= 2,
+	INTERP_HYPER		= 3
+};
 
 /* np2.c */
-extern volatile BOOL np2running;
+extern volatile sig_atomic_t np2running;
 extern NP2OSCFG np2oscfg;
 extern BYTE scrnmode;
+extern int ignore_fullscreen_mode;
 
 extern UINT framecnt;
 extern UINT waitcnt;
@@ -94,7 +102,7 @@ extern UINT framemax;
 extern BOOL s98logging;
 extern int s98log_count;
 
-extern BOOL use_shared_pixmap;
+extern int verbose;
 
 extern char hddfolder[MAX_PATH];
 extern char fddfolder[MAX_PATH];
@@ -102,7 +110,9 @@ extern char bmpfilefolder[MAX_PATH];
 extern char modulefile[MAX_PATH];
 extern char statpath[MAX_PATH];
 extern char fontname[1024];
-extern char fontfilename[MAX_PATH];
+
+extern const char np2flagext[];
+extern const char np2resumeext[];
 
 int flagload(const char* ext, const char* title, BOOL force);
 int flagsave(const char* ext);
@@ -113,13 +123,9 @@ void framereset(UINT cnt);
 void processwait(UINT cnt);
 int mainloop(void *);
 
-#if defined(GCC_CPU_ARCH_IA32)
 extern int mmxflag;
 int havemmx(void);
-#endif
 
-#ifdef __cplusplus
-}
-#endif
+G_END_DECLS
 
 #endif	/* NP2_X11_NP2_H__ */

@@ -1,154 +1,244 @@
-#include	"compiler.h"
-#include	"strres.h"
-#include	"bmpdata.h"
-#include	"oemtext.h"
-#include	"dosio.h"
-#include	"commng.h"
-#include	"dialogs.h"
+/**
+ * @file	dialogs.cpp
+ * @brief	Dialog subroutines
+ *
+ * @author	$Author: yui $
+ * @date	$Date: 2011/03/07 09:54:11 $
+ */
+
+#include "compiler.h"
+#include "resource.h"
+#include "strres.h"
+#include "bmpdata.h"
+#include "dosio.h"
+#include "commng.h"
+#include "dialogs.h"
+#include "np2.h"
 #if defined(MT32SOUND_DLL)
-#include	"mt32snd.h"
+#include "mt32snd.h"
 #endif
 
+#if !defined(__GNUC__)
+#pragma comment(lib, "winmm.lib")
+#endif	// !defined(__GNUC__)
 
-const TCHAR str_nc[] = _T("N/C");
+// ---- enable
 
-const TCHAR str_int0[] = _T("INT0");
-const TCHAR str_int1[] = _T("INT1");
-const TCHAR str_int2[] = _T("INT2");
-const TCHAR str_int4[] = _T("INT4");
-const TCHAR str_int5[] = _T("INT5");
-const TCHAR str_int6[] = _T("INT6");
+void dlgs_enablebyautocheck(HWND hWnd, UINT uID, UINT uCheckID)
+{
+	EnableWindow(GetDlgItem(hWnd, uID),
+			(SendDlgItemMessage(hWnd, uCheckID, BM_GETCHECK, 0, 0) != 0));
+}
+
+void dlgs_disablebyautocheck(HWND hWnd, UINT uID, UINT uCheckID)
+{
+	EnableWindow(GetDlgItem(hWnd, uID),
+			(SendDlgItemMessage(hWnd, uCheckID, BM_GETCHECK, 0, 0) == 0));
+
+}
 
 
 // ---- file select
 
-BOOL dlgs_selectfile(HWND hWnd, const FILESEL *item,
-										OEMCHAR *path, UINT size, int *ro) {
+static BOOL openFileParam(LPOPENFILENAME lpOFN, PCFSPARAM pcParam,
+							LPTSTR pszPath, UINT uSize,
+							BOOL (WINAPI * fnAPI)(LPOPENFILENAME lpofn))
+{
+	LPTSTR		lpszTitle;
+	LPTSTR		lpszFilter;
+	LPTSTR		lpszDefExt;
+	LPTSTR		p;
+	BOOL		bResult;
 
-	OPENFILENAME	ofn;
-#if defined(OSLANG_UTF8)
-	TCHAR			_path[MAX_PATH];
-#endif
-
-	if ((item == NULL) || (path == NULL) || (size == 0)) {
-		return(FALSE);
+	if ((lpOFN == NULL) || (pcParam == NULL) ||
+		(pszPath == NULL) || (uSize == 0) || (fnAPI == NULL))
+	{
+		return FALSE;
 	}
-	ZeroMemory(&ofn, sizeof(OPENFILENAME));
-	ofn.lStructSize = sizeof(OPENFILENAME);
+
+	if (!HIWORD(pcParam->lpszTitle))
+	{
+		lpszTitle = lockstringresource(pcParam->lpszTitle);
+		lpOFN->lpstrTitle = lpszTitle;
+	}
+	else
+	{
+		lpszTitle = NULL;
+		lpOFN->lpstrTitle = pcParam->lpszTitle;
+	}
+
+	if (!HIWORD(pcParam->lpszFilter))
+	{
+		lpszFilter = lockstringresource(pcParam->lpszFilter);
+		lpOFN->lpstrFilter = lpszFilter;
+	}
+	else
+	{
+		lpszFilter = NULL;
+		lpOFN->lpstrFilter = pcParam->lpszFilter;
+	}
+
+	if (!HIWORD(pcParam->lpszDefExt))
+	{
+		lpszDefExt = lockstringresource(pcParam->lpszDefExt);
+		lpOFN->lpstrDefExt = lpszDefExt;
+	}
+	else
+	{
+		lpszDefExt = NULL;
+		lpOFN->lpstrDefExt = pcParam->lpszDefExt;
+	}
+
+	lpOFN->nFilterIndex = pcParam->nFilterIndex;
+
+
+	p = lpszFilter;
+	if (p)
+	{
+		while(*p != '\0')
+		{
+#if !defined(_UNICODE)
+			if (IsDBCSLeadByte((BYTE)*p))
+			{
+				p += 2;
+				continue;
+			}
+#endif	// !defined(_UNICODE)
+			if (*p == '|')
+			{
+				*p = '\0';
+			}
+			p++;
+		}
+	}
+
+	lpOFN->lpstrFile = pszPath;
+	lpOFN->nMaxFile = uSize;
+
+	bResult = (*fnAPI)(lpOFN);
+
+	if (lpszTitle)
+	{
+		unlockstringresource(lpszTitle);
+	}
+	if (lpszFilter)
+	{
+		unlockstringresource(lpszFilter);
+	}
+	if (lpszDefExt)
+	{
+		unlockstringresource(lpszDefExt);
+	}
+
+	return bResult;
+}
+
+BOOL dlgs_openfile(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize, int *pnRO)
+{
+	OPENFILENAME	ofn;
+	BOOL			bResult;
+
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hWnd;
-	ofn.lpstrFilter = item->filter;
-	ofn.nFilterIndex = item->defindex;
-#if defined(OSLANG_UTF8)
-	oemtotchar(_path, NELEMENTS(_path), path, -1);
-	ofn.lpstrFile = _path;
-	ofn.nMaxFile = NELEMENTS(_path);
-#else
-	ofn.lpstrFile = path;
-	ofn.nMaxFile = size;
-#endif
 	ofn.Flags = OFN_FILEMUSTEXIST;
-	ofn.lpstrDefExt = item->ext;
-	ofn.lpstrTitle = item->title;
-	if (!GetOpenFileName(&ofn)) {
-		return(FALSE);
+
+	if (pnRO == NULL)
+	{
+		ofn.Flags |= OFN_HIDEREADONLY;
 	}
-#if defined(OSLANG_UTF8)
-	tchartooem(path, NELEMENTS(path), _path, -1);
-#endif
-	if (ro) {
-		*ro = ofn.Flags & OFN_READONLY;
+
+	bResult = openFileParam(&ofn, pcParam, pszPath, uSize, GetOpenFileName);
+
+	if ((bResult) && (pnRO != NULL))
+	{
+		*pnRO = ofn.Flags & OFN_READONLY;
 	}
-	return(TRUE);
+
+	return bResult;
 }
 
-BOOL dlgs_selectwritefile(HWND hWnd, const FILESEL *item,
-											OEMCHAR *path, UINT size) {
-
+BOOL dlgs_createfile(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize)
+{
 	OPENFILENAME	ofn;
-#if defined(OSLANG_UTF8)
-	TCHAR			_path[MAX_PATH];
-#endif
 
-	if ((item == NULL) || (path == NULL) || (size == 0)) {
-		return(FALSE);
-	}
-	ZeroMemory(&ofn, sizeof(OPENFILENAME));
-	ofn.lStructSize = sizeof(OPENFILENAME);
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hWnd;
-	ofn.lpstrFilter = item->filter;
-	ofn.nFilterIndex = item->defindex;
-#if defined(OSLANG_UTF8)
-	oemtotchar(_path, NELEMENTS(_path), path, -1);
-	ofn.lpstrFile = _path;
-	ofn.nMaxFile = NELEMENTS(_path);
-#else
-	ofn.lpstrFile = path;
-	ofn.nMaxFile = size;
-#endif
 	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
-	ofn.lpstrDefExt = item->ext;
-	ofn.lpstrTitle = item->title;
-	if (!GetSaveFileName(&ofn)) {
-		return(FALSE);
-	}
-#if defined(OSLANG_UTF8)
-	tchartooem(path, NELEMENTS(path), _path, -1);
-#endif
-	return(TRUE);
+	return openFileParam(&ofn, pcParam, pszPath, uSize, GetSaveFileName);
 }
 
-BOOL dlgs_selectwritenum(HWND hWnd, const FILESEL *item,
-											OEMCHAR *path, UINT size) {
+BOOL dlgs_createfilenum(HWND hWnd, PCFSPARAM pcParam, LPTSTR pszPath, UINT uSize)
+{
+	LPTSTR pszNum[4];
+	LPTSTR pszFile;
+	UINT uCount;
+	UINT uPos;
 
-	OEMCHAR	*file;
-	OEMCHAR	*p;
-	OEMCHAR	*q;
-	UINT	i;
-	BOOL	r;
-
-	if ((item == NULL) || (path == NULL) || (size == 0)) {
-		return(FALSE);
+	if (!pszPath)
+	{
+		return FALSE;
 	}
-	file = (OEMCHAR *)_MALLOC((size + 16) * sizeof(OEMCHAR), path);
-	if (file == NULL) {
-		return(FALSE);
-	}
-	p = file_getname(path);
-	milstr_ncpy(file, path, size);
-	file_cutname(file);
-	q = file + OEMSTRLEN(file);
 
-	for (i=0; i<10000; i++) {
-		OEMSPRINTF(q, p, i);
-		if (file_attr(file) == (short)-1) {
+	ZeroMemory(pszNum, sizeof(pszNum));
+	pszFile = file_getname(pszPath);
+	uCount = 0;
+	while(1)
+	{
+		pszFile = milstr_chr(pszPath, '#');
+		if (!pszFile)
+		{
+			break;
+		}
+		*pszFile = '0';
+		pszNum[uCount] = pszFile;
+		uCount = (uCount + 1) % NELEMENTS(pszNum);
+		pszFile++;
+	}
+
+	while(file_attr(pszPath) != (short)-1)
+	{
+		uPos = max(uCount, NELEMENTS(pszNum));
+		while(uPos)
+		{
+			pszFile = pszNum[(uPos - 1) % NELEMENTS(pszNum)];
+			*pszFile = *pszFile + 1;
+			if (*pszFile < ('0' + 10))
+			{
+				break;
+			}
+			*pszFile = '0';
+			uPos--;
+		}
+		if (!uPos)
+		{
 			break;
 		}
 	}
-	r = dlgs_selectwritefile(hWnd, item, file, size);
-	if (r) {
-		milstr_ncpy(path, file, size);
-	}
-	_MFREE(file);
-	return(r);
+	return dlgs_createfile(hWnd, pcParam, pszPath, uSize);
 }
 
 
 // ---- mimpi def file
 
-static const TCHAR mimpi_title[] = _T("Open MIMPI define file");
-static const TCHAR mimpi_ext[] = _T("def");
-static const TCHAR mimpi_filter[] = _T("MIMPI define file(*.def)\0*.def\0");
-static const FILESEL mimpi = {mimpi_title, mimpi_ext, mimpi_filter, 1};
+static const FSPARAM fpMIMPI =
+{
+	MAKEINTRESOURCE(IDS_MIMPITITLE),
+	MAKEINTRESOURCE(IDS_MIMPIEXT),
+	MAKEINTRESOURCE(IDS_MIMPIFILTER),
+	1
+};
 
 void dlgs_browsemimpidef(HWND hWnd, UINT16 res) {
 
-	HWND		subwnd;
-	OEMCHAR		path[MAX_PATH];
-const OEMCHAR	*p;
+	HWND	subwnd;
+	TCHAR	path[MAX_PATH];
+	LPCTSTR	p;
 
 	subwnd = GetDlgItem(hWnd, res);
 	GetWindowText(subwnd, path, NELEMENTS(path));
-	if (dlgs_selectfile(hWnd, &mimpi, path, NELEMENTS(path), NULL)) {
+	if (dlgs_openfile(hWnd, &fpMIMPI, path, NELEMENTS(path), NULL)) {
 		p = path;
 	}
 	else {
@@ -172,22 +262,111 @@ void dlgs_setliststr(HWND hWnd, UINT16 res, const TCHAR **item, UINT items) {
 }
 
 void dlgs_setlistuint32(HWND hWnd, UINT16 res, const UINT32 *item, UINT items) {
-
 	HWND	wnd;
 	UINT	i;
-	OEMCHAR	str[16];
+	TCHAR	str[16];
 
 	wnd = GetDlgItem(hWnd, res);
 	for (i=0; i<items; i++) {
-		OEMSPRINTF(str, str_u, item[i]);
+		wsprintf(str, str_u, item[i]);
 		SendMessage(wnd, CB_INSERTSTRING, (WPARAM)i, (LPARAM)str);
 	}
+}
+
+void dlgs_setcbitem(HWND hWnd, UINT uID, PCCBPARAM pcItem, UINT uItems)
+{
+	HWND	hItem;
+	UINT	i;
+	LPCTSTR lpcszStr;
+	TCHAR	szString[128];
+	int		nIndex;
+
+	hItem = GetDlgItem(hWnd, uID);
+	for (i=0; i<uItems; i++)
+	{
+		lpcszStr = pcItem[i].lpcszString;
+		if (!HIWORD(lpcszStr))
+		{
+			if (!loadstringresource(LOWORD(lpcszStr),
+											szString, NELEMENTS(szString)))
+			{
+				continue;
+			}
+			lpcszStr = szString;
+		}
+		nIndex = (int)SendMessage(hItem, CB_ADDSTRING, 0, (LPARAM)lpcszStr);
+		if (nIndex >= 0)
+		{
+			SendMessage(hItem, CB_SETITEMDATA,
+								(WPARAM)nIndex, (LPARAM)pcItem[i].nItemData);
+		}
+	}
+}
+
+void dlgs_setcbnumber(HWND hWnd, UINT uID, PCCBNPARAM pcItem, UINT uItems)
+{
+	HWND	hItem;
+	UINT	i;
+	TCHAR	szValue[16];
+	int		nIndex;
+
+	hItem = GetDlgItem(hWnd, uID);
+	for (i=0; i<uItems; i++)
+	{
+		wsprintf(szValue, str_u, pcItem[i].uValue);
+		nIndex = (int)SendMessage(hItem, CB_ADDSTRING, 0, (LPARAM)szValue);
+		if (nIndex >= 0)
+		{
+			SendMessage(hItem, CB_SETITEMDATA,
+								(WPARAM)nIndex, (LPARAM)pcItem[i].nItemData);
+		}
+	}
+}
+
+void dlgs_setcbcur(HWND hWnd, UINT uID, int nItemData)
+{
+	HWND	hItem;
+	int		nItems;
+	int		i;
+
+	hItem = GetDlgItem(hWnd, uID);
+	nItems = (int)SendMessage(hItem, CB_GETCOUNT, 0, 0);
+	for (i=0; i<nItems; i++)
+	{
+		if (SendMessage(hItem, CB_GETITEMDATA, (WPARAM)i, 0) == nItemData)
+		{
+			SendMessage(hItem, CB_SETCURSEL, (WPARAM)i, 0);
+			break;
+		}
+	}
+}
+
+int dlgs_getcbcur(HWND hWnd, UINT uID, int nDefault)
+{
+	HWND	hItem;
+	int		nPos;
+
+	hItem = GetDlgItem(hWnd, uID);
+	nPos = (int)SendMessage(hItem, CB_GETCURSEL, 0, 0);
+	if (nPos >= 0)
+	{
+		return (int)SendMessage(hItem, CB_GETITEMDATA, (WPARAM)nPos, 0);
+	}
+	return nDefault;
 }
 
 
 // ---- MIDIデバイスのリスト
 
-void dlgs_setlistmidiout(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
+static void insertnc(HWND hWnd, int nPos)
+{
+	TCHAR	szNC[128];
+
+	loadstringresource(LOWORD(IDS_NONCONNECT), szNC, NELEMENTS(szNC));
+	SendMessage(hWnd, CB_INSERTSTRING, (WPARAM)nPos, (LPARAM)szNC);
+}
+
+void dlgs_setlistmidiout(HWND hWnd, UINT16 res, LPCTSTR defname) {
 
 	HWND		wnd;
 	UINT		defcur;
@@ -199,7 +378,7 @@ void dlgs_setlistmidiout(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
 	wnd = GetDlgItem(hWnd, res);
 	defcur = 0;
 	devs = midiOutGetNumDevs();
-	SendMessage(wnd, CB_INSERTSTRING, (WPARAM)0, (LPARAM)str_nc);
+	insertnc(wnd, 0);
 	SendMessage(wnd, CB_INSERTSTRING, (WPARAM)1, (LPARAM)cmmidi_midimapper);
 	if (!milstr_cmp(defname, cmmidi_midimapper)) {
 		defcur = 1;
@@ -235,7 +414,7 @@ void dlgs_setlistmidiout(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
 	SendMessage(wnd, CB_SETCURSEL, (WPARAM)defcur, (LPARAM)0);
 }
 
-void dlgs_setlistmidiin(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
+void dlgs_setlistmidiin(HWND hWnd, UINT16 res, LPCTSTR defname) {
 
 	HWND		wnd;
 	UINT		defcur;
@@ -246,7 +425,7 @@ void dlgs_setlistmidiin(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
 	wnd = GetDlgItem(hWnd, res);
 	defcur = 0;
 	num = midiInGetNumDevs();
-	SendMessage(wnd, CB_INSERTSTRING, (WPARAM)0, (LPARAM)str_nc);
+	insertnc(wnd, 0);
 	for (i=0; i<num; i++) {
 		if (midiInGetDevCaps(i, &mic, sizeof(mic)) == MMSYSERR_NOERROR) {
 			SendMessage(wnd, CB_INSERTSTRING,
@@ -258,6 +437,7 @@ void dlgs_setlistmidiin(HWND hWnd, UINT16 res, const OEMCHAR *defname) {
 	}
 	SendMessage(wnd, CB_SETCURSEL, (WPARAM)defcur, (LPARAM)0);
 }
+
 
 
 // ---- draw
@@ -297,5 +477,34 @@ void dlgs_drawbmp(HDC hdc, UINT8 *bmp) {
 
 dsdb_err1:
 	_MFREE(bmp);
+}
+
+
+// ----
+
+BOOL dlgs_getitemrect(HWND hWnd, UINT uID, RECT *pRect)
+{
+	HWND	hItem;
+	POINT	pt;
+
+	if (pRect == NULL)
+	{
+		return FALSE;
+	}
+	hItem = GetDlgItem(hWnd, uID);
+	if (!GetWindowRect(hItem, pRect))
+	{
+		return FALSE;
+	}
+	ZeroMemory(&pt, sizeof(pt));
+	if (!ClientToScreen(hWnd, &pt))
+	{
+		return FALSE;
+	}
+	pRect->left -= pt.x;
+	pRect->top -= pt.y;
+	pRect->right -= pt.x;
+	pRect->bottom -= pt.y;
+	return TRUE;
 }
 

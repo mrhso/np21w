@@ -11,7 +11,7 @@
 #include	"hostdrvs.h"
 
 
-static const HDRVDIR hddroot = {"           ", 0, 0, 0, 0x10, {0}, {0}};
+static const HDRVDIR hddroot = {{' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '}, 0, 0, 0, 0x10, {0}, {0}};
 
 static const UINT8 dospathchr[] = {
 			0xfa, 0x23,		// '&%$#"!  /.-,+*)(
@@ -121,7 +121,7 @@ static BOOL hddseadir(void *vpItem, void *vpArg) {
 	return(FALSE);
 }
 
-LISTARRAY hostdrvs_getpathlist(const OEMCHAR *realpath) {
+LISTARRAY hostdrvs_getpathlist(const OEMCHAR *path) {
 
 	FLISTH		flh;
 	FLINFO		fli;
@@ -129,7 +129,7 @@ LISTARRAY hostdrvs_getpathlist(const OEMCHAR *realpath) {
 	char		fcbname[11];
 	HDRVLST		hdd;
 
-	flh = file_list1st(realpath, &fli);
+	flh = file_list1st(path, &fli);
 	if (flh == FLISTH_INVALID) {
 		goto hdgpl_err1;
 	}
@@ -141,7 +141,7 @@ LISTARRAY hostdrvs_getpathlist(const OEMCHAR *realpath) {
 		if ((realname2fcb(fcbname, &fli) == SUCCESS) &&
 			(fcbname[0] != ' ') &&
 			(listarray_enum(ret, hddsea, fcbname) == NULL)) {
-			hdd = listarray_append(ret, NULL);
+			hdd = (HDRVLST)listarray_append(ret, NULL);
 			if (hdd == NULL) {
 				break;
 			}
