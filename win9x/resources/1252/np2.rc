@@ -138,6 +138,7 @@ BEGIN
     LTEXT           "Ratio",IDC_STATIC,20,55,22,8
     CONTROL         "Slider1",IDC_SKIPLIGHT,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,44,55,96,10
     RTEXT           "",IDC_LIGHTSTR,144,54,20,10,SS_SUNKEN
+    CONTROL         "Use software rendering",IDC_SOFTWARERENDERING,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,72,156,10
 END
 
 IDD_SCROPT_FULLSCREEN DIALOG 0, 0, 172, 96
@@ -1327,6 +1328,7 @@ BEGIN
     IDS_ZOOM_NONE           "None"
     IDS_ZOOM_FIXEDASPECT    "Fixed aspect"
     IDS_ZOOM_ADJUSTASPECT   "Adjust aspect"
+    IDS_ZOOM_INTMULTIPLE    "Integer multiple"
 END
 
 STRINGTABLE
@@ -1386,6 +1388,7 @@ BEGIN
     IDS_GD5430_CB2          "PC-9821Cb2 built-in"
     IDS_GD5430_CX2          "PC-9821Cx2 built-in"
     IDS_GD5430_WAB          "MELCO WAB-S"
+    IDS_GD5430_WSN          "MELCO WSN-A4F"
 END
 
 STRINGTABLE
@@ -1434,7 +1437,7 @@ STRINGTABLE
 BEGIN
     IDS_HDDTITLE            "Select HD image"
     IDS_HDDEXT              "thd"
-    IDS_HDDFILTER           "Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|VirtualPC harddisk image files (*.vhd)|*.vhd|All supported files|*.thd;*.nhd;*.hdi;*.vhd|"
+    IDS_HDDFILTER           "Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|VirtualPC harddisk image files (*.vhd)|*.vhd|SL9821 harddisk image files (*.slh)|*.slh|All supported files|*.thd;*.nhd;*.hdi;*.vhd;*.slh|All files (*.*)|*.*|"
     IDS_SASITITLE           "Select SASI/IDE HDD image"
     IDS_IDETITLE            "Select IDE HDD image"
     IDS_ISOTITLE            "Select ISO-9660 image"

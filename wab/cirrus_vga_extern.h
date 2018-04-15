@@ -130,6 +130,7 @@ typedef struct {
 	UINT32	VRAMWindowAddr;
 	UINT32	VRAMWindowAddr2;
 	REG8	mmioenable;
+	UINT32	gd54xxtype;
 } NP2CLVGA;
 
 extern UINT8	cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024];
@@ -147,6 +148,13 @@ void pc98_cirrus_vga_shutdown(void);
 
 void pc98_cirrus_vga_save(void);
 void pc98_cirrus_vga_load(void);
+
+UINT16 __fastcall cirrusvga_ioport_read_wrap16(UINT addr);
+UINT32 __fastcall cirrusvga_ioport_read_wrap32(UINT addr);
+void __fastcall cirrusvga_ioport_write_wrap16(UINT addr, UINT16 dat);
+void __fastcall cirrusvga_ioport_write_wrap32(UINT addr, UINT32 dat);
+
+int pc98_cirrus_isWABport(UINT port);
 
 #ifdef __cplusplus
 }

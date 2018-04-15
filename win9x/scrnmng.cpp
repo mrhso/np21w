@@ -85,6 +85,10 @@ static	DDRAW		ddraw;
 static	SCRNSTAT	scrnstat;
 static	SCRNSURF	scrnsurf;
 
+#ifdef SUPPORT_WAB
+int mt_wabdrawing = 0;
+int mt_wabpausedrawing = 0;
+#endif
 
 static void setwindowsize(HWND hWnd, int width, int height)
 {
@@ -190,6 +194,15 @@ static void renewalclientsize(BOOL winloc) {
 					scrnwidth = (scrnheight * width) / height;
 				}
 				break;
+				
+			case FSCRNMOD_INTMULTIPLE:
+				scrnwidth = (ddraw.width / width) * width;
+				scrnheight = (scrnwidth * height) / width;
+				if (scrnheight >= ddraw.height) {
+					scrnheight = (ddraw.height / height) * height;
+					scrnwidth = (scrnheight * width) / height;
+				}
+				break;
 
 			case FSCRNMOD_LARGE:
 				scrnwidth = ddraw.width;
@@ -217,9 +230,10 @@ static void renewalclientsize(BOOL winloc) {
 
 					case FSCRNMOD_ASPECTFIX8:
 					case FSCRNMOD_ASPECTFIX:
+					case FSCRNMOD_INTMULTIPLE:
 						ddraw.rectclip.bottom = (tmpcy * height) / scrnheight;
 						break;
-
+						
 					case FSCRNMOD_LARGE:
 						break;
 				}
@@ -735,6 +749,16 @@ void scrnmng_destroy(void) {
 		ddraw.clocksurf = NULL;
 	}
 #endif
+#if defined(SUPPORT_WAB)
+	if (ddraw.wabsurf) {
+		mt_wabpausedrawing = 1; // MultiThread‘Îô
+		while(mt_wabdrawing) 
+			Sleep(10);
+		ddraw.wabsurf->Release();
+		ddraw.wabsurf = NULL;
+		mt_wabpausedrawing = 0;
+	}
+#endif
 	if (ddraw.backsurf) {
 		ddraw.backsurf->Release();
 		ddraw.backsurf = NULL;
@@ -1215,13 +1239,17 @@ void scrnmng_blthdc(HDC hdc) {
 	HRESULT	r;
 	HDC hDCDD;
 #if defined(SUPPORT_WAB)
+	mt_wabdrawing = 0;
 	if (np2wabwnd.multiwindow) return;
+	if (mt_wabpausedrawing) return;
 	if (ddraw.wabsurf != NULL) {
+		mt_wabdrawing = 1;
 		r = ddraw.wabsurf->GetDC(&hDCDD);
 		if (r == DD_OK){
 			r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
 			ddraw.wabsurf->ReleaseDC(hDCDD);
 		}
+		mt_wabdrawing = 0;
 	}
 #endif
 }

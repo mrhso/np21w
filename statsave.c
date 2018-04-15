@@ -1531,7 +1531,7 @@ const SFENTRY	*tblterm;
 	fddmtr_reset();
 	soundmng_play();
 
-#if defined(SUPPORT_CL_GD5430)
+#if defined(SUPPORT_WAB)
 	np2wab.relay = 0;
 	np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
 	np2wab.realWidth = np2wab.wndWidth; // XXX: ???

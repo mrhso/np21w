@@ -131,6 +131,7 @@ BEGIN
     LTEXT           "明るさ",IDC_STATIC,20,55,22,8
     CONTROL         "Slider1",IDC_SKIPLIGHT,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,44,55,96,10
     RTEXT           "",IDC_LIGHTSTR,144,54,20,10,SS_SUNKEN
+    CONTROL         "DirectDrawエミュレーションモードを使う",IDC_SOFTWARERENDERING,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,72,156,10
 END
 
 IDD_SCROPT_FULLSCREEN DIALOG 0, 0, 172, 96
@@ -1321,6 +1322,7 @@ BEGIN
     IDS_ZOOM_NONE           "ズームなし"
     IDS_ZOOM_FIXEDASPECT    "画面比固定"
     IDS_ZOOM_ADJUSTASPECT   "画面比調整"
+    IDS_ZOOM_INTMULTIPLE    "整数倍拡大"
 END
 
 STRINGTABLE
@@ -1380,6 +1382,7 @@ BEGIN
     IDS_GD5430_CB2          "PC-9821Cb2内蔵"
     IDS_GD5430_CX2          "PC-9821Cx2内蔵"
     IDS_GD5430_WAB          "MELCO WAB-S"
+    IDS_GD5430_WSN          "MELCO WSN-A4F"
 END
 
 STRINGTABLE
@@ -1428,7 +1431,7 @@ STRINGTABLE
 BEGIN
     IDS_HDDTITLE            "HDイメージ選択"
     IDS_HDDEXT              "thd"
-    IDS_HDDFILTER           "Anex86ハードディスクイメージ(*.hdi)|*.hdi|T98ハードディスクイメージ(*.thd)|*.thd|T98-Nextハードディスクイメージ(*.nhd)|*.nhd|VirtualPCハードディスクイメージ (*.vhd)|*.vhd|対応しているすべての形式|*.thd;*.nhd;*.hdi;*.vhd|"
+    IDS_HDDFILTER           "Anex86ハードディスクイメージ(*.hdi)|*.hdi|T98ハードディスクイメージ(*.thd)|*.thd|T98-Nextハードディスクイメージ(*.nhd)|*.nhd|VirtualPCハードディスクイメージ (*.vhd)|*.vhd|SL9821ハードディスクイメージ(*.slh)|*.slh|対応しているすべての形式|*.thd;*.nhd;*.hdi;*.vhd;*.slh|すべてのファイル(*.*)|*.*|"
     IDS_SASITITLE           "SASI/IDE HDDイメージ"
     IDS_IDETITLE            "IDE HDDイメージ"
     IDS_ISOTITLE            "ISO-9660ディスクイメージ"

@@ -90,6 +90,7 @@
 #define IDC_SKIPLINE                    13103
 #define IDC_SKIPLIGHT                   13104
 #define IDC_LIGHTSTR                    13105
+#define IDC_SOFTWARERENDERING           13106
 #define IDC_FULLSCREEN_SAMEBPP          13201
 #define IDC_FULLSCREEN_SAMERES          13202
 #define IDC_FULLSCREEN_ZOOM             13203
@@ -316,6 +317,7 @@
 #define IDS_ZOOM_FIXEDASPECT            30302
 #define IDS_ZOOM_ADJUSTASPECT           30303
 #define IDS_ZOOM_FULL                   30304
+#define IDS_ZOOM_INTMULTIPLE            30305
 #define IDS_0088                        30401
 #define IDS_0188                        30402
 #define IDS_0288                        30403

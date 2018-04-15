@@ -6,18 +6,14 @@ enum {
 	SNAPDOTPULL		= 12,
 	SNAPDOTREL		= 16
 };
-
-typedef HRESULT (*F_DwmGetWindowAttribute)(
-	   HWND hwnd,
-	   DWORD dwAttribute,
- __out PVOID pvAttribute, 
-	   DWORD cbAttribute
+typedef HRESULT (WINAPI *pfnDwmIsCompositionEnabled)(
+	BOOL *pfEnabled
 );
-typedef HRESULT (*F_DwmSetWindowAttribute)(
-       HWND    hwnd,
-       DWORD   dwAttribute,
-  _In_ LPCVOID pvAttribute,
-       DWORD   cbAttribute
+typedef HRESULT (WINAPI *pfnDwmGetWindowAttribute)(
+	   HWND  hwnd,
+	   DWORD dwAttribute,
+       PVOID pvAttribute, 
+	   DWORD cbAttribute
 );
 typedef enum _DWMWINDOWATTRIBUTE { 
   DWMWA_NCRENDERING_ENABLED          = 1,
@@ -38,12 +34,15 @@ typedef enum _DWMWINDOWATTRIBUTE {
   DWMWA_LAST
 } DWMWINDOWATTRIBUTE;
 
-F_DwmGetWindowAttribute DwmGetWindowAttribute = NULL;
-F_DwmSetWindowAttribute DwmSetWindowAttribute = NULL;
+pfnDwmIsCompositionEnabled	F_DwmIsCompositionEnabled = NULL;
+pfnDwmGetWindowAttribute	F_DwmGetWindowAttribute = NULL;
 HMODULE hDwmModule = NULL;
 int noDWM = 0;
 
+BOOL winloc_GetWindowRect(HWND hwnd, LPRECT lpRect);
+
 BOOL winloc_InitDwmFunc() {
+	RECT r = {0};
 	if(noDWM){
 		// DWM環境でない
 		return FALSE;
@@ -55,14 +54,13 @@ BOOL winloc_InitDwmFunc() {
 				noDWM = 1;
 				return FALSE;
 			}
-			DwmGetWindowAttribute = (F_DwmGetWindowAttribute)GetProcAddress(hDwmModule, "DwmGetWindowAttribute");
-			DwmSetWindowAttribute = (F_DwmSetWindowAttribute)GetProcAddress(hDwmModule, "DwmSetWindowAttribute");
-			if(!DwmGetWindowAttribute || !DwmSetWindowAttribute){
-				// 何故かDwmGetWindowAttributeやDwmSetWindowAttributeが無い？
+			F_DwmIsCompositionEnabled = (pfnDwmIsCompositionEnabled)GetProcAddress(hDwmModule, "DwmIsCompositionEnabled");
+			F_DwmGetWindowAttribute = (pfnDwmGetWindowAttribute)GetProcAddress(hDwmModule, "DwmGetWindowAttribute");
+			if(!F_DwmIsCompositionEnabled || !F_DwmGetWindowAttribute){
+				// 何故かDwmGetWindowAttributeやDwmIsCompositionEnabledが無い？
 				FreeLibrary(hDwmModule);
 				hDwmModule = NULL;
-				DwmGetWindowAttribute = NULL;
-				DwmSetWindowAttribute = NULL;
+				F_DwmGetWindowAttribute = NULL;
 				noDWM = 1;
 				return FALSE;
 			}
@@ -73,21 +71,28 @@ BOOL winloc_InitDwmFunc() {
 }
 void winloc_DisposeDwmFunc() {
 	if(hDwmModule){
-		DwmGetWindowAttribute = NULL;
-		DwmSetWindowAttribute = NULL;
+		F_DwmIsCompositionEnabled = NULL;
+		F_DwmGetWindowAttribute = NULL;
 		FreeLibrary(hDwmModule);
 		hDwmModule = NULL;
 	}
 }
 
 BOOL winloc_GetWindowRect(HWND hwnd, LPRECT lpRect) {
-	if(DwmGetWindowAttribute){
-		// DWM環境
-		HRESULT hr;
-		hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, lpRect, sizeof(RECT));
-		if(SUCCEEDED(hr)){
-			return 1;
+	if(F_DwmGetWindowAttribute){
+		HRESULT hr = 0;
+		BOOL dwmenable = FALSE;
+		F_DwmIsCompositionEnabled(&dwmenable);
+		if(dwmenable){
+			// DWM環境
+			hr = F_DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, lpRect, sizeof(RECT));
+			if(SUCCEEDED(hr)){
+				return 1;
+			}else{
+				return GetWindowRect(hwnd, lpRect);
+			}
 		}else{
+			// コンポジションOFF
 			return GetWindowRect(hwnd, lpRect);
 		}
 	}else{

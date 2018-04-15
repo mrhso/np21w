@@ -65,6 +65,8 @@ BOOL ScrOptVideoPage::OnInitDialog()
 	CheckDlgButton(IDC_LCDX, (np2cfg.LCD_MODE & 2) ? BST_CHECKED : BST_UNCHECKED);
 
 	CheckDlgButton(IDC_SKIPLINE, (np2cfg.skipline) ? BST_CHECKED : BST_UNCHECKED);
+	
+	CheckDlgButton(IDC_SOFTWARERENDERING, (np2oscfg.emuddraw) ? BST_CHECKED : BST_UNCHECKED);
 
 	m_skiplight.SubclassDlgItem(IDC_SKIPLIGHT, this);
 	m_skiplight.SetStaticId(IDC_LIGHTSTR);
@@ -110,6 +112,14 @@ void ScrOptVideoPage::OnOK()
 	{
 		np2cfg.LCD_MODE = cMode;
 		pal_makelcdpal();
+		bUpdated = true;
+	}
+	cMode = (IsDlgButtonChecked(IDC_SOFTWARERENDERING) != BST_UNCHECKED);
+	if (!!cMode == !np2oscfg.emuddraw)
+	{
+		np2oscfg.emuddraw = cMode;
+		scrnmng_destroy();
+		scrnmng_create(g_scrnmode);
 		bUpdated = true;
 	}
 	if (bUpdated)
@@ -432,10 +442,11 @@ private:
 //! ズーム リスト
 static const CComboData::Entry s_zoom[] =
 {
-	{MAKEINTRESOURCE(IDS_ZOOM_NONE),			0},
-	{MAKEINTRESOURCE(IDS_ZOOM_FIXEDASPECT),		1},
-	{MAKEINTRESOURCE(IDS_ZOOM_ADJUSTASPECT),	2},
-	{MAKEINTRESOURCE(IDS_ZOOM_FULL),			3},
+	{MAKEINTRESOURCE(IDS_ZOOM_NONE),			FSCRNMOD_NORESIZE},
+	{MAKEINTRESOURCE(IDS_ZOOM_FIXEDASPECT),		FSCRNMOD_ASPECTFIX8},
+	{MAKEINTRESOURCE(IDS_ZOOM_ADJUSTASPECT),	FSCRNMOD_ASPECTFIX},
+	{MAKEINTRESOURCE(IDS_ZOOM_FULL),			FSCRNMOD_LARGE},
+	{MAKEINTRESOURCE(IDS_ZOOM_INTMULTIPLE),		FSCRNMOD_INTMULTIPLE},
 };
 
 /**
@@ -466,7 +477,7 @@ BOOL ScrOptFullscreenPage::OnInitDialog()
 
 	m_zoom.SubclassDlgItem(IDC_FULLSCREEN_ZOOM, this);
 	m_zoom.Add(s_zoom, _countof(s_zoom));
-	m_zoom.SetCurItemData(c & 3);
+	m_zoom.SetCurItemData(c & FSCRNMOD_ASPECTMASK);
 	m_zoom.EnableWindow((c & FSCRNMOD_SAMERES) ? TRUE : FALSE);
 
 	return TRUE;
@@ -486,7 +497,7 @@ void ScrOptFullscreenPage::OnOK()
 	{
 		c |= FSCRNMOD_SAMERES;
 	}
-	c |= m_zoom.GetCurItemData(np2oscfg.fscrnmod & 3);
+	c |= m_zoom.GetCurItemData(np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK);
 	if (np2oscfg.fscrnmod != c)
 	{
 		np2oscfg.fscrnmod = c;

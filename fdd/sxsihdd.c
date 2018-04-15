@@ -11,6 +11,7 @@
 
 const char sig_vhd[8] = "VHD1.00";
 const char sig_nhd[15] = "T98HDDIMAGE.R0";
+const char sig_slh[] = "HDIM";
 
 const SASIHDD sasihdd[7] = {
 				{33, 4, 153},			// 5MB
@@ -228,6 +229,19 @@ const OEMCHAR	*ext;
 		sectors = vhd.sectors;
 		size = LOADINTELWORD(vhd.sectorsize);
 		totals = (SINT32)LOADINTELDWORD(vhd.totals);
+	}
+	else if ((iftype == SXSIDRV_SASI) && (!file_cmpname(ext, str_slh))) {
+		SLHHDR slh;						// SL9821 HDD (IDE)
+		if ((file_read(fh, &slh, sizeof(slh)) != sizeof(slh)) ||
+			(memcmp(slh.sig, sig_slh, 4))) {
+			goto sxsiope_err2;
+		}
+		headersize = 512;
+		surfaces = LOADINTELDWORD(slh.surfaces);
+		cylinders = LOADINTELDWORD(slh.cylinders);
+		sectors = LOADINTELDWORD(slh.sectors);
+		size = LOADINTELDWORD(slh.sectorsize);
+		totals = (FILEPOS)cylinders * sectors * surfaces;
 	}
 #ifdef SUPPORT_VPCVHD
 	else if ((iftype == SXSIDRV_SASI) && (!file_cmpname(ext, str_vhd))) {

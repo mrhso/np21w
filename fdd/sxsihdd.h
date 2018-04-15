@@ -51,6 +51,18 @@ typedef struct {
 	UINT8	padding2[0x44];
 } VHDHDR;
 
+typedef struct {
+	char	sig[4];
+	UINT8   drvsize[8];
+	UINT8	sectorsize[4];
+	UINT8	cylinders[4];
+	UINT8	surfaces[4];
+	UINT8	sectors[4];
+	UINT8	serialnum[20];
+	UINT8	revision[8];
+	char 	model[40];
+} SLHHDR;
+
 
 #ifdef __cplusplus
 extern "C" {

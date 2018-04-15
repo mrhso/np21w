@@ -384,13 +384,15 @@ void np2wab_drawframe()
 				np2wabwnd.ready = 1;
 			}
 			if(np2wabwnd.ready && (np2wab.relay&0x3)!=0){
-				if(!np2wabwnd.multiwindow && ga_screenupdated){
-					// 画面転送だけメインスレッドで
-					//np2wab_drawWABWindow(np2wabwnd.hDCBuf);
-					scrnmng_bltwab();
+				if(ga_screenupdated){
+					if(!np2wabwnd.multiwindow){
+						// 画面転送だけメインスレッドで
+						//np2wab_drawWABWindow(np2wabwnd.hDCBuf);
+						scrnmng_bltwab();
+					}
 					ga_screenupdated = 0;
+					ResumeThread(ga_hThread);
 				}
-				ResumeThread(ga_hThread);
 			}
 		}
 	}
@@ -411,6 +413,7 @@ DWORD WINAPI ga_ThreadFunc(LPVOID vdParam) {
 			if(!ga_exitThread) SuspendThread(ga_hThread);
 		}else{
 			// 描画しないのに高速でぐるぐる回しても仕方ないのでスリープ
+			ga_screenupdated = 1;
 			if(!ga_exitThread) SuspendThread(ga_hThread);
 		}
 	}
