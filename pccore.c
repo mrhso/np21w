@@ -70,7 +70,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
-				128,
+				128, 0x00, 0,
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
@@ -681,15 +681,7 @@ void pccore_exec(BOOL draw) {
 	MEMWAIT_VRAM = np2cfg.wait[2];
 	MEMWAIT_GRCG = np2cfg.wait[4];
 	
-//#if defined(SUPPORT_WAB)
-//	if(!np2wab.multiwindow && np2wab.relay & 0x3 && np2wab.fps!=0){
-//		nevent_set(NEVENT_FLAMES, pccore.realclock/np2wab.fps, screenvsync, NEVENT_RELATIVE);
-//	}else{
-//		nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
-//	}
-//#else
 	nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
-//#endif
 
 //	nevent_get1stevent();
 

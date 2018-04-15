@@ -21,11 +21,20 @@
 
 static void setsystimerevent(UINT32 cnt, NEVENTPOSITION absolute) {
 
-	if (cnt > 8) {									// ª‹’‚È‚µ
-		cnt *= pccore.multiple;
-	}
-	else {
-		cnt = pccore.multiple << 16;
+	if(np2cfg.timeradj && GetKeyState(VK_SCROLL) & 0x1){
+		if (cnt > 8) {									// ª‹’‚È‚µ
+			cnt *= pccore.multiple/10;
+		}
+		else {
+			cnt = pccore.multiple << 16;
+		}
+	}else{
+		if (cnt > 8) {									// ª‹’‚È‚µ
+			cnt *= pccore.multiple;
+		}
+		else {
+			cnt = pccore.multiple << 16;
+		}
 	}
 	nevent_set(NEVENT_ITIMER, cnt, systimer, absolute);
 }

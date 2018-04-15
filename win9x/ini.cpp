@@ -562,7 +562,10 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GD5430TYPE",PFTYPE_UINT8,	&np2cfg.gd5430type),
 #endif
 	
-	PFAND("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
+	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
+	PFMAX("MODELNUM", PFTYPE_UINT8,		&np2cfg.modelnum,		255),
+	
+	PFVAL("TIMERADJ", PFTYPE_BOOL,		&np2cfg.timeradj),
 
 	// OSàÀë∂ÅH
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),

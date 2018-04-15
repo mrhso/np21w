@@ -48,7 +48,8 @@ static UINT8 key106[256] = {
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0x88
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	HELP, ALT,<>,    ,    ,    ,    ,    		; 0x90
-				  NC,0x73,0x4d,  NC,  NC,  NC,  NC,  NC,			// ver0.28
+				  NC,  NC,0x4d,  NC,  NC,  NC,  NC,  NC,			// ver0.28
+//				  NC,0x73,0x4d,  NC,  NC,  NC,  NC,  NC,			// ver0.28
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0x98
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	    ,    ,    ,    ,    ,    ,    ,    		; 0xa0

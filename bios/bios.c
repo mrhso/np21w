@@ -21,6 +21,9 @@
 #include "itfrom.res"
 #include "startup.res"
 #include "biosfd80.res"
+#if defined(SUPPORT_IDEIO)
+#include	"fdd/sxsi.h"
+#endif
 
 
 #define	BIOS_SIMULATE
@@ -167,6 +170,13 @@ static void bios_reinitbyswitch(void) {
 #if defined(SUPPORT_PC9821)
 	mem[MEMB_CRT_BIOS] |= 0x04;		// 05/02/03
 	mem[0x45c] = 0x40;
+	
+#if defined(SUPPORT_IDEIO)
+	mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
+						  (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
+#endif
+	mem[0xF8E80+0x0011] = mem[0xF8E80+0x0011] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
+	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number
 #endif
 
 #if defined(SUPPORT_PC9801_119)

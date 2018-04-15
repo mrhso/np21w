@@ -176,8 +176,9 @@ void mousemng_sync(void) {
 			DIMOUSESTATE diMouseState = {0};
 			HRESULT hr;
 			hr = diRawMouse->GetDeviceState(sizeof(DIMOUSESTATE), &diMouseState);
-			if (hr == DIERR_INPUTLOST){
-				diRawMouse->Acquire();
+			if (hr != DI_OK){
+				destroyDirectInput();
+				initDirectInput();
 			}else{
 				mousebufX += (SINT16)(diMouseState.lX)*mouseMul;
 				mousebufY += (SINT16)(diMouseState.lY)*mouseMul;

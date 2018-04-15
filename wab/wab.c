@@ -47,6 +47,9 @@ static int		ga_reqChangeWindowSize = 0;
 static int		ga_reqChangeWindowSize_w = 0;
 static int		ga_reqChangeWindowSize_h = 0;
 
+int		ga_relaystateint = 0;
+int		ga_relaystateext = 0;
+
 /**
  * 設定
  */
@@ -370,15 +373,16 @@ DWORD WINAPI ga_ThreadFunc(LPVOID vdParam) {
 static void IOOUTCALL np2wab_ofac(UINT port, REG8 dat) {
 	TRACEOUT(("WAB: out FACh set relay %04X d=%02X", port, dat));
 	dat = dat & ~0xfc;
-	if(np2wab.relay != dat){
-		np2wab_setRelayState(dat);
+	if(ga_relaystateext != dat){
+		ga_relaystateext = dat & 0x3;
+		np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
 	}
 	(void)port;
 	(void)dat;
 }
 static REG8 IOINPCALL np2wab_ifac(UINT port) {
 	TRACEOUT(("WAB: inp FACh get relay %04X", port));
-	return 0xfc | np2wab.relay;
+	return 0xfc | ga_relaystateext;
 }
 
 // NP2起動時の処理
@@ -448,6 +452,10 @@ void np2wab_bind(void)
 	ga_lastscalemode = 0;
 	ga_lastrealwidth = 0;
 	ga_lastrealheight = 0;
+	np2wab.lastWidth = 0;
+	np2wab.lastHeight = 0;
+	ga_relaystateint = 0;
+	np2wab_setRelayState(ga_relaystateint|ga_relaystateext);
 
 	// 設定値更新とか
 	np2wab.multiwindow = np2wabcfg.multiwindow;
@@ -520,9 +528,13 @@ void np2wab_setRelayState(REG8 state)
 			if(!np2cfg.wabasw) soundmng_pcmplay(SOUND_RELAY1, FALSE); // カチッ
 			if(np2wab.multiwindow){
 				// 別窓モードなら別窓を消す
+				np2wab.lastWidth = 0;
+				np2wab.lastHeight = 0;
 				ShowWindow(np2wab.hWndWAB, SW_HIDE);
 			}else{
 				// 統合モードなら画面を戻す
+				np2wab.lastWidth = 0;
+				np2wab.lastHeight = 0;
 				scrnmng_setwidth(dsync.scrnxpos, dsync.scrnxmax); // XXX: 画面幅を乗っ取る前に戻す
 				scrnmng_setheight(0, dsync.scrnymax); // XXX: 画面高さを乗っ取る前に戻す
 				scrnmng_updatefsres(); // フルスクリーン解像度更新

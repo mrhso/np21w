@@ -18,9 +18,6 @@
 #if defined(SUPPORT_CL_GD5430)
 #include	"wab/cirrus_vga_extern.h"
 #endif
-#if defined(SUPPORT_IDEIO)
-#include	"fdd/sxsi.h"
-#endif
 
 
 	UINT8	mem[0x200000];
@@ -328,27 +325,35 @@ static const MEMFNF memfnf = {
 #define EXT_WINDOW_SHFT	0x000000  // 謎
 #define BBLTWINDOW_ADSH	0x200000 // VRAM BITBLT
 #define BBLTWINDOW_SIZE	0x000000  // VRAM BITBLT マッピングサイズ
-#define MMIOWINDOW_ADDR	0x0F2000  // MMIO マッピングアドレス（場所不明）
+#define MMIOWINDOW_ADDR	0xF80000  // MMIO マッピングアドレス（場所不明）
 #define MMIOWINDOW_SIZE	0x000000   // MMIO マッピングサイズ（サイズ不明）
 #define VRA2WINDOW_ADDR	0x0F2000  // VRAMウィンドウ マッピングアドレス（場所不明）
 #define VRA2WINDOW_SIZE	0x000000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define CIRRUS_VRAMWND2_FUNC_rb(a,b)	cirrus_linear_memwnd_readb(a,b)
+#define CIRRUS_VRAMWND2_FUNC_rw(a,b)	cirrus_linear_memwnd_readw(a,b)
+#define CIRRUS_VRAMWND2_FUNC_rl(a,b)	cirrus_linear_memwnd_readl(a,b)
+#define CIRRUS_VRAMWND2_FUNC_wb(a,b,c)	cirrus_linear_memwnd_writeb(a,b,c)
+#define CIRRUS_VRAMWND2_FUNC_ww(a,b,c)	cirrus_linear_memwnd_writew(a,b,c)
+#define CIRRUS_VRAMWND2_FUNC_wl(a,b,c)	cirrus_linear_memwnd_writel(a,b,c)
 #endif
 
 REG8 MEMCALL memp_read8(UINT32 address) {
 
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				return cirrus_linear_readb(cirrusvga_opaque, address);
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
-				return cirrus_linear_readb(cirrusvga_opaque, address);
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					return cirrus_linear_readb(cirrusvga_opaque, address);
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
+					return cirrus_linear_readb(cirrusvga_opaque, address);
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				return cirrus_linear_bitblt_readb(cirrusvga_opaque, address);
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					return cirrus_linear_bitblt_readb(cirrusvga_opaque, address);
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -356,6 +361,9 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 		}
 		if(VRA2WINDOW_ADDR <= address && address < VRA2WINDOW_ADDR + VRA2WINDOW_SIZE){
 			return cirrus_vga_mem_readb(cirrusvga_opaque, address);
+		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			return CIRRUS_VRAMWND2_FUNC_rb(cirrusvga_opaque, address);
 		}
 	}
 #endif
@@ -365,28 +373,28 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 	//		return(mem[address]);
 	//	}
 	//}
-	if(0xF8E80 <= address && address <= 0xF8E80+0x003F){
-		//if (address == 0xF8E80+0x0000) 
-		//	return 0x98;
-		//if (address == 0xF8E80+0x0001) 
-		//	return 0x21;
-		//if (address == 0xF8E80+0x0002) 
-		//	return 0x1d;
-		//if (address == 0xF8E80+0x0003) 
-		//	return 0x23;
-		//if (address == 0xF8E80+0x0004) 
-		//	return 0x2C;
-		//if (address == 0xF8E80+0x0005) 
-		//	return 0xb1;
-		if (address == 0xF8E80+0x0010) 
-			return (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
-				   (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
-			//return 0x0F;
-		if (address == 0xF8E80+0x0011) 
-			return mem[address] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
-		//if (address == 0xF8E80+0x003F) 
-		//	return 0x21; // PC-9821 Xa7,9,10,12/C 
-	}
+	//if(0xF8E80 <= address && address <= 0xF8E80+0x003F){
+	//	//if (address == 0xF8E80+0x0000) 
+	//	//	return 0x98;
+	//	//if (address == 0xF8E80+0x0001) 
+	//	//	return 0x21;
+	//	//if (address == 0xF8E80+0x0002) 
+	//	//	return 0x1d;
+	//	//if (address == 0xF8E80+0x0003) 
+	//	//	return 0x23;
+	//	//if (address == 0xF8E80+0x0004) 
+	//	//	return 0x2C;
+	//	//if (address == 0xF8E80+0x0005) 
+	//	//	return 0xb1;
+	//	if (address == 0xF8E80+0x0010) 
+	//		return (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
+	//			   (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
+	//		//return 0x0F;
+	//	if (address == 0xF8E80+0x0011) 
+	//		return mem[address] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
+	//	//if (address == 0xF8E80+0x003F) 
+	//	//	return 0x21; // PC-9821 Xa7,9,10,12/C 
+	//}
 	//if (address == 0x96000+0x0000) 
 	//	return 0xC3;
 	//if (address == 0x961F0+0x0000) 
@@ -403,6 +411,7 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 	//	return 0x0f;
 	//if (address == 0x055f) 
 	//	return 0x01;
+	
 
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);
@@ -444,17 +453,19 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 	
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				return cirrus_linear_readw(cirrusvga_opaque, address);
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
-				return cirrus_linear_readw(cirrusvga_opaque, address);
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					return cirrus_linear_readw(cirrusvga_opaque, address);
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
+					return cirrus_linear_readw(cirrusvga_opaque, address);
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				return cirrus_linear_bitblt_readw(cirrusvga_opaque, address);
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					return cirrus_linear_bitblt_readw(cirrusvga_opaque, address);
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -462,6 +473,9 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 		}
 		if(VRA2WINDOW_ADDR <= address && address < VRA2WINDOW_ADDR + VRA2WINDOW_SIZE){
 			return cirrus_vga_mem_readw(cirrusvga_opaque, address);
+		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			return CIRRUS_VRAMWND2_FUNC_rw(cirrusvga_opaque, address);
 		}
 	}
 #endif
@@ -517,17 +531,19 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 	
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				return cirrus_linear_readl(cirrusvga_opaque, address);
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
-				return cirrus_linear_readl(cirrusvga_opaque, address);
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					return cirrus_linear_readl(cirrusvga_opaque, address);
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT) return 0;
+					return cirrus_linear_readl(cirrusvga_opaque, address);
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				return cirrus_linear_bitblt_readl(cirrusvga_opaque, address);
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					return cirrus_linear_bitblt_readl(cirrusvga_opaque, address);
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -535,6 +551,9 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 		}
 		if(VRA2WINDOW_ADDR <= address && address < VRA2WINDOW_ADDR + VRA2WINDOW_SIZE){
 			return cirrus_vga_mem_readl(cirrusvga_opaque, address);
+		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			return CIRRUS_VRAMWND2_FUNC_rl(cirrusvga_opaque, address);
 		}
 	}
 #endif
@@ -571,20 +590,22 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				g_cirrus_linear_write[0](cirrusvga_opaque, address, value);
-				return;
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
-				g_cirrus_linear_write[0](cirrusvga_opaque, address, value);
-				return;
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					g_cirrus_linear_write[0](cirrusvga_opaque, address, value);
+					return;
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
+					g_cirrus_linear_write[0](cirrusvga_opaque, address, value);
+					return;
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				cirrus_linear_bitblt_writeb(cirrusvga_opaque, address, value);
-				return;
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					cirrus_linear_bitblt_writeb(cirrusvga_opaque, address, value);
+					return;
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -595,8 +616,12 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 			cirrus_vga_mem_writeb(cirrusvga_opaque, address, value);
 			return;
 		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			CIRRUS_VRAMWND2_FUNC_wb(cirrusvga_opaque, address, value);
+			return;
+		}
 	}
-#endif
+#endif	
 	if (address < I286_MEMWRITEMAX) {
 		mem[address] = (UINT8)value;
 	}
@@ -633,20 +658,22 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				g_cirrus_linear_write[1](cirrusvga_opaque, address, value);
-				return;
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
-				g_cirrus_linear_write[1](cirrusvga_opaque, address, value);
-				return;
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					g_cirrus_linear_write[1](cirrusvga_opaque, address, value);
+					return;
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
+					g_cirrus_linear_write[1](cirrusvga_opaque, address, value);
+					return;
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				cirrus_linear_bitblt_writew(cirrusvga_opaque, address, value);
-				return;
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					cirrus_linear_bitblt_writew(cirrusvga_opaque, address, value);
+					return;
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -655,6 +682,10 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 		}
 		if(VRA2WINDOW_ADDR <= address && address < VRA2WINDOW_ADDR + VRA2WINDOW_SIZE){
 			cirrus_vga_mem_writew(cirrusvga_opaque, address, value);
+			return;
+		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			CIRRUS_VRAMWND2_FUNC_ww(cirrusvga_opaque, address, value);
 			return;
 		}
 	}
@@ -702,20 +733,22 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 
 #if defined(SUPPORT_CL_GD5430)
 	if(cirrusvga_opaque){
-		if(ga_VRAMWindowAddr <= address){
-			if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
-				g_cirrus_linear_write[2](cirrusvga_opaque, address, value);
-				return;
-			}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
-				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
-				g_cirrus_linear_write[2](cirrusvga_opaque, address, value);
-				return;
+		if(ga_VRAMWindowAddr){
+			if(ga_VRAMWindowAddr <= address){
+				if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE){
+					g_cirrus_linear_write[2](cirrusvga_opaque, address, value);
+					return;
+				}else if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SIZE){
+					if(address < ga_VRAMWindowAddr + VRAMWINDOW_SIZE + EXT_WINDOW_SHFT);
+					g_cirrus_linear_write[2](cirrusvga_opaque, address, value);
+					return;
+				}
 			}
-		}
-		if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
-			if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
-				cirrus_linear_bitblt_writel(cirrusvga_opaque, address, value);
-				return;
+			if(ga_VRAMWindowAddr + BBLTWINDOW_ADSH <= address){
+				if(address < ga_VRAMWindowAddr + BBLTWINDOW_ADSH + BBLTWINDOW_SIZE){
+					cirrus_linear_bitblt_writel(cirrusvga_opaque, address, value);
+					return;
+				}
 			}
 		}
 		if(MMIOWINDOW_ADDR <= address && address < MMIOWINDOW_ADDR + MMIOWINDOW_SIZE){
@@ -724,6 +757,10 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 		}
 		if(VRA2WINDOW_ADDR <= address && address < VRA2WINDOW_ADDR + VRA2WINDOW_SIZE){
 			cirrus_vga_mem_writel(cirrusvga_opaque, address, value);
+			return;
+		}
+		if(ga_VRAMWindowAddr2 <= address && address < ga_VRAMWindowAddr2 + 0x10000){
+			CIRRUS_VRAMWND2_FUNC_wl(cirrusvga_opaque, address, value);
 			return;
 		}
 	}

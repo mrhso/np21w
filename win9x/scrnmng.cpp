@@ -1122,8 +1122,6 @@ void scrnmng_exitsizing(void)
 // フルスクリーン解像度調整
 void scrnmng_updatefsres(void) {
 #ifdef SUPPORT_WAB
-	static int lastwidth = 0;
-	static int lastheight = 0;
 	int width = scrnstat.width;
 	int height = scrnstat.height;
 
@@ -1132,13 +1130,15 @@ void scrnmng_updatefsres(void) {
 		ddbltfx.dwSize = sizeof(DDBLTFX);
 		ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&ddbltfx);
 		ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&ddbltfx);
+		np2wab.lastWidth = 0;
+		np2wab.lastHeight = 0;
 		return;
 	}
 	if(scrnstat.width<100 || scrnstat.height<100) return;
 	
-	if(lastwidth!=width || lastheight!=height){
-		lastwidth=width;
-		lastheight=height;
+	if(np2wab.lastWidth!=width || np2wab.lastHeight!=height){
+		np2wab.lastWidth = width;
+		np2wab.lastHeight = height;
 		if((g_scrnmode & SCRNMODE_FULLSCREEN)!=0){
 			g_scrnmode = g_scrnmode & ~SCRNMODE_FULLSCREEN;
 			scrnmng_destroy();

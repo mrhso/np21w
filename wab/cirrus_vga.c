@@ -66,6 +66,7 @@ HPALETTE ga_hpal = NULL;
 BITMAPINFO bmpInfo = {0};
 void *cirrusvga_opaque = NULL;
 UINT32 ga_VRAMWindowAddr = (0x0F<<24);
+UINT32 ga_VRAMWindowAddr2 = (0xf20000);
 
 static HCURSOR ga_hFakeCursor = NULL; // ハードウェアカーソル（仮）
 
@@ -1450,6 +1451,9 @@ static void cirrus_get_resolution(VGAState *s, int *pwidth, int *pheight)
     /* interlace support */
     if (s->cr[0x1a] & 0x01)
         height = height * 2;
+	if(width==320) height /= 2; // XXX: とりあえず仮
+	if(width==400) height = 300; // XXX: とりあえず仮
+	if(width==512) height = 384; // XXX: とりあえず仮
     *pwidth = width;
     *pheight = height;
 }
@@ -1624,8 +1628,8 @@ cirrus_hook_write_sr(CirrusVGAState * s, unsigned reg_index, int reg_value)
 		s->sr[0x11] = reg_value;
 		s->hw_cursor_y = (reg_value << 3) | (reg_index >> 5);
 	break;
-	    case 0x07:			// Extended Sequencer Mode
-    //cirrus_update_memory_access(s);
+	case 0x07:			// Extended Sequencer Mode
+		cirrus_update_memory_access(s);
     case 0x08:			// EEPROM Control
     case 0x09:			// Scratch Register 0
     case 0x0a:			// Scratch Register 1
@@ -2809,6 +2813,128 @@ static void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr,
     cpu_to_le32w((uint32_t_ *)(s->vram_ptr + addr), val);
     cpu_physical_memory_set_dirty(s->vram_offset + addr);
 }
+
+void cirrus_linear_memwnd_writeb(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += (offset) << 14L;
+    else
+		addr += (offset) << 12L;
+
+    *(s->vram_ptr + addr) = val;
+    cpu_physical_memory_set_dirty(s->vram_offset + addr);
+}
+
+void cirrus_linear_memwnd_writew(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += ((int)s->gr[0x09]) << 14L;
+    else
+		addr += ((int)s->gr[0x09]) << 12L;
+    cpu_to_le16w((uint16_t_ *)(s->vram_ptr + addr), val);
+    cpu_physical_memory_set_dirty(s->vram_offset + addr);
+}
+
+void cirrus_linear_memwnd_writel(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += ((int)s->gr[0x09]) << 14L;
+    else
+		addr += ((int)s->gr[0x09]) << 12L;
+    cpu_to_le32w((uint32_t_ *)(s->vram_ptr + addr), val);
+    cpu_physical_memory_set_dirty(s->vram_offset + addr);
+}
+
+uint32_t_ cirrus_linear_memwnd_readb(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += ((int)s->gr[0x09]) << 14L;
+    else
+		addr += ((int)s->gr[0x09]) << 12L;
+    return *(s->vram_ptr + addr);
+}
+
+uint32_t_ cirrus_linear_memwnd_readw(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += ((int)s->gr[0x09]) << 14L;
+    else
+		addr += ((int)s->gr[0x09]) << 12L;
+    return *((uint16_t_ *)(s->vram_ptr + addr));
+}
+
+uint32_t_ cirrus_linear_memwnd_readl(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+
+    //addr &= s->cirrus_addr_mask;
+	addr -= ga_VRAMWindowAddr2;
+    if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		offset = s->gr[0x09/* + bank_index*/];
+    else			/* single bank */
+		offset = s->gr[0x09];
+
+    if ((s->gr[0x0b] & 0x20) != 0)
+		addr += ((int)s->gr[0x09]) << 14L;
+    else
+		addr += ((int)s->gr[0x09]) << 12L;
+    return *((uint32_t_ *)(s->vram_ptr + addr));
+}
+
 
 /***************************************
  *
@@ -4074,13 +4200,31 @@ static void IOOUTCALL cirrusvga_ofa3(UINT port, REG8 dat) {
 	case 0x00:
 		break;
 	case 0x01:
+		switch(dat){
+		case 0x10:
+			ga_VRAMWindowAddr2 = 0x0b0000;
+			break;
+		case 0x80:
+			ga_VRAMWindowAddr2 = 0xf20000;
+			break;
+		case 0xA0:
+			ga_VRAMWindowAddr2 = 0xf00000;
+			break;
+		case 0xC0:
+			ga_VRAMWindowAddr2 = 0xf40000;
+			break;
+		case 0xE0:
+			ga_VRAMWindowAddr2 = 0xf60000;
+			break;
+		}
 		break;
 	case 0x02:
-		ga_VRAMWindowAddr = (dat<<24);
+		if(dat!=0x00 && dat!=0xff) ga_VRAMWindowAddr = (dat<<24);
 		break;
 	case 0x03:
-		if((!!np2wab.relay) != (!!(dat&0x2))){
-			np2wab_setRelayState(dat);
+		if((!!ga_relaystateint) != (!!(dat&0x2))){
+			ga_relaystateint = dat & 0x2;
+			np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
 		}
 		cirrusvga_mmioenable = (dat&0x1);
 		break;
@@ -4096,13 +4240,29 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
-		ret = 0x80;
+		switch(ga_VRAMWindowAddr2){
+		case 0x0b0000:
+			ret = 0x10;
+			break;
+		case 0xf20000:
+			ret = 0x80;
+			break;
+		case 0xf00000:
+			ret = 0xA0;
+			break;
+		case 0xf40000:
+			ret = 0xC0;
+			break;
+		case 0xf60000:
+			ret = 0xE0;
+			break;
+		}
 		break;
 	case 0x02:
 		ret = (ga_VRAMWindowAddr>>24)&0xff;
 		break;
 	case 0x03:
-		ret = (np2wab.relay ? 0x2 : 0x0) | cirrusvga_mmioenable;
+		ret = ((ga_relaystateint&0x2) ? 0x2 : 0x0) | cirrusvga_mmioenable;
 		break;
 	}
 	return ret;
@@ -4124,14 +4284,32 @@ static void IOOUTCALL cirrusvga_ofab(UINT port, REG8 dat) {
 	case 0x00:
 		break;
 	case 0x01:
+		switch(dat){
+		case 0x10:
+			ga_VRAMWindowAddr2 = 0x0b0000;
+			break;
+		case 0x80:
+			ga_VRAMWindowAddr2 = 0xf20000;
+			break;
+		case 0xA0:
+			ga_VRAMWindowAddr2 = 0xf00000;
+			break;
+		case 0xC0:
+			ga_VRAMWindowAddr2 = 0xf40000;
+			break;
+		case 0xE0:
+			ga_VRAMWindowAddr2 = 0xf60000;
+			break;
+		}
 		break;
 	case 0x02:
-		ga_VRAMWindowAddr = (dat<<24);
-		cirrusvga->vram_offset = ga_VRAMWindowAddr;
+		if(dat!=0x00 && dat!=0xff) ga_VRAMWindowAddr = (dat<<24);
+		//cirrusvga->vram_offset = ga_VRAMWindowAddr;
 		break;
 	case 0x03:
-		if((!!np2wab.relay) != (!!(dat&0x2))){
-			np2wab_setRelayState(dat);
+		if((!!ga_relaystateint) != (!!(dat&0x2))){
+			ga_relaystateint = dat & 0x2;
+			np2wab_setRelayState(ga_relaystateint|ga_relaystateext); // リレーはORで･･･（暫定やっつけ修正）
 		}
 		cirrusvga_mmioenable = (dat&0x1);
 		break;
@@ -4147,7 +4325,23 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 		ret = np2cfg.gd5430type;//0x5B;
 		break;
 	case 0x01:
-		ret = 0x80;
+		switch(ga_VRAMWindowAddr2){
+		case 0x0b0000:
+			ret = 0x10;
+			break;
+		case 0xf20000:
+			ret = 0x80;
+			break;
+		case 0xf00000:
+			ret = 0xA0;
+			break;
+		case 0xf40000:
+			ret = 0xC0;
+			break;
+		case 0xf60000:
+			ret = 0xE0;
+			break;
+		}
 		break;
 	case 0x02:
 		ret = (ga_VRAMWindowAddr>>24)&0xff;
@@ -4302,7 +4496,9 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
     qemu_register_reset(cirrus_reset, s);
     cirrus_reset(s);
 	
-	np2wab_setRelayState(0);
+	ga_relaystateext = 0;
+	np2wab_setRelayState(ga_relaystateint|ga_relaystateext);
+	ShowWindow(np2wab.hWndWAB, SW_HIDE); // 設定変更対策
 
 	cirrusvga_mmioenable = 0;
 	np2wab.paletteChanged = 1;

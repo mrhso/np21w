@@ -37,6 +37,8 @@ typedef struct {
 	int wndHeight; // 描画領域サイズ(高さ)
 	int fps; // リフレッシュレート（大体合わせてくれるかもしれない）
 	NP2WAB_DrawFrame *drawframe; // 画面描画関数。hDCBufにアクセラレータ画面データを転送する。
+	int lastWidth; // 前回のウィンドウアクセラレータの横解像度（デバイス再作成判定用）
+	int lastHeight; // 前回のウィンドウアクセラレータの横解像度（デバイス再作成判定用）
 
 	int vramoffs;
 } NP2WAB;
@@ -53,6 +55,9 @@ void np2wab_setScreenSizeMT(int width, int height);
 
 extern NP2WAB np2wab;
 extern NP2WABCFG np2wabcfg;
+
+extern int		ga_relaystateint;
+extern int		ga_relaystateext;
 
 #ifdef __cplusplus
 }

@@ -349,6 +349,9 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_FAMILY	4
 #define	CPU_MODEL	1	/* 486DX */
 #define	CPU_STEPPING	3
+//#define	CPU_FAMILY	5
+//#define	CPU_MODEL	2	/* Pentium */
+//#define	CPU_STEPPING	3
 #else
 #define	CPU_FAMILY	4
 #define	CPU_MODEL	2	/* 486SX */
@@ -389,7 +392,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 /*				(1 << 30) */
 /*				(1 << 31) */
 #if defined(USE_FPU)
-#define	CPU_FEATURES		(CPU_FEATURE_CMOV|CPU_FEATURE_FPU)
+#define	CPU_FEATURES		(CPU_FEATURE_CMOV|CPU_FEATURE_FPU)//|CPU_FEATURE_TSC)
 #else
 #define	CPU_FEATURES		(CPU_FEATURE_CMOV)
 #endif

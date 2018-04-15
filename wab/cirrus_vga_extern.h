@@ -53,6 +53,8 @@ extern CPUWriteMemoryFunc **g_cirrus_linear_write;
 
 extern void		*cirrusvga_opaque;
 extern UINT32	ga_VRAMWindowAddr;
+extern UINT32	ga_VRAMWindowAddr2;
+extern REG8 cirrusvga_mmioenable;
 
 uint32_t_ cirrus_vga_mem_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_vga_mem_readw(void *opaque, target_phys_addr_t addr);
@@ -74,6 +76,13 @@ uint32_t_ cirrus_linear_bitblt_readl(void *opaque, target_phys_addr_t addr);
 void cirrus_linear_bitblt_writeb(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 void cirrus_linear_bitblt_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 void cirrus_linear_bitblt_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+
+uint32_t_ cirrus_linear_memwnd_readb(void *opaque, target_phys_addr_t addr);
+uint32_t_ cirrus_linear_memwnd_readw(void *opaque, target_phys_addr_t addr);
+uint32_t_ cirrus_linear_memwnd_readl(void *opaque, target_phys_addr_t addr);
+void cirrus_linear_memwnd_writeb(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_memwnd_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_memwnd_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 
 uint32_t_ cirrus_mmio_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_mmio_readw(void *opaque, target_phys_addr_t addr);
