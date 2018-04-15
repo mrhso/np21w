@@ -143,7 +143,7 @@ void CIdeDlg::OnOK()
 	m_nudrwait.GetWindowTextW(numbuf, 30);
 	valtmp = _ttol(numbuf);
 	if (valtmp < 0) valtmp = 0;
-	if (valtmp > 10000000) valtmp = 10000000;
+	if (valtmp > 100000000) valtmp = 100000000;
 	if (valtmp != np2cfg.iderwait)
 	{
 		np2cfg.iderwait = valtmp;
@@ -152,7 +152,7 @@ void CIdeDlg::OnOK()
 	m_nudwwait.GetWindowTextW(numbuf, 30);
 	valtmp = _ttol(numbuf);
 	if (valtmp < 0) valtmp = 0;
-	if (valtmp > 10000000) valtmp = 10000000;
+	if (valtmp > 100000000) valtmp = 100000000;
 	if (valtmp != np2cfg.idewwait)
 	{
 		np2cfg.idewwait = valtmp;
@@ -215,7 +215,7 @@ LRESULT CIdeDlg::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				}
 				else if(lpnud->iDelta < 0)
 				{
-					if(nudnum >= 10000000) nudnum = 10000000;
+					if(nudnum >= 100000000) nudnum = 100000000;
 					else nudnum++;
 				}
 				_stprintf(numbuf, _T("%d"), nudnum);
@@ -235,7 +235,7 @@ LRESULT CIdeDlg::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				}
 				else if(lpnud->iDelta < 0)
 				{
-					if(nudnum >= 10000000) nudnum = 10000000;
+					if(nudnum >= 100000000) nudnum = 100000000;
 					else nudnum++;
 				}
 				_stprintf(numbuf, _T("%d"), nudnum);

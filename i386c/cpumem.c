@@ -350,6 +350,12 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 					return CIRRUS_VRAMWND2_FUNC_rb(cirrusvga_opaque, addr2);
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		return CIRRUS_VRAMWND3_FUNC_rb(cirrusvga_opaque, addr3);
+			//	}
+			//}
 		}
 #endif
 
@@ -416,6 +422,12 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 					return CIRRUS_VRAMWND2_FUNC_rw(cirrusvga_opaque, addr2);
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		return CIRRUS_VRAMWND3_FUNC_rw(cirrusvga_opaque, addr3);
+			//	}
+			//}
 		}
 #endif
 	
@@ -490,6 +502,12 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 					return CIRRUS_VRAMWND2_FUNC_rl(cirrusvga_opaque, addr2);
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		return CIRRUS_VRAMWND3_FUNC_rl(cirrusvga_opaque, addr3);
+			//	}
+			//}
 		}
 #endif
 		if (address >= USE_HIMEM) {
@@ -547,6 +565,13 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 						return;
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		CIRRUS_VRAMWND3_FUNC_wb(cirrusvga_opaque, addr3, value);
+			//		return;
+			//	}
+			//}
 		}
 #endif	
 		address = address & CPU_ADRSMASK;
@@ -614,6 +639,13 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 						return;
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		CIRRUS_VRAMWND3_FUNC_ww(cirrusvga_opaque, addr3, value);
+			//		return;
+			//	}
+			//}
 		}
 #endif
 		if ((address + 1) & 0x7fff) {			// non 32kb boundary
@@ -689,6 +721,13 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 						return;
 				}
 			}
+			//if(np2clvga.VRAMWindowAddr3){
+			//	UINT32 addr3 = address;
+			//	if(np2clvga.VRAMWindowAddr3 <= addr3 && addr3 < np2clvga.VRAMWindowAddr3 + VRA3WINDOW_SIZEX){
+			//		CIRRUS_VRAMWND3_FUNC_wl(cirrusvga_opaque, addr3, value);
+			//		return;
+			//	}
+			//}
 		}
 #endif
 		if (address >= USE_HIMEM) {

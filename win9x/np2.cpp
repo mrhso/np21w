@@ -2076,8 +2076,6 @@ void loadNewINI(const OEMCHAR *fname){
 	np2opening = 1;
 	hInstance = g_hInstance;
 
-	winloc_InitDwmFunc();
-
 	// ‹ŒINI•Ð•t‚¯
 #ifdef HOOK_SYSKEY
 	UnhookWindowsHookEx(hHook);
@@ -2363,8 +2361,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	initialize_findacx();
 #endif
 
-	createAsciiTo98KeyCodeList();
+	winloc_InitDwmFunc();
 
+	createAsciiTo98KeyCodeList();
+	
 	_MEM_INIT();
 	CWndProc::Initialize(hInstance);
 	CSubWndBase::Initialize(hInstance);

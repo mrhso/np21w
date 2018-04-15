@@ -2893,7 +2893,13 @@ static void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr,
     cpu_physical_memory_set_dirty(s->vram_offset + addr);
 }
 
-// conver VRAM window address to linear address 
+/***************************************
+ *
+ *  E-BANK memory access
+ *
+ ***************************************/
+
+// convert E-BANK VRAM window address to linear address 
 void cirrus_linear_memwnd_addr_convert(void *opaque, target_phys_addr_t *addrval){
     CirrusVGAState *s = (CirrusVGAState *) opaque;
 	int offset;
@@ -2968,6 +2974,7 @@ void cirrus_linear_memwnd_addr_convert(void *opaque, target_phys_addr_t *addrval
 	}
 	*addrval = addr;
 }
+
 void cirrus_linear_memwnd_writeb(void *opaque, target_phys_addr_t addr,
                                      uint32_t_ val)
 {
@@ -2976,6 +2983,8 @@ void cirrus_linear_memwnd_writeb(void *opaque, target_phys_addr_t addr,
 	cirrus_linear_memwnd_addr_convert(opaque, &addr);
 
 	g_cirrus_linear_write[0](opaque, addr, val);
+	//cirrus_linear_mem_writeb(opaque, addr, val);
+	//cirrus_linear_writeb(opaque, addr, val);
 }
 
 void cirrus_linear_memwnd_writew(void *opaque, target_phys_addr_t addr,
@@ -2986,6 +2995,8 @@ void cirrus_linear_memwnd_writew(void *opaque, target_phys_addr_t addr,
 	cirrus_linear_memwnd_addr_convert(opaque, &addr);
 	
 	g_cirrus_linear_write[1](opaque, addr, val);
+	//cirrus_linear_mem_writew(opaque, addr, val);
+	//cirrus_linear_writew(opaque, addr, val);
 }
 
 void cirrus_linear_memwnd_writel(void *opaque, target_phys_addr_t addr,
@@ -2996,6 +3007,8 @@ void cirrus_linear_memwnd_writel(void *opaque, target_phys_addr_t addr,
 	cirrus_linear_memwnd_addr_convert(opaque, &addr);
 	
 	g_cirrus_linear_write[2](opaque, addr, val);
+	//cirrus_linear_mem_writel(opaque, addr, val);
+	//cirrus_linear_writel(opaque, addr, val);
 }
 
 uint32_t_ cirrus_linear_memwnd_readb(void *opaque, target_phys_addr_t addr)
@@ -3021,6 +3034,104 @@ uint32_t_ cirrus_linear_memwnd_readl(void *opaque, target_phys_addr_t addr)
     CirrusVGAState *s = (CirrusVGAState *) opaque;
 	
 	cirrus_linear_memwnd_addr_convert(opaque, &addr);
+
+	return cirrus_linear_readl(opaque, addr);
+}
+
+/***************************************
+ *
+ *  XXX: F00000 memory access ?
+ *
+ ***************************************/
+
+// XXX: convert F00000 VRAM window address to linear address（どうしたら良いか分からん）
+void cirrus_linear_memwnd3_addr_convert(void *opaque, target_phys_addr_t *addrval){
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	int offset;
+	target_phys_addr_t addr = *addrval;
+
+	//addr &= 0x1ffff;
+	//if ((s->gr[0x0b] & 0x01) != 0){
+	//	/* dual bank */
+	//	if(addr < 0x4000){
+	//		offset = s->gr[0x09];
+	//	}else{
+	//		addr -= 0x4000;
+	//		offset = s->gr[0x0a];
+	//	}
+	//}else{
+	//	/* single bank */
+		//offset = s->gr[0x09];
+	//}
+	////if ((s->gr[0x0b] & 0x20) != 0)
+		//offset <<= 14;
+	////else
+	////	offset <<= 12;
+
+	//addr += (offset);
+	addr &= s->cirrus_addr_mask;
+	*addrval = addr;
+}
+
+void cirrus_linear_memwnd3_writeb(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
+
+	//g_cirrus_linear_write[0](opaque, addr, val);
+	//cirrus_linear_mem_writeb(opaque, addr, val);
+	cirrus_linear_writeb(opaque, addr, val);
+}
+
+void cirrus_linear_memwnd3_writew(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
+	
+	//g_cirrus_linear_write[1](opaque, addr, val);
+	//cirrus_linear_mem_writew(opaque, addr, val);
+	cirrus_linear_writew(opaque, addr, val);
+}
+
+void cirrus_linear_memwnd3_writel(void *opaque, target_phys_addr_t addr,
+                                     uint32_t_ val)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
+	
+	//g_cirrus_linear_write[2](opaque, addr, val);
+	//cirrus_linear_mem_writel(opaque, addr, val);
+	cirrus_linear_writel(opaque, addr, val);
+}
+
+uint32_t_ cirrus_linear_memwnd3_readb(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
+
+	return cirrus_linear_readb(opaque, addr);
+}
+
+uint32_t_ cirrus_linear_memwnd3_readw(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
+
+	return cirrus_linear_readw(opaque, addr);
+}
+
+uint32_t_ cirrus_linear_memwnd3_readl(void *opaque, target_phys_addr_t addr)
+{
+    CirrusVGAState *s = (CirrusVGAState *) opaque;
+	
+	cirrus_linear_memwnd3_addr_convert(opaque, &addr);
 
 	return cirrus_linear_readl(opaque, addr);
 }
@@ -4113,13 +4224,13 @@ void cirrus_reset(void *opaque)
         s->sr[0x15] = 0x02;
 	}
 	if (np2clvga.gd54xxtype == CIRRUS_98ID_WSN) {
-        s->sr[0x1F] = 0x2d;		// MemClock
-        s->gr[0x18] = 0x0f;             // fastest memory configuration
-        s->sr[0x0f] = 0x98;
-        s->sr[0x17] = 0x20;
-        s->sr[0x15] = 0x04; /* memory size, 3=2MB, 4=4MB */
-        //s->sr[0x0F] = 0x20;
-        //s->sr[0x15] = 0x04;
+        //s->sr[0x1F] = 0x2d;		// MemClock
+        //s->gr[0x18] = 0x0f;             // fastest memory configuration
+        //s->sr[0x0f] = 0x98;
+        //s->sr[0x17] = 0x20;
+        //s->sr[0x15] = 0x04; /* memory size, 3=2MB, 4=4MB */
+        s->sr[0x0F] = 0x20;
+        s->sr[0x15] = 0x04;
 	}
 
     /* Win2K seems to assume that the pattern buffer is at 0xff
@@ -4167,16 +4278,23 @@ void cirrusvga_drawGraphic(){
 	//static UINT32 kdownc = 0;
 	//static INT32 memshift = 0;
 	int i, width, height, bpp;
+	uint32_t_ line_offset = 0;
 	LOGPALETTE * lpPalette;
 	static HPALETTE hPalette = NULL, oldPalette = NULL;
 	HDC hdc = np2wabwnd.hDCBuf;
 	static int waitscreenchange = 0;
 	int r;
-	int scanW = 0;
-	int scanpixW = 0;
+	int scanW = 0; // VRAM上の1ラインのデータ幅(byte)
+	int scanpixW = 0; // 実際に転送すべき1ラインのピクセル数(pixel)
 	int scanshift = 0;
 	uint8_t *scanptr;
 	uint8_t *vram_ptr;
+
+
+	// VRAM上での1ラインのサイズ（表示幅と等しくない場合有り）
+	line_offset = cirrusvga->cr[0x13] | ((cirrusvga->cr[0x1b] & 0x10) << 4);
+    line_offset <<= 3;
+
 	vram_ptr = cirrusvga->vram_ptr + np2wab.vramoffs;
 	
 	//	vram_ptr = cirrusvga->vram_ptr + 1024*memshift;
@@ -4207,38 +4325,47 @@ void cirrusvga_drawGraphic(){
     
 	//　謎の表示幅調整（2^nにパディングされることがあるらしいけど条件が分からないので無理矢理）
 	scanW = width*bpp/8;
-	if(scanW<=512 ) scanW = 512;
-	else if(scanW<=1024) scanW = 1024;
-	else if(scanW<=2048) scanW = 2048;
-	else if(scanW<=4096) scanW = 4096;
-	else if(scanW<=8192) scanW = 8192;
 	scanpixW = width;
-	if(width==640){
-		// XXX: 何も補正しない
-	}else{
-		if(scanpixW<=256 ) scanpixW = 256;
-		else if(scanpixW<=512) scanpixW = 512;
-		else if(scanpixW<=1024) scanpixW = 1024;
-		else if(scanpixW<=2048) scanpixW = 2048;
-	}
-	if(width==800 && bpp==8 && (((np2clvga.VRAMWindowAddr>>24)&0xff)==0xf0 || np2clvga.gd54xxtype > 0xff)){
-		// XXX: Win2k用やっつけ修正
-		scanW = width*2;
-		scanpixW = width;
+	if(bpp && line_offset){
+		scanW = line_offset;
+		if(bpp==8)
+			scanpixW = scanW*8/bpp;
 	}
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WAB){
 		// XXX: WSN用やっつけ修正
-		if(width==1280 && bpp==8){
-			scanW = width;
+		if((width==1024 || width==800 || width==640) && bpp==32){
+			scanW = width*bpp/8;
 			scanpixW = width;
-		}else if(width==800 && bpp==32){
-			scanpixW = width;
-			scanW = scanpixW*bpp/8;
-		}else if(width==640 && bpp==32){
-			scanpixW = width;
-			scanW = scanpixW*bpp/8;
 		}
 	}
+	//if(width==640 && bpp==24 && ((np2clvga.VRAMWindowAddr>>24)&0xff)==0xf0){
+	//	// XXX: Win2k用やっつけ修正
+	//	scanpixW = 1024;
+	//}
+	//if((cirrusvga->cr[0x08] & 8)){
+	//	if(scanpixW<=512 ) scanpixW = 512;
+	//	else if(scanpixW<=1024) scanpixW = 1024;
+	//	else if(scanpixW<=2048) scanpixW = 2048;
+	//	else if(scanpixW<=4096) scanpixW = 4096;
+	//	else if(scanpixW<=8192) scanpixW = 8192;
+	//}
+	//if(width==640){
+	//	// XXX: 何も補正しない
+	//}else{
+	//	if(scanpixW<=256 ) scanpixW = 256;
+	//	else if(scanpixW<=512) scanpixW = 512;
+	//	else if(scanpixW<=1024) scanpixW = 1024;
+	//	else if(scanpixW<=2048) scanpixW = 2048;
+	//}
+	//if(width==800 && bpp==8 && (((np2clvga.VRAMWindowAddr>>24)&0xff)==0xf0 || np2clvga.gd54xxtype > 0xff)){
+	//	// XXX: Win2k用やっつけ修正
+	//	scanW = width*2;
+	//	scanpixW = width;
+	//}
+	//if(np2clvga.gd54xxtype == CIRRUS_98ID_Be && width==640 && bpp==8 && np2clvga.VRAMWindowAddr==0){
+	//	// XXX: SC2k用やっつけ修正
+	//	scanpixW = 1024;
+	//}
 	if(bpp==16){
 		uint32_t_* bitfleld = (uint32_t_*)(ga_bmpInfo->bmiColors);
 		scanW = width*2;
@@ -4827,6 +4954,9 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
     s->device_id = device_id;
     s->bustype = CIRRUS_BUSTYPE_ISA;
 	
+	np2clvga.VRAMWindowAddr2 = 0;
+	//np2clvga.VRAMWindowAddr3 = 0;
+	
 	if(np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD
 		
@@ -4903,7 +5033,7 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 		iocore_attachinp(0x46E8, cirrusvga_i46e8);
 		
 		np2clvga.VRAMWindowAddr2 = 0xE0000;
-		//np2clvga.VRAMWindowAddr3 = 0xF0000; // XXX
+		//np2clvga.VRAMWindowAddr3 = 0xF00000; // XXX
 		//np2clvga.VRAMWindowAddr3size = 256*1024;
 	}
 
@@ -4990,7 +5120,9 @@ void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 
 	s = cirrusvga;
 	//memset(s, 0, sizeof(CirrusVGAState));
-	if(np2clvga.gd54xxtype <= 0xff){
+	if(np2clvga.gd54xxtype <= 0x57){
+		pc98_cirrus_reset(s, CIRRUS_ID_CLGD5428, 0);
+	}else if(np2clvga.gd54xxtype <= 0xff){
 		pc98_cirrus_reset(s, CIRRUS_ID_CLGD5434, 0);
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB){
 		pc98_cirrus_reset(s, CIRRUS_ID_CLGD5426, 0);
@@ -5012,7 +5144,9 @@ void pc98_cirrus_vga_bind(void)
 
 	s = cirrusvga;
 	//memset(s, 0, sizeof(CirrusVGAState));
-	if(np2clvga.gd54xxtype <= 0xff){
+	if(np2clvga.gd54xxtype <= 0x57){
+		pc98_cirrus_init_common(s, CIRRUS_ID_CLGD5428, 0);
+	}else if(np2clvga.gd54xxtype <= 0xff){
 		pc98_cirrus_init_common(s, CIRRUS_ID_CLGD5430, 0);
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB){
 		pc98_cirrus_init_common(s, CIRRUS_ID_CLGD5426, 0);

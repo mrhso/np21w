@@ -1375,6 +1375,7 @@ END
 
 STRINGTABLE
 BEGIN
+    IDS_GD5430_BE           "PC-9821Bp,Bs,Be,Bf built-in"
     IDS_GD5430_XE           "PC-9821Xe built-in"
     IDS_GD5430_CB           "PC-9821Cb built-in"
     IDS_GD5430_CF           "PC-9821Cf built-in"

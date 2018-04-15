@@ -32,6 +32,7 @@
 #define CIRRUS_VRAM_SIZE		(4096 * 1024)
 #define CIRRUS_VRAM_SIZE_WAB	(1024 * 1024)
 
+#define CIRRUS_98ID_Be		0x50
 #define CIRRUS_98ID_Xe		0x58
 #define CIRRUS_98ID_Cb		0x59
 #define CIRRUS_98ID_Cf		0x5A
@@ -53,12 +54,19 @@
 #define VRA2WINDOW_ADDR	0x0F2000UL  // VRAMウィンドウ マッピングアドレス（場所不明）
 #define VRA2WINDOW_SIZE	0x000000UL   // VRAMウィンドウ マッピングサイズ（サイズ不明）
 #define VRA2WINDOW_SIZEX  0x8000UL   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define VRA3WINDOW_SIZEX  0x20000UL  // VRAMウィンドウ F00000
 #define CIRRUS_VRAMWND2_FUNC_rb(a,b)	cirrus_linear_memwnd_readb(a,b)
 #define CIRRUS_VRAMWND2_FUNC_rw(a,b)	cirrus_linear_memwnd_readw(a,b)
 #define CIRRUS_VRAMWND2_FUNC_rl(a,b)	cirrus_linear_memwnd_readl(a,b)
 #define CIRRUS_VRAMWND2_FUNC_wb(a,b,c)	cirrus_linear_memwnd_writeb(a,b,c)
 #define CIRRUS_VRAMWND2_FUNC_ww(a,b,c)	cirrus_linear_memwnd_writew(a,b,c)
 #define CIRRUS_VRAMWND2_FUNC_wl(a,b,c)	cirrus_linear_memwnd_writel(a,b,c)
+#define CIRRUS_VRAMWND3_FUNC_rb(a,b)	cirrus_linear_memwnd3_readb(a,b)
+#define CIRRUS_VRAMWND3_FUNC_rw(a,b)	cirrus_linear_memwnd3_readw(a,b)
+#define CIRRUS_VRAMWND3_FUNC_rl(a,b)	cirrus_linear_memwnd3_readl(a,b)
+#define CIRRUS_VRAMWND3_FUNC_wb(a,b,c)	cirrus_linear_memwnd3_writeb(a,b,c)
+#define CIRRUS_VRAMWND3_FUNC_ww(a,b,c)	cirrus_linear_memwnd3_writew(a,b,c)
+#define CIRRUS_VRAMWND3_FUNC_wl(a,b,c)	cirrus_linear_memwnd3_writel(a,b,c)
 
 #define TEST_ADDR		0xF0000000
 #define TEST_ADDR_SIZE	0//0x8000
@@ -115,6 +123,13 @@ void cirrus_linear_memwnd_writeb(void *opaque, target_phys_addr_t addr, uint32_t
 void cirrus_linear_memwnd_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 void cirrus_linear_memwnd_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 
+uint32_t_ cirrus_linear_memwnd3_readb(void *opaque, target_phys_addr_t addr);
+uint32_t_ cirrus_linear_memwnd3_readw(void *opaque, target_phys_addr_t addr);
+uint32_t_ cirrus_linear_memwnd3_readl(void *opaque, target_phys_addr_t addr);
+void cirrus_linear_memwnd3_writeb(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_memwnd3_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_memwnd3_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+
 uint32_t_ cirrus_mmio_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_mmio_readw(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_mmio_readl(void *opaque, target_phys_addr_t addr);
@@ -129,6 +144,8 @@ extern "C" {
 typedef struct {
 	UINT32	VRAMWindowAddr;
 	UINT32	VRAMWindowAddr2;
+	//UINT32	VRAMWindowAddr3;
+	//UINT32	VRAMWindowAddr3size;
 	REG8	mmioenable;
 	UINT32	gd54xxtype;
 } NP2CLVGA;

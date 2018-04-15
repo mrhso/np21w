@@ -345,6 +345,7 @@
 #define IDS_ASYNC                       30512
 #define IDS_ASYNC16X                    30513
 #define IDS_ASYNC64X                    30514
+#define IDS_GD5430_BE                   30600
 #define IDS_GD5430_XE                   30601
 #define IDS_GD5430_CB                   30602
 #define IDS_GD5430_CF                   30603

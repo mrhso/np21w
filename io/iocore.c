@@ -671,13 +671,13 @@ void IOOUTCALL iocore_out32(UINT port, UINT32 dat) {
 		return;
 	}
 #endif
-//#if defined(SUPPORT_CL_GD5430)
-//	if(np2cfg.usegd5430 && (np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN)){
-//		if(pc98_cirrus_isWABport(port)){
-//			cirrusvga_ioport_write_wrap32(port, (UINT32)dat);
-//		}
-//	}
-//#endif
+#if defined(SUPPORT_CL_GD5430)
+	if(np2cfg.usegd5430 && (np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN)){
+		if(pc98_cirrus_isWABport(port)){
+			cirrusvga_ioport_write_wrap32(port, (UINT32)dat);
+		}
+	}
+#endif
 	iocore_out16(port, (UINT16)dat);
 	iocore_out16(port+2, (UINT16)(dat >> 16));
 }
@@ -692,13 +692,13 @@ UINT32 IOINPCALL iocore_inp32(UINT port) {
 		return(pcidev_r32(port));
 	}
 #endif
-//#if defined(SUPPORT_CL_GD5430)
-//	if(np2cfg.usegd5430 && (np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN)){
-//		if(pc98_cirrus_isWABport(port)){
-//			return(cirrusvga_ioport_read_wrap32(port));
-//		}
-//	}
-//#endif
+#if defined(SUPPORT_CL_GD5430)
+	if(np2cfg.usegd5430 && (np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN)){
+		if(pc98_cirrus_isWABport(port)){
+			return(cirrusvga_ioport_read_wrap32(port));
+		}
+	}
+#endif
 	ret = iocore_inp16(port);
 	return(ret + (iocore_inp16(port+2) << 16));
 }
