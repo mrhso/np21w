@@ -2,77 +2,8 @@
 #include	"dosio.h"
 
 
-static	char	curpath[MAX_PATH];
-static	char	*curfilep = curpath;
-
-#define ISKANJI(c)	(((((c) ^ 0x20) - 0xa1) & 0xff) < 0x3c)
-
-#if defined(UNICODE)
-
-static HANDLE CreateFile_A(LPCSTR lpFileName,
-					DWORD dwDesiredAccess,
-					DWORD dwShareMode,
-					LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-					DWORD dwCreationDisposition,
-					DWORD dwFlagsAndAttributes,
-					HANDLE hTemplateFile) {
-
-	TCHAR	FileNameW[MAX_PATH*2];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-							FileNameW, sizeof(FileNameW)/sizeof(TCHAR));
-	return(CreateFile(FileNameW, dwDesiredAccess, dwShareMode,
-						lpSecurityAttributes, dwCreationDisposition,
-						dwFlagsAndAttributes, hTemplateFile));
-}
-
-static inline BOOL DeleteFile_A(LPCSTR lpFileName) {
-
-	TCHAR	FileNameW[MAX_PATH*2];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-							FileNameW, sizeof(FileNameW)/sizeof(TCHAR));
-	return(DeleteFile(FileNameW));
-}
-
-static inline DWORD GetFileAttributes_A(LPCSTR lpFileName) {
-
-	TCHAR	FileNameW[MAX_PATH*2];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-							FileNameW, sizeof(FileNameW)/sizeof(TCHAR));
-	return(GetFileAttributes(FileNameW));
-}
-
-static inline BOOL CreateDirectory_A(LPCSTR lpFileName,
-												LPSECURITY_ATTRIBUTES atr) {
-
-	TCHAR	FileNameW[MAX_PATH*2];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-							FileNameW, sizeof(FileNameW)/sizeof(TCHAR));
-	return(CreateDirectory(FileNameW, atr));
-}
-
-static inline HANDLE FindFirstFile_A(LPCSTR lpFileName,
-													WIN32_FIND_DATA	*w32fd) {
-
-	TCHAR	FileNameW[MAX_PATH*2];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-							FileNameW, sizeof(FileNameW)/sizeof(TCHAR));
-	return(FindFirstFile(FileNameW, w32fd));
-}
-#else
-
-#define	CreateFile_A(a, b, c, d, e, f, g)	\
-								CreateFile(a, b, c, d, e, f, g)
-#define DeleteFile_A(a)			DeleteFile(a)
-#define	GetFileAttributes_A(a)	GetFileAttributes(a)
-#define	CreateDirectory_A(a, b)	CreateDirectory(a, b)
-#define FindFirstFile_A(a, b)	FindFirstFile(a, b)
-
-#endif
+static	OEMCHAR	curpath[MAX_PATH];
+static	OEMCHAR	*curfilep = curpath;
 
 
 // ----
@@ -81,14 +12,52 @@ void dosio_init(void) { }
 void dosio_term(void) { }
 
 											// ファイル操作
-FILEH file_open(const char *path) {
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+static HANDLE _CreateFile(const OEMCHAR *lpFileName,
+					DWORD dwDesiredAccess,
+					DWORD dwShareMode,
+					LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+					DWORD dwCreationDisposition,
+					DWORD dwFlagsAndAttributes,
+					HANDLE hTemplateFile) {
+
+	UINT16	ucs2[MAX_PATH];
+
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
+													ucs2, NELEMENTS(ucs2));
+	return(CreateFile(ucs2, dwDesiredAccess, dwShareMode,
+						lpSecurityAttributes, dwCreationDisposition,
+						dwFlagsAndAttributes, hTemplateFile));
+}
+#elif defined(OSLANG_UTF8)
+static HANDLE _CreateFile(const OEMCHAR *lpFileName,
+					DWORD dwDesiredAccess,
+					DWORD dwShareMode,
+					LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+					DWORD dwCreationDisposition,
+					DWORD dwFlagsAndAttributes,
+					HANDLE hTemplateFile) {
+
+	UINT16	ucs2[MAX_PATH];
+
+	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), lpFileName, (UINT)-1);
+	return(CreateFile(ucs2, dwDesiredAccess, dwShareMode,
+						lpSecurityAttributes, dwCreationDisposition,
+						dwFlagsAndAttributes, hTemplateFile));
+}
+#else
+#define	_CreateFile(a, b, c, d, e, f, g)	CreateFile(a, b, c, d, e, f, g)
+#endif
+
+
+FILEH file_open(const OEMCHAR *path) {
 
 	FILEH	ret;
 
-	if ((ret = CreateFile_A(path, GENERIC_READ | GENERIC_WRITE,
+	if ((ret = _CreateFile(path, GENERIC_READ | GENERIC_WRITE,
 						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
 													== INVALID_HANDLE_VALUE) {
-		if ((ret = CreateFile_A(path, GENERIC_READ,
+		if ((ret = _CreateFile(path, GENERIC_READ,
 						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
 													== INVALID_HANDLE_VALUE) {
 			return(FILEH_INVALID);
@@ -97,11 +66,11 @@ FILEH file_open(const char *path) {
 	return(ret);
 }
 
-FILEH file_open_rb(const char *path) {
+FILEH file_open_rb(const OEMCHAR *path) {
 
 	FILEH	ret;
 
-	if ((ret = CreateFile_A(path, GENERIC_READ, FILE_SHARE_READ, 0,
+	if ((ret = _CreateFile(path, GENERIC_READ, FILE_SHARE_READ, 0,
 								OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
 													== INVALID_HANDLE_VALUE) {
 		return(FILEH_INVALID);
@@ -109,11 +78,11 @@ FILEH file_open_rb(const char *path) {
 	return(ret);
 }
 
-FILEH file_create(const char *path) {
+FILEH file_create(const OEMCHAR *path) {
 
 	FILEH	ret;
 
-	if ((ret = CreateFile_A(path, GENERIC_READ | GENERIC_WRITE,
+	if ((ret = _CreateFile(path, GENERIC_READ | GENERIC_WRITE,
 						 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL))
 											== INVALID_HANDLE_VALUE) {
 		return(FILEH_INVALID);
@@ -195,85 +164,122 @@ short file_getdatetime(FILEH handle, DOSDATE *dosdate, DOSTIME *dostime) {
 	return(0);
 }
 
-short file_delete(const char *path) {
+short file_delete(const OEMCHAR *path) {
 
-	return(DeleteFile_A(path)?0:-1);
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+	UINT16	ucs2[MAX_PATH];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
+													ucs2, NELEMENTS(ucs2));
+	return(DeleteFile(ucs2)?0:-1);
+#elif defined(OSLANG_UTF8)
+	UINT16	ucs2[MAX_PATH];
+	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
+	return(DeleteFile(ucs2)?0:-1);
+#else
+	return(DeleteFile(path)?0:-1);
+#endif
 }
 
-short file_attr(const char *path) {
+short file_attr(const OEMCHAR *path) {
 
-	return((short)GetFileAttributes_A(path));
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+	UINT16	ucs2[MAX_PATH];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
+													ucs2, NELEMENTS(ucs2));
+	return((short)GetFileAttributes(ucs2));
+#elif defined(OSLANG_UTF8)
+	UINT16	ucs2[MAX_PATH];
+	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
+	return((short)GetFileAttributes(ucs2));
+#else
+	return((short)GetFileAttributes(path));
+#endif
 }
 
-short file_dircreate(const char *path) {
+short file_dircreate(const OEMCHAR *path) {
 
-	return(CreateDirectory_A(path, NULL)?0:-1);
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+	UINT16	ucs2[MAX_PATH];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
+													ucs2, NELEMENTS(ucs2));
+	return(CreateDirectory(ucs2, NULL)?0:-1);
+#elif defined(OSLANG_UTF8)
+	UINT16	ucs2[MAX_PATH];
+	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
+	return(CreateDirectory(ucs2, NULL)?0:-1);
+#else
+	return(CreateDirectory(path, NULL)?0:-1);
+#endif
 }
 
 
 											// カレントファイル操作
-void file_setcd(const char *exepath) {
+void file_setcd(const OEMCHAR *exepath) {
 
-	file_cpyname(curpath, exepath, sizeof(curpath));
+	file_cpyname(curpath, exepath, NELEMENTS(curpath));
 	curfilep = file_getname(curpath);
 	*curfilep = '\0';
 }
 
-char *file_getcd(const char *path) {
+char *file_getcd(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(curpath);
 }
 
-FILEH file_open_c(const char *path) {
+FILEH file_open_c(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(file_open(curpath));
 }
 
-FILEH file_open_rb_c(const char *path) {
+FILEH file_open_rb_c(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(file_open_rb(curpath));
 }
 
-FILEH file_create_c(const char *path) {
+FILEH file_create_c(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(file_create(curpath));
 }
 
-short file_delete_c(const char *path) {
+short file_delete_c(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(file_delete(curpath));
 }
 
-short file_attr_c(const char *path) {
+short file_attr_c(const OEMCHAR *path) {
 
-	*curfilep = '\0';
-	file_catname(curpath, path, sizeof(curpath));
+	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(file_attr(curpath));
 }
 
 
+// ----
+
+#if !defined(_WIN32_WCE)
+static const OEMCHAR str_selfdir[] = OEMTEXT(".");
+static const OEMCHAR str_parentdir[] = OEMTEXT("..");
+#endif
+static const OEMCHAR str_wildcard[] = OEMTEXT("*.*");
+
 static BOOL setflist(WIN32_FIND_DATA *w32fd, FLINFO *fli) {
 
-#if defined(UNICODE)
+#if defined(UNICODE) && defined(OSLANG_SJIS)
 	WideCharToMultiByte(CP_ACP, 0, w32fd->cFileName, -1,
-								fli->path, sizeof(fli->path), NULL, NULL);
+								fli->path, NELEMENTS(fli->path), NULL, NULL);
+#elif defined(OSLANG_UTF8)
+	ucscnv_ucs2toutf8(fli->path, NELEMENTS(fli->path), w32fd->cFileName, -1);
 #else
-	milstr_ncpy(fli->path, w32fd->cFileName, sizeof(fli->path));
+	file_cpyname(fli->path, w32fd->cFileName, NELEMENTS(fli->path));
 #endif
 #if !defined(_WIN32_WCE)
 	if ((w32fd->dwFileAttributes & FILEATTR_DIRECTORY) &&
-		((!file_cmpname(fli->path, ".")) ||
-		(!file_cmpname(fli->path, "..")))) {
+		((!file_cmpname(fli->path, str_selfdir)) ||
+		(!file_cmpname(fli->path, str_parentdir)))) {
 		return(FAILURE);
 	}
 #endif
@@ -284,17 +290,29 @@ static BOOL setflist(WIN32_FIND_DATA *w32fd, FLINFO *fli) {
 	return(SUCCESS);
 }
 
-FLISTH file_list1st(const char *dir, FLINFO *fli) {
+FLISTH file_list1st(const OEMCHAR *dir, FLINFO *fli) {
 
-	char			path[MAX_PATH];
+	OEMCHAR			path[MAX_PATH];
 	HANDLE			hdl;
 	WIN32_FIND_DATA	w32fd;
 
-	milsjis_ncpy(path, dir, sizeof(path));
-	file_setseparator(path, sizeof(path));
-	milsjis_ncat(path, "*.*", sizeof(path));
+	file_cpyname(path, dir, NELEMENTS(path));
+	file_setseparator(path, NELEMENTS(path));
+	file_catname(path, str_wildcard, NELEMENTS(path));
 	TRACEOUT(("file_list1st %s", path));
-	hdl = FindFirstFile_A(path, &w32fd);
+
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+	UINT16	ucs2[MAX_PATH];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
+													ucs2, NELEMENTS(ucs2));
+	hdl = FindFirstFile(ucs2, &w32fd);
+#elif defined(OSLANG_UTF8)
+	UINT16	ucs2[MAX_PATH];
+	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
+	hdl = FindFirstFile(ucs2, &w32fd);
+#else
+	hdl = FindFirstFile(path, &w32fd);
+#endif
 	if (hdl != INVALID_HANDLE_VALUE) {
 		do {
 			if (setflist(&w32fd, fli) == SUCCESS) {
@@ -324,89 +342,70 @@ void file_listclose(FLISTH hdl) {
 }
 
 
-char *file_getname(char *path) {
+OEMCHAR *file_getname(const OEMCHAR *path) {
 
-	char	*ret;
+	int			csize;
+const OEMCHAR	*ret;
 
 	ret = path;
-	while(*path != '\0') {
-		if (!ISKANJI(*path)) {
-			if ((*path == '\\') || (*path == '/') || (*path == ':')) {
-				ret = path + 1;
-			}
+	while((csize = milstr_charsize(path)) != 0) {
+		if ((csize == 1) &&
+			((*path == '\\') || (*path == '/') || (*path == ':'))) {
+			ret = path + 1;
 		}
-		else {
-			if (path[1]) {
-				path++;
-			}
-		}
-		path++;
+		path += csize;
 	}
-	return(ret);
+	return((OEMCHAR *)ret);
 }
 
-void file_cutname(char *path) {
+void file_cutname(OEMCHAR *path) {
 
-	char 	*p;
+	OEMCHAR	*p;
 
 	p = file_getname(path);
 	p[0] = '\0';
 }
 
-char *file_getext(char *path) {
+OEMCHAR *file_getext(const OEMCHAR *path) {
 
-	char	*p;
-	char	*q;
+	OEMCHAR	*p;
+	OEMCHAR	*q;
+	int		csize;
 
 	p = file_getname(path);
 	q = NULL;
-
-	while(*p != '\0') {
-		if (!ISKANJI(*p)) {
-			if (*p == '.') {
-				q = p + 1;
-			}
+	while((csize = milstr_charsize(p)) != 0) {
+		if ((csize == 1) && (*p == '.')) {
+			q = p + 1;
 		}
-		else {
-			if (p[1]) {
-				p++;
-			}
-		}
-		p++;
+		p += csize;
 	}
 	if (!q) {
 		q = p;
 	}
-	return(q);
+	return((OEMCHAR *)q);
 }
 
-void file_cutext(char *path) {
+void file_cutext(OEMCHAR *path) {
 
-	char	*p;
-	char	*q;
+	OEMCHAR	*p;
+	OEMCHAR	*q;
+	int		csize;
 
 	p = file_getname(path);
 	q = NULL;
-
-	while(*p != '\0') {
-		if (!ISKANJI(*p)) {
-			if (*p == '.') {
-				q = p;
-			}
+	while((csize = milstr_charsize(p)) != 0) {
+		if ((csize == 1) && (*p == '.')) {
+			q = p;
 		}
-		else {
-			if (p[1]) {
-				p++;
-			}
-		}
-		p++;
+		p += csize;
 	}
 	if (q) {
 		*q = '\0';
 	}
 }
 
-void file_cutseparator(char *path) {
+void file_cutseparator(OEMCHAR *path) {
 
 	int		pos;
 
@@ -420,7 +419,7 @@ void file_cutseparator(char *path) {
 	}
 }
 
-void file_setseparator(char *path, int maxlen) {
+void file_setseparator(OEMCHAR *path, int maxlen) {
 
 	int		pos;
 

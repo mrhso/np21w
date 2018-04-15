@@ -44,34 +44,70 @@ typedef struct {
 
 static MENUSYS	menusys;
 
-
-static const BYTE str_sysr[] = {		// 元のサイズに戻す
-		0x8c,0xb3,0x82,0xcc,0x83,0x54,0x83,0x43,0x83,0x59,0x82,0xc9,0x96,
-		0xdf,0x82,0xb7,0x00};
-static const BYTE str_sysm[] = {		// 移動
-		0x88,0xda,0x93,0xae,0x00};
-static const BYTE str_syss[] = {		// サイズ変更
-		0x83,0x54,0x83,0x43,0x83,0x59,0x95,0xcf,0x8d,0x58,0x00};
-static const BYTE str_sysn[] = {		// 最小化
-		0x8d,0xc5,0x8f,0xac,0x89,0xbb,0x00};
-static const BYTE str_sysx[] = {		// 最大化
-		0x8d,0xc5,0x91,0xe5,0x89,0xbb,0x00};
-static const BYTE str_sysc[] = {		// 閉じる
-		0x95,0xc2,0x82,0xb6,0x82,0xe9,0x00};
+#if !defined(RESOURCE_US) && (!defined(CHARSET_OEM) || defined(OSLANG_SJIS))
+static const char str_sysr[] = 				// 元のサイズに戻す
+			"\214\263\202\314\203\124\203\103\203\131\202\311" \
+			"\226\337\202\267";
+static const char str_sysm[] =				// 移動
+			"\210\332\223\256";
+static const char str_syss[] =				// サイズ変更
+			"\203\124\203\103\203\131\225\317\215\130";
+static const char str_sysn[] =				// 最小化
+			"\215\305\217\254\211\273";
+static const char str_sysx[] =				// 最大化
+			"\215\305\221\345\211\273";
+static const char str_sysc[] =				// 閉じる
+			"\225\302\202\266\202\351";
+#elif defined(OSLANG_EUC) && !defined(RESOURCE_US)
+static const char str_sysr[] = 				// 元のサイズに戻す
+			"\270\265\244\316\245\265\245\244\245\272\244\313" \
+			"\314\341\244\271";
+static const char str_sysm[] =				// 移動
+			"\260\334\306\260";
+static const char str_syss[] =				// サイズ変更
+			"\245\265\245\244\245\272\312\321\271\271";
+static const char str_sysn[] =				// 最小化
+			"\272\307\276\256\262\275";
+static const char str_sysx[] =				// 最大化
+			"\272\307\302\347\262\275";
+static const char str_sysc[] =				// 閉じる
+			"\312\304\244\270\244\353";
+#elif defined(OSLANG_UTF8) && !defined(RESOURCE_US)
+static const char str_sysr[] = 				// 元のサイズに戻す
+			"\345\205\203\343\201\256\343\202\265\343\202\244\343\202\272" \
+			"\343\201\253\346\210\273\343\201\231";
+static const char str_sysm[] =				// 移動
+			"\347\247\273\345\213\225";
+static const char str_syss[] =				// サイズ変更
+			"\343\202\265\343\202\244\343\202\272\345\244\211\346\233\264";
+static const char str_sysn[] =				// 最小化
+			"\346\234\200\345\260\217\345\214\226";
+static const char str_sysx[] =				// 最大化
+			"\346\234\200\345\244\247\345\214\226";
+static const char str_sysc[] =				// 閉じる
+			"\351\226\211\343\201\230\343\202\213";
+#else
+static const char str_sysr[] = "Restore";
+static const char str_sysm[] = "Move";
+static const char str_syss[] = "Size";
+static const char str_sysn[] = "Minimize";
+static const char str_sysx[] = "Maximize";
+static const char str_sysc[] = "Close";
+#endif
 
 
 static const MSYSITEM s_exit[] = {
-		{(char *)str_sysr,	NULL,		0,				MENU_GRAY},
-		{(char *)str_sysm,	NULL,		0,				MENU_GRAY},
-		{(char *)str_syss,	NULL,		0,				MENU_GRAY},
+		{str_sysr,			NULL,		0,				MENU_GRAY},
+		{str_sysm,			NULL,		0,				MENU_GRAY},
+		{str_syss,			NULL,		0,				MENU_GRAY},
 #if defined(MENU_TASKMINIMIZE)
-		{(char *)str_sysn,	NULL,		SID_MINIMIZE,	0},
+		{str_sysn,			NULL,		SID_MINIMIZE,	0},
 #else
-		{(char *)str_sysn,	NULL,		0,				MENU_GRAY},
+		{str_sysn,			NULL,		0,				MENU_GRAY},
 #endif
-		{(char *)str_sysx,	NULL,		0,				MENU_GRAY},
+		{str_sysx,			NULL,		0,				MENU_GRAY},
 		{NULL,				NULL,		0,				MENU_SEPARATOR},
-		{(char *)str_sysc,	NULL,		SID_CLOSE,		MENU_DELETED}};
+		{str_sysc,			NULL,		SID_CLOSE,		MENU_DELETED}};
 
 static const MSYSITEM s_root[] = {
 		{NULL,				s_exit,		0,				MENUS_SYSTEM},
@@ -309,7 +345,7 @@ static BOOL wndopenbase(MENUSYS *sys) {
 		mrect.right -= MENUSYS_BCAPTION;
 		mrect.bottom += MENUSYS_BCAPTION;
 	}
-	vram = menuvram_create(menubase.width, height);
+	vram = menuvram_create(menubase.width, height, menubase.bpp);
 	sys->wnd[0].vram = vram;
 	if (vram == NULL) {
 		goto wopn0_err;
@@ -523,7 +559,7 @@ static BOOL childopn(MENUSYS *sys, int depth, int pos) {
 		width = menubase.width;
 	}
 	height += (MENU_FBORDER + MENU_BORDER);
-	wnd->vram = menuvram_create(width, height);
+	wnd->vram = menuvram_create(width, height, menubase.bpp);
 	if (wnd->vram == NULL) {
 		TRACEOUT(("sub menu vram couldn't create"));
 		goto copn_err;

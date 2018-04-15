@@ -96,18 +96,8 @@ drawmng_create(void *parent, int width, int height)
 	hdl->d.vram.bpp = bitcolor;
 
 	/* pixmap */
-	hdl->shared_pixmap = use_shared_pixmap;
-	hdl->backsurf = NULL;
-	if (use_shared_pixmap) {
-		hdl->backsurf = gdk_pixmap_shpix_new(parent_window->window,
-		    hdl->surface, hdl->d.vram.width, hdl->d.vram.height,
-		    visual->depth);
-	}
-	if (hdl->backsurf == NULL) {
-		hdl->shared_pixmap = FALSE;
-		hdl->backsurf = gdk_pixmap_new(parent_window->window,
-		    hdl->d.vram.width, hdl->d.vram.height, visual->depth);
-	}
+	hdl->backsurf = gdk_pixmap_new(parent_window->window,
+	    hdl->d.vram.width, hdl->d.vram.height, visual->depth);
 	if (hdl->backsurf == NULL)
 		goto destroy;
 
@@ -164,10 +154,8 @@ drawmng_surfunlock(DRAWMNG_HDL dhdl)
 
 	if (hdl) {
 		gc = hdl->drawarea->style->fg_gc[GTK_WIDGET_STATE(hdl->drawarea)];
-		if (!hdl->shared_pixmap) {
-			gdk_draw_image(hdl->backsurf, gc, hdl->surface,
-			    0, 0, 0, 0, hdl->d.width, hdl->d.height);
-		}
+		gdk_draw_image(hdl->backsurf, gc, hdl->surface,
+		    0, 0, 0, 0, hdl->d.width, hdl->d.height);
 		hdl->d.drawing = FALSE;
 	}
 }
@@ -228,16 +216,14 @@ drawmng_invalidate(DRAWMNG_HDL dhdl, RECT_T *r)
 	gint x, y, w, h;
 
 	if (r == NULL) {
-		x = y = 0;
-		w = hdl->d.width;
-		h = hdl->d.height;
+		gtk_widget_queue_draw(hdl->drawarea);
 	} else {
 		x = r->left;
 		y = r->top;
 		w = r->right - r->left;
 		h = r->bottom - r->top;
+		gtk_widget_queue_draw_area(hdl->drawarea, x, y, w, h);
 	}
-	gtk_widget_queue_draw_area(hdl->drawarea, x, y, w, h);
 }
 
 void *

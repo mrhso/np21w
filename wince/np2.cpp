@@ -51,7 +51,7 @@ static const TCHAR szClassName[] = STRLITERAL("NP2-MainWindow");
 		HWND		hWndMain;
 		HINSTANCE	hInst;
 		HINSTANCE	hPrev;
-		char		modulefile[MAX_PATH];
+		OEMCHAR		modulefile[MAX_PATH];
 		GXKeyList	gx_keylist;
 
 enum {
@@ -198,9 +198,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				if (menuvram) {
 					menubase_moving(LOWORD(lParam), HIWORD(lParam), 1);
 				}
-				else {
+				else if (scrnmng_kbdpos(&lParam) == SUCCESS) {
 #if defined(SUPPORT_SOFTKBD)
-					softkbd_down(LOWORD(lParam), HIWORD(lParam) - 200);
+					softkbd_down(LOWORD(lParam), HIWORD(lParam));
 #endif
 				}
 			}
@@ -208,23 +208,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 		case WM_LBUTTONUP:
 			if (scrnmng_mousepos(&lParam) == SUCCESS) {
-
 #if defined(SUPPORT_SOFTKBD)
 				softkbd_up();
-				if (menuvram) {
-					menubase_moving(LOWORD(lParam), HIWORD(lParam), 2);
-				}
-				else if ((LOWORD(lParam) < 32) && (HIWORD(lParam) >= 208)) {
-					sysmenu_menuopen(0, LOWORD(lParam), HIWORD(lParam));
-				}
-#else
-				if (menuvram) {
-					menubase_moving(LOWORD(lParam), HIWORD(lParam), 2);
-				}
-				else {
-					sysmenu_menuopen(0, LOWORD(lParam), HIWORD(lParam));
-				}
 #endif
+				if (menuvram) {
+					menubase_moving(LOWORD(lParam), HIWORD(lParam), 2);
+				}
+				else if (scrnmng_ismenu(lParam)) {
+					sysmenu_menuopen(0, LOWORD(lParam), HIWORD(lParam));
+				}
 			}
 			break;
 
@@ -316,33 +308,37 @@ static void processwait(UINT cnt) {
 
 // ----
 
-#if !defined(UNICODE)
-#define	GetModuleFileName_A(a, b, c)	GetModuleFileName(a, b, c)
-#else
-static DWORD GetModuleFileName_A(HMODULE hModule,
-								LPSTR lpFileName, DWORD nSize) {
+#if defined(UNICODE) && defined(OSLANG_SJIS)
+static DWORD _GetModuleFileName(HMODULE hModule,
+										OEMCHAR *lpFileName, DWORD nSize) {
 
-	TCHAR	*FileNameW;
-	DWORD	len;
+	UINT16	ucs2[MAX_PATH];
 
-	if (nSize) {
-		FileNameW = (TCHAR *)_MALLOC(nSize * sizeof(TCHAR), "ModuleFile");
-		if (FileNameW) {
-			len = GetModuleFileName(hModule, FileNameW, nSize);
-			nSize = WideCharToMultiByte(CP_ACP, 0, FileNameW, -1,
+	GetModuleFileName(hModule, ucs2, NELEMENTS(ucs2));
+	nSize = WideCharToMultiByte(CP_ACP, 0, ucs2, -1,
 										lpFileName, nSize, NULL, NULL);
-			if (nSize) {
-				nSize--;
-			}
-			_MFREE(FileNameW);
-		}
-		else {
-			nSize = 0;
-		}
+	if (nSize) {
+		nSize--;
 	}
 	return(nSize);
 }
+#elif defined(OSLANG_UTF8)
+static DWORD _GetModuleFileName(HMODULE hModule,
+										OEMCHAR *lpFileName, DWORD nSize) {
+
+	UINT16	ucs2[MAX_PATH];
+
+	GetModuleFileName(hModule, ucs2, NELEMENTS(ucs2));
+	nSize = ucscnv_ucs2toutf8(lpFileName, nSize, ucs2, (UINT)-1);
+	if (nSize) {
+		nSize--;
+	}
+	return(nSize);
+}
+#else
+#define	_GetModuleFileName(a, b, c)		GetModuleFileName(a, b, c)
 #endif
+
 
 #if defined(_WIN32_WCE)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
@@ -372,7 +368,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		return(0);
 	}
 
-	GetModuleFileName_A(NULL, modulefile, sizeof(modulefile));
+	_GetModuleFileName(NULL, modulefile, sizeof(modulefile));
 	dosio_init();
 	file_setcd(modulefile);
 	initload();

@@ -38,6 +38,7 @@
 #include "mousemng.h"
 #include "scrnmng.h"
 #include "soundmng.h"
+#include "taskmng.h"
 
 #include "gtk/xnp2.h"
 #include "gtk/gtk_keyboard.h"
@@ -64,6 +65,23 @@
 
 
 /*
+ - Signal: gboolean GtkWidget::configure_event(GtkWidget *widget,
+          GdkEventConfigure *event, gpointer user_data)
+*/
+static gboolean
+configure(GtkWidget *w, GdkEventConfigure *ev, gpointer p)
+{
+
+	UNUSED(ev);
+	UNUSED(p);
+
+	gdk_draw_rectangle(w->window, w->style->black_gc, TRUE,
+	    0, 0, w->allocation.width, w->allocation.height);
+
+	return TRUE;
+}
+
+/*
  - Signal: gboolean GtkWidget::expose_event(GtkWidget *widget,
           GdkEventExpose *event, gpointer user_data)
 */
@@ -74,13 +92,10 @@ expose(GtkWidget *w, GdkEventExpose *ev, gpointer p)
 	UNUSED(w);
 	UNUSED(p);
 
-	if (ev->type == GDK_EXPOSE) {
-		if (ev->count == 0) {
-			scrndraw_redraw();
-		}
-		return TRUE;
+	if (ev->count == 0) {
+		scrndraw_redraw();
 	}
-	return FALSE;
+	return TRUE;
 }
 
 /*
@@ -94,14 +109,11 @@ key_press(GtkWidget *w, GdkEventKey *ev, gpointer p)
 	UNUSED(w);
 	UNUSED(p);
 
-	if (ev->type == GDK_KEY_PRESS) {
-		if ((ev->keyval == GDK_F12) && (np2oscfg.F12KEY == 0))
-			xmenu_toggle_item(MOUSE_MODE, !np2oscfg.MOUSE_SW, TRUE);
-		else
-			gtkkbd_keydown(ev->keyval);
-		return TRUE;
-	}
-	return FALSE;
+	if ((ev->keyval == GDK_F12) && (np2oscfg.F12KEY == 0))
+		xmenu_toggle_item(MOUSE_MODE, !np2oscfg.MOUSE_SW, TRUE);
+	else
+		gtkkbd_keydown(ev->keyval);
+	return TRUE;
 }
 
 /*
@@ -115,12 +127,9 @@ key_release(GtkWidget *w, GdkEventKey *ev, gpointer p)
 	UNUSED(w);
 	UNUSED(p);
 
-	if (ev->type == GDK_KEY_RELEASE) {
-		if ((ev->keyval != GDK_F12) || (np2oscfg.F12KEY != 0))
-			gtkkbd_keyup(ev->keyval);
-		return TRUE;
-	}
-	return FALSE;
+	if ((ev->keyval != GDK_F12) || (np2oscfg.F12KEY != 0))
+		gtkkbd_keyup(ev->keyval);
+	return TRUE;
 }
 
 /*
@@ -134,23 +143,20 @@ button_press(GtkWidget *w, GdkEventButton *ev, gpointer p)
 	UNUSED(w);
 	UNUSED(p);
 
-	if (ev->type == GDK_BUTTON_PRESS) {
-		switch (ev->button) {
-		case 1:
-			mouse_btn(MOUSE_LEFTDOWN);
-			break;
+	switch (ev->button) {
+	case 1:
+		mouse_btn(MOUSE_LEFTDOWN);
+		break;
 
-		case 2:
-			xmenu_toggle_item(MOUSE_MODE, !np2oscfg.MOUSE_SW, TRUE);
-			break;
+	case 2:
+		xmenu_toggle_item(MOUSE_MODE, !np2oscfg.MOUSE_SW, TRUE);
+		break;
 
-		case 3:
-			mouse_btn(MOUSE_RIGHTDOWN);
-			break;
-		}
-		return TRUE;
+	case 3:
+		mouse_btn(MOUSE_RIGHTDOWN);
+		break;
 	}
-	return FALSE;
+	return TRUE;
 }
 
 /*
@@ -164,40 +170,19 @@ button_release(GtkWidget *w, GdkEventButton *ev, gpointer p)
 	UNUSED(w);
 	UNUSED(p);
 
-	if (ev->type == GDK_BUTTON_RELEASE) {
-		switch (ev->button) {
-		case 1:
-			mouse_btn(MOUSE_LEFTUP);
-			break;
+	switch (ev->button) {
+	case 1:
+		mouse_btn(MOUSE_LEFTUP);
+		break;
 
-		case 2:
-			break;
+	case 2:
+		break;
 
-		case 3:
-			mouse_btn(MOUSE_RIGHTUP);
-			break;
-		}
-		return TRUE;
+	case 3:
+		mouse_btn(MOUSE_RIGHTUP);
+		break;
 	}
-	return FALSE;
-}
-
-/*
- - Signal: gboolean GtkWidget::enter_notify_event (GtkWidget *widget,
-          GdkEventCrossing *event, gpointer user_data)
-*/
-static gboolean
-enter_notify(GtkWidget *w, GdkEventCrossing *ev, gpointer p)
-{
-
-	UNUSED(w);
-	UNUSED(p);
-
-	if (ev->type == GDK_ENTER_NOTIFY) {
-		scrndraw_redraw();
-		return TRUE;
-	}
-	return FALSE;
+	return TRUE;
 }
 
 
@@ -214,31 +199,6 @@ set_icon_bitmap(GtkWidget *w)
 	    w->window, np2_bits, np2_width, np2_height);
 	gdk_window_set_icon(w->window, NULL, icon_pixmap, NULL);
 }
-
-#if 0
-static GtkWidget*
-create_pixmap(GtkWidget *widget, gchar **data)
-{
-	GtkWidget *pixmap;
-	GdkColormap *colormap;
-	GdkPixmap *gdkpixmap;
-	GdkBitmap *mask;
-
-	colormap = gtk_widget_get_colormap(widget);
-	gdkpixmap = gdk_pixmap_colormap_create_from_xpm_d(
-	    NULL, colormap, &mask, NULL, data);
-	if (gdkpixmap == NULL) {
-		g_warning("Couldn't create pixmap.");
-		return NULL;
-	}
-
-	pixmap = gtk_pixmap_new(gdkpixmap, mask);
-	gdk_pixmap_unref(gdkpixmap);
-	gdk_bitmap_unref(mask);
-
-	return pixmap;
-}
-#endif
 
 
 /*
@@ -281,10 +241,17 @@ gui_gtk_get_toolkit(void)
 BOOL
 gui_gtk_arginit(int *argcp, char ***argvp)
 {
+	char tmp[MAX_PATH];
+	char *homeenv;
+
+	homeenv = getenv("HOME");
 
 	gtk_set_locale();
-	gtk_rc_add_default_file(".np2rc");
 	gtk_init(argcp, argvp);
+	if (homeenv) {
+		g_snprintf(tmp, sizeof(tmp), "%s/.np2/gtkrc", homeenv);
+		gtk_rc_add_default_file(tmp);
+	}
 
 	return SUCCESS;
 }
@@ -295,7 +262,6 @@ gui_gtk_widget_create(void)
 	GtkWidget *main_vbox;
 	GtkWidget *menubar;
 
-	/* ウィンドウ作成 */
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, TRUE);
 	gtk_window_set_title(GTK_WINDOW(window), np2oscfg.titles);
@@ -306,12 +272,10 @@ gui_gtk_widget_create(void)
 	gtk_container_add(GTK_CONTAINER(window), main_vbox);
 	gtk_widget_show(main_vbox);
 
-	/* メニューバー	*/
-	menubar = create_menu(window);
+	menubar = create_menu();
 	gtk_box_pack_start(GTK_BOX(main_vbox), menubar, FALSE, TRUE, 0);
 	gtk_widget_show(menubar);
 
-	/* 画面領域 */
 	drawarea = gtk_drawing_area_new();
 	gtk_drawing_area_size(GTK_DRAWING_AREA(drawarea), 640, 400);
 	gtk_box_pack_start(GTK_BOX(main_vbox), drawarea, FALSE, TRUE, 0);
@@ -320,7 +284,6 @@ gui_gtk_widget_create(void)
 	gtk_widget_realize(window);
 	set_icon_bitmap(window);
 
-	/* setup signal */
 	gtk_signal_connect(GTK_OBJECT(window), "destroy", 
 	    GTK_SIGNAL_FUNC(gtk_main_quit), "WM destroy");
 	gtk_signal_connect(GTK_OBJECT(window), "key_press_event",
@@ -332,11 +295,10 @@ gui_gtk_widget_create(void)
 	gtk_signal_connect(GTK_OBJECT(window), "button_release_event",
 	    GTK_SIGNAL_FUNC(button_release), NULL);
 
-	/* setup drawarea signal */
+	gtk_signal_connect(GTK_OBJECT(drawarea), "configure_event",
+	    GTK_SIGNAL_FUNC(configure), NULL);
 	gtk_signal_connect(GTK_OBJECT(drawarea), "expose_event",
 	    GTK_SIGNAL_FUNC(expose), NULL);
-	gtk_signal_connect(GTK_OBJECT(drawarea), "enter_notify_event",
-	    GTK_SIGNAL_FUNC(enter_notify), NULL);
 }
 
 static void
@@ -366,6 +328,7 @@ void
 gui_gtk_widget_quit(void)
 {
 
+	taskmng_exit();
 	gtk_main_quit();
 }
 
@@ -373,7 +336,9 @@ void
 gui_gtk_event_process(void)
 {
 
-	/* XXX: Nothing to do */
+	if (taskmng_isavail() && gdk_events_pending()) {
+		gtk_main_iteration_do(FALSE);
+	}
 }
 
 void
@@ -387,8 +352,8 @@ void
 gui_gtk_messagebox(const char *title, const char *msg)
 {
 
-	printf("%s\n", title);
-	printf(msg);
+	UNUSED(title);
+	g_message(msg);
 }
 
 /* toolkit data */

@@ -19,12 +19,105 @@
 #define	siglongjmp(env, val)	longjmp(env, val)
 -------------------------------------------------------------------------------
 
+
+　CHARSET_OEMについて
+　　要は毎回Shift-JISに変換せずに OS依存の文字コードで処理しようとする…
+　　まだ機能しません。定義しないで下さい。
+
+　　OEMCHAR (現状char固定、将来として UCS2でUINT16、UCS4でUINT32)
+　　OEMTEXTの追加
+　　コンパイルが通るかご確認下さい。
+
+　　ステップ.1 (WinCE,X11)
+　　　OEMコードと SJIS(EMBED/hostdrv)の変換調整
+　　　(FONTMNGは SJISのままで EMBEDで変換)
+
+　　　つか…X11版のDOSIO file_catname,file_cmpnameの入力が sjisになってる…
+　　　(NP2はファイル名は OSLANGに従う…筈…
+　　　と思ったら hostdrvで SJISのまま食わせてる？(汗
+
+　　　EUCの２バイトコード判定が (((c - 0xa1) & 0xff) < 0x5d)で
+　　　半角カナ(0x8e)の判定で狂う
+　　　(c & 0x80)のほうが良い？
+
+　　　現状の…
+
+　　　・codecnv.hのインクルードは compiler.hに移動
+
+　　　・#if defined(OSLANG_EUC)
+　　　　　codecnv_sjis2euc(tmp, NELEMENTS(tmp), src, (UINT)-1);
+　　　　　file_catname(path, tmp, NELEMENTS(path));
+　　　　#elif defined(OSLANG_UTF8)
+　　　　　oemtext_sjis2oem(tmp, NELEMENTS(tmp), src, (UINT)-1);
+　　　　　file_catname(path, tmp, NELEMENTS(path));
+　　　　#else
+　　　　　file_catname(path, src, NELEMENTS(path));
+　　　　#endif
+
+　　　　を
+
+　　　　#define oemtext_sjis2oem codecnv_sjis2euc
+　　　　#define oemtext_oemsjis2 codecnv_euc2sjis
+
+　　　　としておいて
+
+　　　　#if defined(OSLANG_ANK) || defined(OSLANG_SJIS)
+　　　　　file_catname(path, src, NELEMENTS(path));
+　　　　#else
+　　　　　oemtext_sjis2oem(tmp, NELEMENTS(tmp), src, (UINT)-1);
+　　　　　file_catname(path, tmp, NELEMENTS(path));
+　　　　#endif
+
+　　　　とする？
+
+　　　メモ: http://euc.jp/i18n/charcode.ja.html
+
+　　ステップ.2 (WinNT,MacOSX)
+　　　OEMCHARのUCS2対応
+
+　　ステップ.3 (MacOSX)
+　　　ANSI PageCodeと Macintosh PageCodeの調整
+　　　メモ: http://homepage1.nifty.com/nomenclator/unicode/normalization.htm
+
+　　ステップ.4 (WinNT,WinCE,MacOSX,X11)
+　　　フォント関数回りを SJISからOEMコードに移行
+
+
+
 // ----
 
 　ver0.78 → ver0.79
+　・CGROM - JIS83罫線の不都合修正
+　・CGROM - ２バイト半角アクセス修正
+　・86PCM - バッファリングの不都合を修正
+　・BEEP - BEEP PCMの修正
+　・BIOS - 2Dタイプのシリンダ倍移動を修正
+　・BIOS - FDD割り込みフラグを修正
+　・AMD98 - レジスタリードの追加
+　・VRAM - スキップライン描画の修正
+　・BMPSave - スキップライン有効時のセーブ不都合を修正
 
-　(X11)
-　　・ソフトウェアキーボードサポート
+　(Win9x)
+　　・ソフトウェアキーボードを有効にした
+
+
+　・内部変更
+
+　　　char *file_getext(const char *path);
+　　　char *file_getname(const char *path);
+　　　(constが付きます)
+
+　　　記念に gif保存に対応してみたり
+　　　　vram/scrnbmp.c の代わりに vram/scrnsave.c をリンクして
+
+　　　　　SCRNSAVE ss = scrnsave_get();
+　　　　　scrnsave_writegif(ss, "out.gif", SCRNSAVE_AUTO);
+	　　　scrnsave_trash(ss);
+
+　　　　　bmpなら scrnsave_writebmp(ss, "out.bmp", SCRNSAVE_AUTO);
+
+　　　　　np21のVGA時に 257色以上になるのに注意
+　　　　　(ss->type == SCRNSAVE_24BITの時にgif保存出来ません)
 
 
 // ----
@@ -43,6 +136,8 @@
 　・LIO - 半角ひらがなの対応
 　・LIO - 円の仮サポート
 
+　(X11)
+　　・ソフトウェアキーボードサポート
 
 　・内部変更
 

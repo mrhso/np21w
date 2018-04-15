@@ -31,7 +31,7 @@ static void rcnvfcb(char *dst, UINT dlen, char *src, UINT slen) {
 		if (c == 0) {
 			break;
 		}
-#if defined(OSLANG_SJIS) || defined(OSLANG_EUC)
+#if defined(OSLANG_SJIS) || defined(OSLANG_EUC) || defined(OSLANG_UTF8)
 		if ((((c ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
 			if ((!slen) || (src[0] == '\0')) {
 				break;
@@ -77,18 +77,23 @@ static void rcnvfcb(char *dst, UINT dlen, char *src, UINT slen) {
 
 static BOOL realname2fcb(char *fcbname, FLINFO *fli) {
 
+#if defined(OSLANG_EUC) || defined(OSLANG_UTF8)
+	char	sjis[MAX_PATH];
+#endif
 	char	*realname;
 	char	*ext;
 
 #if defined(OSLANG_EUC)
-	char		sjis[MAX_PATH];
-
-	codecnv_euc2sjis(sjis, sizeof(sjis), fli->path, sizeof(fli->path));
+	codecnv_euc2sjis(sjis, sizeof(sjis), fli->path, NELEMENTS(fli->path));
+	realname = sjis;
+#elif defined(OSLANG_UTF8)
+	oemtext_oem2sjis(sjis, sizeof(sjis), fli->path, NELEMENTS(fli->path));
 	realname = sjis;
 #else
 	realname = fli->path;
 #endif
 	FillMemory(fcbname, 11, ' ');
+	// ToDo: SJISに変換済みなのに OEM依存してる
 	ext = file_getext(realname);
 	rcnvfcb(fcbname+0, 8, realname, ext - realname);
 	rcnvfcb(fcbname+8, 3, ext, (UINT)-1);
@@ -112,7 +117,7 @@ static BOOL hddseadir(void *vpItem, void *vpArg) {
 	return(FALSE);
 }
 
-LISTARRAY hostdrvs_getpathlist(const char *realpath) {
+LISTARRAY hostdrvs_getpathlist(const OEMCHAR *realpath) {
 
 	FLISTH		flh;
 	FLINFO		fli;
@@ -143,7 +148,7 @@ LISTARRAY hostdrvs_getpathlist(const char *realpath) {
 			hdd->di.attr = fli.attr;
 			hdd->di.date = fli.date;
 			hdd->di.time = fli.time;
-			milstr_ncpy(hdd->realname, fli.path, sizeof(hdd->realname));
+			file_cpyname(hdd->realname, fli.path, NELEMENTS(hdd->realname));
 //			TRACEOUT(("%s -> %11s", fli.path, fcbname));
 		}
 	} while(file_listnext(flh, &fli) == SUCCESS);
@@ -209,20 +214,20 @@ static char *dospath2fcb(char *fcbname, char *dospath) {
 
 BOOL hostdrvs_getrealpath(HDRVPATH *hdp, char *dospath) {
 
-	char		path[MAX_PATH];
+	OEMCHAR		path[MAX_PATH];
 	LISTARRAY	lst;
 const HDRVDIR 	*di;
 	HDRVLST		hdl;
 	char		fcbname[11];
 
-	file_cpyname(path, np2cfg.hdrvroot, sizeof(path));
+	file_cpyname(path, np2cfg.hdrvroot, NELEMENTS(path));
 	lst = NULL;
 	di = &hddroot;
 	while(dospath[0] != '\0') {
 		if ((dospath[0] != '\\') || (!(di->attr & 0x10))) {
 			goto hdsgrp_err;
 		}
-		file_setseparator(path, sizeof(path));
+		file_setseparator(path, NELEMENTS(path));
 		dospath++;
 		if (dospath[0] == '\0') {
 			di = &hddroot;
@@ -235,12 +240,12 @@ const HDRVDIR 	*di;
 		if (hdl == NULL) {
 			goto hdsgrp_err;
 		}
-		file_catname(path, hdl->realname, sizeof(path));
+		file_catname(path, hdl->realname, NELEMENTS(path));
 		di = &hdl->di;
 	}
 	if (hdp) {
 		CopyMemory(&hdp->di, di, sizeof(HDRVDIR));
-		file_cpyname(hdp->path, path, sizeof(hdp->path));
+		file_cpyname(hdp->path, path, NELEMENTS(hdp->path));
 	}
 	listarray_destroy(lst);
 	return(SUCCESS);
@@ -250,7 +255,7 @@ hdsgrp_err:
 	return(FAILURE);
 }
 
-BOOL hostdrvs_getrealdir(char *path, int size, char *fcb, char *dospath) {
+BOOL hostdrvs_getrealdir(OEMCHAR *path, int size, char *fcb, char *dospath) {
 
 	LISTARRAY	lst;
 	HDRVLST		hdl;
@@ -291,25 +296,29 @@ hdsgrd_err:
 
 BOOL hostdrvs_newrealpath(HDRVPATH *hdp, char *dospath) {
 
-	char		path[MAX_PATH];
+	OEMCHAR		path[MAX_PATH];
 	char		fcb[11];
 	LISTARRAY	lst;
 	HDRVLST		hdl;
 	char		dosname[16];
 	UINT		i;
 	char		*p;
+#if defined(OSLANG_EUC) || defined(OSLANG_UTF8)
+	OEMCHAR		oemname[64];
+#endif
 
-	if ((hostdrvs_getrealdir(path, sizeof(path), fcb, dospath) != SUCCESS) ||
+	if ((hostdrvs_getrealdir(path, NELEMENTS(path), fcb, dospath)
+															!= SUCCESS) ||
 	 	(fcb[0] == ' ')) {
 		return(FAILURE);
 	}
 	lst = hostdrvs_getpathlist(path);
 	hdl = (HDRVLST)listarray_enum(lst, hddsea, fcb);
 	if (hdl != NULL) {
-		file_catname(path, hdl->realname, sizeof(path));
+		file_catname(path, hdl->realname, NELEMENTS(path));
 		if (hdp) {
 			CopyMemory(&hdp->di, &hdl->di, sizeof(HDRVDIR));
-			file_cpyname(hdp->path, path, sizeof(hdp->path));
+			file_cpyname(hdp->path, path, NELEMENTS(hdp->path));
 		}
 	}
 	else {
@@ -324,11 +333,20 @@ BOOL hostdrvs_newrealpath(HDRVPATH *hdp, char *dospath) {
 			}
 		}
 		*p = '\0';
-		file_catname(path, dosname, sizeof(path));
+		// ここで SJIS->OEMコードに未変換！
+#if defined(OSLANG_EUC)
+		codecnv_sjis2euc(oemname, NELEMENTS(oemname), dosname, (UINT)-1);
+		file_catname(path, oemname, NELEMENTS(path));
+#elif defined(OSLANG_UTF8)
+		oemtext_sjis2oem(oemname, NELEMENTS(oemname), dosname, (UINT)-1);
+		file_catname(path, oemname, NELEMENTS(path));
+#else
+		file_catname(path, dosname, NELEMENTS(path));
+#endif
 		if (hdp) {
 			ZeroMemory(&hdp->di, sizeof(hdp->di));
 			CopyMemory(hdp->di.fcbname, fcb, 11);
-			file_cpyname(hdp->path, path, sizeof(hdp->path));
+			file_cpyname(hdp->path, path, NELEMENTS(hdp->path));
 		}
 	}
 	listarray_destroy(lst);

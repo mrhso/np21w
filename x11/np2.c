@@ -113,7 +113,7 @@ NP2OSCFG np2oscfg = {
 	FALSE,			/* shared_pixmap */
 };
 
-BOOL np2running = FALSE;
+volatile BOOL np2running = FALSE;
 BYTE scrnmode = 0;
 
 UINT framecnt = 0;
@@ -141,7 +141,7 @@ char fontfilename[MAX_PATH] = FONTNAME_DEFAULT;
 
 char timidity_cfgfile_path[MAX_PATH];
 
-BOOL use_shared_pixmap;
+BOOL use_shared_pixmap = FALSE;
 
 
 UINT32
@@ -379,6 +379,9 @@ havemmx(void)
 {
 	int rv;
 
+#if defined(GCC_CPU_ARCH_AMD64)
+	rv = 1;
+#else	/* !GCC_CPU_ARCH_AMD64 */
 	asm volatile (
 		"pushf;"
 		"popl	%%eax;"
@@ -399,7 +402,8 @@ havemmx(void)
 		"andl	$0x00800000, %0;"
 	".nocpuid:"
 		: "=a" (rv));
-
+#endif /* GCC_CPU_ARCH_AMD64 */
 	return rv;
 }
+
 #endif /* GCC_CPU_ARCH_IA32 */

@@ -1,4 +1,6 @@
 
+#if !defined(DISABLE_SOUND)
+
 enum {
 	BEEPEVENT_MAXBIT	= 8,
 	BEEPEVENT_MAX		= (1 << BEEPEVENT_MAXBIT)
@@ -13,7 +15,7 @@ typedef struct {
 	UINT16	cnt;
 	UINT16	hz;
 	int		buz;
-	int		puchi;
+	int		__puchi;
 	BYTE	mode;
 	BYTE	padding[3];
 
@@ -28,7 +30,7 @@ typedef struct {
 typedef struct {
 	UINT	rate;
 	UINT	vol;
-	UINT	puchibase;
+	UINT	__puchibase;
 	UINT	samplebase;
 } BEEPCFG;
 
@@ -40,6 +42,7 @@ extern "C" {
 extern	_BEEP		beep;
 
 void beep_initialize(UINT rate);
+void beep_deinitialize(void);
 void beep_setvol(UINT vol);
 void beep_changeclock(void);
 
@@ -55,5 +58,17 @@ void SOUNDCALL beep_getpcm(BEEP bp, SINT32 *pcm, UINT count);
 
 #ifdef __cplusplus
 }
+#endif
+
+#else
+
+#define beep_setvol(v)
+#define beep_changeclock()
+#define beep_hzset(c)
+#define beep_modeset()
+#define beep_eventreset()
+#define beep_lheventset(b)
+#define beep_oneventset()
+
 #endif
 

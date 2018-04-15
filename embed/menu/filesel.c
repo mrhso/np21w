@@ -20,15 +20,41 @@ enum {
 	DID_FILTER
 };
 
-static const BYTE str_dirname[] = {		// ファイルの場所
-		0xcc,0xa7,0xb2,0xd9,0x82,0xcc,0x8f,0xea,0x8f,0x8a,0};
-static const BYTE str_filename[] = {	// ファイル名
-		0xcc,0xa7,0xb2,0xd9,0x96,0xbc,0};
-static const BYTE str_filetype[] = {	// ファイルの種類
-		0xcc,0xa7,0xb2,0xd9,0x82,0xcc,0x8e,0xed,0x97,0xde,0};
-static const BYTE str_open[] = {		// 開く
-		0x8a,0x4a,0x82,0xad,0};
-
+#if !defined(RESOURCE_US) && (!defined(CHARSET_OEM) || defined(OSLANG_SJIS))
+static const char str_dirname[] =				// ファイルの場所
+			"\203\164\203\100\203\103\203\213\202\314\217\352\217\212";
+static const char str_filename[] =				// ファイル名
+			"\203\164\203\100\203\103\203\213\226\274";
+static const char str_filetype[] =				// ファイルの種類
+			"\203\164\203\100\203\103\203\213\202\314\216\355\227\336";
+static const char str_open[] =					// 開く
+			"\212\112\202\255";
+#elif defined(OSLANG_EUC) && !defined(RESOURCE_US)
+static const char str_dirname[] =				// ファイルの場所
+			"\245\325\245\241\245\244\245\353\244\316\276\354\275\352";
+static const char str_filename[] =				// ファイル名
+			"\245\325\245\241\245\244\245\353\314\276";
+static const char str_filetype[] =				// ファイルの種類
+			"\245\325\245\241\245\244\245\353\244\316\274\357\316\340";
+static const char str_open[] =					// 開く
+			"\263\253\244\257";
+#elif defined(OSLANG_UTF8) && !defined(RESOURCE_US)
+static const char str_dirname[] =				// ファイルの場所
+			"\343\203\225\343\202\241\343\202\244\343\203\253\343\201\256" \
+			"\345\240\264\346\211\200";
+static const char str_filename[] =				// ファイル名
+			"\343\203\225\343\202\241\343\202\244\343\203\253\345\220\215";
+static const char str_filetype[] =				// ファイルの種類
+			"\343\203\225\343\202\241\343\202\244\343\203\253\343\201\256" \
+			"\347\250\256\351\241\236";
+static const char str_open[] =					// 開く
+			"\351\226\213\343\201\217";
+#else
+static const char str_dirname[] = "Look in";
+static const char str_filename[] = "File name";
+static const char str_filetype[] = "Files of type";
+static const char str_open[] = "Open";
+#endif
 
 #if defined(SIZE_QVGA)
 enum {
@@ -186,7 +212,7 @@ static void dlgsetlist(void) {
 	BOOL		append;
 	FLIST		fl;
 	ITEMEXPRM	prm;
-#if defined(OSLANG_EUC)
+#if defined(OSLANG_EUC) || defined(OSLANG_UTF8)
 	char		sjis[MAX_PATH];
 #endif
 
@@ -194,6 +220,10 @@ static void dlgsetlist(void) {
 
 #if defined(OSLANG_EUC)
 	codecnv_euc2sjis(sjis, sizeof(sjis),
+									file_getname(filesel.path), (UINT)-1);
+	menudlg_settext(DID_FOLDER, sjis);
+#elif defined(OSLANG_UTF8)
+	oemtext_oem2sjis(sjis, sizeof(sjis),
 									file_getname(filesel.path), (UINT)-1);
 	menudlg_settext(DID_FOLDER, sjis);
 #else
@@ -229,6 +259,9 @@ static void dlgsetlist(void) {
 #if defined(OSLANG_EUC)
 		codecnv_euc2sjis(sjis, sizeof(sjis), fl->name, (UINT)-1);
 		prm.str = sjis;
+#elif defined(OSLANG_UTF8)
+		oemtext_oem2sjis(sjis, sizeof(sjis), fl->name, (UINT)-1);
+		prm.str = sjis;
 #else
 		prm.str = fl->name;
 #endif
@@ -240,7 +273,7 @@ static void dlgsetlist(void) {
 
 static void dlginit(void) {
 
-#if defined(OSLANG_EUC)
+#if defined(OSLANG_EUC) || defined(OSLANG_UTF8)
 	char	sjis[MAX_PATH];
 #endif
 
@@ -248,6 +281,10 @@ static void dlginit(void) {
 	menudlg_seticon(DID_PARENT, MICON_FOLDERPARENT);
 #if defined(OSLANG_EUC)
 	codecnv_euc2sjis(sjis, sizeof(sjis),
+									file_getname(filesel.path), (UINT)-1);
+	menudlg_settext(DID_FILE, sjis);
+#elif defined(OSLANG_UTF8)
+	oemtext_oem2sjis(sjis, sizeof(sjis),
 									file_getname(filesel.path), (UINT)-1);
 	menudlg_settext(DID_FILE, sjis);
 #else
@@ -283,7 +320,7 @@ static BOOL dlgupdate(void) {
 static void dlgflist(void) {
 
 	FLIST	fl;
-#if defined(OSLANG_EUC)
+#if defined(OSLANG_EUC) || defined(OSLANG_UTF8)
 	char	sjis[MAX_PATH];
 #endif
 
@@ -291,6 +328,9 @@ static void dlgflist(void) {
 	if ((fl != NULL) && (!fl->isdir)) {
 #if defined(OSLANG_EUC)
 		codecnv_euc2sjis(sjis, sizeof(sjis), fl->name, (UINT)-1);
+		menudlg_settext(DID_FILE, sjis);
+#elif defined(OSLANG_UTF8)
+		oemtext_oem2sjis(sjis, sizeof(sjis), fl->name, (UINT)-1);
 		menudlg_settext(DID_FILE, sjis);
 #else
 		menudlg_settext(DID_FILE, fl->name);
@@ -325,7 +365,12 @@ static int dlgcmd(int msg, MENUID id, long param) {
 					break;
 
 				case DID_FLIST:
-					dlgflist();
+					if (param) {
+						return(dlgcmd(DLGMSG_COMMAND, DID_OK, 0));
+					}
+					else {
+						dlgflist();
+					}
 					break;
 			}
 			break;

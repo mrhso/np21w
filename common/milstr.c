@@ -1,22 +1,26 @@
 #include	"compiler.h"
 
 
-
-// ---- ANK
+// ---- ANK / UCS2 / UCS4
 
 #if defined(SUPPORT_ANK)
-int milank_cmp(const char *str, const char *cmp) {
+int milank_charsize(const OEMCHAR *str) {
+
+	return((str[0] != '\0')?1:0);
+}
+
+int milank_cmp(const OEMCHAR *str, const OEMCHAR *cmp) {
 
 	int		s;
 	int		c;
 
 	do {
-		s = (BYTE)*str++;
-		if (((s - 'a') & 0xff) < 26) {
+		s = *str++;
+		if ((s >= 'a') && (s <= 'z')) {
 			s -= 0x20;
 		}
-		c = (BYTE)*cmp++;
-		if (((c - 'a') & 0xff) < 26) {
+		c = *cmp++;
+		if ((c >= 'a') && (c <= 'z')) {
 			c -= 0x20;
 		}
 		if (s != c) {
@@ -26,28 +30,28 @@ int milank_cmp(const char *str, const char *cmp) {
 	return(0);
 }
 
-int milank_memcmp(const char *str, const char *cmp) {
+int milank_memcmp(const OEMCHAR *str, const OEMCHAR *cmp) {
 
 	int		s;
 	int		c;
 
 	do {
-		c = (BYTE)*cmp++;
+		c = *cmp++;
 		if (c == 0) {
 			return(0);
 		}
-		if (((c - 'a') & 0xff) < 26) {
+		if ((c >= 'a') && (c <= 'z')) {
 			c -= 0x20;
 		}
-		s = (BYTE)*str++;
-		if (((s - 'a') & 0xff) < 26) {
+		s = *str++;
+		if ((s >= 'a') && (s <= 'z')) {
 			s -= 0x20;
 		}
 	} while(s == c);
 	return((s > c)?1:-1);
 }
 
-void milank_ncpy(char *dst, const char *src, int maxlen) {
+void milank_ncpy(OEMCHAR *dst, const OEMCHAR *src, int maxlen) {
 
 	int		i;
 
@@ -60,7 +64,7 @@ void milank_ncpy(char *dst, const char *src, int maxlen) {
 	}
 }
 
-void milank_ncat(char *dst, const char *src, int maxlen) {
+void milank_ncat(OEMCHAR *dst, const OEMCHAR *src, int maxlen) {
 
 	int		i;
 	int		j;
@@ -79,7 +83,7 @@ void milank_ncat(char *dst, const char *src, int maxlen) {
 	}
 }
 
-char *milank_chr(const char *str, int c) {
+OEMCHAR *milank_chr(const OEMCHAR *str, int c) {
 
 	int		s;
 
@@ -87,7 +91,7 @@ char *milank_chr(const char *str, int c) {
 		do {
 			s = *str;
 			if (s == c) {
-				return((char *)str);
+				return((OEMCHAR *)str);
 			}
 			str++;
 		} while(s);
@@ -100,26 +104,34 @@ char *milank_chr(const char *str, int c) {
 // ---- Shift-JIS
 
 #if defined(SUPPORT_SJIS)
+int milsjis_charsize(const char *str) {
+
+	int		pos;
+
+	pos = ((((str[0] ^ 0x20) - 0xa1) & 0xff) < 0x3c)?1:0;
+	return((str[pos] != '\0')?(pos+1):0);
+}
+
 int milsjis_cmp(const char *str, const char *cmp) {
 
 	int		s;
 	int		c;
 
 	do {
-		s = (BYTE)*str++;
+		s = (UINT8)*str++;
 		if ((((s ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
-			c = (BYTE)*cmp++;
+			c = (UINT8)*cmp++;
 			if (s != c) {
 				goto mscp_err;
 			}
-			s = (BYTE)*str++;
-			c = (BYTE)*cmp++;
+			s = (UINT8)*str++;
+			c = (UINT8)*cmp++;
 		}
 		else {
 			if (((s - 'a') & 0xff) < 26) {
 				s -= 0x20;
 			}
-			c = (BYTE)*cmp++;
+			c = (UINT8)*cmp++;
 			if (((c - 'a') & 0xff) < 26) {
 				c -= 0x20;
 			}
@@ -140,20 +152,20 @@ int milsjis_memcmp(const char *str, const char *cmp) {
 	int		c;
 
 	do {
-		c = (BYTE)*cmp++;
+		c = (UINT8)*cmp++;
 		if ((((c ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
-			s = (BYTE)*str++;
+			s = (UINT8)*str++;
 			if (c != s) {
 				break;
 			}
-			c = (BYTE)*cmp++;
-			s = (BYTE)*str++;
+			c = (UINT8)*cmp++;
+			s = (UINT8)*str++;
 		}
 		else if (c) {
 			if (((c - 'a') & 0xff) < 26) {
 				c &= ~0x20;
 			}
-			s = (BYTE)*str++;
+			s = (UINT8)*str++;
 			if (((s - 'a') & 0xff) < 26) {
 				s &= ~0x20;
 			}
@@ -179,8 +191,9 @@ int milsjis_kanji1st(const char *str, int pos) {
 
 int milsjis_kanji2nd(const char *str, int pos) {
 
-	int		ret = 0;
+	int		ret;
 
+	ret = 0;
 	while((pos > 0) && ((((str[--pos] ^ 0x20) - 0xa1) & 0xff) < 0x3c)) {
 		ret ^= 1;
 	}
@@ -253,27 +266,35 @@ char *milsjis_chr(const char *str, int c) {
 
 // ---- EUC
 
-#if defined(SUPPORT_EUC)
+#if defined(SUPPORT_EUC)		// ‚ ‚ê ”¼ŠpƒJƒi–Y‚ê‚Ä‚é‚¼H
+int mileuc_charsize(const char *str) {
+
+	int		pos;
+
+	pos = (str[0] & 0x80)?1:0;
+	return((str[pos] != '\0')?(pos+1):0);
+}
+
 int mileuc_cmp(const char *str, const char *cmp) {
 
 	int		s;
 	int		c;
 
 	do {
-		s = (BYTE)*str++;
-		if (((s - 0xa1) & 0xff) < 0x5d) {
-			c = (BYTE)*cmp++;
+		s = (UINT8)*str++;
+		if (s & 0x80) {
+			c = (UINT8)*cmp++;
 			if (s != c) {
 				goto mscp_err;
 			}
-			s = (BYTE)*str++;
-			c = (BYTE)*cmp++;
+			s = (UINT8)*str++;
+			c = (UINT8)*cmp++;
 		}
 		else {
 			if (((s - 'a') & 0xff) < 26) {
 				s -= 0x20;
 			}
-			c = (BYTE)*cmp++;
+			c = (UINT8)*cmp++;
 			if (((c - 'a') & 0xff) < 26) {
 				c -= 0x20;
 			}
@@ -294,14 +315,14 @@ int mileuc_memcmp(const char *str, const char *cmp) {
 	int		c;
 
 	do {
-		c = (BYTE)*cmp++;
-		if (((c - 0xa1) & 0xff) < 0x5d) {
-			s = (BYTE)*str++;
+		c = (UINT8)*cmp++;
+		if (c & 0x80) {
+			s = (UINT8)*str++;
 			if (c != s) {
 				break;
 			}
-			c = (BYTE)*cmp++;
-			s = (BYTE)*str++;
+			c = (UINT8)*cmp++;
+			s = (UINT8)*str++;
 		}
 		else if (c) {
 			if (((c - 'a') & 0xff) < 26) {
@@ -324,8 +345,7 @@ int mileuc_kanji1st(const char *str, int pos) {
 	int		ret;
 
 	ret = 0;
-	while((pos >= 0) &&
-		(((str[pos--] - 0xa1) & 0xff) < 0x5d)) {
+	while((pos >= 0) && (str[pos--] & 0x80)) {
 		ret ^= 1;
 	}
 	return(ret);
@@ -333,9 +353,10 @@ int mileuc_kanji1st(const char *str, int pos) {
 
 int mileuc_kanji2nd(const char *str, int pos) {
 
-	int		ret = 0;
+	int		ret;
 
-	while((pos > 0) && (((str[--pos] - 0xa1) & 0xff) < 0x5d)) {
+	ret = 0;
+	while((pos > 0) && (str[--pos] & 0x80)) {
 		ret ^= 1;
 	}
 	return(ret);
@@ -393,9 +414,150 @@ char *mileuc_chr(const char *str, int c) {
 			if (s == c) {
 				return((char *)str);
 			}
-			if (((s - 0xa1) & 0xff) < 0x5d) {
+			if (s & 0x80) {
 				str++;
 				s = *str;
+			}
+			str++;
+		} while(s);
+	}
+	return(NULL);
+}
+#endif
+
+
+// ---- UTF8
+
+#if defined(SUPPORT_UTF8)
+int milutf8_charsize(const char *str) {
+
+	if (str[0] == '\0') {
+		return(0);
+	}
+	else if (!(str[0] & 0x80)) {
+		return(1);
+	}
+	else if ((str[0] & 0xe0) == 0xc0) {
+		if ((str[1] & 0xc0) == 0x80) {
+			return(2);
+		}
+	}
+	else if ((str[0] & 0xf0) == 0xe0) {
+		if (((str[1] & 0xc0) == 0x80) ||
+			((str[2] & 0xc0) == 0x80)) {
+			return(3);
+		}
+	}
+	return(0);
+}
+
+int milutf8_cmp(const char *str, const char *cmp) {
+
+	int		s;
+	int		c;
+
+	do {
+		s = (UINT8)*str++;
+		if (((s - 'a') & 0xff) < 26) {
+			s -= 0x20;
+		}
+		c = (BYTE)*cmp++;
+		if (((c - 'a') & 0xff) < 26) {
+			c -= 0x20;
+		}
+		if (s != c) {
+			return((s > c)?1:-1);
+		}
+	} while(s);
+	return(0);
+}
+
+int milutf8_memcmp(const char *str, const char *cmp) {
+
+	int		s;
+	int		c;
+
+	do {
+		c = (UINT8)*cmp++;
+		if (c == 0) {
+			return(0);
+		}
+		if (((c - 'a') & 0xff) < 26) {
+			c -= 0x20;
+		}
+		s = (UINT8)*str++;
+		if (((s - 'a') & 0xff) < 26) {
+			s -= 0x20;
+		}
+	} while(s == c);
+	return((s > c)?1:-1);
+}
+
+int milutf8_kanji1st(const char *str, int pos) {
+
+	return(((str[pos] & 0xc0) >= 0xc0)?1:0);
+}
+
+int milutf8_kanji2nd(const char *str, int pos) {
+
+	return(((str[pos] & 0xc0) == 0x80)?1:0);
+}
+
+void milutf8_ncpy(char *dst, const char *src, int maxlen) {
+
+	int		i;
+
+	if (maxlen > 0) {
+		maxlen--;
+		for (i=0; i<maxlen && src[i]; i++) {
+			dst[i] = src[i];
+		}
+		dst[i] = '\0';
+		if (i) {
+			do {
+				i--;
+			} while((i) && ((dst[i] & 0xc0) == 0x80));
+			i += milutf8_charsize(dst + i);
+			dst[i] = '\0';
+		}
+	}
+}
+
+void milutf8_ncat(char *dst, const char *src, int maxlen) {
+
+	int		i;
+	int		j;
+
+	if (maxlen > 0) {
+		maxlen--;
+		for (i=0; i<maxlen; i++) {
+			if (!dst[i]) {
+				break;
+			}
+		}
+		for (j=0; i<maxlen && src[j]; i++, j++) {
+			dst[i] = src[j];
+		}
+		dst[i] = '\0';
+		if (i) {
+			do {
+				i--;
+			} while((i) && ((dst[i] & 0xc0) == 0x80));
+			i += milutf8_charsize(dst + i);
+			dst[i] = '\0';
+		}
+	}
+}
+
+char *milutf8_chr(const char *str, int c) {
+
+	int		s;
+
+	if (str) {
+		do {
+			s = *str;
+			if (s == c) {
+				return((char *)str);
 			}
 			str++;
 		} while(s);
@@ -443,25 +605,25 @@ int milstr_extendcmp(const char *str, const char *cmp) {
 	return((s > c)?1:-1);
 }
 
-char *milstr_nextword(const char *str) {
+OEMCHAR *milstr_nextword(const OEMCHAR *str) {
 
 	if (str) {
-		while(!(((*str) - 1) & 0xe0)) {
+		while((*str > '\0') && (*str <= ' ')) {
 			str++;
 		}
 	}
-	return((char *)str);
+	return((OEMCHAR *)str);
 }
 
-int milstr_getarg(char *str, char *arg[], int maxarg) {
+int milstr_getarg(OEMCHAR *str, OEMCHAR *arg[], int maxarg) {
 
 	int		ret = 0;
-	char	*p;
+	OEMCHAR	*p;
 	BOOL	quot;
 
 	while(maxarg--) {
 		quot = FALSE;
-		while((*str) && (((BYTE)*str) <= 0x20)) {
+		while((*str > '\0') && (*str <= ' ')) {
 			str++;
 		}
 		if (*str == '\0') {
@@ -470,10 +632,10 @@ int milstr_getarg(char *str, char *arg[], int maxarg) {
 		arg[ret++] = str;
 		p = str;
 		while(*str) {
-			if (*str == 0x22) {
+			if (*str == '\"') {
 				quot = !quot;
 			}
-			else if ((((BYTE)*str) > 0x20) || (quot)) {
+			else if ((quot) || (*str < '\0') || (*str > ' ')) {
 				*p++ = *str;
 			}
 			else {
@@ -487,7 +649,7 @@ int milstr_getarg(char *str, char *arg[], int maxarg) {
 	return(ret);
 }
 
-long milstr_solveHEX(const char *str) {
+long milstr_solveHEX(const OEMCHAR *str) {
 
 	long	ret;
 	int		i;
@@ -514,7 +676,7 @@ long milstr_solveHEX(const char *str) {
 	return(ret);
 }
 
-long milstr_solveINT(const char *str) {
+long milstr_solveINT(const OEMCHAR *str) {
 
 	long	ret;
 	int		c;
@@ -543,7 +705,7 @@ long milstr_solveINT(const char *str) {
 	return(ret * s);
 }
 
-char *milstr_list(const char *lststr, UINT pos) {
+OEMCHAR *milstr_list(const OEMCHAR *lststr, UINT pos) {
 
 	if (lststr) {
 		while(pos) {
@@ -552,6 +714,6 @@ char *milstr_list(const char *lststr, UINT pos) {
 			}
 		}
 	}
-	return((char *)lststr);
+	return((OEMCHAR *)lststr);
 }
 

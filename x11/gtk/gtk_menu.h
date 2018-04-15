@@ -53,10 +53,11 @@ enum {
 	TOOL_WINDOW,
 	KEY_DISPLAY,
 	SOFT_KBD,
+	JAST_SOUND,
 	NUM_TOGGLE_ITEMS
 };
 
-GtkWidget *create_menu(GtkWidget *);
+GtkWidget *create_menu(void);
 
 void xmenu_toggle_item(int, int, int);
 void xmenu_select_item(MENU_HDL, const char *);

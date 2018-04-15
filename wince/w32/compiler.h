@@ -3,8 +3,11 @@
 #include	<stdio.h>
 #include	<stddef.h>
 
+
 #define	BYTESEX_LITTLE
+#if !defined(OSLANG_ANK) && !defined(OSLANG_SJIS) && !defined(OSLANG_EUC) && !defined(OSLANG_UTF8) && !defined(OSLANG_UCS2) && !defined(OSLANG_UCS4)
 #define	OSLANG_SJIS
+#endif
 #define	OSLINEBREAK_CRLF
 
 
@@ -21,6 +24,9 @@ typedef	unsigned int	UINT32;
 #if !defined(SIZE_VGATEST)
 #define	RGB16			UINT32
 #endif
+#endif
+
+#if defined(ADDON_SOFTKBD)
 #define	SUPPORT_SOFTKBD		1
 #endif
 
@@ -36,7 +42,9 @@ typedef	unsigned int	UINT32;
 
 
 #include	"common.h"
+#include	"oemtext.h"
 #include	"milstr.h"
+#include	"ucscnv.h"
 #include	"_memory.h"
 #include	"rect.h"
 #include	"lstarray.h"
@@ -46,8 +54,10 @@ typedef	unsigned int	UINT32;
 #define	GETTICK()	GetTickCount()
 #if defined(UNICODE)
 #define	SPRINTF		sprintf
+#define	STRLEN		strlen
 #else
 #define	SPRINTF		wsprintf
+#define	STRLEN		lstrlen
 #endif
 #define	__ASSERT(s)
 
@@ -55,6 +65,9 @@ typedef	unsigned int	UINT32;
 #define SOUND_CRITICAL
 
 #define	SUPPORT_SJIS
+#if defined(OSLANG_UTF8)
+#define	SUPPORT_UTF8
+#endif
 
 #define	SUPPORT_16BPP
 #define	MEMOPTIMIZE		2

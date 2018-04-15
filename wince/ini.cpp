@@ -192,6 +192,9 @@ static void iniwrsetarg8(char *work, int size, const BYTE *ptr, int arg) {
 	}
 }
 
+
+static const UINT8 utf8hdr[3] = {0xef, 0xbb, 0xbf};
+
 void ini_write(const char *path, const char *title,
 											const INITBL *tbl, UINT count) {
 
@@ -205,6 +208,9 @@ const INITBL	*pterm;
 	if (fh == FILEH_INVALID) {
 		return;
 	}
+#if defined(OSLANG_UTF8)
+	file_write(fh, utf8hdr, sizeof(utf8hdr));
+#endif
 	milstr_ncpy(work, "[", sizeof(work));
 	milstr_ncat(work, title, sizeof(work));
 	milstr_ncat(work, "]\r\n", sizeof(work));
@@ -283,8 +289,13 @@ const INITBL	*pterm;
 
 // ----
 
+#if defined(OSLANG_UTF8)
+static const char ini_title[] = "NekoProjectIICE";
+static const char inifile[] = "np2ce.cfg";
+#else
 static const char ini_title[] = "NekoProjectII";
 static const char inifile[] = "np2.cfg";
+#endif
 
 static const INITBL iniitem[] = {
 	{"pc_model", INITYPE_STR,		&np2cfg.model,

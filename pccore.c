@@ -41,7 +41,7 @@
 #include	"debugsub.h"
 
 
-	const char	np2version[] = NP2VER_CORE;
+const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 
 	NP2CFG	np2cfg = {
 				0, 1, 0, 32, 0, 0, 0x40,
@@ -49,7 +49,7 @@
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
 
-				"VX", PCBASECLOCK25, 4,
+				OEMTEXT("VX"), PCBASECLOCK25, 4,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
 				1, 1, 2, 1, 0x000000, 0xffffff,
 				22050, 500, 4, 0,
@@ -58,18 +58,18 @@
 				1, 0x82,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 				3, 1, 80, 0, 0,
-				{"", ""},
+				{OEMTEXT(""), OEMTEXT("")},
 #if defined(SUPPORT_SCSI)
-				{"", "", "", ""},
+				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
 #endif
-				"", "", ""};
+				OEMTEXT(""), OEMTEXT(""), OEMTEXT("")};
 
 	PCCORE	pccore = {	PCBASECLOCK25, 4,
 						0, PCMODEL_VX, 0, 0, {0x3e, 0x73, 0x7b}, 0,
 						0, 0,
 						4 * PCBASECLOCK25};
 
-	BYTE	screenupdate = 3;
+	UINT8	screenupdate = 3;
 	int		screendispflag = 1;
 	int		soundrenewal = 0;
 	BOOL	drawframe;
@@ -79,9 +79,9 @@
 
 // ---------------------------------------------------------------------------
 
-void getbiospath(char *path, const char *fname, int maxlen) {
+void getbiospath(OEMCHAR *path, const OEMCHAR *fname, int maxlen) {
 
-const char	*p;
+const OEMCHAR	*p;
 
 	p = np2cfg.biospath;
 	if (p[0]) {
@@ -160,6 +160,7 @@ static void pccore_set(void) {
 
 // --------------------------------------------------------------------------
 
+#if !defined(DISABLE_SOUND)
 static void sound_init(void) {
 
 	UINT	rate;
@@ -193,9 +194,11 @@ static void sound_term(void) {
 	soundmng_stop();
 	amd98_deinitialize();
 	rhythm_deinitialize();
+	beep_deinitialize();
 	fddmtrsnd_deinitialize();
 	sound_destroy();
 }
+#endif
 
 void pccore_init(void) {
 
@@ -214,7 +217,9 @@ void pccore_init(void) {
 	gdcsub_initialize();
 	fddfile_initialize();
 
+#if !defined(DISABLE_SOUND)
 	sound_init();
+#endif
 
 	rs232c_construct();
 	mpu98ii_construct();
@@ -233,7 +238,9 @@ void pccore_term(void) {
 	hostdrv_deinitialize();
 #endif
 
+#if !defined(DISABLE_SOUND)
 	sound_term();
+#endif
 
 	fdd_eject(0);
 	fdd_eject(1);
@@ -259,8 +266,8 @@ void pccore_cfgupdate(void) {
 
 	renewal = FALSE;
 	for (i=0; i<8; i++) {
-		if (np2cfg.memsw[i] != mem[MEMB_MSW + i*4]) {
-			np2cfg.memsw[i] = mem[MEMB_MSW + i*4];
+		if (np2cfg.memsw[i] != mem[MEMX_MSW + i*4]) {
+			np2cfg.memsw[i] = mem[MEMX_MSW + i*4];
 			renewal = TRUE;
 		}
 	}
@@ -274,12 +281,13 @@ void pccore_reset(void) {
 	int		i;
 
 	soundmng_stop();
+#if !defined(DISABLE_SOUND)
 	if (soundrenewal) {
 		soundrenewal = 0;
 		sound_term();
 		sound_init();
 	}
-
+#endif
 	ZeroMemory(mem, 0x110000);
 	ZeroMemory(mem + VRAM1_B, 0x18000);
 	ZeroMemory(mem + VRAM1_E, 0x08000);
@@ -603,17 +611,7 @@ void pccore_exec(BOOL draw) {
 		pic_irq();
 		if (CPU_RESETREQ) {
 			CPU_RESETREQ = 0;
-#if 1
 			CPU_SHUT();
-#else
-			CPU_CS = 0xf000;
-			CS_BASE = 0xf0000;
-			CPU_IP = 0xfff0;
-#if defined(CPUCORE_IA32)
-			CPU_DX = 0x0300;
-#endif
-			CPU_CLEARPREFETCH();
-#endif
 		}
 
 #if !defined(SINGLESTEPONLY)

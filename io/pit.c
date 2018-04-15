@@ -178,8 +178,10 @@ static UINT getcount(const _PITCH *pitch) {
 			clock = nevent_getremain(NEVENT_RS232C);
 			break;
 
+#if !defined(DISABLE_SOUND)
 		case 3:
 			return(board14_pitcount());
+#endif
 
 		default:
 			clock = 0;
@@ -335,10 +337,8 @@ static void IOOUTCALL pit_o73(UINT port, REG8 dat) {
 		return;
 	}
 	setbeepevent(pitch->value, NEVENT_ABSOLUTE);
-	if (!(pitch->ctrl & 0x0c)) {
-		beep_lheventset(1);
-	}
-	else {
+	beep_lheventset(1);												// ver0.79
+	if (pitch->ctrl & 0x0c) {
 		beep_hzset(pitch->value);
 	}
 	(void)port;
@@ -419,11 +419,14 @@ void itimer_reset(void) {
 	pit.ch[1].value = beepcnt;
 	pit.ch[2].ctrl = 0xb6 & 0x3f;
 	pit.ch[2].ch = 2;
+#if !defined(DISABLE_SOUND)
 	pit.ch[3].ctrl = 0x36;
 	pit.ch[3].ch = 3;
 	pit.ch[4].ctrl = 0x36;
 	pit.ch[4].ch = 4;
+#endif
 	setsystimerevent(0, NEVENT_ABSOLUTE);
+	beep_lheventset(1);												// ver0.79
 	beep_hzset(beepcnt);
 }
 

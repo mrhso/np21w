@@ -370,7 +370,7 @@ create_timing_note(void)
 
 	for (i = 0; i < NELEMENTS(timing_waitclock_str); i++) {
 		waitclk[i].name_label = gtk_label_new(timing_waitclock_str[i]);
-//		gtk_widget_set_usize(waitclk[i].name_label, 40, 0);
+		gtk_widget_set_usize(waitclk[i].name_label, 40, 0);
 		gtk_widget_show(waitclk[i].name_label);
 		gtk_table_attach(GTK_TABLE(main_widget), waitclk[i].name_label,
 		    0, 1, i, i + 1,

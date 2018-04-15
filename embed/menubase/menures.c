@@ -3,21 +3,62 @@
 #include	"menubase.h"
 
 
+#if !defined(RESOURCE_US) && (!defined(CHARSET_OEM) || defined(OSLANG_SJIS))
 const char mstr_fontcheck[] = " ";
-const BYTE mstr_ok[] = {			// OK
-		0x4f,0x4b,0};
-const BYTE mstr_cancel[] = {		// キャンセル
-		0xb7,0xac,0xdd,0xbe,0xd9,0};
-const BYTE mstr_abort[] = {			// 中止
-		0x92,0x86,0x8e,0x7e,0x00};
-const BYTE mstr_retry[] = {			// 再試行
-		0x8d,0xc4,0x8e,0x8e,0x8d,0x73,0x00};
-const BYTE mstr_ignore[] = {		// 無視
-		0x96,0xb3,0x8e,0x8b,0x00};
-const BYTE mstr_yes[] = {			// はい
-		0x82,0xcd,0x82,0xa2,0x00};
-const BYTE mstr_no[] = {			// いいえ
-		0x82,0xa2,0x82,0xa2,0x82,0xa6,0x00};
+const char mstr_ok[] = "OK";
+			// キャンセル
+const char mstr_cancel[] = "\267\254\335\276\331";
+			// 中止
+const char mstr_abort[] = "\222\206\216\176";
+			// 再試行
+const char mstr_retry[] = "\215\304\216\216\215\163";
+			// 無視
+const char mstr_ignore[] = "\226\263\216\213";
+			// はい
+const char mstr_yes[] = "\202\315\202\242";
+			// いいえ
+const char mstr_no[] = "\202\242\202\242\202\246";
+#elif defined(OSLANG_EUC) && !defined(RESOURCE_US)
+const char mstr_fontcheck[] = " ";
+const char mstr_ok[] = "OK";
+			// キャンセル
+const char mstr_cancel[] = "\216\267\216\254\216\335\216\276\216\331";
+			// 中止
+const char mstr_abort[] = "\303\346\273\337";
+			// 再試行
+const char mstr_retry[] = "\272\306\273\356\271\324";
+			// 無視
+const char mstr_ignore[] = "\314\265\273\353";
+			// はい
+const char mstr_yes[] = "\244\317\244\244";
+			// いいえ
+const char mstr_no[] = "\244\244\244\244\244\250";
+#elif defined(OSLANG_UTF8) && !defined(RESOURCE_US)
+const char mstr_fontcheck[] = " ";
+const char mstr_ok[] = "OK";
+			// キャンセル
+const char mstr_cancel[] = "\357\275\267\357\275\254\357\276\235" \
+							"\357\275\276\357\276\231";
+			// 中止
+const char mstr_abort[] = "\344\270\255\346\255\242";
+			// 再試行
+const char mstr_retry[] = "\345\206\215\350\251\246\350\241\214";
+			// 無視
+const char mstr_ignore[] = "\347\204\241\350\246\226";
+			// はい
+const char mstr_yes[] = "\343\201\257\343\201\204";
+			// いいえ
+const char mstr_no[] = "\343\201\204\343\201\204\343\201\210";
+#else
+const char mstr_fontcheck[] = " ";
+const char mstr_ok[] = "OK";
+const char mstr_cancel[] = "Cancel";
+const char mstr_abort[] = "Abort";
+const char mstr_retry[] = "Retry";
+const char mstr_ignore[] = "Ignore";
+const char mstr_yes[] = "Yes";
+const char mstr_no[] = "No";
+#endif
 
 
 #ifndef SIZE_QVGA

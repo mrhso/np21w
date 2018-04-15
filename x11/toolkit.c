@@ -33,14 +33,14 @@
 
 #include "sysmng.h"
 
-#if (USE_GTK + USE_QT + USE_SDL + USE_X11) > 1
+#if (USE_GTK + USE_GTK2 + USE_QT + USE_SDL + USE_X11) > 1
 
 gui_toolkit_t* toolkitp;
 
 static struct {
 	gui_toolkit_t*	toolkit;
 } toolkit[] = {
-#if USE_GTK > 0
+#if USE_GTK > 0 || USE_GTK2 > 0
 	{ &gtk_toolkit, },
 #endif
 #if USE_QT > 0
