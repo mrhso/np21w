@@ -346,12 +346,12 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 
 /* version */
 #if defined(USE_FPU)
-#define	CPU_FAMILY	4
-#define	CPU_MODEL	1	/* 486DX */
-#define	CPU_STEPPING	3
-//#define	CPU_FAMILY	5
-//#define	CPU_MODEL	2	/* Pentium */
+//#define	CPU_FAMILY	4
+//#define	CPU_MODEL	1	/* 486DX */
 //#define	CPU_STEPPING	3
+#define	CPU_FAMILY	5
+#define	CPU_MODEL	2	/* Pentium */
+#define	CPU_STEPPING	3
 #else
 #define	CPU_FAMILY	4
 #define	CPU_MODEL	2	/* 486SX */

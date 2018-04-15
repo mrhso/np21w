@@ -1197,6 +1197,9 @@
     <ClCompile Include="dialog\d_cfgsave.cpp">
       <Filter>ソース ファイル\win9x\dialog</Filter>
     </ClCompile>
+    <ClCompile Include="dialog\d_cfgload.cpp">
+      <Filter>ソース ファイル\win9x\dialog</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">

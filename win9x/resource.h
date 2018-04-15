@@ -394,6 +394,8 @@
 #define IDS_CFGTITLE                    31121
 #define IDS_CFGEXT                      31122
 #define IDS_CFGFILTER                   31123
+#define IDS_CFGTITLE_L                  31124
+#define IDS_CFGFILTER_L                 31126
 #define IDM_TOOLWIN                     40001
 #define IDM_KEYDISP                     40002
 #define IDM_SOFTKBD                     40003
@@ -419,6 +421,7 @@
 #define IDM_CHANGEFONT                  40104
 #define IDM_EXIT                        40105
 #define IDM_SAVEVMCFG                   40106
+#define IDM_LOADVMCFG                   40107
 #define IDM_FLAGSAVE                    40201
 #define IDM_FLAGSAVE0                   40201
 #define IDM_FLAGSAVE1                   40202

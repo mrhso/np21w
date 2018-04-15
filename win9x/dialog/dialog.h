@@ -14,6 +14,9 @@ void dialog_writebmp(HWND hWnd);
 // d_txt.cpp
 void dialog_writetxt(HWND hWnd);
 
+// d_cfgload.cpp
+int  dialog_readnpcfg(HWND hWnd);
+
 // d_cfgsave.cpp
 void dialog_writenpcfg(HWND hWnd);
 

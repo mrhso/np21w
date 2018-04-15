@@ -130,12 +130,13 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0, 0, 1, 0, 1, 1
+						0, 0, 0, 1, 0, 1, 1, 0, 0
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
 		OEMCHAR		hddfolder[MAX_PATH];
 		OEMCHAR		bmpfilefolder[MAX_PATH];
+		OEMCHAR		npcfgfilefolder[MAX_PATH];
 		OEMCHAR		modulefile[MAX_PATH];
 
 static	UINT		framecnt = 0;
@@ -276,6 +277,10 @@ static void changescreen(UINT8 newmode) {
 		scrnmng_destroy();
 		if (scrnmng_create(newmode) == SUCCESS) {
 			g_scrnmode = newmode;
+			if(np2oscfg.scrnmode != g_scrnmode){
+				np2oscfg.scrnmode = g_scrnmode; // Screen状態保存
+				sysmng_update(SYS_UPDATEOSCFG);
+			}
 		}
 		else {
 			if (scrnmng_create(g_scrnmode) != SUCCESS) {
@@ -533,6 +538,13 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuileave();
 			break;
 			
+		case IDM_LOADVMCFG:
+			winuienter();
+			dialog_readnpcfg(hWnd);
+			winuileave();
+
+			break;
+
 		case IDM_SAVEVMCFG:
 			winuienter();
 			dialog_writenpcfg(hWnd);
@@ -1816,6 +1828,312 @@ static void processwait(UINT cnt) {
 	soundmng_sync();
 }
 
+// やっつけ感漂うINIファイル変更処理
+void loadNewINI(const OEMCHAR *fname){
+	HINSTANCE hInstance;
+	BOOL		xrollkey;
+	//WNDCLASS	wc;
+	HWND		hWnd;
+	DWORD		style;
+	int			i;
+
+	LPTSTR lpFilenameBuf = (LPTSTR)malloc((_tcslen(fname)+1)*sizeof(TCHAR));
+	_tcscpy(lpFilenameBuf, fname);
+
+	np2opening = 1;
+
+	// 旧INI片付け
+#ifdef HOOK_SYSKEY
+	UnhookWindowsHookEx(hHook);
+#endif
+	toolwin_destroy();
+	kdispwin_destroy();
+	skbdwin_destroy();
+	mdbgwin_destroy();
+
+	pccore_cfgupdate();
+
+	mousemng_disable(MOUSEPROC_WINUI);
+	S98_trash();
+
+#if defined(SUPPORT_RESUME)
+	if (np2oscfg.resume) {
+		flagsave(str_sav);
+	}
+	else {
+		flagdelete(str_sav);
+	}
+#endif
+
+#ifdef SUPPORT_CL_GD5430
+	//pc98_cirrus_vga_shutdown();
+#endif
+#ifdef SUPPORT_WAB
+	//np2wab_shutdown();
+#endif
+#ifdef SUPPORT_NET
+	//np2net_shutdown();
+#endif
+
+	pccore_term();
+
+	CSoundMng::GetInstance()->Close();
+	CSoundMng::Deinitialize();
+	scrnmng_destroy();
+	recvideo_close();
+
+	mousemng_destroy();
+
+	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
+		initsave();
+		toolwin_writeini();
+		kdispwin_writeini();
+		skbdwin_writeini();
+		mdbgwin_writeini();
+	}
+#if defined(SUPPORT_WAB)
+	wabwin_writeini();
+#endif	// defined(SUPPORT_WAB)
+	skbdwin_deinitialize();
+
+
+	// 新INI読み込み
+	Np2Arg::GetInstance()->setiniFilename(lpFilenameBuf);
+
+	initload();
+	toolwin_readini();
+	kdispwin_readini();
+	skbdwin_readini();
+	mdbgwin_readini();
+#if defined(SUPPORT_WAB)
+	wabwin_readini();
+#endif	// defined(SUPPORT_WAB)
+
+	rand_setseed((unsigned)time(NULL));
+
+	szClassName[0] = (TCHAR)np2oscfg.winid[0];
+	szClassName[1] = (TCHAR)np2oscfg.winid[1];
+	szClassName[2] = (TCHAR)np2oscfg.winid[2];
+	
+#if !defined(_WIN64)
+	mmxflag = (havemmx())?0:MMXFLAG_NOTSUPPORT;
+	mmxflag += (np2oscfg.disablemmx)?MMXFLAG_DISABLE:0;
+#endif
+	TRACEINIT();
+
+	xrollkey = (np2oscfg.xrollkey == 0);
+	if (np2oscfg.KEYBOARD >= KEY_TYPEMAX) {
+		int keytype = GetKeyboardType(1);
+		if ((keytype & 0xff00) == 0x0d00) {
+			np2oscfg.KEYBOARD = KEY_PC98;
+			xrollkey = !xrollkey;
+		}
+		else if (!keytype) {
+			np2oscfg.KEYBOARD = KEY_KEY101;
+		}
+		else {
+			np2oscfg.KEYBOARD = KEY_KEY106;
+		}
+	}
+	winkbd_roll(xrollkey);
+	winkbd_setf12(np2oscfg.F12COPY);
+	keystat_initialize();
+
+	np2class_initialize(hInstance);
+	//if (!hPrevInst) {
+		//wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+		//wc.lpfnWndProc = WndProc;
+		//wc.cbClsExtra = 0;
+		//wc.cbWndExtra = NP2GWLP_SIZE;
+		//wc.hInstance = hInstance;
+		//wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+		//wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		//wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+		//wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAIN);
+		//wc.lpszClassName = szClassName;
+		//if (!RegisterClass(&wc)) {
+		//	UnloadExternalResource();
+		//	TRACETERM();
+		//	dosio_term();
+		//	SendMessage(hWnd, WM_CLOSE, 0, 0L);
+		//	return;
+		//}
+
+		kdispwin_initialize();
+		skbdwin_initialize();
+		mdbgwin_initialize();
+		CDebugUtyView::Initialize(hInstance);
+	//}
+
+	style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX;
+	if (np2oscfg.thickframe) {
+		style |= WS_THICKFRAME;
+	}
+	//hWnd = CreateWindowEx(0, szClassName, np2oscfg.titles, style,
+	//					np2oscfg.winx, np2oscfg.winy, 640, 400,
+	//					NULL, NULL, hInstance, NULL);
+	hWnd = g_hWndMain;
+
+	mousemng_initialize(); // 場所移動 np21w ver0.96 rev13
+
+	scrnmng_initialize();
+
+	if(np2oscfg.dragdrop)
+		DragAcceptFiles(hWnd, TRUE);	//	イメージファイルのＤ＆Ｄに対応(Kai1)
+	else
+		DragAcceptFiles(hWnd, FALSE);
+
+	UpdateWindow(hWnd);
+	
+#ifdef OPENING_WAIT
+	tick = GetTickCount();
+#endif
+	
+	HMENU hSysMenu = GetSystemMenu(hWnd, FALSE);
+	//sysmenu_initialize(hSysMenu); // 対応面倒くさい
+	
+	HMENU hMenu = np2class_gethmenu(hWnd);
+	//xmenu_initialize(hMenu); // 対応面倒くさい
+	xmenu_update(hMenu);
+	if (file_attr_c(np2help) == -1)								// ver0.30
+	{
+		EnableMenuItem(hMenu, IDM_HELP, MF_GRAYED);
+	}
+	DrawMenuBar(hWnd);
+	
+	if(np2oscfg.savescrn){
+		g_scrnmode = np2oscfg.scrnmode;
+	}else{
+		g_scrnmode = np2oscfg.scrnmode = 0;
+	}
+	if (Np2Arg::GetInstance()->fullscreen())
+	{
+		g_scrnmode |= SCRNMODE_FULLSCREEN;
+	}
+	if (np2cfg.RASTER) {
+		g_scrnmode |= SCRNMODE_HIGHCOLOR;
+	}
+	if (scrnmng_create(g_scrnmode) != SUCCESS) {
+		g_scrnmode ^= SCRNMODE_FULLSCREEN;
+		if (scrnmng_create(g_scrnmode) != SUCCESS) {
+			messagebox(hWnd, MAKEINTRESOURCE(IDS_ERROR_DIRECTDRAW), MB_OK | MB_ICONSTOP);
+			UnloadExternalResource();
+			TRACETERM();
+			dosio_term();
+			SendMessage(hWnd, WM_CLOSE, 0, 0L);
+			return;
+		}
+	}
+
+	CSoundMng::Initialize();
+	OpenSoundDevice(hWnd);
+
+	if (CSoundMng::GetInstance()->Open(static_cast<CSoundMng::DeviceType>(np2oscfg.cSoundDeviceType), np2oscfg.szSoundDeviceName, hWnd))
+	{
+		CSoundMng::GetInstance()->LoadPCM(SOUND_PCMSEEK, TEXT("SEEKWAV"));
+		CSoundMng::GetInstance()->LoadPCM(SOUND_PCMSEEK1, TEXT("SEEK1WAV"));
+		CSoundMng::GetInstance()->LoadPCM(SOUND_RELAY1, TEXT("RELAY1WAV"));
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_RELAY1, np2cfg.MOTORVOL);
+	}
+
+	if (np2oscfg.MOUSE_SW) {										// ver0.30
+		mousemng_enable(MOUSEPROC_SYSTEM);
+	}
+
+	commng_initialize();
+	sysmng_initialize();
+
+	joymng_initialize();
+	pccore_init();
+	S98_init();
+
+#ifdef OPENING_WAIT
+	while((GetTickCount() - tick) < OPENING_WAIT);
+#endif
+
+	scrndraw_redraw();
+	
+#ifdef SUPPORT_NET
+	//np2net_init();
+#endif
+#ifdef SUPPORT_WAB
+	//np2wab_init(g_hInstance, g_hWndMain);
+#endif
+#ifdef SUPPORT_CL_GD5430
+	//pc98_cirrus_vga_init();
+#endif
+#ifdef HOOK_SYSKEY
+	hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
+#endif
+
+	pccore_reset();
+
+	np2opening = 0;
+
+	// れじうむ
+#if defined(SUPPORT_RESUME)
+	if (np2oscfg.resume) {
+		int		id;
+
+		id = flagload(hWnd, str_sav, _T("Resume"), FALSE);
+		if (id == IDYES)
+		{
+			Np2Arg::GetInstance()->ClearDisk();
+		}
+		else if (id == IDCANCEL) {
+			DestroyWindow(hWnd);
+			mousemng_disable(MOUSEPROC_WINUI);
+			S98_trash();
+			pccore_term();
+			CSoundMng::GetInstance()->Close();
+			CSoundMng::Deinitialize();
+			scrnmng_destroy();
+			UnloadExternalResource();
+			TRACETERM();
+			dosio_term();
+			SendMessage(hWnd, WM_CLOSE, 0, 0L);
+			return;
+		}
+	}
+#endif
+
+//	リセットしてから… 
+	// INIに記録されたディスクを挿入
+	if(np2cfg.savefddfile){
+		for (i = 0; i < 4; i++)
+		{
+			LPCTSTR lpDisk = np2cfg.fddfile[i];
+			if (lpDisk)
+			{
+				diskdrv_readyfdd((REG8)i, lpDisk, 0);
+			}
+		}
+	}
+	// コマンドラインのディスク挿入。
+	for (i = 0; i < 4; i++)
+	{
+		LPCTSTR lpDisk = Np2Arg::GetInstance()->disk(i);
+		if (lpDisk)
+		{
+			diskdrv_readyfdd((REG8)i, lpDisk, 0);
+		}
+	}
+
+	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
+		if (np2oscfg.toolwin) {
+			toolwin_create();
+		}
+		if (np2oscfg.keydisp) {
+			kdispwin_create();
+		}
+	}
+
+	sysmng_workclockreset();
+	sysmng_updatecaption(3);
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 										LPSTR lpszCmdLine, int nCmdShow) {
 	WNDCLASS	wc;
@@ -1961,7 +2279,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	}
 	DrawMenuBar(hWnd);
 
-	g_scrnmode = 0;
+	if(np2oscfg.savescrn){
+		g_scrnmode = np2oscfg.scrnmode;
+	}else{
+		g_scrnmode = np2oscfg.scrnmode = 0;
+	}
 	if (Np2Arg::GetInstance()->fullscreen())
 	{
 		g_scrnmode |= SCRNMODE_FULLSCREEN;

@@ -453,6 +453,7 @@ static const PFTBL s_IniItems[] =
 	PFSTR("FDfolder", PFTYPE_STR,		fddfolder),
 	PFSTR("HDfolder", PFTYPE_STR,		hddfolder),
 	PFSTR("bmap_Dir", PFTYPE_STR,		bmpfilefolder),
+	PFSTR("npcfgDir", PFTYPE_STR,		npcfgfilefolder),
 	PFSTR("fontfile", PFTYPE_STR,		np2cfg.fontfile),
 	PFSTR("biospath", PFRO_STR,			np2cfg.biospath),
 
@@ -469,6 +470,8 @@ static const PFTBL s_IniItems[] =
 	PFEXT("MEMswtch", PFTYPE_BIN,		np2cfg.memsw,			8),
 	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			244),
 	PFVAL("ITF_WORK", PFTYPE_BOOL,		&np2cfg.ITF_WORK),
+	
+	PFVAL("USE_BIOS", PFTYPE_BOOL,		&np2cfg.usebios),  // 実機BIOS使用
 	
 	PFVAL("SVFDFILE", PFTYPE_BOOL,		&np2cfg.savefddfile),
 	PFSTR("FDD1FILE", PFTYPE_STR,		np2cfg.fddfile[0]),
@@ -575,6 +578,8 @@ static const PFTBL s_IniItems[] =
 	PFMAX("MODELNUM", PFTYPE_HEX8,		&np2cfg.modelnum,		255),
 	
 	PFVAL("TIMERADJ", PFTYPE_BOOL,		&np2cfg.timeradj),
+	
+	PFVAL("WINNTFIX", PFTYPE_BOOL,		&np2cfg.winntfix),
 
 	// OS依存？
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),
@@ -643,13 +648,16 @@ static const PFTBL s_IniItems[] =
 	
 	PFVAL("EMUDDRAW", PFRO_BOOL,		&np2oscfg.emuddraw), // 最近はEMULATIONONLYにした方速かったりする（特にピクセル操作する場合とか）
 	
-	PFVAL("DRAGDROP", PFRO_BOOL,		&np2oscfg.dragdrop), // どらっぐあんどどろっぷサポート
+	PFVAL("DRAGDROP", PFRO_BOOL,		&np2oscfg.dragdrop), // ドラッグアンドドロップサポート
 	PFVAL("MAKELHDD", PFRO_BOOL,		&np2oscfg.makelhdd), // 巨大HDDイメージ作成サポート
 	PFVAL("SYSKHOOK", PFTYPE_BOOL,		&np2oscfg.syskhook), // システムキーフックサポート
 	PFVAL("RAWMOUSE", PFTYPE_BOOL,		&np2oscfg.rawmouse), // 直接マウスデータ読み取り
 	PFVAL("MOUSEMUL", PFTYPE_SINT16,	&np2oscfg.mousemul), // マウススピード倍率（分子）
 	PFVAL("MOUSEDIV", PFTYPE_SINT16,	&np2oscfg.mousediv), // マウススピード倍率（分母）
-
+	
+	PFVAL("SCRNMODE", PFTYPE_UINT8,		&np2oscfg.scrnmode), // フルスクリーン設定
+	PFVAL("SAVESCRN", PFTYPE_BOOL,		&np2oscfg.savescrn), // フルスクリーン設定を保存・復元する
+	
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };
 

@@ -706,16 +706,25 @@ REG16 IOINPCALL lgy98_ib200_16(UINT addr) {
     return (REG16)ret;
 }
 
+//int lognum = 100;
 static void IOOUTCALL lgy98_ob300_16(UINT port, REG8 dat) {
 	LGY98 *s = &lgy98;
-	TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
+	//TRACEOUT(("LGY-98: out %04X d=%02X", port, dat));
+	//TRACEOUT(("%d OUT &H%04X,%d", lognum, port, dat));
+	//lognum++;
 	//pic_resetirq(lgy98.irq);
 	/* Nothing to do */
 	(void)port;
 	(void)dat;
 }
 static REG8 IOINPCALL lgy98_ib300_16(UINT port) {
-	TRACEOUT(("LGY-98: inp %04X", port));
+	//TRACEOUT(("LGY-98: inp %04X", port));
+	//TRACEOUT(("%d A=INP(&H%04X)", lognum, port));
+	//lognum++;
+	//TRACEOUT(("%d PRINT #1 A", lognum));
+	//lognum++;
+	//TRACEOUT(("%d PRINT #1", lognum));
+	//lognum++;
 	//pic_resetirq(lgy98.irq);
     switch (port & 0x0f) {
     case 0x0a:

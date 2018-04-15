@@ -11,6 +11,12 @@
 #ifdef SUPPORT_LGY98
 #include	"network/lgy98.h"
 #endif
+#ifdef SUPPORT_WAB
+#include	"wab/wab.h"
+#endif
+#ifdef SUPPORT_CL_GD5430
+#include	"wab/cirrus_vga_extern.h"
+#endif
 
 
 	_ARTIC		artic;

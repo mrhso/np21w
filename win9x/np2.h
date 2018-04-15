@@ -91,6 +91,9 @@ typedef struct {
 	UINT8	rawmouse; // Raw mouse input support
 	SINT16	mousemul; // Mouse speed (mul)
 	SINT16	mousediv; // Mouse speed (div)
+	
+	UINT8	scrnmode; // Screen Mode
+	UINT8	savescrn; // Save ScreenMode
 } NP2OSCFG;
 
 
@@ -134,6 +137,8 @@ extern	OEMCHAR		modulefile[MAX_PATH];
 extern	OEMCHAR		fddfolder[MAX_PATH];
 extern	OEMCHAR		hddfolder[MAX_PATH];
 extern	OEMCHAR		bmpfilefolder[MAX_PATH];
+extern	OEMCHAR		npcfgfilefolder[MAX_PATH];
 
 void np2active_renewal(void);
+void loadNewINI(const OEMCHAR *fname);
 

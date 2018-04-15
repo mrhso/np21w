@@ -179,6 +179,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -471,6 +472,7 @@
     <ClCompile Include="dialog\c_slidervalue.cpp" />
     <ClCompile Include="dialog\d_about.cpp" />
     <ClCompile Include="dialog\d_bmp.cpp" />
+    <ClCompile Include="dialog\d_cfgload.cpp" />
     <ClCompile Include="dialog\d_cfgsave.cpp" />
     <ClCompile Include="dialog\d_clnd.cpp" />
     <ClCompile Include="dialog\d_config.cpp" />

@@ -801,6 +801,7 @@ BEGIN
         MENUITEM "&New disk...",                IDM_NEWDISK
         MENUITEM "&Font...",                    IDM_CHANGEFONT
         MENUITEM SEPARATOR
+        MENUITEM "&Load VM config...",          IDM_LOADVMCFG
         MENUITEM "&Save VM config...",          IDM_SAVEVMCFG
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       IDM_EXIT

@@ -19,11 +19,11 @@ typedef struct {
 static	MOUSEMNG	mousemng;
 static  int mousecaptureflg = 0;
 
-static  SINT16 mouseMul = 1; // マウススピード倍率（分子）
-static  SINT16 mouseDiv = 1; // マウススピード倍率（分母）
+static  int mouseMul = 1; // マウススピード倍率（分子）
+static  int mouseDiv = 1; // マウススピード倍率（分母）
 
-static  SINT16 mousebufX = 0; // マウス移動バッファ(X)
-static  SINT16 mousebufY = 0; // マウス移動バッファ(Y)
+static  int mousebufX = 0; // マウス移動バッファ(X)
+static  int mousebufY = 0; // マウス移動バッファ(Y)
 
 // RAWマウス入力対応 np21w ver0.86 rev13
 static  LPDIRECTINPUT8 dinput = NULL; 
@@ -52,11 +52,6 @@ static void getmaincenter(POINT *cp) {
 	RECT	rct;
 
 	GetWindowRect(g_hWndMain, &rct);
-//#ifdef SUPPORT_WAB
-//	// XXX: 解像度を変えると中心座標が変わってしまうので対策（手抜き）
-//	rct.right = rct.left + 640;
-//	rct.bottom = rct.top + 400;
-//#endif
 	cp->x = (rct.right + rct.left) / 2;
 	cp->y = (rct.bottom + rct.top) / 2;
 }
@@ -90,13 +85,6 @@ static void initDirectInput(){
 				if (!FAILED(hr)) {
 					// 入力開始
 					hr = diRawMouse->Acquire();
-					if (!FAILED(hr)) {
-						// 失敗･･･
-						diRawMouse->Release();
-						diRawMouse = NULL;
-						dinput->Release();
-						dinput = NULL;
-					}
 				}else{
 					// 失敗･･･
 					diRawMouse->Release();
@@ -106,10 +94,17 @@ static void initDirectInput(){
 				}
 			}else{
 				// 失敗･･･
+				diRawMouse = NULL;
 				dinput->Release();
 				dinput = NULL;
 			}
+		}else{
+			// 失敗･･･
+			diRawMouse = NULL;
+			dinput = NULL;
 		}
+	}else{
+		hr = diRawMouse->Acquire();
 	}
 }
 static void destroyDirectInput(){
@@ -154,7 +149,8 @@ static void mousecapture(BOOL capture) {
 		style |= CS_DBLCLKS;
 		mousecaptureflg = 0;
 		if(np2oscfg.rawmouse){
-			destroyDirectInput();
+			diRawMouse->Unacquire();
+			//destroyDirectInput();
 		}
 	}
 	SetClassLong(g_hWndMain, GCL_STYLE, style);
@@ -186,22 +182,34 @@ void mousemng_sync(void) {
 			HRESULT hr;
 			hr = diRawMouse->GetDeviceState(sizeof(DIMOUSESTATE), &diMouseState);
 			if (hr != DI_OK){
-				destroyDirectInput();
-				initDirectInput();
+				switch(hr){
+				case E_PENDING:
+					break;
+				case DIERR_INPUTLOST:
+				case DIERR_NOTACQUIRED:
+					diRawMouse->Acquire();
+					break;
+				case DIERR_NOTINITIALIZED:
+				case DIERR_INVALIDPARAM:
+				default:
+					destroyDirectInput(); 
+					initDirectInput();
+					break;
+				}
 			}else{
-				mousebufX += (SINT16)(diMouseState.lX)*mouseMul;
-				mousebufY += (SINT16)(diMouseState.lY)*mouseMul;
+				mousebufX += (diMouseState.lX*mouseMul);
+				mousebufY += (diMouseState.lY*mouseMul);
 			}
 		}else{
-			mousebufX += (SINT16)(p.x - cp.x)*mouseMul;
-			mousebufY += (SINT16)(p.y - cp.y)*mouseMul;
+			mousebufX += (p.x - cp.x)*mouseMul;
+			mousebufY += (p.y - cp.y)*mouseMul;
 		}
 		if(mousebufX >= mouseDiv || mousebufX <= -mouseDiv){
-			mousemng.x += mousebufX / mouseDiv;
+			mousemng.x += (SINT16)(mousebufX / mouseDiv);
 			mousebufX   = mousebufX % mouseDiv;
 		}
 		if(mousebufY >= mouseDiv || mousebufY <= -mouseDiv){
-			mousemng.y += mousebufY / mouseDiv;
+			mousemng.y += (SINT16)(mousebufY / mouseDiv);
 			mousebufY   = mousebufY % mouseDiv;
 		}
 		//mousemng.x += (SINT16)((p.x - cp.x));// / 2);

@@ -31,6 +31,28 @@
 
 #define CIRRUS_VRAM_SIZE	(4096 * 1024)
 
+#define VRAMWINDOW_SIZE	0x200000  // VRAM マッピングサイズ
+#define EXT_WINDOW_SIZE	0x200000  // 謎
+#define EXT_WINDOW_SHFT	0x000000  // 謎
+#define BBLTWINDOW_ADSH	0x200000 // VRAM BITBLT
+#define BBLTWINDOW_SIZE	0x000000  // VRAM BITBLT マッピングサイズ
+#define MMIOWINDOW_ADDR	0xF80000  // MMIO マッピングアドレス（場所不明）
+#define MMIOWINDOW_SIZE	0x000000   // MMIO マッピングサイズ（サイズ不明）
+#define VRA2WINDOW_ADDR	0x0F2000  // VRAMウィンドウ マッピングアドレス（場所不明）
+#define VRA2WINDOW_SIZE	0x000000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define VRA2WINDOW_SIZEX	0x8000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define CIRRUS_VRAMWND2_FUNC_rb(a,b)	cirrus_linear_memwnd_readb(a,b)
+#define CIRRUS_VRAMWND2_FUNC_rw(a,b)	cirrus_linear_memwnd_readw(a,b)
+#define CIRRUS_VRAMWND2_FUNC_rl(a,b)	cirrus_linear_memwnd_readl(a,b)
+#define CIRRUS_VRAMWND2_FUNC_wb(a,b,c)	cirrus_linear_memwnd_writeb(a,b,c)
+#define CIRRUS_VRAMWND2_FUNC_ww(a,b,c)	cirrus_linear_memwnd_writew(a,b,c)
+#define CIRRUS_VRAMWND2_FUNC_wl(a,b,c)	cirrus_linear_memwnd_writel(a,b,c)
+
+#define TEST_ADDR		0xF00000
+#define TEST_ADDR_SIZE	0//0x8000
+
+#define CIRRUS_MELCOWAB_OFS	0x0
+
 typedef	signed char		int8_t;
 typedef	unsigned char	uint8_t;
 typedef	signed short	int16_t;

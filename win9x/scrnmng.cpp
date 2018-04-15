@@ -443,10 +443,16 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	UINT			fscrnmod;
 	DEVMODE			devmode;
 
+	static UINT8 lastscrnmode = 0;
+	static WINDOWPLACEMENT wp = {0};
+
 	ZeroMemory(&scrnmng, sizeof(scrnmng));
 	winstyle = GetWindowLong(g_hWndMain, GWL_STYLE);
 	winstyleex = GetWindowLong(g_hWndMain, GWL_EXSTYLE);
 	if (scrnmode & SCRNMODE_FULLSCREEN) {
+		if(!(lastscrnmode & SCRNMODE_FULLSCREEN)){
+			GetWindowPlacement(g_hWndMain, &wp);
+		}
 		scrnmode &= ~SCRNMODE_ROTATEMASK;
 		scrnmng.flag = SCRNFLAG_FULLSCREEN;
 		winstyle &= ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
@@ -455,6 +461,8 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		ddraw.menudisp = 0;
 		ddraw.menusize = GetSystemMetrics(SM_CYMENU);
 		np2class_enablemenu(g_hWndMain, FALSE);
+		SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
+		SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
 	}
 	else {
 		scrnmng.flag = SCRNFLAG_HAVEEXTEND;
@@ -467,9 +475,20 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		}
 		winstyle &= ~WS_POPUP;
 		winstyleex &= ~WS_EX_TOPMOST;
+		if(lastscrnmode & SCRNMODE_FULLSCREEN){
+			ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境でフルスクリーン→ウィンドウの時にシステムアイコンが消える対策のためのおまじない（その1）
+			SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
+			SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
+			ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その2）
+			ShowWindow(g_hWndMain, SW_HIDE); // Aeroな環境で(ry（その3）
+			ShowWindow(g_hWndMain, SW_SHOWNORMAL); // Aeroな環境で(ry（その4）
+			SetWindowPlacement(g_hWndMain, &wp); // Aeroな環境で(ry（その5）
+		}else{
+			SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
+			SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
+			GetWindowPlacement(g_hWndMain, &wp);
+		}
 	}
-	SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
-	SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
 	
 	if (DirectDrawCreate(np2oscfg.emuddraw ? (LPGUID)DDCREATE_EMULATIONONLY : NULL, &ddraw.ddraw1, NULL) != DD_OK) {
 		goto scre_err;
@@ -486,7 +505,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		width = np2oscfg.fscrn_cx;
 		height = np2oscfg.fscrn_cy;
 #ifdef SUPPORT_WAB
-		if(np2wab.relay&0x3){
+		if(!np2wabwnd.multiwindow && (np2wab.relay&0x3)){
 			if(np2wab.realWidth>=640 && np2wab.realHeight>=400){
 				width = np2wab.realWidth;
 				height = np2wab.realHeight;
@@ -549,20 +568,25 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
 		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 #ifdef SUPPORT_WAB
-		if(np2oscfg.fscrnmod & FSCRNMOD_SAMERES){
-			int maxx = GetSystemMetrics(SM_CXSCREEN);
-			int maxy = GetSystemMetrics(SM_CYSCREEN);
-			ddsd.dwWidth = (1280 > maxx ? maxx : 1280);
-			ddsd.dwHeight = (1024 > maxy ? maxy : 1024);
-		}else{
-			if((np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
-				// 実サイズに
-				ddsd.dwWidth = np2wab.realWidth;
-				ddsd.dwHeight = np2wab.realHeight;
+		if(!np2wabwnd.multiwindow){
+			if(np2oscfg.fscrnmod & FSCRNMOD_SAMERES){
+				int maxx = GetSystemMetrics(SM_CXSCREEN);
+				int maxy = GetSystemMetrics(SM_CYSCREEN);
+				ddsd.dwWidth = (1280 > maxx ? maxx : 1280);
+				ddsd.dwHeight = (1024 > maxy ? maxy : 1024);
 			}else{
-				ddsd.dwWidth = 640;
-				ddsd.dwHeight = 480;
+				if((np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
+					// 実サイズに
+					ddsd.dwWidth = np2wab.realWidth;
+					ddsd.dwHeight = np2wab.realHeight;
+				}else{
+					ddsd.dwWidth = 640;
+					ddsd.dwHeight = 480;
+				}
 			}
+		}else{
+			ddsd.dwWidth = 640;
+			ddsd.dwHeight = 480;
 		}
 #else
 		ddsd.dwWidth = 640;
@@ -622,7 +646,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
 		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 #ifdef SUPPORT_WAB
-		if((np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
+		if(!np2wabwnd.multiwindow && (np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
 			// 実サイズに
 			width = ddsd.dwWidth = np2wab.realWidth;
 			height = ddsd.dwHeight = np2wab.realHeight;
@@ -678,6 +702,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	ddraw.height = height;
 	ddraw.cliping = 0;
 	renewalclientsize(FALSE);
+	lastscrnmode = scrnmode;
 //	screenupdate = 3;					// update!
 	return(SUCCESS);
 

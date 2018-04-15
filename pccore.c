@@ -72,7 +72,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0, {1, 1, 6, 1, 8, 1},
 				128, 0x00, 0, 
 
-				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
+				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE, 1,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
 				1, 1, 2, 1, 0x000000, 0xffffff,
 				44100, 250, 4, 0,
@@ -107,6 +107,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_CL_GD5430)
 				0, 0x5B,
 #endif
+				0,
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -564,9 +565,14 @@ static void drawscreen(void) {
 	}
 #ifdef SUPPORT_WAB
 	if(np2wab.relay & 0x3){
-		pcstat.screenupdate = scrndraw_draw((UINT8)(pcstat.screenupdate & 2));
-		drawcount++;
-		return;
+		if(!np2wabcfg.multiwindow){
+			pcstat.screenupdate = scrndraw_draw((UINT8)(pcstat.screenupdate & 2));
+			drawcount++;
+			return;
+		}else{
+			pcstat.screenupdate = 1;
+			drawcount++;
+		}
 	}
 #endif
 	if ((gdcs.textdisp & GDCSCRN_EXT) || (gdcs.grphdisp & GDCSCRN_EXT)) {

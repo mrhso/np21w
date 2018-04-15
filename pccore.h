@@ -96,6 +96,8 @@ struct tagNP2Config
 	OEMCHAR	model[8];
 	UINT	baseclock;
 	UINT	multiple;
+	
+	UINT8	usebios;
 
 	UINT8	memsw[8];
 
@@ -176,7 +178,8 @@ struct tagNP2Config
 	UINT8	usegd5430;
 	UINT16	gd5430type;
 #endif
-
+	
+	UINT8	winntfix;
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

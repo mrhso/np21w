@@ -39,18 +39,39 @@ static const UINT s_nFilter[1] =
  */
 static void GetDefaultFilename(LPCTSTR lpExt, LPTSTR lpFilename, UINT cchFilename)
 {
-	for (UINT i = 0; i < 10000; i++)
-	{
+	if(np2cfg.fddfile[0][0] || np2cfg.sasihdd[0][0]){
 		TCHAR szFilename[MAX_PATH];
-		wsprintf(szFilename, TEXT("NP2_%04d.%s"), i, lpExt);
-
-		file_cpyname(lpFilename, bmpfilefolder, cchFilename);
+		TCHAR *fname, *extpos;
+		if(np2cfg.fddfile[0][0]){
+			fname = _tcsrchr(np2cfg.fddfile[0], '\\');
+		}else if(np2cfg.sasihdd[0][0]){
+			fname = _tcsrchr(np2cfg.sasihdd[0], '\\');
+		}
+		extpos = _tcsrchr(fname, '.');
+		if(extpos){
+			*extpos = '\0';
+			wsprintf(szFilename, TEXT("%s.%s"), fname, lpExt);
+			*extpos = '.';
+		}else{
+			wsprintf(szFilename, TEXT("%s.%s"), fname, lpExt);
+		}
+		file_cpyname(lpFilename, npcfgfilefolder, cchFilename);
 		file_cutname(lpFilename);
 		file_catname(lpFilename, szFilename, cchFilename);
-
-		if (file_attr(lpFilename) == -1)
+	}else{
+		for (UINT i = 0; i < 10000; i++)
 		{
-			break;
+			TCHAR szFilename[MAX_PATH];
+			wsprintf(szFilename, TEXT("NP2_%04d.%s"), i, lpExt);
+
+			file_cpyname(lpFilename, npcfgfilefolder, cchFilename);
+			file_cutname(lpFilename);
+			file_catname(lpFilename, szFilename, cchFilename);
+
+			if (file_attr(lpFilename) == -1)
+			{
+				break;
+			}
 		}
 	}
 }
@@ -75,6 +96,8 @@ void dialog_writenpcfg(HWND hWnd)
 	{
 		LPCTSTR lpFilename = dlg.GetPathName();
 		LPCTSTR lpExt = file_getext(szPath);
+		file_cpyname(npcfgfilefolder, lpFilename, _countof(bmpfilefolder));
+		sysmng_update(SYS_UPDATEOSCFG);
 		LPTSTR lpFilenameBuf = (LPTSTR)malloc((_tcslen(lpFilename)+1)*sizeof(TCHAR));
 		_tcscpy(lpFilenameBuf, lpFilename);
 		Np2Arg::GetInstance()->setiniFilename(lpFilenameBuf);

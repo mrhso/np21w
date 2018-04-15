@@ -95,6 +95,8 @@ static void bios_reinitbyswitch(void) {
 	UINT8	biosflag;
 	UINT8	extmem; // LARGE_MEM //UINT16	extmem;
 	UINT8	boot;
+	FILEH	fh;
+	OEMCHAR	path[MAX_PATH];
 
 	if (!(pccore.dipsw[2] & 0x80)) {
 #if defined(CPUCORE_IA32)
@@ -174,10 +176,45 @@ static void bios_reinitbyswitch(void) {
 #if defined(SUPPORT_IDEIO)
 	mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 						  (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
-	mem[0x0457] = (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x42 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x90 : 0x0);
+	mem[0x0457] = (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x42 : 0x07)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x90 : 0x38);
 	//mem[0x045D] |= 0x0C;
 	//mem[0x045E] |= 0x60;
 	mem[0x0481] |= 0x03;
+	if(np2cfg.winntfix){
+		// WinNT4.0でHDDが認識するようになる（ただしWin9xではHDD認識失敗の巻き添えになってCDが認識しなくなる）
+		mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+					  (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
+	}
+	//mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+	//			  (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
+	//mem[0x05A9] = 0xF3;
+	//mem[0x05AA] = 0x6D;
+	//mem[0x05AB] = 0xCB;
+	//mem[0x05b0] = 0xff;
+	//mem[0x05E8] = 0x8F;
+	//mem[0x05E9] = 0x07;
+	//mem[0x05EA] = 0x00;
+	//mem[0x05EB] = 0xD8;
+	//mem[0x05EC] = 0x89;
+	//mem[0x05ED] = 0x07;
+	//mem[0x05EE] = 0x00;
+	//mem[0x05EF] = 0xD8;
+	//mem[0x04DA] = 0xAA;
+	//mem[0x04DB] = 0xAA;
+	//getbiospath(path, _T("test.bin"), NELEMENTS(path));
+	//fh = file_open_rb(path);
+	//if (fh != FILEH_INVALID) {
+	//	file_read(fh, mem + 0x0DA000, 0x2B0);
+	//	file_close(fh);
+	//}
+	//getbiospath(path, _T("ide.romemu"), NELEMENTS(path));
+//	fh = file_open_rb(path);
+//	if (fh != FILEH_INVALID) {
+//#define READSIZE 0
+//		file_seek(fh, READSIZE, SEEK_CUR);
+//		file_read(fh, mem + 0x0D8000+READSIZE, 0x2000-READSIZE);
+//		file_close(fh);
+//	}
 #endif
 	mem[0xF8E80+0x0011] = mem[0xF8E80+0x0011] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
 	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number
@@ -248,10 +285,12 @@ void bios_initialize(void) {
 
 	biosrom = FALSE;
 	getbiospath(path, str_biosrom, NELEMENTS(path));
-	fh = file_open_rb(path);
-	if (fh != FILEH_INVALID) {
-		biosrom = (file_read(fh, mem + 0x0e8000, 0x18000) == 0x18000);
-		file_close(fh);
+	if(np2cfg.usebios){
+		fh = file_open_rb(path);
+		if (fh != FILEH_INVALID) {
+			biosrom = (file_read(fh, mem + 0x0e8000, 0x18000) == 0x18000);
+			file_close(fh);
+		}
 	}
 	if (biosrom) {
 		TRACEOUT(("load bios.rom"));
@@ -322,7 +361,13 @@ void bios_initialize(void) {
 	STOREINTELDWORD(mem + 0xffff1, 0xfd800000);
 
 	CopyMemory(mem + 0x0fd800 + 0x0e00, keytable[0], 0x300);
-
+	
+	//fh = file_create_c(_T("emuitf.rom"));
+	//if (fh != FILEH_INVALID) {
+	//	file_write(fh, itfrom, sizeof(itfrom));
+	//	file_close(fh);
+	//	TRACEOUT(("write emuitf.rom"));
+	//}
 	CopyMemory(mem + ITF_ADRS, itfrom, sizeof(itfrom));
 	mem[ITF_ADRS + 0x7ff0] = 0xea;
 	STOREINTELDWORD(mem + ITF_ADRS + 0x7ff1, 0xf8000000);

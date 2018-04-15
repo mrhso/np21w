@@ -794,6 +794,7 @@ BEGIN
         MENUITEM "&New disk...",                IDM_NEWDISK
         MENUITEM "&Font...",                    IDM_CHANGEFONT
         MENUITEM SEPARATOR
+        MENUITEM "&Load VM config...",          IDM_LOADVMCFG
         MENUITEM "&Save VM config...",          IDM_SAVEVMCFG
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       IDM_EXIT
@@ -1394,6 +1395,8 @@ BEGIN
     IDS_CFGTITLE            "Save VM configuration file"
     IDS_CFGEXT              "npcfg"
     IDS_CFGFILTER           "Neko Project VM configuration file (*.npcfg)|*.npcfg|Neko Project II VM configuration file (*.np2cfg)|*.np2cfg|Neko Project 21 VM configuration file (*.np21cfg)|*.np21cfg|Neko Project 21/W VM configuration file (*.np21wcfg)|*.np21wcfg|"
+    IDS_CFGTITLE_L          "Load VM configuration file"
+    IDS_CFGFILTER_L         "Neko Project VM configuration file (*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg)|*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg|Neko Project II INI file (*.ini)|*.ini|All files (*.*)|*.*|"
 END
 
 STRINGTABLE

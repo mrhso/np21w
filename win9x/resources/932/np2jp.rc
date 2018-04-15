@@ -793,6 +793,7 @@ BEGIN
         MENUITEM "ディスクイメージ作成(&N)...", IDM_NEWDISK
         MENUITEM "フォント(&F)...",             IDM_CHANGEFONT
         MENUITEM SEPARATOR
+        MENUITEM "&VM設定ファイル読込(&O)...",  IDM_LOADVMCFG
         MENUITEM "&VM設定ファイル保存(&S)...",  IDM_SAVEVMCFG
         MENUITEM SEPARATOR
         MENUITEM "終了(&X)",                    IDM_EXIT
