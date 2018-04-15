@@ -1,7 +1,17 @@
 #include "compiler.h"
+
+#ifndef USE_FPU
+
 #include "ia32/cpu.h"
 #include "ia32/ia32.mcr"
 #include "fp.h"
+
+void FPU_FXSAVE(void){
+	EXCEPTION(UD_EXCEPTION, 0);
+}
+void FPU_FXRSTOR(void){
+	EXCEPTION(UD_EXCEPTION, 0);
+}
 
 void
 ESC0(void)
@@ -150,3 +160,5 @@ ESC7(void)
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 }
+
+#endif

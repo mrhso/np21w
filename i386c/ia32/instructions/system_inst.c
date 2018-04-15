@@ -353,6 +353,9 @@ MOV_CdRd(void)
 #if (CPU_FEATURES & CPU_FEATURE_PGE) == CPU_FEATURE_PGE
 			    | CPU_CR4_PGE
 #endif
+#if (CPU_FEATURES & CPU_FEATURE_FXSR) == CPU_FEATURE_FXSR
+			    | CPU_CR4_OSFXSR
+#endif
 			;
 			if (src & ~reg) {
 				if (src & 0xfffffc00) {
@@ -1057,8 +1060,13 @@ RDMSR(void)
 
 	idx = CPU_ECX;
 	switch (idx) {
+	//case 0x1b:
+	//	CPU_EDX = 0x00000000;
+	//	CPU_EAX = 0xfee00800;
+	//	break;
 	default:
-		EXCEPTION(GP_EXCEPTION, 0);
+		CPU_EDX = CPU_EAX = 0;
+		//EXCEPTION(GP_EXCEPTION, 0); // XXX: Ç∆ÇËÇ†Ç¶Ç∏í Ç∑
 		break;
 	}
 }
@@ -1078,7 +1086,7 @@ WRMSR(void)
 		/* MTRR Ç÷ÇÃèëÇ´çûÇ›éû tlb_flush_all(); */
 
 	default:
-		EXCEPTION(GP_EXCEPTION, 0);
+		//EXCEPTION(GP_EXCEPTION, 0); // XXX: Ç∆ÇËÇ†Ç¶Ç∏í Ç∑
 		break;
 	}
 }
@@ -1094,6 +1102,21 @@ RDTSC(void)
 #else
 	ia32_panic("RDTSC: not implemented yet!");
 #endif
+}
+
+void
+RDPMC(void)
+{
+	int idx;
+
+	if (CPU_STAT_PM && (CPU_STAT_VM86 || CPU_STAT_CPL != 0)) {
+		VERBOSE(("RDPMC: VM86(%s) or CPL(%d) != 0", CPU_STAT_VM86 ? "true" : "false", CPU_STAT_CPL));
+		EXCEPTION(GP_EXCEPTION, 0);
+	}
+
+	idx = CPU_ECX;
+	switch (idx) {
+	}
 }
 
 void

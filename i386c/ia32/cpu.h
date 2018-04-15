@@ -260,6 +260,10 @@ typedef union {
         UINT32 lower;
         SINT32 upper;
     } l;
+    struct {
+        UINT32 lower;
+        UINT32 upper;
+    } ul;
     SINT64 ll;
 } FP_REG;
 
@@ -366,12 +370,21 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 
 /* version */
 #if defined(USE_FPU)
+#if defined(USE_MMX)
+#define	CPU_FAMILY	6
+#define	CPU_MODEL	3	/* Pentium II */
+#define	CPU_STEPPING	3
+//#define	CPU_FAMILY	6
+//#define	CPU_MODEL	1	/* Pentium Pro */
+//#define	CPU_STEPPING	1
+#else
+#define	CPU_FAMILY	5
+#define	CPU_MODEL	2	/* Pentium */
+#define	CPU_STEPPING	5
 //#define	CPU_FAMILY	4
 //#define	CPU_MODEL	1	/* 486DX */
 //#define	CPU_STEPPING	3
-#define	CPU_FAMILY	5
-#define	CPU_MODEL	2	/* Pentium */
-#define	CPU_STEPPING	3
+#endif
 #else
 #define	CPU_FAMILY	4
 #define	CPU_MODEL	2	/* 486SX */
@@ -411,12 +424,26 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 /*				(1 << 29) */
 /*				(1 << 30) */
 /*				(1 << 31) */
+
 #if defined(USE_FPU)
-#define	CPU_FEATURES		(CPU_FEATURE_CMOV|CPU_FEATURE_FPU)//|CPU_FEATURE_TSC)
+#define	CPU_FEATURE_FPU_FLAG	CPU_FEATURE_FPU
 #else
-#define	CPU_FEATURES		(CPU_FEATURE_CMOV)
+#define	CPU_FEATURE_FPU_FLAG	0
 #endif
 
+#if defined(USE_TSC)
+#define	CPU_FEATURE_TSC_FLAG	CPU_FEATURE_TSC
+#else
+#define	CPU_FEATURE_TSC_FLAG	0
+#endif
+
+#if defined(USE_MMX)
+#define	CPU_FEATURE_MMX_FLAG	CPU_FEATURE_MMX|CPU_FEATURE_FXSR
+#else
+#define	CPU_FEATURE_MMX_FLAG	0
+#endif
+
+#define	CPU_FEATURES		(CPU_FEATURE_CMOV|CPU_FEATURE_FPU_FLAG|CPU_FEATURE_TSC_FLAG|CPU_FEATURE_MMX_FLAG)
 
 #define	CPU_REGS_BYTEL(n)	CPU_STATSAVE.cpu_regs.reg[(n)].b.l
 #define	CPU_REGS_BYTEH(n)	CPU_STATSAVE.cpu_regs.reg[(n)].b.h

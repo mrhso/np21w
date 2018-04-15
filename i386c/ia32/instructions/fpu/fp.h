@@ -33,6 +33,8 @@ extern "C" {
 void fpu_init(void);
 void fpu_fwait(void);
 
+void FPU_FXSAVERSTOR(void);
+
 void FWAIT(void);
 void ESC0(void);
 void ESC1(void);

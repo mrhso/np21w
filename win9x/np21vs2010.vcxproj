@@ -326,13 +326,6 @@
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpdummy.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Precise</FloatingPointModel>
@@ -346,10 +339,13 @@
     </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\logic_arith.c" />
     <ClCompile Include="..\i386c\ia32\instructions\misc_inst.c" />
+    <ClCompile Include="..\i386c\ia32\instructions\mmx\mmx.c" />
     <ClCompile Include="..\i386c\ia32\instructions\seg_reg.c" />
     <ClCompile Include="..\i386c\ia32\instructions\shift_rotate.c" />
     <ClCompile Include="..\i386c\ia32\instructions\string_inst.c" />
-    <ClCompile Include="..\i386c\ia32\instructions\system_inst.c" />
+    <ClCompile Include="..\i386c\ia32\instructions\system_inst.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="..\i386c\ia32\inst_table.c" />
     <ClCompile Include="..\i386c\ia32\interface.c" />
     <ClCompile Include="..\i386c\ia32\paging.c" />
@@ -676,6 +672,7 @@
     <ClInclude Include="..\i386c\ia32\instructions\fpu\fp.h" />
     <ClInclude Include="..\i386c\ia32\instructions\logic_arith.h" />
     <ClInclude Include="..\i386c\ia32\instructions\misc_inst.h" />
+    <ClInclude Include="..\i386c\ia32\instructions\mmx\mmx.h" />
     <ClInclude Include="..\i386c\ia32\instructions\seg_reg.h" />
     <ClInclude Include="..\i386c\ia32\instructions\shift_rotate.h" />
     <ClInclude Include="..\i386c\ia32\instructions\string_inst.h" />

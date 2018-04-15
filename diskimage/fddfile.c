@@ -8,14 +8,14 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/img_common.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/img_strres.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_xdf.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_d88.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_dcp.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_bkdsk.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_nfd.h"	//	’Ç‰Á(Kai1)
-#include	"DiskImage/FD/fdd_vfdd.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/img_common.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/img_strres.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_xdf.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_d88.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_dcp.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_bkdsk.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_nfd.h"	//	’Ç‰Á(Kai1)
+#include	"diskimage/fd/fdd_vfdd.h"	//	’Ç‰Á(Kai1)
 
 
 	_FDDFILE	fddfile[MAX_FDDFILE];

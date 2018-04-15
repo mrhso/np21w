@@ -7,10 +7,10 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/fddfile.h"
-#include	"DiskImage/FD/fdd_xdf.h"
-#include	"DiskImage/FD/fdd_dcp.h"
-#include	"DiskImage/FD/fdd_bkdsk.h"
+#include	"diskimage/fddfile.h"
+#include	"diskimage/fd/fdd_xdf.h"
+#include	"diskimage/fd/fdd_dcp.h"
+#include	"diskimage/fd/fdd_bkdsk.h"
 
 static const _XDFINFO supportbkdsk[] = {
 			{0, 154, 26, 1, DISKTYPE_2HD, 0},	//	BKDSK(HDB)	BASIC 2HD

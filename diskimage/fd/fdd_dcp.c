@@ -5,9 +5,9 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/fddfile.h"
-#include	"DiskImage/FD/fdd_xdf.h"
-#include	"DiskImage/FD/fdd_dcp.h"
+#include	"diskimage/fddfile.h"
+#include	"diskimage/fd/fdd_xdf.h"
+#include	"diskimage/fd/fdd_dcp.h"
 
 typedef struct {
 	UINT8		mediatype;

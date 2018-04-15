@@ -1,5 +1,5 @@
 #include	"compiler.h"
-#include	"DiskImage/img_strres.h"
+#include	"diskimage/img_strres.h"
 
 #ifdef SUPPORT_KAI_IMAGES
 

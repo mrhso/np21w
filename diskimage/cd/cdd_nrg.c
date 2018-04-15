@@ -5,8 +5,8 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/cddfile.h"
-#include	"DiskImage/win9x/img_dosio.h"
+#include	"diskimage/cddfile.h"
+#include	"diskimage/win9x/img_dosio.h"
 
 static const UINT8 nrg_sig_new[4] = {'N','E','R','5'};
 static const UINT8 nrg_sig_old[4] = {'N','E','R','O'};

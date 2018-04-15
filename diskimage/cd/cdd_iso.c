@@ -4,7 +4,7 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/cddfile.h"
+#include	"diskimage/cddfile.h"
 
 //	指定ファイルをISOイメージとみなして開く
 BRESULT openiso(SXSIDEV sxsi, const OEMCHAR *path) {

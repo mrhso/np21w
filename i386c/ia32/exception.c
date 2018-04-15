@@ -96,10 +96,12 @@ exception(int num, int error_code)
 	}
 
 	switch (num) {
+	case UD_EXCEPTION:	/* (F) 無効オペコード */
+		//ia32_warning("warning: undefined op!");
+		//return; // DEBUG 
 	case DE_EXCEPTION:	/* (F) 除算エラー */
 	case DB_EXCEPTION:	/* (F/T) デバッグ */
 	case BR_EXCEPTION:	/* (F) BOUND の範囲外 */
-	case UD_EXCEPTION:	/* (F) 無効オペコード */
 	case NM_EXCEPTION:	/* (F) デバイス使用不可 (FPU が無い) */
 	case MF_EXCEPTION:	/* (F) 浮動小数点エラー */
 		CPU_EIP = CPU_PREV_EIP;

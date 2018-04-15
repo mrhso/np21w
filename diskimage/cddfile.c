@@ -7,9 +7,9 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/img_strres.h"
-#include	"DiskImage/win9x/img_dosio.h"
-#include	"DiskImage/CD/cdd_iso.h"
+#include	"diskimage/img_strres.h"
+#include	"diskimage/win9x/img_dosio.h"
+#include	"diskimage/cd/cdd_iso.h"
 
 //	ISO9660のボリューム記述子によるチェックを有効にする場合はコメントを外す
 //	※有効にした場合、CD-ROM以外がマウントできなくなる

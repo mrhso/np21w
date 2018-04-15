@@ -5,8 +5,8 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/fddfile.h"
-#include	"DiskImage/FD/fdd_nfd.h"
+#include	"diskimage/fddfile.h"
+#include	"diskimage/fd/fdd_nfd.h"
 
 static const UINT8 nfd_FileID_r0[15] =
 						{'T','9','8','F','D','D','I','M','A','G','E','.','R','0',0x00};

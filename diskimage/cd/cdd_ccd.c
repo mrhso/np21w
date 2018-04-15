@@ -5,8 +5,8 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/cddfile.h"
-#include	"DiskImage/CD/cdd_cue.h"
+#include	"diskimage/cddfile.h"
+#include	"diskimage/cd/cdd_cue.h"
 
 static const OEMCHAR str_img[] = OEMTEXT(".img");
 

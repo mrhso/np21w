@@ -30,6 +30,7 @@
 #include "misc_inst.h"
 #include "ia32/inst_table.h"
 
+#include "pccore.h"
 
 void
 LEA_GwM(void)
@@ -92,9 +93,45 @@ XLAT(void)
 	}
 }
 
+#if defined(USE_MMX)
+#define	CPU_BRAND_STRING_1	"Inte"
+#define	CPU_BRAND_STRING_2	"l(R)"
+#define	CPU_BRAND_STRING_3	" Pen"
+#define	CPU_BRAND_STRING_4	"tium"
+#define	CPU_BRAND_STRING_5	"(R) "
+#define	CPU_BRAND_STRING_6	"II C"
+#define	CPU_BRAND_STRING_7	"PU  "
+#define	CPU_BRAND_STRING_8	"    "
+#define	CPU_BRAND_STRING_SPC	"    "
+
+//#define	CPU_BRAND_STRING_1	"Inte"
+//#define	CPU_BRAND_STRING_2	"l(R)"
+//#define	CPU_BRAND_STRING_3	" Pen"
+//#define	CPU_BRAND_STRING_4	"tium"
+//#define	CPU_BRAND_STRING_5	"(R) "
+//#define	CPU_BRAND_STRING_6	"Pro "
+//#define	CPU_BRAND_STRING_7	"CPU "
+//#define	CPU_BRAND_STRING_8	"    "
+//#define	CPU_BRAND_STRING_SPC	"    "
+
+#else
+#define	CPU_BRAND_STRING_1	"Inte"
+#define	CPU_BRAND_STRING_2	"l(R)"
+#define	CPU_BRAND_STRING_3	" Pen"
+#define	CPU_BRAND_STRING_4	"tium"
+#define	CPU_BRAND_STRING_5	"(R) "
+#define	CPU_BRAND_STRING_6	"Proc"
+#define	CPU_BRAND_STRING_7	"esso"
+#define	CPU_BRAND_STRING_8	"r   "
+#define	CPU_BRAND_STRING_SPC	"    "
+
+#endif
+
 void
 _CPUID(void)
 {
+	char clkbuf[30]; // ˆÀ‘S‚Ì‚½‚ß‘½‚ß‚É¥¥¥
+	UINT32 clkMHz;
 
 	switch (CPU_EAX) {
 	case 0:
@@ -117,6 +154,68 @@ _CPUID(void)
 		CPU_ECX = 0;
 		CPU_EDX = 0;
 		break;
+		
+#if defined(USE_FPU)
+	case 0x80000000:
+		CPU_EAX = 0x80000004;
+		CPU_EBX = 0;
+		CPU_ECX = 0;
+		CPU_EDX = 0;
+		break;
+
+	case 0x80000001:
+		CPU_EAX = 0;
+		CPU_EBX = 0;
+		CPU_ECX = 0;
+		CPU_EDX = 0;
+		break;
+		
+	case 0x80000002:
+		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_1));
+		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_2));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_3));
+		CPU_EDX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_4));
+		break;
+		
+#if defined(USE_MMX)
+	case 0x80000003:
+		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_5));
+		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_6));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_7));
+		clkbuf[0] = '\0';
+		clkMHz = pccore.realclock/1000/1000;
+		sprintf(clkbuf, "%d MHz", clkMHz);
+		CPU_EDX = LOADINTELDWORD(((UINT8*)clkbuf));
+		break;
+		
+	case 0x80000004:
+		clkbuf[0] = '\0';
+		clkMHz = pccore.realclock/1000/1000;
+		sprintf(clkbuf, "%d MHz", clkMHz);
+		CPU_EAX = LOADINTELDWORD(((UINT8*)(clkbuf+4)));
+		CPU_EBX = LOADINTELDWORD(((UINT8*)(clkbuf+8)));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)(clkbuf+12)));
+		CPU_EDX = 0;
+		break;
+#else
+	case 0x80000003:
+		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_5));
+		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_6));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_7));
+		CPU_EDX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_8));
+		break;
+		
+	case 0x80000004:
+		clkbuf[0] = '\0';
+		clkMHz = pccore.realclock/1000/1000;
+		sprintf(clkbuf, "%d MHz", clkMHz);
+		CPU_EAX = LOADINTELDWORD(((UINT8*)clkbuf));
+		CPU_EBX = LOADINTELDWORD(((UINT8*)(clkbuf+4)));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)(clkbuf+8)));
+		CPU_EDX = LOADINTELDWORD(((UINT8*)(clkbuf+12)));
+		break;
+#endif
+#endif
 	}
 }
 

@@ -13,8 +13,8 @@
 #include <ntddscsi.h>
 #pragma warning (pop)
 
-#include	"DiskImage/cddfile.h"
-#include	"DiskImage/CD/cdd_real.h"
+#include	"diskimage/cddfile.h"
+#include	"diskimage/cd/cdd_real.h"
 
 UINT64 msf2lba(UINT64 msf){
 	UINT64 m,s,f;

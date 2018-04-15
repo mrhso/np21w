@@ -651,10 +651,83 @@ static void FPU_FCOM(UINT st, UINT other){
 	FPU_SET_C0(0);
 	return;
 }
+static void FPU_FCOMI(UINT st, UINT other){
+	if(((FPU_STAT.tag[st] != TAG_Valid) && (FPU_STAT.tag[st] != TAG_Zero)) || 
+		((FPU_STAT.tag[other] != TAG_Valid) && (FPU_STAT.tag[other] != TAG_Zero))){
+		CPU_FLAGL = (CPU_FLAGL & ~Z_FLAG) | Z_FLAG;
+		CPU_FLAGL = (CPU_FLAGL & ~P_FLAG) | P_FLAG;
+		CPU_FLAGL = (CPU_FLAGL & ~C_FLAG) | C_FLAG;
+		return;
+	}
+
+	if(FPU_STAT.reg[st].d == FPU_STAT.reg[other].d){
+		CPU_FLAGL = (CPU_FLAGL & ~Z_FLAG) | Z_FLAG;
+		CPU_FLAGL = (CPU_FLAGL & ~P_FLAG) | 0;
+		CPU_FLAGL = (CPU_FLAGL & ~C_FLAG) | 0;
+		return;
+	}
+	if(FPU_STAT.reg[st].d < FPU_STAT.reg[other].d){
+		CPU_FLAGL = (CPU_FLAGL & ~Z_FLAG) | 0;
+		CPU_FLAGL = (CPU_FLAGL & ~P_FLAG) | 0;
+		CPU_FLAGL = (CPU_FLAGL & ~C_FLAG) | C_FLAG;
+		return;
+	}
+	// st > other
+	CPU_FLAGL = (CPU_FLAGL & ~Z_FLAG) | 0;
+	CPU_FLAGL = (CPU_FLAGL & ~P_FLAG) | 0;
+	CPU_FLAGL = (CPU_FLAGL & ~C_FLAG) | 0;
+	return;
+}
 
 static void FPU_FUCOM(UINT st, UINT other){
 	//does atm the same as fcom 
 	FPU_FCOM(st,other);
+}
+static void FPU_FUCOMI(UINT st, UINT other){
+	//does atm the same as fcomi 
+	FPU_FCOMI(st,other);
+}
+
+static void FPU_FCMOVB(UINT st, UINT other){
+	if(CPU_FLAGL & C_FLAG){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVE(UINT st, UINT other){
+	if(CPU_FLAGL & Z_FLAG){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVBE(UINT st, UINT other){
+	if(CPU_FLAGL & (C_FLAG|Z_FLAG)){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVU(UINT st, UINT other){
+	if(CPU_FLAGL & P_FLAG){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+
+static void FPU_FCMOVNB(UINT st, UINT other){
+	if(!(CPU_FLAGL & C_FLAG)){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVNE(UINT st, UINT other){
+	if(!(CPU_FLAGL & Z_FLAG)){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVNBE(UINT st, UINT other){
+	if(!(CPU_FLAGL & (C_FLAG|Z_FLAG))){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
+}
+static void FPU_FCMOVNU(UINT st, UINT other){
+	if(!(CPU_FLAGL & P_FLAG)){
+		FPU_STAT.tag[st] = FPU_STAT.tag[other];
+	}
 }
 
 static void FPU_FRNDINT(void){
@@ -822,6 +895,70 @@ static void FPU_FRSTOR(UINT32 addr)
 	for(i = 0;i < 8;i++){
 		FPU_STAT.reg[FPU_ST(i)].d = FPU_FLD80(addr+start);
 		start += 10;
+	}
+}
+
+static void FPU_FXSAVE(UINT32 addr){
+	UINT start;
+	UINT i;
+	
+	descriptor_t *sdp = &CPU_CS_DESC;
+	
+	//FPU_FSTENV(addr);
+	fpu_memorywrite_w(addr+0,FPU_CTRLWORD);
+	fpu_memorywrite_w(addr+2,FPU_STATUSWORD);
+	fpu_memorywrite_w(addr+4,FPU_GetTag());
+	fpu_memorywrite_w(addr+10,FPU_LASTINSTOP);		
+	start = 32;
+	for(i = 0;i < 8;i++){
+		//FPU_ST80(addr+start,FPU_ST(i));
+		fpu_memorywrite_d(addr+start+0,FPU_STAT.reg[i].l.lower);
+		fpu_memorywrite_d(addr+start+4,FPU_STAT.reg[i].l.upper);
+		fpu_memorywrite_d(addr+start+8,0xff);
+		fpu_memorywrite_d(addr+start+12,0xff);
+		start += 16;
+	}
+}
+static void FPU_FXRSTOR(UINT32 addr){
+	UINT start;
+	UINT i;
+	
+	descriptor_t *sdp = &CPU_CS_DESC;
+	
+	//FPU_FLDENV(addr);
+	FPU_SetCW(fpu_memoryread_w(addr+0));
+	FPU_STATUSWORD = fpu_memoryread_w(addr+2);
+	FPU_SetTag(fpu_memoryread_w(addr+4));
+	FPU_LASTINSTOP = fpu_memoryread_w(addr+10);
+	start = 32;
+	for(i = 0;i < 8;i++){
+		//FPU_STAT.reg[FPU_ST(i)].d = FPU_FLD80(addr+start);
+		FPU_STAT.reg[i].l.lower = fpu_memoryread_d(addr+start+0);
+		FPU_STAT.reg[i].l.upper = fpu_memoryread_d(addr+start+4);
+		start += 16;
+	}
+}
+
+void FPU_FXSAVERSTOR(void){
+	UINT32 op;
+	UINT idx, sub;
+	UINT32 maddr;
+	
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
+	GET_PCBYTE((op));
+	idx = (op >> 3) & 7;
+	sub = (op & 7);
+	switch(idx){
+	case 0: // FXSAVE
+		maddr = calc_ea_dst(op);
+		FPU_FXSAVE(maddr);
+		break;
+	case 1: // FXRSTOR
+		maddr = calc_ea_dst(op);
+		FPU_FXRSTOR(maddr);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -1330,6 +1467,22 @@ ESC2(void)
 	if (op >= 0xc0) {
 		/* Fxxx ST(0), ST(i) */
 		switch (idx) {
+		case 0: /* FCMOVB */
+			TRACEOUT(("ESC2: FCMOVB"));
+			FPU_FCMOVB(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 1: /* FCMOVE */
+			TRACEOUT(("ESC2: FCMOVE"));
+			FPU_FCMOVE(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 2: /* FCMOVBE */
+			TRACEOUT(("ESC2: FCMOVBE"));
+			FPU_FCMOVBE(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 3: /* FCMOVU */
+			TRACEOUT(("ESC2: FCMOVU"));
+			FPU_FCMOVU(FPU_STAT_TOP,FPU_ST(sub));
+			break;
 		case 5:
 			switch (sub) {
 			case 1: /* FUCOMPP */
@@ -1370,6 +1523,22 @@ ESC3(void)
 	{
 		/* Fxxx ST(0), ST(i) */
 		switch (idx) {
+		case 0: /* FCMOVNB */
+			TRACEOUT(("ESC3: FCMOVNB"));
+			FPU_FCMOVNB(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 1: /* FCMOVNE */
+			TRACEOUT(("ESC3: FCMOVNE"));
+			FPU_FCMOVNE(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 2: /* FCMOVNBE */
+			TRACEOUT(("ESC3: FCMOVNBE"));
+			FPU_FCMOVNBE(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 3: /* FCMOVNU */
+			TRACEOUT(("ESC3: FCMOVNU"));
+			FPU_FCMOVNU(FPU_STAT_TOP,FPU_ST(sub));
+			break;
 		case 4:
 			switch (sub) {
 			case 0: /* FNENI */
@@ -1394,6 +1563,14 @@ ESC3(void)
 			default:
 				break;
 			}
+			break;
+		case 5: /* FUCOMI */
+			TRACEOUT(("ESC3: FUCOMI"));
+			FPU_FUCOMI(FPU_STAT_TOP,FPU_ST(sub));
+			break;
+		case 6: /* FCOMI */
+			TRACEOUT(("ESC3: FCOMI"));
+			FPU_FCOMI(FPU_STAT_TOP,FPU_ST(sub));	
 			break;
 		default:
 			break;
@@ -1706,7 +1883,16 @@ ESC7(void)
 				break;
 			}
 			break;
-			/*FALLTHROUGH*/
+		case 5: /* FUCOMIP */
+			TRACEOUT(("ESC7: FUCOMIP"));
+			FPU_FUCOMI(FPU_STAT_TOP,FPU_ST(sub));	
+			FPU_FPOP();
+			break;
+		case 6: /* FCOMIP */
+			TRACEOUT(("ESC7: FCOMIP"));
+			FPU_FCOMI(FPU_STAT_TOP,FPU_ST(sub));	
+			FPU_FPOP();
+			break;
 		default:
 			break;
 		}

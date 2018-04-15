@@ -4,7 +4,7 @@
 
 #ifdef SUPPORT_KAI_IMAGES
 
-#include	"DiskImage/cddfile.h"
+#include	"diskimage/cddfile.h"
 
 #define	LOADINTELQWORD(a)		(*((UINT64 *)(a)))
 
