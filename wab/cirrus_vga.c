@@ -82,7 +82,7 @@ REG8 cirrusvga_regindex = 0;
 //REG8 cirrusvga_mmioenable = 0;
 
 NP2CLVGA	np2clvga = {0};
-NP2CLVGA2	np2clvga2 = {0};
+//NP2CLVGA2	np2clvga = {0};
 void *cirrusvga_opaque = NULL;
 UINT8	cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024];
 
@@ -3074,7 +3074,7 @@ void cirrus_linear_memwnd3_addr_convert(void *opaque, target_phys_addr_t *addrva
 	int offset;
 	target_phys_addr_t addr = *addrval;
 	
-	addr -= np2clvga2.VRAMWindowAddr3;
+	addr -= np2clvga.VRAMWindowAddr3;
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_GA98NB){
 		offset = s->gr[0x09];
 		offset *= 0x20000;
@@ -4009,7 +4009,7 @@ void pc98_cirrus_vga_save()
 	array_write(f, pos, &s->device_id, sizeof(s->device_id));
 	array_write(f, pos, &s->bustype, sizeof(s->bustype));
 	
-	array_write(f, pos, &np2clvga2.VRAMWindowAddr3, sizeof(np2clvga2.VRAMWindowAddr3));
+	array_write(f, pos, &np2clvga.VRAMWindowAddr3, sizeof(np2clvga.VRAMWindowAddr3));
 
     //array_write(f, pos, &s->latch, sizeof(s->latch));
     //array_write(f, pos, &s->sr_index, sizeof(s->sr_index));
@@ -4212,7 +4212,7 @@ void pc98_cirrus_vga_load()
 		array_read(f, pos, &s->bustype, sizeof(s->bustype));
 
 		if(state_ver >= 2){
-			array_read(f, pos, &np2clvga2.VRAMWindowAddr3, sizeof(np2clvga2.VRAMWindowAddr3));
+			array_read(f, pos, &np2clvga.VRAMWindowAddr3, sizeof(np2clvga.VRAMWindowAddr3));
 		}
 
 		break;
@@ -5090,7 +5090,7 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
     s->bustype = CIRRUS_BUSTYPE_ISA;
 	
 	np2clvga.VRAMWindowAddr2 = 0;
-	np2clvga2.VRAMWindowAddr3 = 0;
+	np2clvga.VRAMWindowAddr3 = 0;
 	
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO || np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD
@@ -5174,7 +5174,7 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 		if(np2clvga.gd54xxtype != CIRRUS_98ID_AUTO){
 			np2clvga.VRAMWindowAddr2 = 0xE0000;
 		}
-		//np2clvga2.VRAMWindowAddr3 = 0xF00000; // XXX
+		//np2clvga.VRAMWindowAddr3 = 0xF00000; // XXX
 		//np2clvga.VRAMWindowAddr3size = 256*1024;
 	}
 
@@ -5241,12 +5241,14 @@ void pc98_cirrus_vga_init(void)
 void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 {
     CirrusVGAState *s;
-	if(!np2cfg.usegd5430){
+
+	np2clvga.enabled = np2cfg.usegd5430;
+	if(!np2clvga.enabled){
 		TRACEOUT(("CL-GD54xx: Window Accelerator Disabled"));
 		return;
 	}
 	
-	np2clvga2.defgd54xxtype = np2cfg.gd5430type;
+	np2clvga.defgd54xxtype = np2cfg.gd5430type;
 	np2clvga.gd54xxtype = np2cfg.gd5430type;
 	
 	s = cirrusvga;
@@ -5268,11 +5270,11 @@ void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 void pc98_cirrus_vga_bind(void)
 {
     CirrusVGAState *s;
-	if(!np2cfg.usegd5430){
+	if(!np2clvga.enabled){
 		TRACEOUT(("CL-GD54xx: Window Accelerator Disabled"));
 		return;
 	}
-	np2clvga2.defgd54xxtype = np2cfg.gd5430type;
+	//np2clvga.defgd54xxtype = np2cfg.gd5430type;
 	
 	s = cirrusvga;
 	//memset(s, 0, sizeof(CirrusVGAState));

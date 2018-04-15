@@ -461,7 +461,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	DEVMODE			devmode;
 
 	static UINT8 lastscrnmode = 0;
-	static WINDOWPLACEMENT wp = {0};
+	static WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
 
 	ZeroMemory(&scrnmng, sizeof(scrnmng));
 	winstyle = GetWindowLong(g_hWndMain, GWL_STYLE);

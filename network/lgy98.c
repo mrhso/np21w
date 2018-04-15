@@ -1007,10 +1007,11 @@ static void lgy98_recieve_packet(const UINT8 *buf, int size)
 void lgy98_reset(const NP2CFG *pConfig){
 	UINT base = 0x10D0;
 	REG8 irq = 5;
-	REG8 macaddr[6];
+	
+	lgy98cfg.enabled = np2cfg.uselgy98;
 
 	// MACƒAƒhƒŒƒX
-	memcpy(macaddr, np2cfg.lgy98mac, 6);
+	memcpy(lgy98.macaddr, np2cfg.lgy98mac, 6);
 
 	np2net.recieve_packet = np2net_lgy98_default_recieve_packet;
 
@@ -1025,8 +1026,6 @@ void lgy98_reset(const NP2CFG *pConfig){
 
 	lgy98.base = base;
 	lgy98.irq = irq;
-	
-	memcpy(lgy98.macaddr, macaddr, 6);
 }
 void lgy98_bind(void){
 	int i;
@@ -1035,7 +1034,8 @@ void lgy98_bind(void){
 	REG8 irq = 5;
 	//NICInfo *nd;
 
-	if(!np2cfg.uselgy98) return;
+	if(!lgy98cfg.enabled) return;
+	
 
     vlan = np2net_find_vlan(0);
 

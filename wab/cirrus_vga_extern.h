@@ -143,24 +143,25 @@ extern "C" {
 #endif
 
 typedef struct {
+	UINT8	enabled;
 	UINT32	VRAMWindowAddr;
 	UINT32	VRAMWindowAddr2;
+	UINT32	VRAMWindowAddr3;
 	//UINT32	VRAMWindowAddr3;
 	//UINT32	VRAMWindowAddr3size;
 	REG8	mmioenable;
 	UINT32	gd54xxtype;
-} NP2CLVGA;
-typedef struct {
-	UINT32	VRAMWindowAddr3;
 	UINT32	defgd54xxtype;
-} NP2CLVGA2;
+} NP2CLVGA;
+//typedef struct {
+//} NP2CLVGA2;
 
 
 extern UINT8		cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024];
 
 extern void			*cirrusvga_opaque;
 extern NP2CLVGA		np2clvga;
-extern NP2CLVGA2	np2clvga2;
+//extern NP2CLVGA2	np2clvga;
 	
 void cirrusvga_drawGraphic();
 

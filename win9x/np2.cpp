@@ -90,6 +90,7 @@
 #if defined(SUPPORT_CL_GD5430)
 #include "wab/cirrus_vga_extern.h"
 #endif
+#include "pcm86.h"
 
 #ifdef BETA_RELEASE
 #define		OPENING_WAIT		1500
@@ -1215,6 +1216,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 					// クリップボード奪取失敗･･･
 					GlobalFree(hMem);
 				}
+				pcm86_setnextintr();
 			}
 			break;
 			

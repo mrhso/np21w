@@ -740,6 +740,8 @@ void pccore_postevent(UINT32 event) {	// yet!
 
 void pccore_exec(BOOL draw) {
 
+	static UINT32 disptmr = 0;
+
 	pcstat.drawframe = (UINT8)draw;
 //	keystat_sync();
 	soundmng_sync();
@@ -755,7 +757,10 @@ void pccore_exec(BOOL draw) {
 	nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
 
 //	nevent_get1stevent();
-
+	
+#if defined(SUPPORT_HRTIMER)
+	disptmr = hrtimertime_hl;
+#endif
 	while(pcstat.screendispflag) {
 #if defined(TRACE)
 		resetcnt++;
@@ -768,7 +773,7 @@ void pccore_exec(BOOL draw) {
 			np2wab_setRelayState(0); // XXX:
 #endif
 #if defined(SUPPORT_CL_GD5430)
-			np2clvga.gd54xxtype = np2clvga2.defgd54xxtype; // Auto Select用
+			np2clvga.gd54xxtype = np2clvga.defgd54xxtype; // Auto Select用
 #endif
 #if defined(SUPPORT_IDEIO)
 			ideio_reset(&np2cfg); // XXX: ソフトウェアリセットでIDEデバイスが認識しないのをごまかす。高速再起動には効かないのでもっといい場所へ移住すべき
@@ -797,6 +802,11 @@ void pccore_exec(BOOL draw) {
 		if(hrtimerupd){ // XXX: 位置てきとー
 			STOREINTELDWORD(mem+0x04F1, hrtimertime_hl); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
 			hrtimerupd = 0;
+			if(hrtimertime_hl - disptmr > 100){
+				// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
+				//pcstat.screendispflag = 0;
+				nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
+			}
 		}
 #endif
 		nevent_progress();

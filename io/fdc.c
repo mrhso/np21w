@@ -7,6 +7,11 @@
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"diskimage/fddfile.h"
+#if defined(SUPPORT_SWSEEKSND)
+#include	"sound/pcmmix.h"
+#include	"fdd_mtr.res"
+#endif
+#include	"soundmng.h"
 
 #if 1
 #undef	TRACEOUT
@@ -308,6 +313,11 @@ static BRESULT writesector(void) {
 	fdc.bufcnt = 128 << fdc.N;
 	fdc.bufp = 0;
 	fdc.status = FDCSTAT_RQM | FDCSTAT_NDM | FDCSTAT_CB;
+#if defined(SUPPORT_SWSEEKSND)
+	if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+#else
+	if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK, FALSE);
+#endif
 	fdc_dmaready(1);
 	dmac_check();
 	return(SUCCESS);
@@ -390,6 +400,11 @@ static void readsector(void) {
 		fdcsend_error7();
 		return;
 	}
+#if defined(SUPPORT_SWSEEKSND)
+	if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+#else
+	if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK, FALSE);
+#endif
 
 	fdc.event = FDCEVENT_BUFSEND2;
 	fdc.bufp = 0;
@@ -477,6 +492,11 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 				/* 170107 for Windows95 form ... */
 				if (fdd_seek()) {
 					fdc.stat[fdc.us] |= FDCRLT_IC0;
+#if defined(SUPPORT_SWSEEKSND)
+					if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+#else
+					if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK1, FALSE);
+#endif
 				}
 				/* 170107 for Windows95 ... to */
 			}
@@ -551,6 +571,11 @@ static void FDC_ReadID(void) {							// cmd: 0a
 			if (fdd_readid() == SUCCESS) {
 				fdcsend_success7();
 				//fdc.status = 0x80; // TEST
+#if defined(SUPPORT_SWSEEKSND)
+				if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+#else
+				if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK, FALSE);
+#endif
 			}
 			else {
 				fdc.stat[fdc.us] = fdc.us | (fdc.hd << 2) |
@@ -652,6 +677,11 @@ static void FDC_Seek(void) {							// cmd: 0f
 				if (fdd_seek()) {
 					fdc.stat[fdc.us] |= FDCRLT_IC0;
 				}
+#if defined(SUPPORT_SWSEEKSND)
+				if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+#else
+				if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK1, FALSE);
+#endif
 				/* 170107 for Windows95 ... to */
 			}
 			fdc_interrupt();

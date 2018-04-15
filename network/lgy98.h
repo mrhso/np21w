@@ -31,6 +31,7 @@ extern "C" {
 #endif
 	
 typedef struct {
+	UINT8 enabled;
 	UINT  baseaddr;
 	UINT8 irq;
 } LGY98CFG;
