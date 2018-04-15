@@ -59,6 +59,7 @@ static void IOOUTCALL sb16_o2000(UINT port, REG8 dat) {
 	g_opl.addr = dat;
 #ifdef USE_MAME
 	YMF262Write(opl3, 0, dat);
+	g_opl3.s.addrl = dat; // Key Display用
 #endif
 }
 
@@ -68,6 +69,7 @@ static void IOOUTCALL sb16_o2100(UINT port, REG8 dat) {
 	//S98_put(NORMAL2608, g_opl.addr, dat);
 #ifdef USE_MAME
 	YMF262Write(opl3, 1, dat);
+	opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat); // Key Display用
 #endif
 }
 static void IOOUTCALL sb16_o2200(UINT port, REG8 dat) {
@@ -75,6 +77,7 @@ static void IOOUTCALL sb16_o2200(UINT port, REG8 dat) {
 	g_opl.addr2 = dat;
 #ifdef USE_MAME
 	YMF262Write(opl3, 2, dat);
+	g_opl3.s.addrh = dat; // Key Display用
 #endif
 }
 
@@ -84,6 +87,7 @@ static void IOOUTCALL sb16_o2300(UINT port, REG8 dat) {
 	//S98_put(EXTEND2608, opl.addr2, dat);
 #ifdef USE_MAME
 	YMF262Write(opl3, 3, dat);
+	opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat); // Key Display用
 #endif
 }
 
@@ -154,6 +158,8 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 	INT16 *buf[4];
 	INT16 s1l,s1r,s2l,s2r;
 	SINT32 *outbuf = pcm;
+	float oplfm_volume;
+	oplfm_volume = 2 * np2cfg.vol_fm / 64.0;
 	buf[0] = &s1l;
 	buf[1] = &s1r;
 	buf[2] = &s2l;
@@ -163,8 +169,8 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 #ifdef USE_MAME
 		YMF262UpdateOne(opl3, buf, 1);
 #endif
-		outbuf[0] += s1l << 1;
-		outbuf[1] += s1r << 1;
+		outbuf[0] += (SINT32)((s1l << 1) * oplfm_volume);
+		outbuf[1] += (SINT32)((s1r << 1) * oplfm_volume);
 		outbuf += 2;
 	}
 }
@@ -229,6 +235,7 @@ void boardsb16_bind(void) {
 		samplerate = np2cfg.samplingrate;
 	}
 	sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm);
+	opl3_bind(&g_opl3); // MAME使用の場合Key Display用
 }
 
 #endif

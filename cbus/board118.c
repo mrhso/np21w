@@ -33,6 +33,7 @@ void YMF262UpdateOne(void *chip, INT16 **buffer, INT length);
 static void IOOUTCALL sb16_o20d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.addr = dat;
+	g_opl3.s.addrl = dat; // Key Display用
 	YMF262Write(opl3, 0, dat);
 }
 
@@ -40,19 +41,20 @@ static void IOOUTCALL sb16_o21d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr] = dat;
 	//S98_put(NORMAL2608, g_opl.addr, dat);
-	//opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat);
+	opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat); // Key Display用
 	YMF262Write(opl3, 1, dat);
 }
 static void IOOUTCALL sb16_o22d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.addr2 = dat;
+	g_opl3.s.addrh = dat; // Key Display用
 	YMF262Write(opl3, 2, dat);
 }
 
 static void IOOUTCALL sb16_o23d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr2 + 0x100] = dat;
-	//opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat);
+	opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat); // Key Display用
 	//S98_put(EXTEND2608, opl.addr2, dat);
 	YMF262Write(opl3, 3, dat);
 }
@@ -446,6 +448,9 @@ void board118_bind(void)
 	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
 		iocore_attachout(0xb460, ymf_oa460);
 		iocore_attachinp(0xb460, ymf_ia460);
+	}else if(g_nSoundID==SOUNDID_MATE_X_PCM){
+		iocore_attachout(0xa460, ymf_oa460);
+		iocore_attachinp(0xa460, ymf_ia460);
 	}else{
 		opna_bind(&g_opna[opna_idx]);
 		cbuscore_attachsndex(cs4231.port[4],ymf_o, ymf_i);
@@ -468,8 +473,9 @@ void board118_bind(void)
 		iocore_attachout(cs4231.port[9]+1, ym_o1489);
 		iocore_attachout(cs4231.port[9]+2, ym_o148a);
 		iocore_attachout(cs4231.port[9]+3, ym_o148b);
-		opl3_bind(&g_opl3);
 #endif
+		opl3_bind(&g_opl3); // MAME使用の場合Key Display用
+
 		iocore_attachout(cs4231.port[1], ymf_oa460);
 		iocore_attachinp(cs4231.port[1], ymf_ia460);
 

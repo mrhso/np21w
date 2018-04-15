@@ -9,6 +9,9 @@
 #include "fmboard.h"
 #include "dmac.h"
 #include "cpucore.h"
+#ifndef CPU_STAT_PM
+#define CPU_STAT_PM	0
+#endif
 
 	CS4231CFG	cs4231cfg;
 
@@ -64,6 +67,8 @@ static const UINT8 cs4231cnt64[8] = {
 				2560/64};	//  9600/ 6620
 
 //    640:441
+				
+static void setdataalign(void);
 
 void cs4231_initialize(UINT rate) {
 
@@ -88,6 +93,9 @@ void cs4231_dma(NEVENTITEM item) {
 		if (cs4231.dmach != 0xff) {
 			dmach = dmac.dmach + cs4231.dmach;
 
+			// サウンド再生用バッファに送る？(cs4231g.c)
+			sound_sync();
+
 			// バッファに空きがあればデータを読み出す
 			if (cs4231.bufsize-4 > cs4231.bufdatas) {
 				rem = cs4231.bufsize - 4 - cs4231.bufdatas; //読み取り単位は16bitステレオの1サンプル分(4byte)にしておかないと雑音化する
@@ -97,9 +105,6 @@ void cs4231_dma(NEVENTITEM item) {
 				cs4231.bufwpos = (cs4231.bufwpos + r) & CS4231_BUFMASK; // バッファ書き込み位置を更新
 				cs4231.bufdatas += r; // バッファ内の有効なデータ数を更新 = (bufwpos-bufpos)&CS4231_BUFMASK
 			}
-
-			// サウンド再生用バッファに送る？(cs4231g.c)
-			sound_sync();
 
 			// まだデータがありそうならNEVENTをセット
 			if ((dmach->leng.w) && (cs4231cfg.rate)) {
@@ -134,11 +139,11 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 	switch(func) {
 		case DMAEXT_START:
 			if (cs4231cfg.rate) {
-				DMACH	dmach;
-				dmach = dmac.dmach + cs4231.dmach;
-				dmach->adrs.d = dmach->startaddr;
-				cs4231.bufpos = cs4231.bufwpos;
-				cs4231.bufdatas = 0;
+				//DMACH	dmach;
+				//dmach = dmac.dmach + cs4231.dmach;
+				//dmach->adrs.d = dmach->startaddr;
+				//cs4231.bufpos = cs4231.bufwpos;
+				//cs4231.bufdatas = 0;
 				cs4231_totalsample = 0;
 				cnt = pccore.realclock * 16 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
@@ -146,7 +151,7 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 			break;
 		case DMAEXT_END:
 			// ここでの割り込みは要らない？
-			//if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
+			//if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
 			//	cs4231.intflag |= INt;
 			//	cs4231.reg.featurestatus |= PI;
 			//	pic_setirq(cs4231.dmairq);
@@ -154,6 +159,11 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 			break;
 
 		case DMAEXT_BREAK:
+			//{
+			//	DMACH	dmach;
+			//	dmach = dmac.dmach + cs4231.dmach;
+			//	dmach->adrs.d = dmach->startaddr;
+			//}
 			nevent_reset(NEVENT_CS4231);
 			break;
 
@@ -175,7 +185,7 @@ void cs4231_reset(void) {
 void cs4231_update(void) {
 }
 
-// バッファ位置がズレ修正用（雑音化防止）
+// バッファ位置のズレ修正用（雑音化防止）
 static void setdataalign(void) {
 
 	UINT	step;
@@ -218,6 +228,9 @@ void cs4231_control(UINT idx, REG8 dat) {
 	case CS4231REG_PLAYFMT:
 		// 再生フォーマット設定とか　Fs and Playback Data Format (I8)
 		if (modify & 0xf0) {
+			dmach->adrs.d = dmach->startaddr;
+			cs4231.bufpos = cs4231.bufwpos;
+			cs4231.bufdatas = 0;
 			setdataalign();
 		}
 		if (cs4231cfg.rate) {
@@ -259,19 +272,46 @@ void cs4231_control(UINT idx, REG8 dat) {
 			cs4231.intflag &= ~INt;
 		}
         break;
+	case CS4231REG_PLAYCNTM:
+		// Playback Upper Base (I14)
+		// cs4231.reg.playcount[0]
+        break;
+	case CS4231REG_PLAYCNTL:
+		// Playback Lower Base (I15)
+		// cs4231.reg.playcount[1]
+        break;
 	//case CS4231REG_TIMERL:
 	//	// CS4231 割り込みタイマー設定(下位バイト)
-	//	cs4231.timer = (cs4231.timer & 0xff00) | dat;
+	//	cs4231.reg.timer[0]
 	//	break;
 	//case CS4231REG_TIMERH:
 	//	// CS4231 割り込みタイマー設定(上位バイト)
-	//	cs4231.timer = (cs4231.timer & 0x00ff) | (dat<<8);
+	//	cs4231.reg.timer[1] 
 	//	break;
 	}
 }
 
 // 各フォーマットの割り込み間隔テーブル（たぶん1サンプルあたりのバイト数）
-static const SINT32 cs4231_irqsamples[16] = {
+//static const SINT32 cs4231_irqsamples[16] = {
+//			1  ,		// 0: 8bit PCM
+//			1*2,
+//			1  ,		// 1: u-Law
+//			1  ,
+//			1*2,		// 2: 16bit PCM(little endian)?
+//			1*4,
+//			1  ,		// 3: A-Law
+//			1  ,
+//			1  ,		// 4:
+//			1  ,
+//			1  ,		// 5: ADPCM
+//			1  ,
+//			1*2,		// 6: 16bit PCM
+//			1*4,
+//			1  ,		// 7: ADPCM
+//			1  };
+
+
+static const SINT32 cs4231_playcountshift[16] = {
 			1  ,		// 0: 8bit PCM
 			1*2,
 			1  ,		// 1: u-Law
@@ -288,6 +328,7 @@ static const SINT32 cs4231_irqsamples[16] = {
 			1*4,
 			1  ,		// 7: ADPCM
 			1  };
+
 
 // CS4231 DMAデータ読み取り
 UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
@@ -333,23 +374,33 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 				dmach->proc.extproc(DMAEXT_END);
 			}
 
-			// 読み取り数カウント
-			cs4231_totalsample += leng;
-			
 			// 読み取り数と残り数更新
 			lengsum += leng;
 			size -= leng;
 			
-			// XXX: 一定バイト数読む毎に割り込みする（あまり根拠のない実装･･･）
-			sampleirq = cs4231_irqsamples[cs4231.reg.datafmt >> 4] * ((cs4231.step12*cs4231cfg.rate)>>12) / 32; // * 1100/1000; //XXX: 割り込み間隔実験式
-			if(cs4231_totalsample >= sampleirq){
-				if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
+			// Playback Countだけデータを転送したら割り込みを発生させる
+			if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
+				int playcount = (cs4231.reg.playcount[1]|(cs4231.reg.playcount[0] << 8)) * cs4231_playcountshift[cs4231.reg.datafmt >> 4];
+				// 読み取り数カウント
+				cs4231_totalsample += leng;
+			
+				if(cs4231_totalsample >= playcount){
+					cs4231_totalsample -= playcount;
 					cs4231.intflag |= INt;
 					cs4231.reg.featurestatus |= PI;
 					pic_setirq(cs4231.dmairq);
 				}
-				cs4231_totalsample -= sampleirq;
 			}
+			//// XXX: 一定バイト数読む毎に割り込みする（あまり根拠のない実装･･･）
+			//sampleirq = cs4231_irqsamples[cs4231.reg.datafmt >> 4] * ((cs4231.step12*cs4231cfg.rate)>>12) / 32; // * 1100/1000; //XXX: 割り込み間隔実験式
+			//if(cs4231_totalsample >= sampleirq){
+			//	if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
+			//		//cs4231.intflag |= INt;
+			//		//cs4231.reg.featurestatus |= PI;
+			//		//pic_setirq(cs4231.dmairq);
+			//	}
+			//	cs4231_totalsample -= sampleirq;
+			//}
 		}else{
 			break;
 		}
