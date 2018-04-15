@@ -14,6 +14,7 @@
 	UINT8	renewal_line[SURFACE_HEIGHT];
 	UINT8	np2_tram[SURFACE_SIZE];
 	UINT8	np2_vram[2][SURFACE_SIZE];
+	UINT8	redrawpending = 0;
 
 
 static void updateallline(UINT32 update) {
@@ -25,6 +26,9 @@ static void updateallline(UINT32 update) {
 	}
 }
 
+void scrndraw_updateallline(void) {
+	redrawpending = 1;
+}
 
 // ----
 
@@ -138,8 +142,9 @@ const SDRAWFN	*sdrawfn;
 	int			height;
 	
 
-	if (redraw) {
+	if (redraw || redrawpending) {
 		updateallline(0x80808080);
+		redrawpending = 0;
 	}
 
 	ret = 0;
@@ -150,7 +155,7 @@ const SDRAWFN	*sdrawfn;
 			// XXX: ウィンドウアクセラレータ動作中は内蔵グラフィックを描画しない
 			scrnmng_update();
 			ret = 1;
-			goto sddr_exit1;
+			return(ret);
 		}
 	}
 #endif
