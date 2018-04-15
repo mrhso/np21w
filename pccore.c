@@ -70,7 +70,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
-				128, 0x00, 0, 0, 
+				128, 0x00, 0, 0, 0,
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
@@ -125,12 +125,18 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 	//UINT32 hrtimerclockcounter = 0;
 	UINT32 hrtimerdiv = 32; 
 	UINT32 hrtimerint = 0;
+	//UINT32 hrtimerupd = 0;
+	//UINT32 hrtimertime_hl = 0;
+	//UINT8  hrtimertime_h = 0;
+	//UINT16 hrtimertime_l = 0;
 
 static HANDLE pccore_hrtimerThread = 0; 
 static int pccore_hrtimerThreadExit = 0; 
 
 static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 	LARGE_INTEGER hrtmp = {0}; 
+	SYSTEMTIME hrtimertime;
+	UINT32 hrtimertimeuint;
 	while (!pccore_hrtimerThreadExit) {
 		SINT64 times;
 		QueryPerformanceFrequency(&hrtimerfreq);
@@ -144,6 +150,12 @@ static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 				times -= hrtimerfreq.QuadPart;
 			} while(times >= hrtimerfreq.QuadPart);
 		}
+		//GetLocalTime(&hrtimertime);
+		//hrtimertimeuint = ((((UINT32)hrtimertime.wHour*60 + (UINT32)hrtimertime.wMinute)*60 + (UINT32)hrtimertime.wSecond)*32) + ((UINT32)hrtimertime.wMilliseconds*32)/1000;
+		//if(hrtimertimeuint != hrtimertime_hl){
+		//	hrtimertime_hl = hrtimertimeuint;
+		//	hrtimerupd = 1;
+		//}
 		Sleep(8);
 	}
 	return 0;
@@ -740,7 +752,7 @@ void pccore_exec(BOOL draw) {
 		if (CPU_RESETREQ) {
 			CPU_RESETREQ = 0;
 #if defined(SUPPORT_WAB)
-			ga_relaystateint = ga_relaystateext = 0;
+			np2wab.relaystateint = np2wab.relaystateext = 0;
 			np2wab_setRelayState(0); // XXX:
 #endif
 #if defined(SUPPORT_IDEIO)
@@ -749,8 +761,6 @@ void pccore_exec(BOOL draw) {
 			CPU_SHUT();
 		}
 #if !defined(SINGLESTEPONLY)
-#if defined(SUPPORT_HRTIMER)
-#endif
 		if (CPU_REMCLOCK > 0) {
 			if (!(CPU_TYPE & CPUTYPE_V30)) {
 				CPU_EXEC();
@@ -769,6 +779,12 @@ void pccore_exec(BOOL draw) {
 			pic_setirq(15);
 			hrtimerint = 0;
 		}
+		//if(hrtimerupd){ // XXX: à íuÇƒÇ´Ç∆Å[
+		//	//*(mem+0x04F1) = hrtimertime_h;
+		//	//STOREINTELWORD(mem+0x04F2, hrtimertime_l);
+		//	STOREINTELDWORD(mem+0x04F0, hrtimertime_hl);
+		//	hrtimerupd = 0;
+		//}
 #endif
 		nevent_progress();
 	}

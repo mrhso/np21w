@@ -29,6 +29,8 @@
 
 #pragma once
 
+#define CIRRUS_VRAM_SIZE	(4096 * 1024)
+
 typedef	signed char		int8_t;
 typedef	unsigned char	uint8_t;
 typedef	signed short	int16_t;
@@ -49,12 +51,7 @@ typedef uint32_t_ target_phys_addr_t;
 typedef void CPUWriteMemoryFunc(void *opaque, target_phys_addr_t addr, uint32_t_ value);
 typedef uint32_t_ CPUReadMemoryFunc(void *opaque, target_phys_addr_t addr);
 
-extern CPUWriteMemoryFunc **g_cirrus_linear_write;
-
-extern void		*cirrusvga_opaque;
-extern UINT32	ga_VRAMWindowAddr;
-extern UINT32	ga_VRAMWindowAddr2;
-extern REG8 cirrusvga_mmioenable;
+extern CPUWriteMemoryFunc *g_cirrus_linear_write[3];
 
 uint32_t_ cirrus_vga_mem_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_vga_mem_readw(void *opaque, target_phys_addr_t addr);
@@ -95,12 +92,27 @@ void cirrus_mmio_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 extern "C" {
 #endif
 
+typedef struct {
+	UINT32	VRAMWindowAddr;
+	UINT32	VRAMWindowAddr2;
+	REG8	mmioenable;
+} NP2CLVGA;
+
+extern UINT8	cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024];
+
+extern void		*cirrusvga_opaque;
+extern NP2CLVGA	np2clvga;
+	
 void cirrusvga_drawGraphic();
 
 // ñ≥óùñÓóùäOÇ©ÇÁåƒÇ◊ÇÈÇÊÇ§Ç…
 void pc98_cirrus_vga_init(void);
+void pc98_cirrus_vga_reset(const NP2CFG *pConfig);
 void pc98_cirrus_vga_bind(void);
 void pc98_cirrus_vga_shutdown(void);
+
+void pc98_cirrus_vga_save(void);
+void pc98_cirrus_vga_load(void);
 
 #ifdef __cplusplus
 }

@@ -29,6 +29,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+	
+typedef struct {
+	UINT  baseaddr;
+	UINT8 irq;
+} LGY98CFG;
+
+extern LGY98CFG lgy98cfg;
 
 //void IOOUTCALL ideio_w16(UINT port, REG16 value);
 //REG16 IOINPCALL ideio_r16(UINT port);

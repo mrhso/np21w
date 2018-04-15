@@ -89,7 +89,14 @@ static void initDirectInput(){
 				}
 				if (!FAILED(hr)) {
 					// “ü—ÍŠJŽn
-					diRawMouse->Acquire();
+					hr = diRawMouse->Acquire();
+					if (!FAILED(hr)) {
+						// Ž¸”s¥¥¥
+						diRawMouse->Release();
+						diRawMouse = NULL;
+						dinput->Release();
+						dinput = NULL;
+					}
 				}else{
 					// Ž¸”s¥¥¥
 					diRawMouse->Release();
@@ -172,6 +179,8 @@ void mousemng_sync(void) {
 
 	if ((!mousemng.flag) && (GetCursorPos(&p))) {
 		getmaincenter(&cp);
+		if(np2oscfg.rawmouse && dinput==NULL)
+			initDirectInput();
 		if(np2oscfg.rawmouse && mousemng_supportrawinput()){
 			DIMOUSESTATE diMouseState = {0};
 			HRESULT hr;

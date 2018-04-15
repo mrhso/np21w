@@ -1174,7 +1174,7 @@ void scrnmng_blthdc(HDC hdc) {
 	HRESULT	r;
 	HDC hDCDD;
 #if defined(SUPPORT_WAB)
-	if(np2wab.multiwindow) return;
+	if (np2wabwnd.multiwindow) return;
 	if (ddraw.backsurf != NULL) {
 		if (ddraw.scrnmode & SCRNMODE_FULLSCREEN) {
 			if (GetWindowLongPtr(g_hWndMain, NP2GWLP_HMENU)) {

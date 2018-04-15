@@ -38,6 +38,19 @@
 #include "hostdrv.h"
 #include "calendar.h"
 #include "keystat.h"
+#if defined(SUPPORT_WAB)
+#include "wab/wab.h"
+#endif
+#if defined(SUPPORT_CL_GD5430)
+#include "wab/cirrus_vga_extern.h"
+#endif
+#if defined(SUPPORT_NET)
+#include "network/net.h"
+#endif
+#if defined(SUPPORT_LGY98)
+#include "network/lgy98.h"
+#include "network/lgy98dev.h"
+#endif
 
 #if defined(MACOS)
 #define	CRCONST		str_cr
@@ -990,7 +1003,11 @@ typedef struct {
 	UINT8	scsi[8];
 } SXSIDEVS;
 
+#ifdef SUPPORT_IDEIO
+static const OEMCHAR str_sasix[] = OEMTEXT("IDE#%u");
+#else
 static const OEMCHAR str_sasix[] = OEMTEXT("SASI%u");
+#endif
 static const OEMCHAR str_scsix[] = OEMTEXT("SCSI%u");
 
 static int flagsave_sxsi(STFLAGH sfh, const SFENTRY *tbl) {
@@ -1204,6 +1221,10 @@ const SFENTRY	*tblterm;
 	if (sffh == NULL) {
 		return(STATFLAG_FAILURE);
 	}
+	
+#if defined(SUPPORT_CL_GD5430)
+	pc98_cirrus_vga_save();
+#endif
 
 	ret = STATFLAG_SUCCESS;
 	tbl = np2tbl;
@@ -1479,6 +1500,21 @@ const SFENTRY	*tblterm;
 	iocore_bind();
 	cbuscore_bind();
 	fmboard_bind();
+	
+#if defined(SUPPORT_NET)
+	np2net_reset(&np2cfg);
+	np2net_bind();
+#endif
+#if defined(SUPPORT_LGY98)
+	lgy98_bind();
+#endif
+#if defined(SUPPORT_WAB)
+	np2wab_bind();
+#endif
+#if defined(SUPPORT_CL_GD5430)
+	pc98_cirrus_vga_bind();
+	pc98_cirrus_vga_load();
+#endif
 
 	gdcs.textdisp |= GDCSCRN_EXT;
 	gdcs.textdisp |= GDCSCRN_ALLDRAW2;
@@ -1494,6 +1530,16 @@ const SFENTRY	*tblterm;
 	MEMM_VRAM(vramop.operate);
 	fddmtr_reset();
 	soundmng_play();
+
+#if defined(SUPPORT_CL_GD5430)
+	np2wab.relay = 0;
+	np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
+	np2wab.realWidth = np2wab.wndWidth; // XXX: ???
+	np2wab.realHeight = np2wab.wndHeight; // XXX: ???
+	np2wab.lastWidth = 0;
+	np2wab.lastHeight = 0;
+	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
+#endif
 
 	return(ret);
 }

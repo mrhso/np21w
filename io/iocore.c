@@ -65,8 +65,8 @@ typedef struct {
 static	_IOCORE		iocore;
 static	UINT8		ioterminate[0x100];
 
-extern UINT lgy98_baseaddr;
-extern UINT ne2000_baseaddr;
+//extern UINT lgy98_baseaddr;
+//extern UINT ne2000_baseaddr;
 
 // ----
 
@@ -565,7 +565,7 @@ void IOOUTCALL iocore_out16(UINT port, REG16 dat) {
 	}
 #endif
 #if defined(SUPPORT_LGY98)
-	if (np2cfg.uselgy98 && port == lgy98_baseaddr + 0x200) {
+	if (np2cfg.uselgy98 && port == lgy98cfg.baseaddr + 0x200) {
 		lgy98_ob200_16(port, dat);
 		return;
 	}
@@ -607,7 +607,7 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 	}
 #endif
 #if defined(SUPPORT_LGY98)
-	if (np2cfg.uselgy98 && port == lgy98_baseaddr + 0x200) {
+	if (np2cfg.uselgy98 && port == lgy98cfg.baseaddr + 0x200) {
 		return(lgy98_ib200_16(port));
 	}
 #endif

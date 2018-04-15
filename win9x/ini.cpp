@@ -566,6 +566,7 @@ static const PFTBL s_IniItems[] =
 	PFMAX("MODELNUM", PFTYPE_UINT8,		&np2cfg.modelnum,		255),
 	
 	PFVAL("TIMERADJ", PFTYPE_BOOL,		&np2cfg.timeradj),
+	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
 	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
 
 	// OSàÀë∂ÅH

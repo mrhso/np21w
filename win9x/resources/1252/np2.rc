@@ -899,6 +899,7 @@ BEGIN
     POPUP "&Other"
     BEGIN
         MENUITEM "&BMP save...",                IDM_BMPSAVE
+        MENUITEM "&TXT save...",                IDM_TXTSAVE
         MENUITEM "&S98 logging...",             IDM_S98LOGGING
         MENUITEM "Ca&lendar...",                IDM_CALENDAR
         POPUP "Shortcut &key"
@@ -1382,6 +1383,9 @@ BEGIN
     IDS_MIMPITITLE          "Open MIMPI define file"
     IDS_MIMPIEXT            "def"
     IDS_MIMPIFILTER         "MIMPI define file(*.def)|*.def|"
+    IDS_TXTTITLE            "Save as text file"
+    IDS_TXTEXT              "txt"
+    IDS_TXTFILTER           "Text file (*.txt)|*.txt|"
 END
 
 STRINGTABLE

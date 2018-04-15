@@ -31,6 +31,9 @@ static const FNIORESET resetfn[] = {
 #if defined(SUPPORT_LGY98)
 			lgy98_reset,
 #endif
+#if defined(SUPPORT_CL_GD5430)
+			pc98_cirrus_vga_reset,
+#endif
 #if defined(SUPPORT_WAB)
 			np2wab_reset,
 #endif

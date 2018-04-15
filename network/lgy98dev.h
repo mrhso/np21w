@@ -104,6 +104,8 @@ typedef struct {
 	VLANClientState *vc;*/
 } LGY98;
 
+extern LGY98	lgy98;
+
 #ifdef __cplusplus
 }
 #endif

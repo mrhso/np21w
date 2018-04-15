@@ -278,16 +278,17 @@ void bios_initialize(void) {
 	}
 
 #if defined(SUPPORT_PC9821)
-	getbiospath(path, OEMTEXT("bios9821.rom"), NELEMENTS(path));
-	fh = file_open_rb(path);
-	if (fh != FILEH_INVALID) {
-		if (file_read(fh, mem + 0x0d8000, 0x2000) == 0x2000) {
-			// IDE BIOS‚ð’×‚·
-			TRACEOUT(("load bios9821.rom"));
-			STOREINTELWORD(mem + 0x0d8009, 0);
-		}
-		file_close(fh);
-	}
+	// ideio.c‚ÖˆÚ“®
+	//getbiospath(path, OEMTEXT("bios9821.rom"), NELEMENTS(path));
+	//fh = file_open_rb(path);
+	//if (fh != FILEH_INVALID) {
+	//	if (file_read(fh, mem + 0x0d8000, 0x2000) == 0x2000) {
+	//		// IDE BIOS‚ð’×‚·
+	//		TRACEOUT(("load bios9821.rom"));
+	//		STOREINTELWORD(mem + 0x0d8009, 0);
+	//	}
+	//	file_close(fh);
+	//}
 #if defined(BIOS_SIMULATE)
 	mem[0xf8e80] = 0x98;
 	mem[0xf8e81] = 0x21;

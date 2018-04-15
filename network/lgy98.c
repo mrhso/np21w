@@ -126,10 +126,11 @@
 #define ENTSR_OWC 0x80  /* There was an out-of-window collision. */
 
 
-	LGY98	lgy98;
+	LGY98		lgy98;
+	LGY98CFG	lgy98cfg;
 
-UINT lgy98_baseaddr = 0x10D0;
-UINT ne2000_baseaddr = 0x0200;
+//UINT lgy98_baseaddr = 0x10D0;
+//UINT ne2000_baseaddr = 0x0200;
 
 static void ne2000_reset(LGY98 *s)
 {
@@ -781,36 +782,55 @@ VLANClientState *np2net_new_vlan_client(VLANState *vlan,
     return vc;
 }
 
-
-void lgy98_reset(const NP2CFG *pConfig){
-
+// パケット受信時に呼ばれる（デフォルト処理）
+static void np2net_lgy98_default_recieve_packet(const UINT8 *buf, int size)
+{
+	// 何もしない
 }
+
 // パケット受信時に呼ばれる
 static void lgy98_recieve_packet(const UINT8 *buf, int size)
 {
 	lgy98.vc->fd_read(&lgy98, buf, size);
 }
 
-void lgy98_bind(void){
-	int i;
+void lgy98_reset(const NP2CFG *pConfig){
 	UINT base = 0x10D0;
 	REG8 irq = 5;
 	REG8 macaddr[6] = {0x52, 0x54, 0x00, 0x12, 0x34, 0x56};
+
+	np2net.recieve_packet = np2net_lgy98_default_recieve_packet;
+
+	// 初期化
+	memset(&lgy98, 0, sizeof(lgy98));
+
+	if(np2cfg.lgy98io) base = np2cfg.lgy98io;
+	if(np2cfg.lgy98irq) irq = np2cfg.lgy98irq;
+	
+	lgy98cfg.baseaddr = base;
+	lgy98cfg.irq = irq;
+
+	lgy98.base = base;
+	lgy98.irq = irq;
+	
+	memcpy(lgy98.macaddr, macaddr, 6);
+}
+void lgy98_bind(void){
+	int i;
     VLANState *vlan;
+	UINT base = 0x10D0;
+	REG8 irq = 5;
 	//NICInfo *nd;
 
 	if(!np2cfg.uselgy98) return;
 
-	// 初期化
     vlan = np2net_find_vlan(0);
-	memset(&lgy98, 0, sizeof(lgy98));
-	
-	if(np2cfg.lgy98io) base = np2cfg.lgy98io;
-	if(np2cfg.lgy98irq) irq = np2cfg.lgy98irq;
-	
+
+	base = lgy98.base;
+	irq = lgy98.irq;
+
 	TRACEOUT(("LGY-98: I/O:%04X, IRQ:%d, TAP:%s", base, irq, np2cfg.np2nettap));
 
-	lgy98_baseaddr = base;
 	//
 	//if(np2net_reset(np2cfg.lgy98tap)){
 	//	TRACEOUT(("LGY-98: reset falied"));
@@ -818,10 +838,11 @@ void lgy98_bind(void){
 	//}
 
 	//np2net_check_nic_model(nd, "ne2k_isa");
-
-	lgy98.base = base;
-	lgy98.irq = irq;
-	memcpy(lgy98.macaddr, macaddr, 6);
+	//
+	//lgy98.base = base;
+	//lgy98.irq = irq;
+	//memcpy(lgy98.macaddr, macaddr, 6);
+	//
 	for(i=0;i<16;i++){
 		iocore_attachout(base + i, lgy98_ob000);
 		iocore_attachinp(base + i, lgy98_ib000);

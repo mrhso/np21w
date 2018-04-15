@@ -75,6 +75,7 @@ typedef struct {
 	UINT8	padding;
 	UINT8   bios;
 	TCHAR   biosname[16];
+	UINT8   rwait;
 	UINT8   wwait;
 	_IDEDEV	dev[2];
 } IDEIO;

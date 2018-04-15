@@ -1086,12 +1086,14 @@ WRMSR(void)
 void
 RDTSC(void)
 {
+#ifdef _WIN32
 	static LARGE_INTEGER li = {0};
 	QueryPerformanceCounter(&li);
 	CPU_STATSAVE.cpu_regs.reg[CPU_EDX_INDEX].d = li.HighPart;
 	CPU_STATSAVE.cpu_regs.reg[CPU_EAX_INDEX].d = li.LowPart;
-
-	//ia32_panic("RDTSC: not implemented yet!");
+#else
+	ia32_panic("RDTSC: not implemented yet!");
+#endif
 }
 
 void

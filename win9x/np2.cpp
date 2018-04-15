@@ -1855,6 +1855,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		dosio_term();
 		return(FALSE);
 	}
+#else
+	if ((hWnd = FindWindow(szClassName, NULL)) != NULL && np2oscfg.resume) {
+		// ÉåÉWÉÖÅ[ÉÄÇÃéûÇÕï°êîãNìÆÇ∑ÇÈÇ∆Ç‚ÇŒÇ¢ÇÃÇ≈•••
+		ShowWindow(hWnd, SW_RESTORE);
+		SetForegroundWindow(hWnd);
+		dosio_term();
+		return(FALSE);
+	}
 #endif
 
 	g_hInstance = hInstance = LoadExternalResource(hInstance);
@@ -2140,16 +2148,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #ifdef HOOK_SYSKEY
 	UnhookWindowsHookEx(hHook);
 #endif
-#ifdef SUPPORT_CL_GD5430
-	pc98_cirrus_vga_shutdown();
-#endif
-#ifdef SUPPORT_WAB
-	np2wab_shutdown();
-#endif
-#ifdef SUPPORT_NET
-	np2net_shutdown();
-#endif
-
 	toolwin_destroy();
 	kdispwin_destroy();
 	skbdwin_destroy();
@@ -2167,6 +2165,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	else {
 		flagdelete(str_sav);
 	}
+#endif
+
+#ifdef SUPPORT_CL_GD5430
+	pc98_cirrus_vga_shutdown();
+#endif
+#ifdef SUPPORT_WAB
+	np2wab_shutdown();
+#endif
+#ifdef SUPPORT_NET
+	np2net_shutdown();
 #endif
 
 	pccore_term();

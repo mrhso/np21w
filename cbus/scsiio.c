@@ -222,7 +222,7 @@ void scsiio_reset(const NP2CFG *pConfig) {
 			r = file_read(fh, scsiio.bios, 0x4000);
 			file_close(fh);
 		}
-		if (r == 0x4000) {
+		if (r != 0) { // if (r == 0x4000) {
 			TRACEOUT(("load scsi.rom"));
 		}
 		else {

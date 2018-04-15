@@ -91,7 +91,8 @@ struct tagNP2Config
 	UINT8	modelnum;
 
 	UINT8	timeradj;
-
+	
+	UINT32	iderwait; // IDE読み取りの割り込み遅延時間(clock)。  np21w ver0.86 rev19
 	UINT32	idewwait; // IDE書き込みの割り込み遅延時間(clock)。IDE BIOSがある場合は0にしても強制的に20000clock以上なります。  np21w ver0.86 rev18
 
 	// リセット時とかあんまり参照されない奴

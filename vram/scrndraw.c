@@ -145,7 +145,7 @@ const SDRAWFN	*sdrawfn;
 	ret = 0;
 #ifdef SUPPORT_WAB
 	np2wab_drawframe(); 
-	if(!np2wab.multiwindow){
+	if(!np2wabwnd.multiwindow){
 		if(np2wab.relay & 0x3){
 			// XXX: ウィンドウアクセラレータ動作中は内蔵グラフィックを描画しない
 			scrnmng_update();

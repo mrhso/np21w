@@ -157,7 +157,7 @@ static void setintr(IDEDRV drv) {
 }
 
 // ’x‰„•t‚«Š„‚èž‚ÝiIDE BIOS‚Í’x‰„‚ª‚ ‚é‚±‚Æ‚ª‘O’ñHj
-static void setdintr(IDEDRV drv, UINT8 errno, UINT8 status) {
+static void setdintr(IDEDRV drv, UINT8 errno, UINT8 status, UINT32 delay) {
 
 	if (!(drv->ctrl & IDECTRL_NIEN)) {
 		//drv->status |= IDESTAT_BSY;
@@ -165,11 +165,7 @@ static void setdintr(IDEDRV drv, UINT8 errno, UINT8 status) {
 		TRACEOUT(("ideio: reg setdintr()"));
 
 		// Žw’è‚µ‚½ŽžŠÔ’x‰„
-		if(ideio.bios == IDETC_BIOS){
-			nevent_set(NEVENT_SASIIO, max(20000, np2cfg.idewwait), ideioint, NEVENT_ABSOLUTE);
-		}else{
-			nevent_set(NEVENT_SASIIO, np2cfg.idewwait, ideioint, NEVENT_ABSOLUTE);
-		}
+		nevent_set(NEVENT_SASIIO, delay, ideioint, NEVENT_ABSOLUTE);
 	}
 }
 
@@ -311,7 +307,13 @@ static void readsec(IDEDRV drv) {
 	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
 		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 		drv->error = 0;
-		setintr(drv);
+		if(ideio.rwait > 0){
+			drv->status |= IDESTAT_BSY;
+			setdintr(drv, 0, 0, ideio.rwait);
+		}else{
+			setintr(drv);
+		}
+		//setintr(drv);
 	}
 	drv->mulcnt++;
 	return;
@@ -336,7 +338,11 @@ static void writesec(IDEDRV drv) {
 		drv->error = 0;
 		//setintr(drv);
 		if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
-			setdintr(drv, 0, 0);
+			if(ideio.bios == IDETC_BIOS){
+				setdintr(drv, 0, 0, max(20000, ideio.wwait));
+			}else{
+				setdintr(drv, 0, 0, ideio.wwait);
+			}
 		}else{
 			setintr(drv);
 		}
@@ -1055,7 +1061,11 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						drv->bufpos = 0;
 						drv->error = 0;
 						if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
-							setdintr(drv, 0, 0);
+							if(ideio.bios == IDETC_BIOS){
+								setdintr(drv, 0, 0, max(20000, ideio.wwait));
+							}else{
+								setdintr(drv, 0, 0, ideio.wwait);
+							}
 						}else{
 							setintr(drv);
 						}
@@ -1247,6 +1257,7 @@ void ideio_reset(const NP2CFG *pConfig) {
 		devinit(drv, i);
 	}
 	
+	ideio.rwait = np2cfg.iderwait;
 	ideio.wwait = np2cfg.idewwait;
 	ideio.bios = IDETC_NOBIOS;
 
@@ -1260,6 +1271,11 @@ void ideio_reset(const NP2CFG *pConfig) {
 	}
 	if (fh == FILEH_INVALID) {
 		_tcscpy(tmpbiosname, OEMTEXT("bank3.bin"));
+		getbiospath(path, tmpbiosname, NELEMENTS(path));
+		fh = file_open_rb(path);
+	}
+	if (fh == FILEH_INVALID) {
+		_tcscpy(tmpbiosname, OEMTEXT("bios9821.rom"));
 		getbiospath(path, tmpbiosname, NELEMENTS(path));
 		fh = file_open_rb(path);
 	}

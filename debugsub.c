@@ -7,7 +7,6 @@
 #include	"iocore.h"
 #include	"debugsub.h"
 
-
 #if defined(MACOS)
 #define	CRLITERAL	"\r"
 #define	CRCONST		str_cr

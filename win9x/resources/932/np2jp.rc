@@ -893,6 +893,7 @@ BEGIN
     POPUP "その他(&O)"
     BEGIN
         MENUITEM "BMP画面キャプチャ(&B)...",        IDM_BMPSAVE
+        MENUITEM "テキストVRAM保存(&T)...",         IDM_TXTSAVE
         MENUITEM "S98サウンドログ保存(&S)...",      IDM_S98LOGGING
         MENUITEM "カレンダ設定(&L)...",             IDM_CALENDAR
         POPUP "ショートカットキー(&K)"
@@ -1229,8 +1230,8 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_CONFIRM_RESUME      "Conflict!\n\n%s\nContinue?"
-    IDS_ERROR_RESUME        "Couldn't restart"
+    IDS_CONFIRM_RESUME      "以下のファイルは変更されており、保存時の状態を再現できません。\n\n%s\nレジュームを続行しますか？"
+    IDS_ERROR_RESUME        "レジュームに失敗しました。"
 END
 
 STRINGTABLE
@@ -1376,6 +1377,9 @@ BEGIN
     IDS_MIMPITITLE          "MIMPI定義ファイルを開く"
     IDS_MIMPIEXT            "def"
     IDS_MIMPIFILTER         "MIMPI定義ファイル(*.def)|*.def|"
+    IDS_TXTTITLE            "テキストVRAM保存"
+    IDS_TXTEXT              "txt"
+    IDS_TXTFILTER           "テキストファイル (*.txt)|*.txt|"
 END
 
 STRINGTABLE
