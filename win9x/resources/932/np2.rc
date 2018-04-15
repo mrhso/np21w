@@ -542,7 +542,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "General"
 FONT 9, "‚l‚r ‚oƒSƒVƒbƒN", 0, 0, 0x0
 BEGIN
-    CONTROL         "Use Analog Switch IC",IDC_WABASWITCH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,200,10
+    CONTROL         "Use Analog Switch IC (No relay sound)",IDC_WABASWITCH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,200,10
     CONTROL         "Multi Window Mode",IDC_WABMULTIWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,28,200,10
     CONTROL         "Multi Thread Mode",IDC_WABMULTHREAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,48,200,10
 END
@@ -914,7 +914,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Disp vsync",                 IDM_DISPSYNC
         MENUITEM "Real &palettes",              IDM_RASTER
+        MENUITEM SEPARATOR
         MENUITEM "&No wait",                    IDM_NOWAIT
+        //MENUITEM "&CPU clock stabilizer",       IDM_CPUSTABILIZER
         MENUITEM SEPARATOR
         MENUITEM "&Auto frame",                 IDM_AUTOFPS
         MENUITEM "F&ull frame",                 IDM_60FPS
@@ -1585,6 +1587,9 @@ BEGIN
     IDS_CPU_MMXPENTIUM      "Intel MMX Pentium"
     IDS_CPU_PENTIUMPRO      "Intel Pentium Pro"
     IDS_CPU_PENTIUMII       "Intel Pentium II"
+    IDS_CPU_AMD_K6_2        "AMD K6-2"
+    IDS_CPU_AMD_K6_III      "AMD K6-III"
+    IDS_CPU_NEKOPRO         "Neko Processor II"
 END
 
 

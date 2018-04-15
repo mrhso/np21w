@@ -473,7 +473,10 @@
 #define IDS_CPU_MMXPENTIUM              32024
 #define IDS_CPU_PENTIUMPRO              32025
 #define IDS_CPU_PENTIUMII               32026
+#define IDS_CPU_AMD_K6_2                32035
+#define IDS_CPU_AMD_K6_III              32036
 #define IDS_CPU_80286					32040
+#define IDS_CPU_NEKOPRO                 32049
 #define IDM_TOOLWIN                     40001
 #define IDM_KEYDISP                     40002
 #define IDM_SOFTKBD                     40003
@@ -585,6 +588,7 @@
 #define IDM_20FPS                       40512
 #define IDM_15FPS                       40513
 #define IDM_SCREENOPT                   40514
+#define IDM_CPUSTABILIZER               40515
 #define IDM_KEY                         40601
 #define IDM_JOY1                        40602
 #define IDM_JOY2                        40603

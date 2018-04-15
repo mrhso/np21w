@@ -108,7 +108,7 @@ _CPUID(void)
 		CPU_EAX = (i386cpuid.cpu_family << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping;
 		CPU_EBX = 0;
 		CPU_ECX = 0;
-		CPU_EDX = i386cpuid.cpu_feature & CPU_FEATURES;
+		CPU_EDX = i386cpuid.cpu_feature & CPU_FEATURES_ALL;
 		break;
 
 	case 2:
@@ -120,16 +120,30 @@ _CPUID(void)
 		
 	case 0x80000000:
 		CPU_EAX = 0x80000004;
-		CPU_EBX = 0;
-		CPU_ECX = 0;
-		CPU_EDX = 0;
+		if(strcmp(i386cpuid.cpu_vendor, CPU_VENDOR_AMD)==0){ // AMD”»’è
+			CPU_EBX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+0)));
+			CPU_EDX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+4)));
+			CPU_ECX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+8)));
+		}else{
+			CPU_EBX = 0;
+			CPU_ECX = 0;
+			CPU_EDX = 0;
+		}
 		break;
 
 	case 0x80000001:
-		CPU_EAX = 0;
+		if(strcmp(i386cpuid.cpu_vendor, CPU_VENDOR_AMD)==0){ // AMD”»’è
+			if(i386cpuid.cpu_family >= 6 || (i386cpuid.cpu_family==5 && i386cpuid.cpu_model >= 6)){
+				CPU_EAX = ((i386cpuid.cpu_family+1) << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping;
+			}else{
+				CPU_EAX = (i386cpuid.cpu_family << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping;
+			}
+		}else{
+			CPU_EAX = 0;
+		}
 		CPU_EBX = 0;
 		CPU_ECX = 0;
-		CPU_EDX = 0;
+		CPU_EDX = i386cpuid.cpu_feature_ex & CPU_FEATURES_EX_ALL;
 		break;
 		
 	case 0x80000002:

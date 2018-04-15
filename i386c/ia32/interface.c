@@ -47,7 +47,7 @@ ia32_initreg(void)
 #if defined(USE_FPU)
 	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
 		CPU_CR0 |= CPU_CR0_ET;	/* FPU present */
-		//CPU_CR0 &= ~CPU_CR0_EM;
+		CPU_CR0 &= ~CPU_CR0_EM;
 	}else{
 		CPU_CR0 |= CPU_CR0_EM | CPU_CR0_NE;
 		CPU_CR0 &= ~(CPU_CR0_MP | CPU_CR0_ET);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 NONAKA Kimihiro
+ * Copyright (c) 2018 SimK
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,67 +23,45 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	IA32_CPU_INSTRUCTION_FPU_FP_H__
-#define	IA32_CPU_INSTRUCTION_FPU_FP_H__
+#ifndef	IA32_CPU_INSTRUCTION_FPU_FPUMEM_H__
+#define	IA32_CPU_INSTRUCTION_FPU_FPUMEM_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 	
-void fpu_initialize(void);
+/*
+ * FPU memory access function
+ */
+UINT8 MEMCALL
+fpu_memoryread_b(UINT32 address);
 
-void FPU_FWAIT(void);
+UINT16 MEMCALL
+fpu_memoryread_w(UINT32 address);
 
-#if defined(USE_FPU)
-#if defined(SUPPORT_FPU_DOSBOX)
-void DB_FPU_FINIT(void);
-void DB_FPU_FXSAVERSTOR(void);
-void DB_ESC0(void);
-void DB_ESC1(void);
-void DB_ESC2(void);
-void DB_ESC3(void);
-void DB_ESC4(void);
-void DB_ESC5(void);
-void DB_ESC6(void);
-void DB_ESC7(void);
-#endif
-#if defined(SUPPORT_FPU_DOSBOX2)
-void DB2_FPU_FINIT(void);
-void DB2_FPU_FXSAVERSTOR(void);
-void DB2_ESC0(void);
-void DB2_ESC1(void);
-void DB2_ESC2(void);
-void DB2_ESC3(void);
-void DB2_ESC4(void);
-void DB2_ESC5(void);
-void DB2_ESC6(void);
-void DB2_ESC7(void);
-#endif
-#if defined(SUPPORT_FPU_SOFTFLOAT)
-void SF_FPU_FINIT(void);
-void SF_FPU_FXSAVERSTOR(void);
-void SF_ESC0(void);
-void SF_ESC1(void);
-void SF_ESC2(void);
-void SF_ESC3(void);
-void SF_ESC4(void);
-void SF_ESC5(void);
-void SF_ESC6(void);
-void SF_ESC7(void);
-#endif
-#endif
+UINT32 MEMCALL
+fpu_memoryread_d(UINT32 address);
 
-// for i486SX
-void NOFPU_FPU_FINIT(void);
-void NOFPU_FPU_FXSAVERSTOR(void);
-void NOFPU_ESC0(void);
-void NOFPU_ESC1(void);
-void NOFPU_ESC2(void);
-void NOFPU_ESC3(void);
-void NOFPU_ESC4(void);
-void NOFPU_ESC5(void);
-void NOFPU_ESC6(void);
-void NOFPU_ESC7(void);
+UINT64 MEMCALL
+fpu_memoryread_q(UINT32 address);
+
+REG80 MEMCALL
+fpu_memoryread_f(UINT32 address);
+
+void MEMCALL
+fpu_memorywrite_b(UINT32 address, UINT8 value);
+
+void MEMCALL
+fpu_memorywrite_w(UINT32 address, UINT16 value);
+
+void MEMCALL
+fpu_memorywrite_d(UINT32 address, UINT32 value);
+
+void MEMCALL
+fpu_memorywrite_q(UINT32 address, UINT64 value);
+
+void MEMCALL
+fpu_memorywrite_f(UINT32 address, REG80 *value);
 
 #ifdef __cplusplus
 }

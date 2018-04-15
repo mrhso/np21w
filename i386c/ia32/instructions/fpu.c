@@ -30,7 +30,11 @@
 #include "ia32/inst_table.h"
 
 #include "ia32/instructions/fpu/fp.h"
+#include "ia32/instructions/fpu/fpumem.h"
 
+#if defined(USE_FPU) && !defined(SUPPORT_FPU_DOSBOX) && !defined(SUPPORT_FPU_DOSBOX2) && !defined(SUPPORT_FPU_SOFTFLOAT)
+#error No FPU detected. Please define SUPPORT_FPU_DOSBOX, SUPPORT_FPU_DOSBOX2 or SUPPORT_FPU_SOFTFLOAT.
+#endif
 
 void
 fpu_initialize(void)
@@ -49,6 +53,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB_ESC7;
+			DB_FPU_FINIT();
 			break;
 #endif
 #if defined(SUPPORT_FPU_DOSBOX2)
@@ -62,6 +67,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB2_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB2_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB2_ESC7;
+			DB2_FPU_FINIT();
 			break;
 #endif
 #if defined(SUPPORT_FPU_SOFTFLOAT)
@@ -75,6 +81,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = SF_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = SF_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = SF_ESC7;
+			SF_FPU_FINIT();
 			break;
 #endif
 		default:
@@ -88,6 +95,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = SF_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = SF_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = SF_ESC7;
+			SF_FPU_FINIT();
 #elif defined(SUPPORT_FPU_DOSBOX)
 			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB_FPU_FXSAVERSTOR;
 			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB_ESC0;
@@ -98,6 +106,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB_ESC7;
+			DB_FPU_FINIT();
 #elif defined(SUPPORT_FPU_DOSBOX2)
 			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = DB2_FPU_FXSAVERSTOR;
 			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = DB2_ESC0;
@@ -108,6 +117,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = DB2_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = DB2_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = DB2_ESC7;
+			DB2_FPU_FINIT();
 #else
 			insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = NOFPU_FPU_FXSAVERSTOR;
 			insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = NOFPU_ESC0;
@@ -118,6 +128,7 @@ fpu_initialize(void)
 			insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = NOFPU_ESC5;
 			insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = NOFPU_ESC6;
 			insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = NOFPU_ESC7;
+			NOFPU_FPU_FINIT();
 #endif
 			break;
 		}
@@ -132,6 +143,7 @@ fpu_initialize(void)
 		insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = NOFPU_ESC5;
 		insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = NOFPU_ESC6;
 		insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = NOFPU_ESC7;
+		NOFPU_FPU_FINIT();
 #if defined(USE_FPU)
 	}
 #endif
@@ -143,8 +155,113 @@ fpu_reg2str(void)
 	return NULL;
 }
 
+/*
+ * FPU memory access function
+ */
+#if defined(USE_FPU)
+UINT8 MEMCALL
+fpu_memoryread_b(UINT32 address)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	return cpu_vmemoryread_b(seg, address);
+}
+
+UINT16 MEMCALL
+fpu_memoryread_w(UINT32 address)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	return cpu_vmemoryread_w(seg, address);
+}
+
+UINT32 MEMCALL
+fpu_memoryread_d(UINT32 address)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	return cpu_vmemoryread_d(seg, address);
+}
+
+UINT64 MEMCALL
+fpu_memoryread_q(UINT32 address)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	return cpu_vmemoryread_q(seg, address);
+}
+
+REG80 MEMCALL
+fpu_memoryread_f(UINT32 address)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	return cpu_vmemoryread_f(seg, address);
+}
+
+void MEMCALL
+fpu_memorywrite_b(UINT32 address, UINT8 value)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	cpu_vmemorywrite_b(seg, address, value);
+}
+
+void MEMCALL
+fpu_memorywrite_w(UINT32 address, UINT16 value)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	cpu_vmemorywrite_w(seg, address, value);
+}
+
+void MEMCALL
+fpu_memorywrite_d(UINT32 address, UINT32 value)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	cpu_vmemorywrite_d(seg, address, value);
+}
+
+void MEMCALL
+fpu_memorywrite_q(UINT32 address, UINT64 value)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	cpu_vmemorywrite_q(seg, address, value);
+}
+
+void MEMCALL
+fpu_memorywrite_f(UINT32 address, REG80 *value)
+{
+	UINT16 seg;
+
+	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
+	FPU_DATAPTR_OFFSET = address;
+	cpu_vmemorywrite_f(seg, address, value);
+}
+#endif
+
 void
-FWAIT(void)
+FPU_FWAIT(void)
 {
 #if defined(USE_FPU)
 	// FPU‚È‚µ‚È‚ç‰½‚à‚µ‚È‚¢

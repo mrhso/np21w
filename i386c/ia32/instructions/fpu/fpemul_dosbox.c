@@ -56,6 +56,7 @@
 #include "ia32/ia32.mcr"
 
 #include "ia32/instructions/fpu/fp.h"
+#include "ia32/instructions/fpu/fpumem.h"
 
 #if 1
 #undef	TRACEOUT
@@ -85,109 +86,6 @@ fpu_check_NM_EXCEPTION2(){
 	if ((CPU_CR0 & (CPU_CR0_TS)) || (CPU_CR0 & CPU_CR0_EM)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
-}
-
-/*
- * FPU memory access function
- */
-static UINT8 MEMCALL
-fpu_memoryread_b(UINT32 address)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	return cpu_vmemoryread_b(seg, address);
-}
-
-static UINT16 MEMCALL
-fpu_memoryread_w(UINT32 address)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	return cpu_vmemoryread_w(seg, address);
-}
-
-static UINT32 MEMCALL
-fpu_memoryread_d(UINT32 address)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	return cpu_vmemoryread_d(seg, address);
-}
-
-static UINT64 MEMCALL
-fpu_memoryread_q(UINT32 address)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	return cpu_vmemoryread_q(seg, address);
-}
-
-static REG80 MEMCALL
-fpu_memoryread_f(UINT32 address)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	return cpu_vmemoryread_f(seg, address);
-}
-
-static void MEMCALL
-fpu_memorywrite_b(UINT32 address, UINT8 value)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	cpu_vmemorywrite_b(seg, address, value);
-}
-
-static void MEMCALL
-fpu_memorywrite_w(UINT32 address, UINT16 value)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	cpu_vmemorywrite_w(seg, address, value);
-}
-
-static void MEMCALL
-fpu_memorywrite_d(UINT32 address, UINT32 value)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	cpu_vmemorywrite_d(seg, address, value);
-}
-
-static void MEMCALL
-fpu_memorywrite_q(UINT32 address, UINT64 value)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	cpu_vmemorywrite_q(seg, address, value);
-}
-
-static void MEMCALL
-fpu_memorywrite_f(UINT32 address, REG80 *value)
-{
-	UINT16 seg;
-
-	FPU_DATAPTR_SEG = seg = CPU_INST_SEGREG_INDEX;
-	FPU_DATAPTR_OFFSET = address;
-	cpu_vmemorywrite_f(seg, address, value);
 }
 
 static const FPU_PTR zero_ptr = { 0, 0, 0 };
@@ -617,7 +515,8 @@ static void FPU_FPTAN(void){
 static void FPU_FDIV(UINT st, UINT other){
 	if(FPU_STAT.reg[other].d64==0){
 		FPU_STATUSWORD |= FP_ZE_FLAG;
-		return;
+		if(!(FPU_CTRLWORD & FP_ZE_FLAG))
+			return;
 	}
 	FPU_STAT.reg[st].d64= FPU_STAT.reg[st].d64/FPU_STAT.reg[other].d64;
 	//flags and such :)
@@ -627,7 +526,8 @@ static void FPU_FDIV(UINT st, UINT other){
 static void FPU_FDIVR(UINT st, UINT other){
 	if(FPU_STAT.reg[st].d64==0){
 		FPU_STATUSWORD |= FP_ZE_FLAG;
-		return;
+		if(!(FPU_CTRLWORD & FP_ZE_FLAG))
+			return;
 	}
 	FPU_STAT.reg[st].d64= FPU_STAT.reg[other].d64/FPU_STAT.reg[st].d64;
 	// flags and such :)
@@ -1148,6 +1048,16 @@ FPU_FINIT(void)
 		//FPU_STAT.reg[i].ll = 0;
 	}
 	FPU_STAT.tag[8] = TAG_Valid; // is only used by us
+}
+void DB_FPU_FINIT(void){
+	int i;
+	FPU_FINIT();
+	for(i=0;i<8;i++){
+		FPU_STAT.tag[i] = TAG_Empty;
+		FPU_STAT.reg[i].l.ext = 0;
+		FPU_STAT.reg[i].l.lower = 0;
+		FPU_STAT.reg[i].l.upper = 0;
+	}
 }
 
 /*

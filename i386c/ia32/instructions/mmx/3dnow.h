@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 NONAKA Kimihiro
+ * Copyright (c) 2018 SimK
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,70 +23,48 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	IA32_CPU_INSTRUCTION_FPU_FP_H__
-#define	IA32_CPU_INSTRUCTION_FPU_FP_H__
+#ifndef	IA32_CPU_INSTRUCTION_MMX_AMD3DNOW_H__
+#define	IA32_CPU_INSTRUCTION_MMX_AMD3DNOW_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum{
+	AMD3DNOW_SUFFIX_PAVGUSB	= 0xBF,
+	AMD3DNOW_SUFFIX_PFADD	= 0x9E,
+	AMD3DNOW_SUFFIX_PFSUB	= 0x9A,
+	AMD3DNOW_SUFFIX_PFSUBR	= 0xAA,
+	AMD3DNOW_SUFFIX_PFACC	= 0xAE,
+	AMD3DNOW_SUFFIX_PFCMPGE	= 0x90,
+	AMD3DNOW_SUFFIX_PFCMPGT	= 0xA0,
+	AMD3DNOW_SUFFIX_PFCMPEQ	= 0xB0,
+	AMD3DNOW_SUFFIX_PFMIN	= 0x94,
+	AMD3DNOW_SUFFIX_PFMAX	= 0xA4,
+	AMD3DNOW_SUFFIX_PI2FD	= 0x0D,
+	AMD3DNOW_SUFFIX_PF2ID	= 0x1D,
+	AMD3DNOW_SUFFIX_PFRCP	= 0x96,
+	AMD3DNOW_SUFFIX_PFRSQRT	= 0x97,
+	AMD3DNOW_SUFFIX_PFMUL	= 0xB4,
+	AMD3DNOW_SUFFIX_PFRCPIT1 = 0xA6,
+	AMD3DNOW_SUFFIX_PFRSQIT1 = 0xA7,
+	AMD3DNOW_SUFFIX_PFRCPIT2 = 0xB6,
+	AMD3DNOW_SUFFIX_PMULHRW = 0xB7,
+	AMD3DNOW_SUFFIX_PF2IW = 0x1C,
+	AMD3DNOW_SUFFIX_PI2FW = 0x0C,
+	AMD3DNOW_SUFFIX_PFNACC = 0x8A,
+	AMD3DNOW_SUFFIX_PFPNACC = 0x8E,
+	AMD3DNOW_SUFFIX_PSWAPD = 0xBB,
+};
 	
-void fpu_initialize(void);
+void AMD3DNOW_F0(void);
 
-void FPU_FWAIT(void);
+void AMD3DNOW_FEMMS(void);
 
-#if defined(USE_FPU)
-#if defined(SUPPORT_FPU_DOSBOX)
-void DB_FPU_FINIT(void);
-void DB_FPU_FXSAVERSTOR(void);
-void DB_ESC0(void);
-void DB_ESC1(void);
-void DB_ESC2(void);
-void DB_ESC3(void);
-void DB_ESC4(void);
-void DB_ESC5(void);
-void DB_ESC6(void);
-void DB_ESC7(void);
-#endif
-#if defined(SUPPORT_FPU_DOSBOX2)
-void DB2_FPU_FINIT(void);
-void DB2_FPU_FXSAVERSTOR(void);
-void DB2_ESC0(void);
-void DB2_ESC1(void);
-void DB2_ESC2(void);
-void DB2_ESC3(void);
-void DB2_ESC4(void);
-void DB2_ESC5(void);
-void DB2_ESC6(void);
-void DB2_ESC7(void);
-#endif
-#if defined(SUPPORT_FPU_SOFTFLOAT)
-void SF_FPU_FINIT(void);
-void SF_FPU_FXSAVERSTOR(void);
-void SF_ESC0(void);
-void SF_ESC1(void);
-void SF_ESC2(void);
-void SF_ESC3(void);
-void SF_ESC4(void);
-void SF_ESC5(void);
-void SF_ESC6(void);
-void SF_ESC7(void);
-#endif
-#endif
-
-// for i486SX
-void NOFPU_FPU_FINIT(void);
-void NOFPU_FPU_FXSAVERSTOR(void);
-void NOFPU_ESC0(void);
-void NOFPU_ESC1(void);
-void NOFPU_ESC2(void);
-void NOFPU_ESC3(void);
-void NOFPU_ESC4(void);
-void NOFPU_ESC5(void);
-void NOFPU_ESC6(void);
-void NOFPU_ESC7(void);
+void AMD3DNOW_PREFETCH(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* IA32_CPU_INSTRUCTION_FPU_FP_H__ */
+#endif	/* IA32_CPU_INSTRUCTION_MMX_MMX_H__ */

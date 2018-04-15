@@ -32,7 +32,7 @@
 
 #if defined(USE_MMX) && defined(USE_FPU)
 
-#define CPU_MMXWORKCLOCK(a)	CPU_WORKCLOCK(8)
+#define CPU_MMXWORKCLOCK(a)	CPU_WORKCLOCK(6)
 
 static INLINE void
 MMX_check_NM_EXCEPTION(){

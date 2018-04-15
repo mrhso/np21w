@@ -228,6 +228,7 @@ struct tagNP2Config
 	UINT32	cpu_model; // モデル
 	UINT32	cpu_stepping; // ステッピング
 	UINT32	cpu_feature; // 機能フラグ
+	UINT32	cpu_feature_ex; // 拡張機能フラグ
 	char	cpu_brandstring[64]; // ブランド名（48byte）
 	OEMCHAR	cpu_vendor_o[16]; // ベンダー（12byte）OEMCHAR
 	OEMCHAR	cpu_brandstring_o[64]; // ブランド名（48byte）OEMCHAR

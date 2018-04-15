@@ -280,6 +280,12 @@
     <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat">
       <UniqueIdentifier>{a75abfc2-c1e6-4d90-a883-3d16434e44d8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\i386c\ia32\instructions\sse">
+      <UniqueIdentifier>{d22e0c91-e644-4425-a584-a259bb1e6e9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\sse">
+      <UniqueIdentifier>{1624adcd-5244-4b38-9099-0fc098198614}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1284,6 +1290,12 @@
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox2.c">
       <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
     </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\mmx\3dnow.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\mmx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\sse</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2266,6 +2278,15 @@
     </ClInclude>
     <ClInclude Include="..\i386c\ia32\instructions\fpu\softfloat\softfloat-specialize.h">
       <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu\softfloat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\fpu\fpumem.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\fpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\mmx\3dnow.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\mmx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\sse\sse.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\sse</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

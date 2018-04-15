@@ -4,6 +4,10 @@
 #include "ia32/ia32.mcr"
 #include "fp.h"
 
+void NOFPU_FPU_FINIT(void){
+	// Nothing to do
+}
+
 void NOFPU_FPU_FXSAVERSTOR(void){
 	EXCEPTION(UD_EXCEPTION, 0);
 }

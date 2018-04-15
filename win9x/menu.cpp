@@ -322,6 +322,7 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_DISPSYNC, MF_BYCOMMAND | MFCHECK(np2cfg.DISPSYNC));
 	CheckMenuItem(hMenu, IDM_RASTER, MF_BYCOMMAND | MFCHECK(np2cfg.RASTER));
 	CheckMenuItem(hMenu, IDM_NOWAIT, MF_BYCOMMAND | MFCHECK(np2oscfg.NOWAIT));
+	CheckMenuItem(hMenu, IDM_CPUSTABILIZER, MF_BYCOMMAND | MFCHECK(np2oscfg.cpustabf != 0));
 	const UINT8 DRAW_SKIP = np2oscfg.DRAW_SKIP;
 	CheckMenuItem(hMenu, IDM_AUTOFPS, MF_BYCOMMAND | MFCHECK(DRAW_SKIP == 0));
 	CheckMenuItem(hMenu, IDM_60FPS, MF_BYCOMMAND | MFCHECK(DRAW_SKIP == 1));

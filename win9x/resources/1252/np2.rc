@@ -1580,6 +1580,9 @@ BEGIN
     IDS_CPU_MMXPENTIUM      "Intel MMX Pentium"
     IDS_CPU_PENTIUMPRO      "Intel Pentium Pro"
     IDS_CPU_PENTIUMII       "Intel Pentium II"
+    IDS_CPU_AMD_K6_2        "AMD K6-2"
+    IDS_CPU_AMD_K6_III      "AMD K6-III"
+    IDS_CPU_NEKOPRO         "Neko Processor II"
 END
 
 STRINGTABLE

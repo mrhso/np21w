@@ -1066,6 +1066,9 @@ RDMSR(void)
 
 	idx = CPU_ECX;
 	switch (idx) {
+	case 0x10:
+		RDTSC();
+		break;
 	case 0x2c:
 		CPU_EDX = 0x00000000;
 		CPU_EAX = 0xfee00800;
