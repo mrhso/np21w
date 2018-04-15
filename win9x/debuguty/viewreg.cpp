@@ -10,82 +10,18 @@
 #include	"cpucore.h"
 
 
-#if !defined(CPUCORE_IA32)
+#if defined(CPUCORE_IA32)
 static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
 
 	LONG		y;
 	DWORD		pos;
-	char		str[128];
-	HFONT		hfont;
-	I286STAT	*r;
-
-	hfont = CreateFont(16, 0, 0, 0, 0, 0, 0, 0, 
-					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-					DEFAULT_QUALITY, FIXED_PITCH, "ÇlÇr ÉSÉVÉbÉN");
-	SetTextColor(hdc, 0xffffff);
-	SetBkColor(hdc, 0x400000);
-	hfont = (HFONT)SelectObject(hdc, hfont);
-
-	if (view->lock) {
-		if (view->buf1.type != ALLOCTYPE_REG) {
-			if (viewcmn_alloc(&view->buf1, sizeof(i286core.s))) {
-				view->lock = FALSE;
-				viewmenu_lock(view);
-			}
-			else {
-				view->buf1.type = ALLOCTYPE_REG;
-				CopyMemory(view->buf1.ptr, &i286core.s, sizeof(i286core.s));
-			}
-			viewcmn_putcaption(view);
-		}
-	}
-
-	pos = view->pos;
-	if (view->lock) {
-		r = (I286STAT *)view->buf1.ptr;
-	}
-	else {
-		r = &i286core.s;
-	}
-
-	for (y=0; y<rc->bottom && pos<4; y+=16, pos++) {
-		switch(pos) {
-			case 0:
-				wsprintf(str, "AX=%.4x  BX=%.4x  CX=%.4x  DX=%.4x",
-								r->r.w.ax, r->r.w.bx, r->r.w.cx, r->r.w.dx);
-				break;
-
-			case 1:
-				wsprintf(str, "SP=%.4x  BP=%.4x  SI=%.4x  DI=%.4x",
-								r->r.w.sp, r->r.w.bp, r->r.w.si, r->r.w.di);
-				break;
-
-			case 2:
-				wsprintf(str, "CS=%.4x  DS=%.4x  ES=%.4x  SS=%.4x",
-								r->r.w.cs, r->r.w.ds, r->r.w.es, r->r.w.ss);
-				break;
-
-			case 3:
-				wsprintf(str, "IP=%.4x   %s",
-								r->r.w.ip, debugsub_flags(r->r.w.flag));
-				break;
-		}
-		TextOut(hdc, 0, y, str, strlen(str));
-	}
-	DeleteObject(SelectObject(hdc, hfont));
-}
-#else
-static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
-
-	LONG		y;
-	DWORD		pos;
-	char		str[128];
+	TCHAR		str[128];
 	HFONT		hfont;
 	I386STAT	*r;
 
 	hfont = CreateFont(16, 0, 0, 0, 0, 0, 0, 0, 
 					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-					DEFAULT_QUALITY, FIXED_PITCH, "ÇlÇr ÉSÉVÉbÉN");
+					DEFAULT_QUALITY, FIXED_PITCH, np2viewfont);
 	SetTextColor(hdc, 0xffffff);
 	SetBkColor(hdc, 0x400000);
 	hfont = (HFONT)SelectObject(hdc, hfont);
@@ -115,7 +51,7 @@ static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
 	for (y=0; y<rc->bottom && pos<4; y+=16, pos++) {
 		switch(pos) {
 			case 0:
-				wsprintf(str, "EAX=%.8x EBX=%.8x ECX=%.8x EDX=%.8x",
+				wsprintf(str, _T("EAX=%.8x EBX=%.8x ECX=%.8x EDX=%.8x"),
 								r->cpu_regs.reg[CPU_EAX_INDEX].d,
 								r->cpu_regs.reg[CPU_EBX_INDEX].d,
 								r->cpu_regs.reg[CPU_ECX_INDEX].d,
@@ -123,7 +59,7 @@ static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
 				break;
 
 			case 1:
-				wsprintf(str, "ESP=%.8x EBP=%.8x ESI=%.8x EDI=%.8x",
+				wsprintf(str, _T("ESP=%.8x EBP=%.8x ESI=%.8x EDI=%.8x"),
 								r->cpu_regs.reg[CPU_ESP_INDEX].d,
 								r->cpu_regs.reg[CPU_EBP_INDEX].d,
 								r->cpu_regs.reg[CPU_ESI_INDEX].d,
@@ -131,8 +67,7 @@ static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
 				break;
 
 			case 2:
-				wsprintf(str, "CS=%.4x DS=%.4x ES=%.4x " \
-								"FS=%.4x GS=%.4x SS=%.4x",
+				wsprintf(str, _T("CS=%.4x DS=%.4x ES=%.4x FS=%.4x GS=%.4x SS=%.4x"),
 								r->cpu_regs.sreg[CPU_CS_INDEX],
 								r->cpu_regs.sreg[CPU_DS_INDEX],
 								r->cpu_regs.sreg[CPU_ES_INDEX],
@@ -142,12 +77,140 @@ static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
 				break;
 
 			case 3:
-				wsprintf(str, "EIP=%.8x   %s",
+				wsprintf(str, _T("EIP=%.8x   %s"),
 								r->cpu_regs.eip.d,
 								debugsub_flags(r->cpu_regs.eflags.d));
 				break;
 		}
-		TextOut(hdc, 0, y, str, strlen(str));
+		TextOut(hdc, 0, y, str, lstrlen(str));
+	}
+	DeleteObject(SelectObject(hdc, hfont));
+}
+#elif defined(CPUCORE_V30)
+static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
+
+	LONG		y;
+	DWORD		pos;
+	TCHAR		str[128];
+	HFONT		hfont;
+	V30STAT		*r;
+
+	hfont = CreateFont(16, 0, 0, 0, 0, 0, 0, 0, 
+					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+					DEFAULT_QUALITY, FIXED_PITCH, np2viewfont);
+	SetTextColor(hdc, 0xffffff);
+	SetBkColor(hdc, 0x400000);
+	hfont = (HFONT)SelectObject(hdc, hfont);
+
+	if (view->lock) {
+		if (view->buf1.type != ALLOCTYPE_REG) {
+			if (viewcmn_alloc(&view->buf1, sizeof(v30core.s))) {
+				view->lock = FALSE;
+				viewmenu_lock(view);
+			}
+			else {
+				view->buf1.type = ALLOCTYPE_REG;
+				CopyMemory(view->buf1.ptr, &v30core.s, sizeof(v30core.s));
+			}
+			viewcmn_putcaption(view);
+		}
+	}
+
+	pos = view->pos;
+	if (view->lock) {
+		r = (V30STAT *)view->buf1.ptr;
+	}
+	else {
+		r = &v30core.s;
+	}
+
+	for (y=0; y<rc->bottom && pos<4; y+=16, pos++) {
+		switch(pos) {
+			case 0:
+				wsprintf(str, _T("AW=%.4x  BW=%.4x  CW=%.4x  DW=%.4x"),
+								r->r.w.aw, r->r.w.bw, r->r.w.cw, r->r.w.dw);
+				break;
+
+			case 1:
+				wsprintf(str, _T("SP=%.4x  BP=%.4x  IX=%.4x  IY=%.4x"),
+								r->r.w.sp, r->r.w.bp, r->r.w.ix, r->r.w.iy);
+				break;
+
+			case 2:
+				wsprintf(str, _T("PS=%.4x  DS0=%.4x  ES1=%.4x  SS=%.4x"),
+								r->r.w.ps, r->r.w.ds0, r->r.w.ds1, r->r.w.ss);
+				break;
+
+			case 3:
+				wsprintf(str, _T("PC=%.4x   %s"),
+								r->r.w.pc, debugsub_flags(r->r.w.psw));
+				break;
+		}
+		TextOut(hdc, 0, y, str, lstrlen(str));
+	}
+	DeleteObject(SelectObject(hdc, hfont));
+}
+#else
+static void viewreg_paint(NP2VIEW_T *view, RECT *rc, HDC hdc) {
+
+	LONG		y;
+	DWORD		pos;
+	TCHAR		str[128];
+	HFONT		hfont;
+	I286STAT	*r;
+
+	hfont = CreateFont(16, 0, 0, 0, 0, 0, 0, 0, 
+					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+					DEFAULT_QUALITY, FIXED_PITCH, np2viewfont);
+	SetTextColor(hdc, 0xffffff);
+	SetBkColor(hdc, 0x400000);
+	hfont = (HFONT)SelectObject(hdc, hfont);
+
+	if (view->lock) {
+		if (view->buf1.type != ALLOCTYPE_REG) {
+			if (viewcmn_alloc(&view->buf1, sizeof(i286core.s))) {
+				view->lock = FALSE;
+				viewmenu_lock(view);
+			}
+			else {
+				view->buf1.type = ALLOCTYPE_REG;
+				CopyMemory(view->buf1.ptr, &i286core.s, sizeof(i286core.s));
+			}
+			viewcmn_putcaption(view);
+		}
+	}
+
+	pos = view->pos;
+	if (view->lock) {
+		r = (I286STAT *)view->buf1.ptr;
+	}
+	else {
+		r = &i286core.s;
+	}
+
+	for (y=0; y<rc->bottom && pos<4; y+=16, pos++) {
+		switch(pos) {
+			case 0:
+				wsprintf(str, _T("AX=%.4x  BX=%.4x  CX=%.4x  DX=%.4x"),
+								r->r.w.ax, r->r.w.bx, r->r.w.cx, r->r.w.dx);
+				break;
+
+			case 1:
+				wsprintf(str, _T("SP=%.4x  BP=%.4x  SI=%.4x  DI=%.4x"),
+								r->r.w.sp, r->r.w.bp, r->r.w.si, r->r.w.di);
+				break;
+
+			case 2:
+				wsprintf(str, _T("CS=%.4x  DS=%.4x  ES=%.4x  SS=%.4x"),
+								r->r.w.cs, r->r.w.ds, r->r.w.es, r->r.w.ss);
+				break;
+
+			case 3:
+				wsprintf(str, _T("IP=%.4x   %s"),
+								r->r.w.ip, debugsub_flags(r->r.w.flag));
+				break;
+		}
+		TextOut(hdc, 0, y, str, lstrlen(str));
 	}
 	DeleteObject(SelectObject(hdc, hfont));
 }

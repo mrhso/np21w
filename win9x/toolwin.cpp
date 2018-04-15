@@ -3,6 +3,7 @@
 #include	"resource.h"
 #include	"np2.h"
 #include	"winloc.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 #include	"soundmng.h"
 #include	"sysmng.h"
@@ -48,31 +49,31 @@ enum {
 };
 
 typedef struct {
-	char	main[MAX_PATH];
-	char	font[64];
+	OEMCHAR	main[MAX_PATH];
+	OEMCHAR	font[64];
 	SINT32	fontsize;
 	UINT32	color1;
 	UINT32	color2;
 } TOOLSKIN;
 
 typedef struct {
-	UINT	tctl;
-const char	*text;
-	short	posx;
-	short	posy;
-	short	width;
-	short	height;
-	short	extend;
-	short	padding;
+	UINT		tctl;
+const OEMCHAR	*text;
+	short		posx;
+	short		posy;
+	short		width;
+	short		height;
+	short		extend;
+	short		padding;
 } SUBITEM;
 
 typedef struct {
 	HWND			hwnd;
 	WINLOCEX		wlex;
 	HBITMAP			hbmp;
-	BYTE			fddaccess[2];
-	BYTE			hddaccess;
-	BYTE			_padding;
+	UINT8			fddaccess[2];
+	UINT8			hddaccess;
+	UINT8			_padding;
 	int				winflg;
 	int				wingx;
 	int				wingy;
@@ -102,11 +103,11 @@ static	TOOLWIN		toolwin;
 
 
 typedef struct {
-	WORD	idc;
-	BYTE	*counter;
+	UINT16	idc;
+	UINT8	*counter;
 } DISKACC;
 
-static const BYTE fddlist[FDDLIST_DRV] = {
+static const UINT8 fddlist[FDDLIST_DRV] = {
 					IDC_TOOLFDD1LIST, IDC_TOOLFDD2LIST};
 
 static const DISKACC diskacc[3] = {
@@ -117,19 +118,19 @@ static const DISKACC diskacc[3] = {
 
 // ----
 
-static HBITMAP skinload(const char *path) {
+static HBITMAP skinload(const OEMCHAR *path) {
 
-	char	fname[MAX_PATH];
+	OEMCHAR	fname[MAX_PATH];
 	UINT	i;
 	HBITMAP	ret;
 
 	ZeroMemory(&toolskin, sizeof(toolskin));
 	toolskin.fontsize = 12;
-	milstr_ncpy(toolskin.font, str_deffont, sizeof(toolskin.font));
+	milstr_ncpy(toolskin.font, str_deffont, NELEMENTS(toolskin.font));
 	toolskin.color1 = 0x600000;
 	toolskin.color2 = 0xff0000;
 	if (path) {
-		ini_read(path, skintitle, skinini1, sizeof(skinini1)/sizeof(INITBL));
+		ini_read(path, skintitle, skinini1, NELEMENTS(skinini1));
 	}
 	if (toolskin.main[0]) {
 		ZeroMemory(subitem, sizeof(defsubitem));
@@ -142,29 +143,35 @@ static HBITMAP skinload(const char *path) {
 		CopyMemory(subitem, defsubitem, sizeof(defsubitem));
 	}
 	if (path) {
-		ini_read(path, skintitle, skinini2, sizeof(skinini2)/sizeof(INITBL));
+		ini_read(path, skintitle, skinini2, NELEMENTS(skinini2));
 	}
 	if (toolskin.main[0]) {
-		milstr_ncpy(fname, path, sizeof(fname));
+		milstr_ncpy(fname, path, NELEMENTS(fname));
 		file_cutname(fname);
-		file_catname(fname, toolskin.main, sizeof(fname));
-		ret = (HBITMAP)LoadImage(hInst, fname, IMAGE_BITMAP,
+		file_catname(fname, toolskin.main, NELEMENTS(fname));
+#if defined(OSLANG_UTF8)
+		TCHAR tchr[MAX_PATH];
+		oemtotchar(tchr, NELEMENTS(tchr), fname, -1);
+#else
+		const TCHAR *tchr = fname;
+#endif
+		ret = (HBITMAP)LoadImage(hInst, tchr, IMAGE_BITMAP,
 													0, 0, LR_LOADFROMFILE);
 		if (ret != NULL) {
 			return(ret);
 		}
 	}
-	return(LoadBitmap(hInst, "NP2TOOL"));
+	return(LoadBitmap(hInst, _T("NP2TOOL")));
 }
 
 
 // ----
 
-static void calctextsize(char *path, int leng, const char *p, int width) {
+static void calctextsize(OEMCHAR *path, int leng, const OEMCHAR *p, int width) {
 
 	HDC		hdc;
 	SIZE	cur;
-	char	work[MAX_PATH];
+	OEMCHAR	work[MAX_PATH];
 	int		l;
 	SIZE	tail;
 	int		pos;
@@ -172,7 +179,7 @@ static void calctextsize(char *path, int leng, const char *p, int width) {
 
 	milstr_ncpy(path, p, leng);
 	hdc = toolwin.hdcfont;
-	GetTextExtentPoint32(hdc, p, strlen(p), &cur);
+	GetTextExtentPoint32(hdc, p, OEMSTRLEN(p), &cur);
 	if (cur.cx < width) {
 		return;
 	}
@@ -181,16 +188,20 @@ static void calctextsize(char *path, int leng, const char *p, int width) {
 	file_cutseparator(path);
 	file_cutname(path);
 	file_cutseparator(path);
-	l = strlen(path);
+	l = OEMSTRLEN(path);
 	work[0] = '\0';
 	if (l) {
-		milstr_ncpy(work, str_browse, sizeof(work));
+		milstr_ncpy(work, str_browse, NELEMENTS(work));
 	}
-	milstr_ncat(work, p + l, sizeof(work));
-	GetTextExtentPoint32(hdc, work, strlen(work), &tail);
+	milstr_ncat(work, p + l, NELEMENTS(work));
+	GetTextExtentPoint32(hdc, work, OEMSTRLEN(work), &tail);
 	pos = 0;
 	while(pos < l) {
-		step = ((((p[pos] ^ 0x20) - 0xa1) & 0xff) < 0x3c)?2:1;
+#if defined(_UNICODE)
+		step = 1;
+#else
+		step = (IsDBCSLeadByte((BYTE)p[pos]))?2:1;
+#endif
 		GetTextExtentPoint32(hdc, p, pos + step, &cur);
 		if (cur.cx + tail.cx >= width) {
 			break;
@@ -205,35 +216,35 @@ static void calctextsize(char *path, int leng, const char *p, int width) {
 
 static void setlist(HWND hwnd, const TOOLFDD *fdd, UINT sel) {
 
-	RECT	rc;
-	int		width;
-	char	basedir[MAX_PATH];
-	UINT	i;
-const char	*p;
-	char	dir[MAX_PATH];
-const char	*q;
+	RECT		rc;
+	int			width;
+	OEMCHAR		basedir[MAX_PATH];
+	UINT		i;
+const OEMCHAR	*p;
+	OEMCHAR		dir[MAX_PATH];
+const OEMCHAR	*q;
 
 	SendMessage(hwnd, CB_RESETCONTENT, (WPARAM)0, (LPARAM)0);
 	GetClientRect(hwnd, &rc);
 	width = rc.right - rc.left - 6;			// border size?
 	basedir[0] = '\0';
 	if (sel < fdd->cnt) {
-		milstr_ncpy(basedir, fdd->name[fdd->pos[sel]], sizeof(basedir));
+		milstr_ncpy(basedir, fdd->name[fdd->pos[sel]], NELEMENTS(basedir));
 		file_cutname(basedir);
 	}
 	for (i=0; i<fdd->cnt; i++) {
 		p = fdd->name[fdd->pos[i]];
-		milstr_ncpy(dir, p, sizeof(dir));
+		milstr_ncpy(dir, p, NELEMENTS(dir));
 		file_cutname(dir);
 		if (!file_cmpname(basedir, dir)) {
-			q = file_getname((char *)p);
+			q = file_getname(p);
 		}
 		else {
-			calctextsize(dir, sizeof(dir), p, width);
+			calctextsize(dir, NELEMENTS(dir), p, width);
 			q = dir;
 		}
 		SendMessage(hwnd, CB_INSERTSTRING, (WPARAM)i, (LPARAM)q);
-		p += sizeof(fdd->name[0]);
+		p += NELEMENTS(fdd->name[0]);
 	}
 	if (sel < fdd->cnt) {
 		SendMessage(hwnd, CB_SETCURSEL, (WPARAM)sel, (LPARAM)0);
@@ -261,10 +272,10 @@ static void sellist(UINT drv) {
 
 static void remakefddlist(HWND hwnd, TOOLFDD *fdd) {
 
-	char	*p;
+	OEMCHAR	*p;
 	UINT	cnt;
-	char	*q;
-	char	*fname[FDDLIST_MAX];
+	OEMCHAR	*q;
+	OEMCHAR	*fname[FDDLIST_MAX];
 	UINT	i;
 	UINT	j;
 	UINT	sel;
@@ -285,7 +296,7 @@ static void remakefddlist(HWND hwnd, TOOLFDD *fdd) {
 			fdd->pos[j] = fdd->pos[j-1];
 		}
 		fdd->pos[i] = cnt;
-		p += sizeof(fdd->name[0]);
+		p += NELEMENTS(fdd->name[0]);
 	}
 	fdd->cnt = cnt;
 	sel = (UINT)-1;
@@ -300,7 +311,7 @@ static void remakefddlist(HWND hwnd, TOOLFDD *fdd) {
 	setlist(hwnd, fdd, sel);
 }
 
-static void accdraw(HWND hWnd, BYTE count) {
+static void accdraw(HWND hWnd, UINT8 count) {
 
 	HDC			hdc;
 	PAINTSTRUCT	ps;
@@ -321,7 +332,7 @@ static LRESULT CALLBACK twsub(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	int		dir;
 	UINT	newidc;
 	int		files;
-	char	fname[MAX_PATH];
+	OEMCHAR	fname[MAX_PATH];
 
 	idc = GetWindowLong(hWnd, GWL_ID) - IDC_BASE;
 	if (idc >= IDC_MAXITEMS) {
@@ -353,7 +364,13 @@ static LRESULT CALLBACK twsub(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	else if (msg == WM_DROPFILES) {
    	    files = DragQueryFile((HDROP)wp, (UINT)-1, NULL, 0);
 		if (files == 1) {
-			DragQueryFile((HDROP)wp, 0, fname, sizeof(fname));
+#if defined(OSLANG_UTF8)
+			TCHAR tchr[MAX_PATH];
+			DragQueryFile((HDROP)wp, 0, tchr, NELEMENTS(tchr));
+			tchartooem(fname, NELEMENTS(fname), tchr, -1);
+#else
+			DragQueryFile((HDROP)wp, 0, fname, NELEMENTS(fname));
+#endif
 			if (idc == IDC_TOOLFDD1LIST) {
 				diskdrv_setfdd(0, fname, 0);
 				toolwin_setfdd(0, fname);
@@ -388,17 +405,16 @@ static LRESULT CALLBACK twsub(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 static void toolwincreate(HWND hWnd) {
 
-	HDC			hdc;
-const SUBITEM	*p;
-	UINT		i;
-	HWND		sub;
-const char		*cls;
-	DWORD		style;
-
+#if defined(OSLANG_UTF8)
+	TCHAR fontface[64];
+	oemtotchar(fontface, NELEMENTS(fontface), toolskin.font, -1);
+#else
+	const TCHAR *fontface = toolskin.font;
+#endif
 	toolwin.hfont = CreateFont(toolskin.fontsize, 0, 0, 0, 0, 0, 0, 0,
 					SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-					DEFAULT_QUALITY, FIXED_PITCH, toolskin.font);
-    hdc = GetDC(NULL);
+					DEFAULT_QUALITY, FIXED_PITCH, fontface);
+	HDC hdc = GetDC(NULL);
 	toolwin.hdcfont = CreateCompatibleDC(hdc);
 	ReleaseDC(NULL, hdc);
 	SelectObject(toolwin.hdcfont, toolwin.hfont);
@@ -406,10 +422,12 @@ const char		*cls;
 	toolwin.access[0] = CreateSolidBrush(0x000060);
 	toolwin.access[1] = CreateSolidBrush(0x0000ff);
 
-	p = subitem;
+	const SUBITEM *p = subitem;
+	UINT i;
 	for (i=0; i<IDC_MAXITEMS; i++) {
-		sub = NULL;
-		cls = NULL;
+		HWND sub = NULL;
+		const TCHAR *cls = NULL;
+		DWORD style;
 		switch(p->tctl) {
 			case TCTL_STATIC:
 				cls = str_static;
@@ -433,7 +451,13 @@ const char		*cls;
 				break;
 		}
 		if ((cls) && (p->width > 0) && (p->height > 0)) {
-			sub = CreateWindow(cls, p->text, WS_CHILD | WS_VISIBLE | style,
+#if defined(OSLANG_UTF8)
+			TCHAR ptext[64];
+			oemtotchar(ptext, NELEMENTS(ptext), p->text, -1);
+#else
+			const TCHAR *ptext = p->text;
+#endif
+			sub = CreateWindow(cls, ptext, WS_CHILD | WS_VISIBLE | style,
 							p->posx, p->posy, p->width, p->height,
 							hWnd, (HMENU)(i + IDC_BASE), hInst, NULL);
 		}
@@ -448,7 +472,7 @@ const char		*cls;
 		p++;
 	}
 	for (i=0; i<FDDLIST_DRV; i++) {
-		sub = toolwin.sub[fddlist[i]];
+		HWND sub = toolwin.sub[fddlist[i]];
 		if (sub) {
 			DragAcceptFiles(sub, TRUE);
 			remakefddlist(sub, np2tool.fdd + i);
@@ -541,15 +565,15 @@ static void tooldrawbutton(HWND hWnd, UINT idc, LPDRAWITEMSTRUCT lpdis) {
 
 static HMENU createskinmenu(void) {
 
-	HMENU	ret;
-	UINT	cnt;
-const char	*base;
-	UINT	flag;
-	char	*p;
-	UINT	i;
-	UINT	j;
-	UINT	id[SKINMRU_MAX];
-const char	*file[SKINMRU_MAX];
+	HMENU		ret;
+	UINT		cnt;
+const OEMCHAR	*base;
+	UINT		flag;
+	OEMCHAR		*p;
+	UINT		i;
+	UINT		j;
+	UINT		id[SKINMRU_MAX];
+const OEMCHAR	*file[SKINMRU_MAX];
 
 	ret = CreatePopupMenu();
 	AppendMenu(ret, MF_STRING, IDM_SKINSEL, str_skinsel);
@@ -578,14 +602,20 @@ const char	*file[SKINMRU_MAX];
 	for (i=0; i<cnt; i++) {
 		j = id[i];
 		flag = (!file_cmpname(base, np2tool.skinmru[j]))?MF_CHECKED:0;
-		AppendMenu(ret, MF_STRING + flag, IDM_SKINMRU + j, file[j]);
+#if defined(OSLANG_UTF8)
+		TCHAR path[MAX_PATH];
+		oemtotchar(path, NELEMENTS(path), file[j], -1);
+#else
+		const TCHAR *path = file[j];
+#endif
+		AppendMenu(ret, MF_STRING + flag, IDM_SKINMRU + j, path);
 	}
 	return(ret);
 }
 
 static void skinchange(HWND hWnd) {
 
-const char		*p;
+const OEMCHAR	*p;
 	UINT		i;
 	HBITMAP		hbmp;
 	BITMAP		bmp;
@@ -603,7 +633,7 @@ const char		*p;
 												sizeof(np2tool.skinmru[0]));
 			i--;
 		}
-		file_cpyname(np2tool.skinmru[0], p, sizeof(np2tool.skinmru[0]));
+		file_cpyname(np2tool.skinmru[0], p, NELEMENTS(np2tool.skinmru[0]));
 	}
 	ModifyMenu(np2class_gethmenu(hWnd), 0, MF_BYPOSITION | MF_POPUP,
 									(UINT)createskinmenu(), str_toolskin);
@@ -740,7 +770,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				case IDM_SKINSEL:
 					soundmng_disable(SNDPROC_TOOL);
 					r = dlgs_selectfile(hWnd, &skinui, np2tool.skin,
-											sizeof(np2tool.skin), NULL);
+											NELEMENTS(np2tool.skin), NULL);
 					soundmng_enable(SNDPROC_TOOL);
 					if (r) {
 						skinchange(hWnd);
@@ -758,7 +788,7 @@ static LRESULT CALLBACK twproc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				case IDM_SKINMRU + 3:
 					file_cpyname(np2tool.skin,
 									np2tool.skinmru[LOWORD(wp) - IDM_SKINMRU],
-									sizeof(np2tool.skin));
+									NELEMENTS(np2tool.skin));
 					skinchange(hWnd);
 					break;
 
@@ -940,11 +970,11 @@ HWND toolwin_gethwnd(void) {
 	return(toolwin.hwnd);
 }
 
-void toolwin_setfdd(BYTE drv, const char *name) {
+void toolwin_setfdd(UINT8 drv, const OEMCHAR *name) {
 
 	TOOLFDD	*fdd;
-	char	*q;
-	char	*p;
+	OEMCHAR	*q;
+	OEMCHAR	*p;
 	UINT	i;
 	HWND	sub;
 
@@ -962,16 +992,16 @@ void toolwin_setfdd(BYTE drv, const char *name) {
 			if (!file_cmpname(q, name)) {
 				break;
 			}
-			q += sizeof(fdd->name[0]);
+			q += NELEMENTS(fdd->name[0]);
 		}
-		p = q - sizeof(fdd->name[0]);
+		p = q - NELEMENTS(fdd->name[0]);
 		while(i > 0) {
 			i--;
 			CopyMemory(q, p, sizeof(fdd->name[0]));
-			p -= sizeof(fdd->name[0]);
-			q -= sizeof(fdd->name[0]);
+			p -= NELEMENTS(fdd->name[0]);
+			q -= NELEMENTS(fdd->name[0]);
 		}
-		file_cpyname(fdd->name[0], name, sizeof(fdd->name[0]));
+		file_cpyname(fdd->name[0], name, NELEMENTS(fdd->name[0]));
 	}
 	sysmng_update(SYS_UPDATEOSCFG);
 	if (toolwin.hwnd != NULL) {
@@ -983,7 +1013,7 @@ void toolwin_setfdd(BYTE drv, const char *name) {
 	}
 }
 
-static void setdiskacc(UINT num, BYTE count) {
+static void setdiskacc(UINT num, UINT8 count) {
 
 const DISKACC	*acc;
 	HWND		sub;
@@ -991,7 +1021,7 @@ const DISKACC	*acc;
 	if (toolwin.hwnd == NULL) {
 		return;
 	}
-	if (num < (sizeof(diskacc)/sizeof(DISKACC))) {
+	if (num < NELEMENTS(diskacc)) {
 		acc = diskacc + num;
 		sub = NULL;
 		if (*(acc->counter) == 0) {
@@ -1004,23 +1034,23 @@ const DISKACC	*acc;
 	}
 }
 
-void toolwin_fddaccess(BYTE drv) {
+void toolwin_fddaccess(UINT8 drv) {
 
 	if (drv < 2) {
 		setdiskacc(drv, 20);
 	}
 }
 
-void toolwin_hddaccess(BYTE drv) {
+void toolwin_hddaccess(UINT8 drv) {
 
 	setdiskacc(2, 10);
 }
 
-void toolwin_draw(BYTE frame) {
+void toolwin_draw(UINT8 frame) {
 
 const DISKACC	*acc;
 const DISKACC	*accterm;
-	BYTE		counter;
+	UINT8		counter;
 	HWND		sub;
 
 	if (toolwin.hwnd == NULL) {
@@ -1030,7 +1060,7 @@ const DISKACC	*accterm;
 		frame = 1;
 	}
 	acc = diskacc;
-	accterm = acc + (sizeof(diskacc)/sizeof(DISKACC));
+	accterm = acc + NELEMENTS(diskacc);
 	while(acc < accterm) {
 		counter = *acc->counter;
 		if (counter) {
@@ -1052,51 +1082,51 @@ const DISKACC	*accterm;
 
 // ----
 
-static const char ini_title[] = "NP2 tool";
+static const OEMCHAR ini_title[] = OEMTEXT("NP2 tool");
 
-static const INITBL iniitem[] = {
-	{"WindposX", INITYPE_SINT32,	&np2tool.posx,			0},
-	{"WindposY", INITYPE_SINT32,	&np2tool.posy,			0},
-	{"WindType", INITYPE_BOOL,		&np2tool.type,			0},
-	{"SkinFile", INITYPE_STR,		np2tool.skin,			MAX_PATH},
-	{"SkinMRU0", INITYPE_STR,		np2tool.skinmru[0],		MAX_PATH},
-	{"SkinMRU1", INITYPE_STR,		np2tool.skinmru[1],		MAX_PATH},
-	{"SkinMRU2", INITYPE_STR,		np2tool.skinmru[2],		MAX_PATH},
-	{"SkinMRU3", INITYPE_STR,		np2tool.skinmru[3],		MAX_PATH},
-	{"FD1NAME0", INITYPE_STR,		np2tool.fdd[0].name[0],	MAX_PATH},
-	{"FD1NAME1", INITYPE_STR,		np2tool.fdd[0].name[1],	MAX_PATH},
-	{"FD1NAME2", INITYPE_STR,		np2tool.fdd[0].name[2],	MAX_PATH},
-	{"FD1NAME3", INITYPE_STR,		np2tool.fdd[0].name[3],	MAX_PATH},
-	{"FD1NAME4", INITYPE_STR,		np2tool.fdd[0].name[4],	MAX_PATH},
-	{"FD1NAME5", INITYPE_STR,		np2tool.fdd[0].name[5],	MAX_PATH},
-	{"FD1NAME6", INITYPE_STR,		np2tool.fdd[0].name[6],	MAX_PATH},
-	{"FD1NAME7", INITYPE_STR,		np2tool.fdd[0].name[7],	MAX_PATH},
-	{"FD2NAME0", INITYPE_STR,		np2tool.fdd[1].name[0],	MAX_PATH},
-	{"FD2NAME1", INITYPE_STR,		np2tool.fdd[1].name[1],	MAX_PATH},
-	{"FD2NAME2", INITYPE_STR,		np2tool.fdd[1].name[2],	MAX_PATH},
-	{"FD2NAME3", INITYPE_STR,		np2tool.fdd[1].name[3],	MAX_PATH},
-	{"FD2NAME4", INITYPE_STR,		np2tool.fdd[1].name[4],	MAX_PATH},
-	{"FD2NAME5", INITYPE_STR,		np2tool.fdd[1].name[5],	MAX_PATH},
-	{"FD2NAME6", INITYPE_STR,		np2tool.fdd[1].name[6],	MAX_PATH},
-	{"FD2NAME7", INITYPE_STR,		np2tool.fdd[1].name[7],	MAX_PATH}};
+static const PFTBL iniitem[] = {
+	PFVAL("WindposX", PFTYPE_SINT32,	&np2tool.posx),
+	PFVAL("WindposY", PFTYPE_SINT32,	&np2tool.posy),
+	PFVAL("WindType", PFTYPE_BOOL,		&np2tool.type),
+	PFSTR("SkinFile", PFTYPE_STR,		np2tool.skin),
+	PFSTR("SkinMRU0", PFTYPE_STR,		np2tool.skinmru[0]),
+	PFSTR("SkinMRU1", PFTYPE_STR,		np2tool.skinmru[1]),
+	PFSTR("SkinMRU2", PFTYPE_STR,		np2tool.skinmru[2]),
+	PFSTR("SkinMRU3", PFTYPE_STR,		np2tool.skinmru[3]),
+	PFSTR("FD1NAME0", PFTYPE_STR,		np2tool.fdd[0].name[0]),
+	PFSTR("FD1NAME1", PFTYPE_STR,		np2tool.fdd[0].name[1]),
+	PFSTR("FD1NAME2", PFTYPE_STR,		np2tool.fdd[0].name[2]),
+	PFSTR("FD1NAME3", PFTYPE_STR,		np2tool.fdd[0].name[3]),
+	PFSTR("FD1NAME4", PFTYPE_STR,		np2tool.fdd[0].name[4]),
+	PFSTR("FD1NAME5", PFTYPE_STR,		np2tool.fdd[0].name[5]),
+	PFSTR("FD1NAME6", PFTYPE_STR,		np2tool.fdd[0].name[6]),
+	PFSTR("FD1NAME7", PFTYPE_STR,		np2tool.fdd[0].name[7]),
+	PFSTR("FD2NAME0", PFTYPE_STR,		np2tool.fdd[1].name[0]),
+	PFSTR("FD2NAME1", PFTYPE_STR,		np2tool.fdd[1].name[1]),
+	PFSTR("FD2NAME2", PFTYPE_STR,		np2tool.fdd[1].name[2]),
+	PFSTR("FD2NAME3", PFTYPE_STR,		np2tool.fdd[1].name[3]),
+	PFSTR("FD2NAME4", PFTYPE_STR,		np2tool.fdd[1].name[4]),
+	PFSTR("FD2NAME5", PFTYPE_STR,		np2tool.fdd[1].name[5]),
+	PFSTR("FD2NAME6", PFTYPE_STR,		np2tool.fdd[1].name[6]),
+	PFSTR("FD2NAME7", PFTYPE_STR,		np2tool.fdd[1].name[7])};
 
 void toolwin_readini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	ZeroMemory(&np2tool, sizeof(np2tool));
 	np2tool.posx = CW_USEDEFAULT;
 	np2tool.posy = CW_USEDEFAULT;
 	np2tool.type = 1;
-	initgetfile(path, sizeof(path));
-	ini_read(path, ini_title, iniitem, sizeof(iniitem)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_read(path, ini_title, iniitem, NELEMENTS(iniitem));
 }
 
 void toolwin_writeini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	initgetfile(path, sizeof(path));
-	ini_write(path, ini_title, iniitem, sizeof(iniitem)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_write(path, ini_title, iniitem, NELEMENTS(iniitem));
 }
 

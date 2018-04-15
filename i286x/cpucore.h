@@ -163,7 +163,7 @@ typedef struct {
 	UINT16	prefix;
 	UINT8	trap;
 	UINT8	resetreq;						// ver0.72
-	BYTE	prefetchque[4];
+	UINT8	prefetchque[4];
 	I286DTR	GDTR;
 	UINT16	MSW;
 	I286DTR	IDTR;
@@ -182,9 +182,9 @@ typedef struct {
 } I286STAT;
 
 typedef struct {							// for ver0.73
-	BYTE	*ext;
+	UINT8	*ext;
 	UINT32	extsize;
-	BYTE	*ems[4];
+	UINT8	*ems[4];
 	UINT32	repbak;
 	UINT32	inport;
 } I286EXT;
@@ -210,7 +210,7 @@ void i286x_resetprefetch(void);
 void i286x_setextsize(UINT32 size);
 void i286x_setemm(UINT frame, UINT32 addr);
 
-void CPUCALL i286x_interrupt(BYTE vect);
+void CPUCALL i286x_interrupt(UINT8 vect);
 
 void i286x(void);
 void i286x_step(void);
@@ -240,6 +240,16 @@ void v30x_step(void);
 #define	CPU_ES			i286core.s.r.w.es
 #define	CPU_SS			i286core.s.r.w.ss
 #define	CPU_IP			i286core.s.r.w.ip
+
+#define	CPU_EAX			i286core.s.r.w.ax
+#define	CPU_EBX			i286core.s.r.w.bx
+#define	CPU_ECX			i286core.s.r.w.cx
+#define	CPU_EDX			i286core.s.r.w.dx
+#define	CPU_ESI			i286core.s.r.w.si
+#define	CPU_EDI			i286core.s.r.w.di
+#define	CPU_EBP			i286core.s.r.w.bp
+#define	CPU_ESP			i286core.s.r.w.sp
+#define	CPU_EIP			i286core.s.r.w.ip
 
 #define	ES_BASE			i286core.s.es_base
 #define	CS_BASE			i286core.s.cs_base
@@ -279,7 +289,7 @@ void v30x_step(void);
 						i286core.s.trap = 0;
 #define	CPU_STI			i286core.s.r.w.flag |= I_FLAG;						\
 						i286core.s.trap = (i286core.s.r.w.flag >> 8) & 1;
-#define	CPU_A20EN(en)	CPU_ADRSMASK = (en)?0xfffffff:0x000fffff;
+#define	CPU_A20EN(en)	CPU_ADRSMASK = (en)?0x00ffffff:0x000fffff;
 
 #define	CPU_INITIALIZE				i286x_initialize
 #define	CPU_DEINITIALIZE			i286x_deinitialize
@@ -291,4 +301,6 @@ void v30x_step(void);
 #define	CPU_SHUT					i286x_shut
 #define	CPU_SETEXTSIZE(size)		i286x_setextsize((UINT32)(size) << 20)
 #define	CPU_SETEMM(frame, addr)		i286x_setemm(frame, addr)
+
+#define	CPU_STEPEXEC				i286x_step
 

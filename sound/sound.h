@@ -36,7 +36,7 @@ const SINT32 *sound_pcmlock(void);
 void sound_pcmunlock(const SINT32 *hdl);
 
 #if defined(SUPPORT_WAVEREC)
-BOOL sound_recstart(const char *filename);
+BOOL sound_recstart(const OEMCHAR *filename);
 void sound_recstop(void);
 #endif
 
@@ -82,8 +82,8 @@ typedef struct {
 extern "C" {
 #endif
 
-BOOL pcmmix_regist(PMIXDAT *dat, void *datptr, UINT datsize, UINT rate);
-BOOL pcmmix_regfile(PMIXDAT *dat, const char *fname, UINT rate);
+BRESULT pcmmix_regist(PMIXDAT *dat, void *datptr, UINT datsize, UINT rate);
+BRESULT pcmmix_regfile(PMIXDAT *dat, const OEMCHAR *fname, UINT rate);
 
 void SOUNDCALL pcmmix_getpcm(PCMMIX hdl, SINT32 *pcm, UINT count);
 

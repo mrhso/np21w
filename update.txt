@@ -86,6 +86,53 @@
 
 // ----
 
+　ver0.80 → ver0.81
+　・80286 (x86版) - rep ins, ２バイトmov8命令の不都合修正
+　・80286 (x86版) - クロック修正 (enter)
+　・80286 (C版) - クロック修正 (cmp, jcc, test, enter)
+　・80286 (ARM版) - pop ss命令の修正
+　・80286 (ARM版) - クロック修正 (cmp, jcc, test, enter)
+　・80286 (C版) - rep outsw命令を修正
+　・MPU-PC98II - conductor修正
+　・MPU-PC98II - Request PC/Tempo コマンドの追加
+　・DMA - セルフイニシャライズを追加
+　・GDC - ソフトリセット時のフラグ修正
+　・GRCG - ソフトリセット時のフラグ修正
+　・PIT - シリアルカウンタの修正
+　・MOUSE - 割り込み修正
+　・ATRIC - 時間巻き戻りバグ修正
+　・SOUND - アドレスバスの修正
+　・WSS - データ転送サイズの修正
+　・BIOS - 1842h スクリーンモードを破壊する不都合修正 (ver0.75エンバグ)
+　・BIOS - CRTBIOSフラグ修正 (PC-9821モード)
+　・BIOS - FDDアクセス時にstatsaveを行なうと復帰できなくなる不都合修正
+　・一部(というか大部分…)のキーボードのmake/break関係を修正
+
+　・メモリを修正(C版コア)
+　・16MB以上のメモリをサポート(IA32)
+
+　・内部変更
+　　たぶん
+　　　#define OEMTEXT(string)    (string)
+　　を
+　　　#define OEMTEXT(string)    string
+　　にする必要がある。
+
+　　CPUフォルダの DMA EGC等がほぼ同様のコードなので memフォルダへ移動し
+　　共通にしました。
+
+　　embedのShift-JISを ネイティブコードにしました。
+　　文字コードがEUCの環境では SUPPORT_SJISは不要になります。
+　　また、fontmng_getsize, fontmng_getdrawsizeの引き数の文字コードが
+　　SJISからEUCへ変更になっています。
+
+　　codecnvとucscnvを /codecnv へ移動しました。
+
+　　pccore.cとかにあるデバグコードがウザイので trapフォルダへ移動。
+　　ENABLE_TRAPが定義されてなければ見る必要はありません。
+
+
+
 　ver0.79 → ver0.80
 　・BIOS - スクロールコマンド修正
 　・BIOS - システムポートの修正(i286/V30ではほぼ無意味)

@@ -34,13 +34,13 @@ typedef struct {
 	long	fptr;
 	UINT	size;
 	BOOL	write;
-	BYTE	buf[D88BUFSIZE];
+	UINT8	buf[D88BUFSIZE];
 } _D88TRK, *D88TRK;
 
 static	_D88TRK		d88trk;
 
 
-static BOOL d88trk_flushdata(D88TRK trk) {
+static BRESULT d88trk_flushdata(D88TRK trk) {
 
 	FDDFILE		fdd;
 	FILEH		fh;
@@ -71,7 +71,7 @@ dtfd_err1:
 	return(FAILURE);
 }
 
-static BOOL d88trk_read(D88TRK trk, FDDFILE fdd, UINT track, UINT type) {
+static BRESULT d88trk_read(D88TRK trk, FDDFILE fdd, UINT track, UINT type) {
 
 	UINT8	rpm;
 	FILEH	fh;
@@ -146,7 +146,7 @@ dtrd_err1:
 }
 
 
-static BOOL rpmcheck(D88SEC sec) {
+static BRESULT rpmcheck(D88SEC sec) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
 	UINT8	rpm;
@@ -193,7 +193,7 @@ static void drvflush(FDDFILE fdd) {
 	}
 }
 
-static BOOL trkseek(FDDFILE fdd, UINT track) {
+static BRESULT trkseek(FDDFILE fdd, UINT track) {
 
 	D88TRK	trk;
 	BOOL	r;
@@ -212,7 +212,7 @@ static BOOL trkseek(FDDFILE fdd, UINT track) {
 
 static D88SEC searchsector_d88(BOOL check) {			// ver0.29
 
-	BYTE	*p;
+	UINT8	*p;
 	UINT	sec;
 	UINT	pos = 0;
 	UINT	nsize;
@@ -263,7 +263,7 @@ static D88SEC searchsector_d88(BOOL check) {			// ver0.29
 
 // ----
 
-BOOL fddd88_set(FDDFILE fdd, const char *fname, int ro) {
+BRESULT fddd88_set(FDDFILE fdd, const OEMCHAR *fname, int ro) {
 
 	short	attr;
 	FILEH	fh;
@@ -285,7 +285,6 @@ BOOL fddd88_set(FDDFILE fdd, const char *fname, int ro) {
 		goto fdst_err;
 	}
 	fdd->type = DISKTYPE_D88;
-	file_cpyname(fdd->fname, fname, sizeof(fdd->fname));
 	fdd->protect = ((attr & 1) || (fdd->inf.d88.head.protect & 0x10) ||
 															(ro))?TRUE:FALSE;
 	fdd->inf.d88.fdtype_major = fdd->inf.d88.head.fd_type >> 4;
@@ -300,7 +299,7 @@ fdst_err:
 	return(FAILURE);
 }
 
-BOOL fddd88_eject(FDDFILE fdd) {
+BRESULT fddd88_eject(FDDFILE fdd) {
 
 	drvflush(fdd);
 	fdd->fname[0] = '\0';
@@ -310,7 +309,7 @@ BOOL fddd88_eject(FDDFILE fdd) {
 }
 
 
-BOOL fdd_diskaccess_d88(void) {										// ver0.31
+BRESULT fdd_diskaccess_d88(void) {									// ver0.31
 
 	FDDFILE	fdd = fddfile + fdc.us;
 	UINT8	rpm;
@@ -340,14 +339,14 @@ BOOL fdd_diskaccess_d88(void) {										// ver0.31
 	return(SUCCESS);
 }
 
-BOOL fdd_seek_d88(void) {
+BRESULT fdd_seek_d88(void) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
 
 	return(trkseek(fdd, (fdc.ncn << 1) + fdc.hd));
 }
 
-BOOL fdd_seeksector_d88(void) {
+BRESULT fdd_seeksector_d88(void) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
 
@@ -360,7 +359,7 @@ BOOL fdd_seeksector_d88(void) {
 	return(SUCCESS);
 }
 
-BOOL fdd_read_d88(void) {
+BRESULT fdd_read_d88(void) {
 
 	FDDFILE		fdd = fddfile + fdc.us;
 	D88SEC		p;
@@ -396,7 +395,7 @@ BOOL fdd_read_d88(void) {
 	return(SUCCESS);
 }
 
-BOOL fdd_write_d88(void) {
+BRESULT fdd_write_d88(void) {
 
 	FDDFILE		fdd = fddfile + fdc.us;
 	D88SEC		p;
@@ -431,10 +430,10 @@ BOOL fdd_write_d88(void) {
 	return(SUCCESS);
 }
 
-BOOL fdd_readid_d88(void) {
+BRESULT fdd_readid_d88(void) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
-	BYTE	*p;
+	UINT8	*p;
 	UINT	sec;
 	UINT	pos = 0;
 	UINT	sectors;
@@ -484,8 +483,8 @@ BOOL fdd_readid_d88(void) {
 
 // えーと…こんなところにあって大丈夫？
 static BOOL formating = FALSE;
-static BYTE formatsec = 0;
-static BYTE formatwrt = 0;
+static UINT8 formatsec = 0;
+static UINT8 formatwrt = 0;
 static UINT formatpos = 0;
 
 static int fileappend(FILEH hdl, FDDFILE fdd,
@@ -495,7 +494,7 @@ static int fileappend(FILEH hdl, FDDFILE fdd,
 	UINT	size;
 	UINT	rsize;
 	int		t;
-	BYTE	tmp[0x400];							// Stack 0x1000->0x400
+	UINT8	tmp[0x400];							// Stack 0x1000->0x400
 	UINT32	cur;
 
 	if ((length = last - ptr) <= 0) {			// 書き換える必要なし
@@ -527,7 +526,7 @@ static int fileappend(FILEH hdl, FDDFILE fdd,
 }
 
 
-static void endoftrack(UINT fmtsize, BYTE sectors) {
+static void endoftrack(UINT fmtsize, UINT8 sectors) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
 
@@ -594,7 +593,7 @@ static void endoftrack(UINT fmtsize, BYTE sectors) {
 }
 
 
-BOOL fdd_formatinit_d88(void) {
+BRESULT fdd_formatinit_d88(void) {
 
 	if (fdc.treg[fdc.us] < 82) {
 		formating = TRUE;
@@ -608,7 +607,7 @@ BOOL fdd_formatinit_d88(void) {
 }
 
 	// todo アンフォーマットとか ディスク１周した時の切り捨てとか…
-BOOL fdd_formating_d88(const BYTE *ID) {
+BRESULT fdd_formating_d88(const UINT8 *ID) {
 
 	FDDFILE	fdd = fddfile + fdc.us;
 

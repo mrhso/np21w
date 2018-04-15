@@ -148,11 +148,11 @@ void gdc_analogext(BOOL extend) {
 
 	if (extend) {
 		gdc.analog |= (1 << GDCANALOG_256);
-		vramop.operate |= 0x20;
+		vramop.operate |= (1 << VOPBIT_VGA);
 	}
 	else {
 		gdc.analog &= ~(1 << (GDCANALOG_256));
-		vramop.operate &= ~0x20;
+		vramop.operate &= ~(1 << VOPBIT_VGA);
 	}
 	gdcs.palchange = GDCSCRN_REDRAW;
 	gdcs.grphdisp |= GDCSCRN_EXT | GDCSCRN_ALLDRAW2;
@@ -417,7 +417,7 @@ const GDCCLK	*clk;
 
 void gdc_restorekacmode(void) {
 
-	BYTE	bit;
+	UINT8	bit;
 
 	bit = (((!np2cfg.uPD72020) && (gdc.mode1 & 0x20))?0x00:0xff);
 	if (gdc.bitac != bit) {
@@ -503,16 +503,16 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 					gdc.analog &= ~(1 << GDCANALOG_16);
 					gdc.analog |= (dat << GDCANALOG_16);
 					gdcs.palchange = GDCSCRN_REDRAW;
-					vramop.operate &= VOP_ANALOGMASK;
-					vramop.operate |= dat << 4;
+					vramop.operate &= ~(1 << VOPBIT_ANALOG);
+					vramop.operate |= dat << VOPBIT_ANALOG;
 					i286_vram_dispatch(vramop.operate);
 				}
 				break;
 
 			case 2:
 				if ((gdc.mode2 & 0x08) && (grcg.chip == 3)) {
-					vramop.operate &= VOP_EGCMASK;
-					vramop.operate |= dat << 1;
+					vramop.operate &= ~(1 << VOPBIT_EGC);
+					vramop.operate |= dat << VOPBIT_EGC;
 					i286_vram_dispatch(vramop.operate);
 				}
 				break;
@@ -713,10 +713,11 @@ static void IOOUTCALL gdc_oa4(UINT port, REG8 dat) {
 
 static void IOOUTCALL gdc_oa6(UINT port, REG8 dat) {
 
-	if ((gdcs.access ^ dat) & 1) {
-		gdcs.access = dat & 1;
-		vramop.operate &= VOP_ACCESSMASK;
-		vramop.operate |= gdcs.access;
+	dat = dat & 1;
+	if (gdcs.access != dat) {
+		gdcs.access = (UINT8)dat;
+		vramop.operate &= ~(1 << VOPBIT_ACCESS);
+		vramop.operate |= dat << VOPBIT_ACCESS;
 		i286_vram_dispatch(vramop.operate);
 	}
 	(void)port;
@@ -1045,7 +1046,8 @@ static const IOINP gdcia0[8] = {
 void gdc_biosreset(void) {
 
 #if defined(SUPPORT_PC9821)
-	UINT	i, j;
+	UINT	i;
+	UINT	j;
 	UINT8	tmp;
 	UINT8	*pal;
 #endif
@@ -1085,12 +1087,18 @@ void gdc_biosreset(void) {
 	gdcs.access = 0;
 	gdc.analog &= ~(1 << GDCANALOG_16);
 	gdcs.palchange = GDCSCRN_REDRAW;
-	vramop.operate &= VOP_ACCESSMASK;
-	vramop.operate &= VOP_EGCMASK;
-	vramop.operate &= VOP_ANALOGMASK;
+
+	gdc.mode2 &= ~(1 << 0);
+	gdc.mode2 &= ~(1 << 2);
+	gdc.mode2 &= ~(1 << 3);
+	gdcs.mode2 = gdc.mode2;
+
+	vramop.operate &= ~(1 << VOPBIT_ACCESS);
+	vramop.operate &= ~(1 << VOPBIT_EGC);
+	vramop.operate &= ~(1 << VOPBIT_ANALOG);
 #if defined(SUPPORT_PC9821)
 	gdc.analog &= ~(1 << (GDCANALOG_256));
-	vramop.operate &= ~0x20;
+	vramop.operate &= ~(1 << VOPBIT_VGA);
 #endif
 	i286_vram_dispatch(vramop.operate);
 

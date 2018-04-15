@@ -4,8 +4,11 @@
 #include	"v30patch.h"
 #include	"pccore.h"
 #include	"iocore.h"
-#include	"dmap.h"
+#include	"dmax86.h"
 #include	"i286c.mcr"
+#if defined(ENABLE_TRAP)
+#include	"steptrap.h"
+#endif
 
 
 	I286CORE	i286core;
@@ -180,17 +183,33 @@ void i286c_shut(void) {
 void i286c_setextsize(UINT32 size) {
 
 	if (CPU_EXTMEMSIZE != size) {
-		if (CPU_EXTMEM) {
-			_MFREE(CPU_EXTMEM);
+		UINT8 *extmem;
+		extmem = CPU_EXTMEM;
+		if (extmem != NULL) {
+			_MFREE(extmem);
+			extmem = NULL;
+		}
+		if (size != 0) {
+			extmem = (UINT8 *)_MALLOC(size + 16, "EXTMEM");
+		}
+		if (extmem != NULL) {
+			CPU_EXTMEM = extmem;
+			CPU_EXTMEMSIZE = size;
+			CPU_EXTMEMBASE = CPU_EXTMEM - 0x100000;
+			CPU_EXTLIMIT16 = min(size + 0x100000, 0xf00000);
+#if defined(CPU_EXTLIMIT)
+			CPU_EXTLIMIT = size + 0x100000;
+#endif
+		}
+		else {
 			CPU_EXTMEM = NULL;
+			CPU_EXTMEMSIZE = 0;
+			CPU_EXTMEMBASE = NULL;
+			CPU_EXTLIMIT16 = 0;
+#if defined(CPU_EXTLIMIT)
+			CPU_EXTLIMIT = 0;
+#endif
 		}
-		if (size) {
-			CPU_EXTMEM = (BYTE *)_MALLOC(size + 16, "EXTMEM");
-			if (CPU_EXTMEM == NULL) {
-				size = 0;
-			}
-		}
-		CPU_EXTMEMSIZE = size;
 	}
 	i286core.e.ems[0] = mem + 0xc0000;
 	i286core.e.ems[1] = mem + 0xc4000;
@@ -200,7 +219,7 @@ void i286c_setextsize(UINT32 size) {
 
 void i286c_setemm(UINT frame, UINT32 addr) {
 
-	BYTE	*ptr;
+	UINT8	*ptr;
 
 	frame &= 3;
 	if (addr < USE_HIMEM) {
@@ -218,7 +237,7 @@ void i286c_setemm(UINT frame, UINT32 addr) {
 
 void CPUCALL i286c_intnum(UINT vect, REG16 IP) {
 
-const BYTE	*ptr;
+const UINT8	*ptr;
 
 	REGPUSH0(REAL_FLAGREG)
 	REGPUSH0(I286_CS)
@@ -237,7 +256,7 @@ const BYTE	*ptr;
 void CPUCALL i286c_interrupt(REG8 vect) {
 
 	UINT	op;
-const BYTE	*ptr;
+const UINT8	*ptr;
 
 	op = i286_memoryread(I286_IP + CS_BASE);
 	if (op == 0xf4) {							// hlt
@@ -263,23 +282,32 @@ void i286c(void) {
 
 	if (I286_TRAP) {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			i286op[opcode]();
 			if (I286_TRAP) {
 				i286c_interrupt(1);
 			}
-			dmap_i286();
+			dmax86();
 		} while(I286_REMCLOCK > 0);
 	}
 	else if (dmac.working) {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			i286op[opcode]();
-			dmap_i286();
+			dmax86();
 		} while(I286_REMCLOCK > 0);
 	}
 	else {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			i286op[opcode]();
 		} while(I286_REMCLOCK > 0);
@@ -300,14 +328,14 @@ void i286c_step(void) {
 	if (I286_OV) {
 		I286_FLAG |= (O_FLAG);
 	}
-	dmap_i286();
+	dmax86();
 }
 
 
 // ---- test
 
 #if defined(I286C_TEST)
-BYTE BYTESZPF(UINT r) {
+UINT8 BYTESZPF(UINT r) {
 
 	if (r & (~0xff)) {
 		TRACEOUT(("BYTESZPF bound error: %x", r));
@@ -315,7 +343,7 @@ BYTE BYTESZPF(UINT r) {
 	return(iflags[r & 0xff]);
 }
 
-BYTE BYTESZPCF(UINT r) {
+UINT8 BYTESZPCF(UINT r) {
 
 	if (r & (~0x1ff)) {
 		TRACEOUT(("BYTESZPCF bound error: %x", r));
@@ -323,10 +351,10 @@ BYTE BYTESZPCF(UINT r) {
 	return(iflags[r & 0x1ff]);
 }
 
-BYTE WORDSZPF(UINT32 r) {
+UINT8 WORDSZPF(UINT32 r) {
 
-	BYTE	f1;
-	BYTE	f2;
+	UINT8	f1;
+	UINT8	f2;
 
 	if (r & (~0xffff)) {
 		TRACEOUT(("WORDSZPF bound error: %x", r));
@@ -341,10 +369,10 @@ BYTE WORDSZPF(UINT32 r) {
 	return(f1);
 }
 
-BYTE WORDSZPCF(UINT32 r) {
+UINT8 WORDSZPCF(UINT32 r) {
 
-	BYTE	f1;
-	BYTE	f2;
+	UINT8	f1;
+	UINT8	f2;
 
 	if ((r & 0xffff0000) && (!(r & 0x00010000))) {
 		TRACEOUT(("WORDSZPCF bound error: %x", r));

@@ -1,5 +1,5 @@
 // CodeWarrior Prefix include file.
-// Used by np2.proj
+// Used by np21.proj
 
 #include	<MacHeadersCarbon.h>
 

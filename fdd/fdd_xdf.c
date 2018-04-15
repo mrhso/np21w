@@ -24,18 +24,18 @@ static const _XDFINFO supportxdf[] = {
 };
 
 typedef struct {
-	BYTE	dummy[4];
-	BYTE	fddtype[4];
-	BYTE	headersize[4];
-	BYTE	fddsize[4];
-	BYTE	sectorsize[4];
-	BYTE	sectors[4];
-	BYTE	surfaces[4];
-	BYTE	cylinders[4];
+	UINT8	dummy[4];
+	UINT8	fddtype[4];
+	UINT8	headersize[4];
+	UINT8	fddsize[4];
+	UINT8	sectorsize[4];
+	UINT8	sectors[4];
+	UINT8	surfaces[4];
+	UINT8	cylinders[4];
 } FDIHDR;
 
 
-BOOL fddxdf_set(FDDFILE fdd, const char *fname, int ro) {
+BRESULT fddxdf_set(FDDFILE fdd, const OEMCHAR *fname, int ro) {
 
 const _XDFINFO	*xdf;
 	short		attr;
@@ -55,12 +55,11 @@ const _XDFINFO	*xdf;
 	file_close(fh);
 
 	xdf = supportxdf;
-	while(xdf < (supportxdf + (sizeof(supportxdf)/sizeof(_XDFINFO)))) {
+	while(xdf < (supportxdf + NELEMENTS(supportxdf))) {
 		size = xdf->tracks;
 		size *= xdf->sectors;
 		size <<= (7 + xdf->n);
 		if (size == fdsize) {
-			file_cpyname(fdd->fname, fname, sizeof(fdd->fname));
 			fdd->type = DISKTYPE_BETA;
 			fdd->protect = ((attr & 1) || (ro))?TRUE:FALSE;
 			fdd->inf.xdf = *xdf;
@@ -72,7 +71,7 @@ const _XDFINFO	*xdf;
 }
 
 // ‚±‚Á‚»‚è‘Î‰ž‚µ‚½‚è‚µ‚Ä
-BOOL fddxdf_setfdi(FDDFILE fdd, const char *fname, int ro) {
+BRESULT fddxdf_setfdi(FDDFILE fdd, const OEMCHAR *fname, int ro) {
 
 	short	attr;
 	FILEH	fh;
@@ -150,7 +149,6 @@ BOOL fddxdf_setfdi(FDDFILE fdd, const char *fname, int ro) {
 		default:
 			return(FAILURE);
 	}
-	file_cpyname(fdd->fname, fname, sizeof(fdd->fname));
 	fdd->type = DISKTYPE_BETA;
 	fdd->protect = ((attr & 1) || (ro))?TRUE:FALSE;
 	fdd->inf.xdf.headersize = headersize;
@@ -162,7 +160,7 @@ BOOL fddxdf_setfdi(FDDFILE fdd, const char *fname, int ro) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_eject(FDDFILE fdd) {
+BRESULT fddxdf_eject(FDDFILE fdd) {
 
 	fdd->fname[0] = '\0';
 	fdd->type = DISKTYPE_NOTREADY;
@@ -170,7 +168,7 @@ BOOL fddxdf_eject(FDDFILE fdd) {
 }
 
 
-BOOL fddxdf_diskaccess(FDDFILE fdd) {
+BRESULT fddxdf_diskaccess(FDDFILE fdd) {
 
 	if ((fdd->type != DISKTYPE_BETA) ||
 		(CTRL_FDMEDIA != fdd->inf.xdf.disktype)) {
@@ -179,7 +177,7 @@ BOOL fddxdf_diskaccess(FDDFILE fdd) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_seek(FDDFILE fdd) {
+BRESULT fddxdf_seek(FDDFILE fdd) {
 
 	if ((fdd->type != DISKTYPE_BETA) ||
 		(CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
@@ -190,7 +188,7 @@ BOOL fddxdf_seek(FDDFILE fdd) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_seeksector(FDDFILE fdd) {
+BRESULT fddxdf_seeksector(FDDFILE fdd) {
 
 	if ((fdd->type != DISKTYPE_BETA) ||
 		(CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
@@ -210,7 +208,7 @@ BOOL fddxdf_seeksector(FDDFILE fdd) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_read(FDDFILE fdd) {
+BRESULT fddxdf_read(FDDFILE fdd) {
 
 	FILEH	hdl;
 	long	seekp;
@@ -249,7 +247,7 @@ BOOL fddxdf_read(FDDFILE fdd) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_write(FDDFILE fdd) {
+BRESULT fddxdf_write(FDDFILE fdd) {
 
 	FILEH	hdl;
 	long	seekp;
@@ -293,7 +291,7 @@ BOOL fddxdf_write(FDDFILE fdd) {
 	return(SUCCESS);
 }
 
-BOOL fddxdf_readid(FDDFILE fdd) {
+BRESULT fddxdf_readid(FDDFILE fdd) {
 
 	fddlasterror = 0x00;
 	if ((!fdc.mf) ||

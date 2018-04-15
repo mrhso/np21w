@@ -50,10 +50,12 @@ typedef struct {
 } _D88INFO, *D88INFO;
 
 typedef struct {
-	char	fname[MAX_PATH];
-	BYTE	type;
-	BYTE	num;
-	BYTE	protect;
+	OEMCHAR	fname[MAX_PATH];
+	UINT	ftype;
+	int		ro;
+	UINT8	type;
+	UINT8	num;
+	UINT8	protect;
 	union {
 		_XDFINFO	xdf;
 		_D88INFO	d88;
@@ -66,31 +68,32 @@ extern "C" {
 #endif
 
 extern	_FDDFILE	fddfile[MAX_FDDFILE];
-extern	BYTE		fddlasterror;
+extern	UINT8		fddlasterror;
 
 // ãNìÆéûÇ…àÍâÒÇæÇØèâä˙âª
 void fddfile_initialize(void);
 
 void fddfile_reset2dmode(void);
 
-const char *fdd_diskname(REG8 drv);
+OEMCHAR *fdd_diskname(REG8 drv);
+OEMCHAR *fdd_getfileex(REG8 drv, UINT *ftype, int *ro);
 BOOL fdd_diskready(REG8 drv);
 BOOL fdd_diskprotect(REG8 drv);
 
-BOOL fdd_set(REG8 drv, const char *fname, UINT ftype, int ro);
-BOOL fdd_eject(REG8 drv);
+BRESULT fdd_set(REG8 drv, const OEMCHAR *fname, UINT ftype, int ro);
+BRESULT fdd_eject(REG8 drv);
 
-BOOL fdd_diskaccess(void);
-BOOL fdd_seek(void);
-BOOL fdd_seeksector(void);
-BOOL fdd_read(void);
-BOOL fdd_write(void);
-BOOL fdd_diagread(void);
-BOOL fdd_readid(void);
-BOOL fdd_writeid(void);
+BRESULT fdd_diskaccess(void);
+BRESULT fdd_seek(void);
+BRESULT fdd_seeksector(void);
+BRESULT fdd_read(void);
+BRESULT fdd_write(void);
+BRESULT fdd_diagread(void);
+BRESULT fdd_readid(void);
+BRESULT fdd_writeid(void);
 
-BOOL fdd_formatinit(void);
-BOOL fdd_formating(const BYTE *ID);
+BRESULT fdd_formatinit(void);
+BRESULT fdd_formating(const UINT8 *ID);
 BOOL fdd_isformating(void);
 
 #ifdef __cplusplus

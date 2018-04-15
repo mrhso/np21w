@@ -12,7 +12,7 @@
 #error : not support CPUCORE_IA32
 #endif
 
-#if !defined(CPUDEBUG)
+#if 1 // !defined(CPUDEBUG)
 enum {
 	I286_MEMREADMAX		= 0xa4000,
 	I286_MEMWRITEMAX	= 0xa0000
@@ -177,9 +177,11 @@ typedef struct {
 } I286STAT;
 
 typedef struct {							// for ver0.73
-	BYTE	*ext;
+	UINT8	*ext;
 	UINT32	extsize;
-	BYTE	*ems[4];
+	UINT8	*extbase;						// ext - 0x100000
+	UINT32	extlimit16mb;					// extsize + 0x100000
+	UINT8	*ems[4];
 	UINT32	inport;
 #if defined(CPUSTRUC_MEMWAIT)
 	UINT8	tramwait;
@@ -240,6 +242,16 @@ void v30c_step(void);
 #define	CPU_SS			i286core.s.r.w.ss
 #define	CPU_IP			i286core.s.r.w.ip
 
+#define	CPU_EAX			i286core.s.r.w.ax
+#define	CPU_EBX			i286core.s.r.w.bx
+#define	CPU_ECX			i286core.s.r.w.cx
+#define	CPU_EDX			i286core.s.r.w.dx
+#define	CPU_ESI			i286core.s.r.w.si
+#define	CPU_EDI			i286core.s.r.w.di
+#define	CPU_EBP			i286core.s.r.w.bp
+#define	CPU_ESP			i286core.s.r.w.sp
+#define	CPU_EIP			i286core.s.r.w.ip
+
 #define	ES_BASE			i286core.s.es_base
 #define	CS_BASE			i286core.s.cs_base
 #define	SS_BASE			i286core.s.ss_base
@@ -268,6 +280,8 @@ void v30c_step(void);
 
 #define	CPU_EXTMEM		i286core.e.ext
 #define	CPU_EXTMEMSIZE	i286core.e.extsize
+#define	CPU_EXTMEMBASE	i286core.e.extbase
+#define	CPU_EXTLIMIT16	i286core.e.extlimit16mb
 #define	CPU_INPADRS		i286core.e.inport
 #define	CPU_EMSPTR		i286core.e.ems
 
@@ -286,7 +300,7 @@ void v30c_step(void);
 						i286core.s.trap = 0;
 #define	CPU_STI			i286core.s.r.w.flag |= I_FLAG;						\
 						i286core.s.trap = (i286core.s.r.w.flag >> 8) & 1;
-#define	CPU_A20EN(en)	CPU_ADRSMASK = (en)?0xfffffff:0x000fffff;
+#define	CPU_A20EN(en)	CPU_ADRSMASK = (en)?0x00ffffff:0x000fffff;
 
 #define	CPU_INITIALIZE				i286c_initialize
 #define	CPU_DEINITIALIZE			i286c_deinitialize
@@ -298,4 +312,6 @@ void v30c_step(void);
 #define	CPU_SHUT					i286c_shut
 #define	CPU_SETEXTSIZE(size)		i286c_setextsize((UINT32)(size) << 20)
 #define	CPU_SETEMM(frame, addr)		i286c_setemm(frame, addr)
+
+#define	CPU_STEPEXEC				i286c_step
 

@@ -26,7 +26,7 @@ static	KEYSTAT		keystat;
 
 void keystat_initialize(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	ZeroMemory(&keyctrl, sizeof(keyctrl));
 	keyctrl.keyrep = 0x21;
@@ -36,7 +36,7 @@ void keystat_initialize(void) {
 	ZeroMemory(&keystat, sizeof(keystat));
 	FillMemory(keystat.ref, sizeof(keystat.ref), NKEYREF_NC);
 	keystat_tblreset();
-	getbiospath(path, "key.txt", sizeof(path));
+	getbiospath(path, OEMTEXT("key.txt"), NELEMENTS(path));
 	keystat_tblload(path);
 }
 
@@ -79,16 +79,16 @@ void keystat_tblset(REG8 ref, const UINT8 *key, UINT cnt) {
 
 // ---- config...
 
-static const char str_userkey1[] = "userkey1";
-static const char str_userkey2[] = "userkey2";
+static const OEMCHAR str_userkey1[] = OEMTEXT("userkey1");
+static const OEMCHAR str_userkey2[] = OEMTEXT("userkey2");
 
-static REG8 searchkeynum(const char *str, BOOL user) {
+static REG8 searchkeynum(const OEMCHAR *str, BOOL user) {
 
 const KEYNAME	*n;
 const KEYNAME	*nterm;
 
 	n = keyname;
-	nterm = keyname + (sizeof(keyname) / sizeof(KEYNAME));
+	nterm = keyname + NELEMENTS(keyname);
 	while(n < nterm) {
 		if (!milstr_cmp(n->str, str)) {
 			return(n->num);
@@ -106,13 +106,13 @@ const KEYNAME	*nterm;
 	return(0xff);
 }
 
-void keystat_tblload(const char *filename) {
+void keystat_tblload(const OEMCHAR *filename) {
 
 	TEXTFILEH	tfh;
-	char		work[256];
-	char		*p;
-	char		*q;
-	char		*r;
+	OEMCHAR		work[256];
+	OEMCHAR		*p;
+	OEMCHAR		*q;
+	OEMCHAR		*r;
 	UINT8		ref;
 	UINT8		key[15];
 	UINT		cnt;
@@ -121,7 +121,7 @@ void keystat_tblload(const char *filename) {
 	if (tfh == NULL) {
 		goto kstbl_err;
 	}
-	while(textfile_read(tfh, work, sizeof(work)) == SUCCESS) {
+	while(textfile_read(tfh, work, NELEMENTS(work)) == SUCCESS) {
 		p = milstr_nextword(work);
 		q = milstr_chr(p, '\t');
 		if (q == NULL) {
@@ -270,10 +270,22 @@ void keystat_down(const UINT8 *key, REG8 keys, REG8 ref) {
 		keydata = *key++;
 		keycode = (keydata & 0x7f);
 		if (keycode < 0x70) {
+#if 1												// 05/02/04
+			if (keystat.ref[keycode] != NKEYREF_NC) {
+				if (!(kbexflag[keycode] & KBEX_NONREP)) {
+					keyboard_send((REG8)(keycode + 0x80));
+					keystat.ref[keycode] = NKEYREF_NC;
+				}
+			}
+			if (keystat.ref[keycode] == NKEYREF_NC) {
+				keyboard_send(keycode);
+			}
+#else
 			if ((keystat.ref[keycode] == NKEYREF_NC) ||
 				(!(kbexflag[keycode] & KBEX_NONREP))) {
 				keyboard_send(keycode);
 			}
+#endif
 			keystat.ref[keycode] = ref;
 		}
 		else {

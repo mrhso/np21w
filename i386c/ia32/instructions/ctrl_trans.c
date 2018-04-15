@@ -1,4 +1,4 @@
-/*	$Id: ctrl_trans.c,v 1.16 2004/03/22 14:22:26 monaka Exp $	*/
+/*	$Id: ctrl_trans.c,v 1.20 2005/03/12 12:33:47 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -12,8 +12,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -33,6 +31,10 @@
 #include "ctrlxfer.h"
 
 #include "ctrl_trans.h"
+
+#if defined(ENABLE_TRAP)
+#include "inttrap.h"
+#endif
 
 
 /*
@@ -1238,6 +1240,9 @@ INT_Ib(void)
 	CPU_WORKCLOCK(37);
 	if (!CPU_STAT_PM || !CPU_STAT_VM86 || (CPU_STAT_IOPL == CPU_IOPL3)) {
 		GET_PCBYTE(vect);
+#if defined(ENABLE_TRAP)
+		softinttrap(CPU_CS, CPU_EIP - 2, vect);
+#endif
 		INTERRUPT(vect, -1, 0, 0);
 		return;
 	}

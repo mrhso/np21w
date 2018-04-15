@@ -1,8 +1,8 @@
 #include	"compiler.h"
 #include	"cpucore.h"
-#include	"egcmem.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"memegc.h"
 #include	"gdc_sub.h"
 #include	"gdc_pset.h"
 #include	"vram.h"
@@ -50,7 +50,7 @@ static void MEMCALL _set(GDCPSET pset, UINT addr, UINT bit) {
 
 static void MEMCALL withtdw(GDCPSET pset, UINT addr, UINT bit) {
 
-	BYTE	*ptr;
+	UINT8	*ptr;
 
 	addr &= ~1;
 	*(UINT16 *)(vramupdate + addr) |= pset->update.w;
@@ -64,9 +64,9 @@ static void MEMCALL withtdw(GDCPSET pset, UINT addr, UINT bit) {
 
 static void MEMCALL withrmw(GDCPSET pset, UINT addr, UINT bit) {
 
-	BYTE	*ptr;
-	BYTE	data;
-	BYTE	mask;
+	UINT8	*ptr;
+	UINT8	data;
+	UINT8	mask;
 
 	vramupdate[addr] |= pset->update.b[0];
 	ptr = pset->base.ptr + addr;
@@ -94,7 +94,7 @@ static void MEMCALL withegc(GDCPSET pset, UINT addr, UINT bit) {
 		addr &= ~1;
 		data <<= 8;
 	}
-	egc_write_w(pset->base.addr + addr, data);
+	egc_writeword(pset->base.addr + addr, data);
 }
 
 
@@ -109,10 +109,10 @@ static const GDCPFN psettbl[4][2] = {
 
 void MEMCALL gdcpset_prepare(GDCPSET pset, UINT32 csrw, REG16 pat, REG8 op) {
 
-	BYTE	*base;
-	BYTE	update;
+	UINT8	*base;
+	UINT8	update;
 
-	if (vramop.operate & VOP_EGCBIT) {
+	if (vramop.operate & (1 << VOPBIT_EGC)) {
 		pset->func[0] = _nop;
 		pset->func[1] = withegc;
 		pset->base.addr = gdcplaneseg[(csrw >> 14) & 3];

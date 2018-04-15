@@ -6,20 +6,20 @@
 typedef struct {
 	int		winx;
 	int		winy;
-	BYTE	NOWAIT;
-	BYTE	DRAW_SKIP;
+	UINT8	NOWAIT;
+	UINT8	DRAW_SKIP;
 
-	BYTE	KEYBOARD;
-	BYTE	F12COPY;
+	UINT8	KEYBOARD;
+	UINT8	F12COPY;
 
-	BYTE	MOUSE_SW;
-	BYTE	JOYPAD1;
-	BYTE	JOYPAD2;
-	BYTE	JOY1BTN[4];
+	UINT8	MOUSE_SW;
+	UINT8	JOYPAD1;
+	UINT8	JOYPAD2;
+	UINT8	JOY1BTN[4];
 
-	BYTE	resume;
-	BYTE	jastsnd;
-	BYTE	I286SAVE;
+	UINT8	resume;
+	UINT8	jastsnd;
+	UINT8	I286SAVE;
 } NP2OSCFG;
 
 
@@ -47,15 +47,15 @@ enum {
 
 // #define	STATSAVEMAX		10
 
-extern	const char	szAppCaption[];
+extern	const TCHAR	szAppCaption[];
 extern	NP2OSCFG	np2oscfg;
 extern	HWND		hWndMain;
 extern	HINSTANCE	hInst;
 extern	HINSTANCE	hPrev;
 
-extern	char		modulefile[MAX_PATH];
-extern	char		fddfolder[MAX_PATH];
-extern	char		hddfolder[MAX_PATH];
-extern	char		bmpfilefolder[MAX_PATH];
-extern	char		mimpideffile[MAX_PATH];
+extern	TCHAR		modulefile[MAX_PATH];
+extern	TCHAR		fddfolder[MAX_PATH];
+extern	TCHAR		hddfolder[MAX_PATH];
+extern	TCHAR		bmpfilefolder[MAX_PATH];
+extern	TCHAR		mimpideffile[MAX_PATH];
 

@@ -11,7 +11,7 @@ typedef struct {
 } _CMSER, *CMSER;
 
 
-static UINT serialread(COMMNG self, BYTE *data) {
+static UINT serialread(COMMNG self, UINT8 *data) {
 
 	CMSER	serial;
 	COMSTAT	ct;
@@ -28,7 +28,7 @@ static UINT serialread(COMMNG self, BYTE *data) {
 	return(0);
 }
 
-static UINT serialwrite(COMMNG self, BYTE data) {
+static UINT serialwrite(COMMNG self, UINT8 data) {
 
 	CMSER	serial;
 	DWORD	writesize;
@@ -38,7 +38,7 @@ static UINT serialwrite(COMMNG self, BYTE data) {
 	return(1);
 }
 
-static BYTE serialgetstat(COMMNG self) {
+static UINT8 serialgetstat(COMMNG self) {
 
 	CMSER	serial;
 	DCB		dcb;
@@ -73,29 +73,29 @@ static void serialrelease(COMMNG self) {
 
 // ----
 
-COMMNG cmserial_create(UINT port, BYTE param, UINT32 speed) {
+COMMNG cmserial_create(UINT port, UINT8 param, UINT32 speed) {
 
-	char	commstr[16];
+	TCHAR	commstr[16];
 	HANDLE	hdl;
 	DCB		dcb;
 	UINT	i;
 	COMMNG	ret;
 	CMSER	serial;
 
-	wsprintf(commstr, "COM%u", port);
+	wsprintf(commstr, _T("COM%u"), port);
 	hdl = CreateFile(commstr, GENERIC_READ | GENERIC_WRITE,
 												0, 0, OPEN_EXISTING, 0, NULL);
 	if (hdl == INVALID_HANDLE_VALUE) {
 		goto cscre_err1;
 	}
 	GetCommState(hdl, &dcb);
-	for (i=0; i<(sizeof(cmserial_speed)/sizeof(UINT32)); i++) {
+	for (i=0; i<NELEMENTS(cmserial_speed); i++) {
 		if (cmserial_speed[i] >= speed) {
 			dcb.BaudRate = cmserial_speed[i];
 			break;
 		}
 	}
-	dcb.ByteSize = (BYTE)(((param >> 2) & 3) + 5);
+	dcb.ByteSize = (UINT8)(((param >> 2) & 3) + 5);
 	switch(param & 0x30) {
 		case 0x10:
 			dcb.Parity = ODDPARITY;

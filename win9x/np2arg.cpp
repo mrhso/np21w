@@ -1,5 +1,6 @@
 #include	"compiler.h"
 #include	"np2arg.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 
 												// ver0.26 np2arg.cpp append
@@ -9,7 +10,7 @@
 
 
 #define	MAXARG		32
-#define	ARG_BASE	0				// win32のlpszCmdLineの場合
+#define	ARG_BASE	1				// win32のlpszCmdLineの場合
 									// 実行ファイル名無し
 
 	NP2ARG_T	np2arg = {{NULL, NULL, NULL, NULL},
@@ -17,21 +18,23 @@
 
 // ---------------------------------------------------------------------
 
-// win32の場合 コマンドラインが stringが返ってくる・・・
+static	OEMCHAR	argstrtmp[2048];
 
-static char argstrtmp[1024];
+void np2arg_analize(void) {
 
-void np2arg_analize(char *argstr) {
+	int			np2argc;
+	OEMCHAR		*np2argv[MAXARG];
+	int			i;
+	int			drv = 0;
+	OEMCHAR		c;
+const OEMCHAR	*p;
 
-	int		np2argc;
-	char	*np2argv[MAXARG];
-	int		i;
-	int		drv = 0;
-	char	c;
-const char	*p;
-
-	milstr_ncpy(argstrtmp, argstr, sizeof(argstrtmp));
-	np2argc = milstr_getarg(argstrtmp, np2argv, sizeof(argstrtmp));
+#if defined(OSLANG_UTF8)
+	tchartooem(argstrtmp, NELEMENTS(argstrtmp), GetCommandLine(), -1);
+#else
+	milstr_ncpy(argstrtmp, GetCommandLine(), NELEMENTS(argstrtmp));
+#endif
+	np2argc = milstr_getarg(argstrtmp, np2argv, NELEMENTS(np2argv));
 
 	for (i=ARG_BASE; i<np2argc; i++) {
 		c = np2argv[i][0];
@@ -41,6 +44,7 @@ const char	*p;
 				case 'f':
 					np2arg.fullscreen = TRUE;
 					break;
+
 				case 'I':
 				case 'i':
 					if (!np2arg.ini) {
@@ -51,7 +55,7 @@ const char	*p;
 		}
 		else {														// ver0.29
 			p = file_getext(np2argv[i]);
-			if (!file_cmpname(p, "INI")) {
+			if (!file_cmpname(p, OEMTEXT("ini"))) {
 				if (!np2arg.ini) {
 					np2arg.ini = np2argv[i];
 				}

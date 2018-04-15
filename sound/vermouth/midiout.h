@@ -2,6 +2,9 @@
 #if !defined(_WIN32_WCE) && !defined(SLZAURUS)
 #define	ENABLE_TREMOLO
 #define	ENABLE_VIRLATE
+#define	ENABLE_GSRX
+#define	PANPOT_REVA
+// #define	VOLUME_ACURVE
 #else
 #define	MIDI_GMONLY
 #endif
@@ -69,9 +72,9 @@ struct _midictrl {
 	UINT		samprate;
 	UINT		worksize;
 	int			level;
-	BYTE		status;
+	UINT8		status;
 	SINT8		gain;
-	BYTE		master;
+	UINT8		master;
 
 	MIDIMOD		module;
 	INSTRUMENT	*bank0[2];
@@ -95,7 +98,7 @@ struct _midictrl {
 extern "C" {
 #endif
 
-AEXTERN UINT AEXPORT midiout_getver(char *string, int leng);
+AEXTERN UINT AEXPORT midiout_getver(OEMCHAR *string, int leng);
 
 AEXTERN _MIDIMOD AEXPORT * midimod_create(UINT samprate);
 AEXTERN void AEXPORT midimod_destroy(MIDIMOD hdl);
@@ -107,7 +110,7 @@ AEXTERN void AEXPORT midimod_loadall(MIDIMOD hdl);
 AEXTERN _MIDIHDL AEXPORT * midiout_create(MIDIMOD module, UINT worksize);
 AEXTERN void AEXPORT midiout_destroy(MIDIHDL hdl);
 AEXTERN void AEXPORT midiout_shortmsg(MIDIHDL hdl, UINT32 msg);
-AEXTERN void AEXPORT midiout_longmsg(MIDIHDL hdl, const BYTE *msg, UINT size);
+AEXTERN void AEXPORT midiout_longmsg(MIDIHDL hdl, const UINT8 *msg, UINT size);
 AEXTERN const SINT32 AEXPORT * midiout_get(MIDIHDL hdl, UINT *samples);
 AEXTERN UINT AEXPORT midiout_get32(MIDIHDL hdl, SINT32 *pcm, UINT size);
 AEXTERN void AEXPORT midiout_setgain(MIDIHDL hdl, int gain);

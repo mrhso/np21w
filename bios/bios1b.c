@@ -68,12 +68,12 @@ static void biosfd_setchrn(void) {
 #if 0
 static void biosfd_resultout(UINT32 result) {
 
-	BYTE	*ptr;
+	UINT8	*ptr;
 
 	ptr = mem + 0x00564 + (fdc.us*8);
-	ptr[0] = (BYTE)(result & 0xff) | (fdc.hd << 2) | fdc.us;
-	ptr[1] = (BYTE)(result >> 8);
-	ptr[2] = (BYTE)(result >> 16);
+	ptr[0] = (UINT8)(result & 0xff) | (fdc.hd << 2) | fdc.us;
+	ptr[1] = (UINT8)(result >> 8);
+	ptr[2] = (UINT8)(result >> 16);
 	ptr[3] = fdc.C;
 	ptr[4] = fdc.H;
 	ptr[5] = fdc.R;
@@ -235,12 +235,12 @@ static void b0patch(void) {
 			REG8	c;
 			REG8	cl;
 			REG8	last;
-			addr = ES_BASE + CPU_BP;
+			addr = CPU_BP;
 			size = CPU_BX;
 			cnt = 0;
 			last = 0;
 			while(size--) {
-				c = i286_memoryread(addr++);
+				c = MEML_READ8(ES_BASE, addr++);
 				cl = 0;
 				do {
 					REG8 now = c & 0x80;
@@ -264,13 +264,13 @@ static void b0patch(void) {
 			}
 		}
 		if ((b0p.pos >> 3) < CPU_BX) {
-			UINT32 addr;
+			UINT addr;
 			REG8 c;
-			addr = ES_BASE + CPU_BP + (b0p.pos >> 3);
-			c = i286_memoryread(addr);
+			addr = CPU_BP + (b0p.pos >> 3);
+			c = MEML_READ8(CPU_ES, addr);
 			c ^= (1 << (b0p.pos & 7));
 			b0p.pos++;
-			i286_memorywrite(addr, c);
+			MEML_WRITE8(CPU_ES, addr, c);
 		}
 	}
 }
@@ -288,9 +288,9 @@ static REG8 fdd_operate(REG8 type, REG8 rpm, BOOL ndensity) {
 	UINT16	accesssize;
 	UINT16	secsize;
 	UINT16	para;
-	BYTE	s;
-	BYTE	ID[4];
-	BYTE	hd;
+	UINT8	s;
+	UINT8	ID[4];
+	UINT8	hd;
 	int		result = FDCBIOS_NORESULT;
 	UINT32	addr;
 	UINT8	mtr_c;
@@ -334,16 +334,14 @@ static REG8 fdd_operate(REG8 type, REG8 rpm, BOOL ndensity) {
 		}
 		if (!fdd_diskready(fdc.us)) {
 			fdd_int(FDCBIOS_NONREADY);
-			if (CPU_AH == 0x84) {
-				return(0x68);			// 新センスは 両用ドライブ情報も
-			}
-			if (CPU_AH == 0xc4) {									// ver0.31
-				if (fdc.support144) {
-					return(0x6c);
+			ret_ah = 0x60;
+			if ((CPU_AX & 0x8f40) == 0x8400) {
+				ret_ah |= 8;					// 1MB/640KB両用ドライブ
+				if ((CPU_AH & 0x40) && (fdc.support144)) {
+					ret_ah |= 4;				// 1.44対応ドライブ
 				}
-				return(0x68);
 			}
-			return(0x60);
+			return(ret_ah);
 		}
 	}
 
@@ -444,11 +442,11 @@ static REG8 fdd_operate(REG8 type, REG8 rpm, BOOL ndensity) {
 				if (mem[fmode] & (0x01 << fdc.us)) {
 					ret_ah |= 0x01;
 				}
-				if (mem[fmode] & (0x10 << fdc.us)) {				// ver0.30
+				if (mem[fmode] & (0x10 << fdc.us)) {
 					ret_ah |= 0x04;
 				}
 			}
-			if (CPU_AH & 0x80) {									// ver0.30
+			if ((CPU_AX & 0x8f40) == 0x8400) {
 				ret_ah |= 8;					// 1MB/640KB両用ドライブ
 				if ((CPU_AH & 0x40) && (fdc.support144)) {
 					ret_ah |= 4;				// 1.44対応ドライブ
@@ -784,7 +782,7 @@ static UINT16 boot_fd(REG8 drv, REG8 type) {
 		// 2DD
 		bootseg = boot_fd1(0, 0);
 		if (bootseg) {
-			mem[MEMB_DISK_BOOT] = (BYTE)(0x70 + drv);
+			mem[MEMB_DISK_BOOT] = (UINT8)(0x70 + drv);
 			fddbios_equip(0, TRUE);
 			return(bootseg);
 		}
@@ -806,7 +804,7 @@ static REG16 boot_hd(REG8 drv) {
 
 REG16 bootstrapload(void) {
 
-	BYTE	i;
+	UINT8	i;
 	REG16	bootseg;
 
 //	fdmode = 0;
@@ -873,19 +871,7 @@ void bios0x1b(void) {
 	REG8	ret_ah;
 	REG8	flag;
 
-#if defined(SUPPORT_SCSI)
-	if ((CPU_AL & 0xf0) == 0xc0) {
-		TRACEOUT(("%.4x:%.4x AX=%.4x BX=%.4x CX=%.4x DX=%.4 ES=%.4x BP=%.4x",
-							MEML_READ16(CPU_SS, CPU_SP+2),
-							MEML_READ16(CPU_SS, CPU_SP),
-							CPU_AX, CPU_BX, CPU_CX, CPU_DX, CPU_ES, CPU_BP));
-		scsicmd_bios();
-		return;
-	}
-#endif
-
 #if 1			// bypass to disk bios
-{
 	REG8	seg;
 	UINT	sp;
 
@@ -920,7 +906,17 @@ void bios0x1b(void) {
 		CPU_IP = 0x18;
 		return;
 	}
-}
+#endif
+
+#if defined(SUPPORT_SCSI)
+	if ((CPU_AL & 0xf0) == 0xc0) {
+		TRACEOUT(("%.4x:%.4x AX=%.4x BX=%.4x CX=%.4x DX=%.4 ES=%.4x BP=%.4x",
+							MEML_READ16(CPU_SS, CPU_SP+2),
+							MEML_READ16(CPU_SS, CPU_SP),
+							CPU_AX, CPU_BX, CPU_CX, CPU_DX, CPU_ES, CPU_BP));
+		scsicmd_bios();
+		return;
+	}
 #endif
 
 	switch(CPU_AL & 0xf0) {
@@ -962,7 +958,7 @@ void bios0x1b(void) {
 			ret_ah = 0x40;
 			break;
 	}
-#if 1
+#if 0
 	TRACEOUT(("%04x:%04x AX=%04x BX=%04x %02x:%02x:%02x:%02x\n"	\
 						"ES=%04x BP=%04x \nret=%02x",
 							MEML_READ16(CPU_SS, CPU_SP+2),
@@ -984,7 +980,6 @@ UINT bios0x1b_wait(void) {
 	REG8	bit;
 
 	if (fddmtr.busy) {
-		CPU_IP--;
 		CPU_REMCLOCK = -1;
 	}
 	else {

@@ -1,4 +1,4 @@
-/*	$Id: compiler.h,v 1.26 2004/07/29 13:06:09 monaka Exp $	*/
+/*	$Id: compiler.h,v 1.31 2005/03/23 13:54:48 monaka Exp $	*/
 
 /*-
  * Copyright (c) 2003, 2004 NONAKA Kimihiro
@@ -197,13 +197,17 @@ UINT32 gettick(void);
 #define	GETTICK()	gettick()
 #define	GETRAND()	random()
 #define	SPRINTF		sprintf
+#define	STRLEN		strlen
+
+#define	OEMCHAR		char
+#define OEMTEXT(s)	s
+#define OEMNULLSTR	OEMTEXT("")
+#define	OEMSPRINTF	sprintf
+#define	OEMSTRLEN	strlen
 
 #if defined(CPUCORE_IA32)
 void toolkit_msgbox(const char *title, const char *msg);
 #define	msgbox(title, msg)	toolkit_msgbox(title, msg);
-#ifndef	IA32_PAGING_EACHSIZE
-#define	IA32_PAGING_EACHSIZE
-#endif
 
 #define	SUPPORT_PC9821
 #define	SUPPORT_CRT31KHZ

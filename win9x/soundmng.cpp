@@ -10,6 +10,10 @@
 #if defined(VERMOUTH_LIB)
 #include	"vermouth.h"
 #endif
+#if defined(MT32SOUND_DLL)
+#include	"mt32snd.h"
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +41,7 @@ void __fastcall satuation_s16mmx(SINT16 *dst, const SINT32 *src, UINT size);
 static	LPDIRECTSOUND		pDSound;
 static	LPDIRECTSOUNDBUFFER	pDSData3;
 static	UINT				dsstreambytes;
-static	BYTE				dsstreamevent;
+static	UINT8				dsstreamevent;
 static	LPDIRECTSOUNDBUFFER pDSwave3[SOUND_MAXPCM];
 static	UINT				mute;
 static	void				(PARTSCALL *fnmix)(SINT16 *dst,
@@ -50,7 +54,7 @@ static	void				(PARTSCALL *fnmix)(SINT16 *dst,
 
 // ---- directsound
 
-static BOOL dsoundcreate(void) {
+static BRESULT dsoundcreate(void) {
 
 	// DirectSoundの初期化
 	if (FAILED(DirectSoundCreate(0, &pDSound, 0))) {
@@ -88,7 +92,7 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	}
 
 	// キーボード表示のディレイ設定
-//	keydispr_delayinit((BYTE)((ms * 10 + 563) / 564));
+//	keydispr_delayinit((UINT8)((ms * 10 + 563) / 564));
 
 	samples = (rate * ms) / 2000;
 	samples = (samples + 3) & (~3);
@@ -118,7 +122,10 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	vermouth_module = midimod_create(rate);
 	midimod_loadall(vermouth_module);
 #endif
-	dsstreamevent = (BYTE)-1;
+#if defined(MT32SOUND_DLL)
+	mt32sound_setrate(rate);
+#endif
+	dsstreamevent = (UINT8)-1;
 	soundmng_reset();
 	return(samples);
 
@@ -146,7 +153,7 @@ void soundmng_reset(void) {
 		}
 		pDSData3->Unlock(blockptr1, blocksize1, blockptr2, blocksize2);
 		pDSData3->SetCurrentPosition(0);
-		dsstreamevent = (BYTE)-1;
+		dsstreamevent = (UINT8)-1;
 	}
 }
 
@@ -156,6 +163,9 @@ void soundmng_destroy(void) {
 #if defined(VERMOUTH_LIB)
 		midimod_destroy(vermouth_module);
 		vermouth_module = NULL;
+#endif
+#if defined(MT32SOUND_DLL)
+		mt32sound_setrate(0);
 #endif
 		pDSData3->Stop();
 		pDSData3->Release();
@@ -297,7 +307,7 @@ static void pcmstop(void) {
 	}
 }
 
-void soundmng_pcmload(UINT num, const char *filename, UINT type) {
+void soundmng_pcmload(UINT num, const OEMCHAR *filename, UINT type) {
 
 	EXTROMH				erh;
 	RIFF_HEADER			riff;
@@ -408,7 +418,7 @@ void soundmng_pcmvolume(UINT num, int volume) {
 	}
 }
 
-BOOL soundmng_pcmplay(UINT num, BOOL loop) {
+BRESULT soundmng_pcmplay(UINT num, BOOL loop) {
 
 	LPDIRECTSOUNDBUFFER	dsbuf;
 
@@ -438,12 +448,15 @@ void soundmng_pcmstop(UINT num) {
 
 // ----
 
-BOOL soundmng_initialize(void) {
+BRESULT soundmng_initialize(void) {
 
 	if (dsoundcreate() != SUCCESS) {
 		goto smcre_err;
 	}
 	pcmcreate();
+#if defined(MT32SOUND_DLL)
+	mt32sound_initialize();
+#endif
 	return(SUCCESS);
 
 smcre_err:
@@ -453,6 +466,9 @@ smcre_err:
 
 void soundmng_deinitialize(void) {
 
+#if defined(MT32SOUND_DLL)
+	mt32sound_deinitialize();
+#endif
 	pcmdestroy();
 	soundmng_destroy();
 	RELEASE(pDSound);

@@ -2,6 +2,7 @@
 #include	"strres.h"
 #include	"resource.h"
 #include	"np2.h"
+#include	"oemtext.h"
 #include	"commng.h"
 #include	"sysmng.h"
 #include	"dialog.h"
@@ -20,45 +21,49 @@ extern	COMMNG	cm_mpu98;
 }
 #endif
 
-static const char *mpuinterrupt[4] = {str_int0, str_int1, str_int2, str_int5};
+static const TCHAR *mpuinterrupt[4] = {
+									str_int0, str_int1, str_int2, str_int5};
 
-static	BYTE	mpu = 0;
+static	UINT8	mpu = 0;
 
 
-static void setmpuiopara(HWND hWnd, WORD res, BYTE value) {
+static void setmpuiopara(HWND hWnd, UINT16 res, UINT8 value) {
 
 	SendDlgItemMessage(hWnd, res, CB_SETCURSEL,
 									(WPARAM)((value >> 4) & 15), (LPARAM)0);
 }
 
-static BYTE getmpuio(HWND hWnd, WORD res) {
+static UINT8 getmpuio(HWND hWnd, UINT16 res) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
-	return((milstr_solveHEX(work) >> 6) & 0xf0);
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
+	return((miltchar_solveHEX(work) >> 6) & 0xf0);
 }
 
-static void setmpuintpara(HWND hWnd, WORD res, BYTE value) {
+static void setmpuintpara(HWND hWnd, UINT16 res, UINT8 value) {
 
 	SendDlgItemMessage(hWnd, res, CB_SETCURSEL,
 									(WPARAM)(value & 3), (LPARAM)0);
 }
 
-static BYTE getmpuint(HWND hWnd, WORD res) {
+static UINT8 getmpuint(HWND hWnd, UINT16 res) {
 
-	char	work[8];
-	BYTE	ret;
+	TCHAR	work[8];
+	TCHAR	ret;
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
 	ret = work[3] - '0';
-	if (ret >= 3) {
+	if (ret < 0) {
+		ret = 0;
+	}
+	else if (ret >= 3) {
 		ret = 3;
 	}
-	return(ret);
+	return((UINT8)ret);
 }
 
-static void setmpujmp(HWND hWnd, BYTE value, BYTE bit) {
+static void setmpujmp(HWND hWnd, UINT8 value, UINT8 bit) {
 
 	if ((mpu ^ value) & bit) {
 		mpu &= ~bit;
@@ -73,12 +78,12 @@ static void setmpujmp(HWND hWnd, BYTE value, BYTE bit) {
 static void mpucreate(HWND hWnd) {
 
 	UINT	i;
-	char	buf[8];
+	TCHAR	buf[8];
 	HWND	sub;
 
 	mpu = np2cfg.mpuopt;
 	for (i=0; i<16; i++) {
-		wsprintf(buf, str_4X, 0xC0D0 + (i << 10));
+		wsprintf(buf, tchar_4X, 0xC0D0 + (i << 10));
 		SendDlgItemMessage(hWnd, IDC_MPUIO,
 									CB_INSERTSTRING, (WPARAM)i, (LPARAM)buf);
 	}
@@ -104,10 +109,10 @@ static void mpucreate(HWND hWnd) {
 static void mpuupdate(HWND hWnd) {
 
 	union {
-		char	mmap[MAXPNAMELEN];
-		char	mmdl[64];
-		char	mdef[MAX_PATH];
-		char	mdin[MAXPNAMELEN];
+		OEMCHAR	mmap[MAXPNAMELEN];
+		OEMCHAR	mmdl[64];
+		OEMCHAR	mdef[MAX_PATH];
+		OEMCHAR	mdin[MAXPNAMELEN];
 	} s;
 	UINT	update;
 
@@ -116,19 +121,19 @@ static void mpuupdate(HWND hWnd) {
 		np2cfg.mpuopt = mpu;
 		update |= SYS_UPDATECFG | SYS_UPDATEMIDI;
 	}
-	GetDlgItemText(hWnd, IDC_MPU98MMAP, s.mmap, sizeof(s.mmap));
+	GetDlgItemText(hWnd, IDC_MPU98MMAP, s.mmap, NELEMENTS(s.mmap));
 	if (milstr_cmp(np2oscfg.mpu.mout, s.mmap)) {
-		milstr_ncpy(np2oscfg.mpu.mout, s.mmap, sizeof(np2oscfg.mpu.mout));
+		milstr_ncpy(np2oscfg.mpu.mout, s.mmap, NELEMENTS(np2oscfg.mpu.mout));
 		update |= SYS_UPDATEOSCFG | SYS_UPDATEMIDI;
 	}
-	GetDlgItemText(hWnd, IDC_MPU98MDIN, s.mdin, sizeof(s.mdin));
+	GetDlgItemText(hWnd, IDC_MPU98MDIN, s.mdin, NELEMENTS(s.mdin));
 	if (milstr_cmp(np2oscfg.mpu.min, s.mdin)) {
-		milstr_ncpy(np2oscfg.mpu.min, s.mdin, sizeof(np2oscfg.mpu.min));
+		milstr_ncpy(np2oscfg.mpu.min, s.mdin, NELEMENTS(np2oscfg.mpu.min));
 		update |= SYS_UPDATEOSCFG | SYS_UPDATEMIDI;
 	}
-	GetDlgItemText(hWnd, IDC_MPU98MMDL, s.mmdl, sizeof(s.mmdl));
+	GetDlgItemText(hWnd, IDC_MPU98MMDL, s.mmdl, NELEMENTS(s.mmdl));
 	if (milstr_cmp(np2oscfg.mpu.mdl, s.mmdl)) {
-		milstr_ncpy(np2oscfg.mpu.mdl, s.mmdl, sizeof(np2oscfg.mpu.mdl));
+		milstr_ncpy(np2oscfg.mpu.mdl, s.mmdl, NELEMENTS(np2oscfg.mpu.mdl));
 		update |= SYS_UPDATEOSCFG | SYS_UPDATEMIDI;
 	}
 
@@ -136,9 +141,9 @@ static void mpuupdate(HWND hWnd) {
 	if (cm_mpu98) {
 		cm_mpu98->msg(cm_mpu98, COMMSG_MIMPIDEFEN, np2oscfg.mpu.def_en);
 	}
-	GetDlgItemText(hWnd, IDC_MPU98DEFF, s.mdef, sizeof(s.mdef));
+	GetDlgItemText(hWnd, IDC_MPU98DEFF, s.mdef, NELEMENTS(s.mdef));
 	if (milstr_cmp(np2oscfg.mpu.def, s.mdef)) {
-		milstr_ncpy(np2oscfg.mpu.def, s.mdef, sizeof(np2oscfg.mpu.def));
+		milstr_ncpy(np2oscfg.mpu.def, s.mdef, NELEMENTS(np2oscfg.mpu.def));
 		if (cm_mpu98) {
 			cm_mpu98->msg(cm_mpu98, COMMSG_MIMPIDEFFILE, (long)s.mdef);
 		}
@@ -153,7 +158,7 @@ static void mpucmddipsw(HWND hWnd) {
 	RECT	rect2;
 	POINT	p;
 	BOOL	redraw;
-	BYTE	bit;
+	UINT8	bit;
 
 	GetWindowRect(GetDlgItem(hWnd, IDC_MPUDIP), &rect1);
 	GetClientRect(GetDlgItem(hWnd, IDC_MPUDIP), &rect2);
@@ -173,7 +178,7 @@ static void mpucmddipsw(HWND hWnd) {
 		redraw = TRUE;
 	}
 	else if ((p.x >= 9) && (p.x < 13)) {
-		bit = (BYTE)(12 - p.x);
+		bit = (UINT8)(12 - p.x);
 		if ((mpu ^ bit) & 3) {
 			mpu &= ~0x3;
 			mpu |= bit;

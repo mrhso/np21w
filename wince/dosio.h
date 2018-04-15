@@ -72,7 +72,7 @@ short file_dircreate(const OEMCHAR *path);
 
 											// カレントファイル操作
 void file_setcd(const OEMCHAR *exepath);
-char *file_getcd(const OEMCHAR *path);
+OEMCHAR *file_getcd(const OEMCHAR *path);
 FILEH file_open_c(const OEMCHAR *path);
 FILEH file_open_rb_c(const OEMCHAR *path);
 FILEH file_create_c(const OEMCHAR *path);
@@ -80,7 +80,7 @@ short file_delete_c(const OEMCHAR *path);
 short file_attr_c(const OEMCHAR *path);
 
 FLISTH file_list1st(const OEMCHAR *dir, FLINFO *fli);
-BOOL file_listnext(FLISTH hdl, FLINFO *fli);
+BRESULT file_listnext(FLISTH hdl, FLINFO *fli);
 void file_listclose(FLISTH hdl);
 
 #if defined(OSLANG_SJIS)

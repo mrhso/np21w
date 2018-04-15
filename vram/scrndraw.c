@@ -8,9 +8,9 @@
 #include	"palettes.h"
 
 
-	BYTE	renewal_line[SURFACE_HEIGHT];
-	BYTE	np2_tram[SURFACE_SIZE];
-	BYTE	np2_vram[2][SURFACE_SIZE];
+	UINT8	renewal_line[SURFACE_HEIGHT];
+	UINT8	np2_tram[SURFACE_SIZE];
+	UINT8	np2_vram[2][SURFACE_SIZE];
 
 
 static void updateallline(UINT32 update) {
@@ -44,7 +44,7 @@ void scrndraw_changepalette(void) {
 	updateallline(0x80808080);
 }
 
-static BYTE rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
+static UINT8 rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 
 	RGB32		pal[16];
 	SINT32		clock;
@@ -53,6 +53,7 @@ static BYTE rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 	int			nextupdate;
 	int			y;
 
+	TRACEOUT(("rasterdraw: maxy = %d", maxy));
 	CopyMemory(pal, palevent.pal, sizeof(pal));
 	clock = maxy;
 	clock += 2;
@@ -85,7 +86,7 @@ static BYTE rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 			nextupdate = y;
 			// Ç®ïŸìñÇêHÇ◊ÇÈ
 			while(clock < event->clock) {
-				((BYTE *)pal)[event->color] = event->value;
+				((UINT8 *)pal)[event->color] = event->value;
 				event++;
 				if (event >= eventterm) {
 					break;
@@ -94,7 +95,7 @@ static BYTE rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 		}
 		clock -= 2 * gdc.rasterclock;
 	}
-	if (y < maxy) {
+	if (nextupdate < maxy) {
 		if (!(np2cfg.LCD_MODE & 1)) {
 			pal_makeanalog(pal, 0xffff);
 		}
@@ -123,13 +124,13 @@ static BYTE rasterdraw(SDRAWFN sdrawfn, SDRAW sdraw, int maxy) {
 	}
 }
 
-BYTE scrndraw_draw(BYTE redraw) {
+UINT8 scrndraw_draw(UINT8 redraw) {
 
-	BYTE		ret;
+	UINT8		ret;
 const SCRNSURF	*surf;
 const SDRAWFN	*sdrawfn;
 	_SDRAW		sdraw;
-	BYTE		bit;
+	UINT8		bit;
 	int			i;
 	int			height;
 
@@ -155,13 +156,13 @@ const SDRAWFN	*sdrawfn;
 
 	bit = 0;
 	if (gdc.mode1 & 0x80) {						// ver0.28
-#if defined(SUPPORT_PC9821)
-		if ((gdc.analog & 6) == 6) {
-			bit |= 0x01;
-		}
-		else
-#endif
 		if (gdcs.grphdisp & 0x80) {
+#if defined(SUPPORT_PC9821)
+			if ((gdc.analog & 6) == 6) {
+				bit |= 0x01;
+			}
+			else
+#endif
 			bit |= (1 << gdcs.disp);
 		}
 		if (gdcs.textdisp & 0x80) {

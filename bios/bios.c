@@ -56,7 +56,7 @@ const IODATA	*pterm;
 	gdc_biosreset();
 
 	p = iodata;
-	pterm = iodata + (sizeof(iodata) / sizeof(IODATA));
+	pterm = iodata + NELEMENTS(iodata);
 	while(p < pterm) {
 		iocore_out8(p->port, p->data);
 		p++;
@@ -82,9 +82,10 @@ static void bios_memclear(void) {
 
 static void bios_reinitbyswitch(void) {
 
-	BYTE	prxcrt;
-	BYTE	prxdupd;
-	BYTE	biosflag;
+	UINT8	prxcrt;
+	UINT8	prxdupd;
+	UINT8	biosflag;
+	UINT8	extmem;
 	UINT8	boot;
 
 	if (!(np2cfg.dipsw[2] & 0x80)) {
@@ -132,7 +133,12 @@ static void bios_reinitbyswitch(void) {
 		biosflag |= 0x40;
 	}
 	mem[MEMB_BIOS_FLAG1] = biosflag;
-	mem[MEMB_EXPMMSZ] = (BYTE)(pccore.extmem << 3);
+	extmem = pccore.extmem;
+	extmem = min(extmem, 14);
+	mem[MEMB_EXPMMSZ] = (UINT8)(extmem << 3);
+	if (pccore.extmem >= 15) {
+		mem[0x0594] = pccore.extmem - 15;
+	}
 	mem[MEMB_CRT_RASTER] = 0x0f;
 
 	// FDD initialize
@@ -151,9 +157,10 @@ static void bios_reinitbyswitch(void) {
 	mem[MEMB_F2DD_MODE] = 0xff;
 
 #if defined(SUPPORT_CRT31KHZ)
-	mem[MEMB_CRT_BIOS] = 0x80;
+	mem[MEMB_CRT_BIOS] |= 0x80;
 #endif
 #if defined(SUPPORT_PC9821)
+	mem[MEMB_CRT_BIOS] |= 0x04;		// 05/02/03
 	mem[0x45c] = 0x40;
 #endif
 
@@ -210,14 +217,14 @@ static void setbiosseed(UINT8 *ptr, UINT size, UINT seedpos) {
 void bios_initialize(void) {
 
 	BOOL	biosrom;
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 	FILEH	fh;
 	UINT	i;
 	UINT32	tmp;
 	UINT	pos;
 
 	biosrom = FALSE;
-	getbiospath(path, str_biosrom, sizeof(path));
+	getbiospath(path, str_biosrom, NELEMENTS(path));
 	fh = file_open_rb(path);
 	if (fh != FILEH_INVALID) {
 		biosrom = (file_read(fh, mem + 0x0e8000, 0x18000) == 0x18000);
@@ -248,7 +255,7 @@ void bios_initialize(void) {
 	}
 
 #if defined(SUPPORT_PC9821)
-	getbiospath(path, "bios9821.rom", sizeof(path));
+	getbiospath(path, OEMTEXT("bios9821.rom"), sizeof(path));
 	fh = file_open_rb(path);
 	if (fh != FILEH_INVALID) {
 		if (file_read(fh, mem + 0x0d8000, 0x2000) == 0x2000) {
@@ -258,6 +265,16 @@ void bios_initialize(void) {
 		}
 		file_close(fh);
 	}
+#if defined(BIOS_SIMULATE)
+	mem[0xf8e80] = 0x98;
+	mem[0xf8e81] = 0x21;
+	mem[0xf8e82] = 0x1f;
+	mem[0xf8e83] = 0x20;	// Model Number?
+	mem[0xf8e84] = 0x2c;
+	mem[0xf8e85] = 0xb0;
+
+	// mem[0xf8eaf] = 0x21;		// <- ‚±‚ê‚Á‚Ä‰½‚¾‚Á‚¯H
+#endif
 #endif
 
 #if defined(BIOS_SIMULATE)

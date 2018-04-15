@@ -1,4 +1,7 @@
 #include	"compiler.h"
+#if defined(OSLANG_UTF8) || defined(OSLANG_UCS2)
+#include	"oemtext.h"
+#endif
 #include	"dosio.h"
 #include	"newdisk.h"
 #include	"fddfile.h"
@@ -8,14 +11,19 @@
 
 // ---- fdd
 
-void newdisk_fdd(const char *fname, REG8 type, const char *label) {
+void newdisk_fdd(const OEMCHAR *fname, REG8 type, const OEMCHAR *label) {
 
 	_D88HEAD	d88head;
 	FILEH		fh;
 
 	ZeroMemory(&d88head, sizeof(d88head));
 	STOREINTELDWORD(d88head.fd_size, sizeof(d88head));
+#if defined(OSLANG_UTF8) || defined(OSLANG_UCS2)
+	oemtext_oemtosjis((char *)d88head.fd_name, sizeof(d88head.fd_name),
+															label, (UINT)-1);
+#else
 	milstr_ncpy((char *)d88head.fd_name, label, sizeof(d88head.fd_name));
+#endif
 	d88head.fd_type = type;
 	fh = file_create(fname);
 	if (fh != FILEH_INVALID) {
@@ -29,7 +37,7 @@ void newdisk_fdd(const char *fname, REG8 type, const char *label) {
 
 static BOOL writezero(FILEH fh, UINT size) {
 
-	BYTE	work[256];
+	UINT8	work[256];
 	UINT	wsize;
 
 	ZeroMemory(work, sizeof(work));
@@ -45,7 +53,7 @@ static BOOL writezero(FILEH fh, UINT size) {
 
 static BOOL writehddipl(FILEH fh, UINT ssize, UINT32 tsize) {
 
-	BYTE	work[1024];
+	UINT8	work[1024];
 	UINT	size;
 
 	ZeroMemory(work, sizeof(work));
@@ -71,10 +79,10 @@ static BOOL writehddipl(FILEH fh, UINT ssize, UINT32 tsize) {
 	return(SUCCESS);
 }
 
-void newdisk_thd(const char *fname, UINT hddsize) {
+void newdisk_thd(const OEMCHAR *fname, UINT hddsize) {
 
 	FILEH	fh;
-	BYTE	work[256];
+	UINT8	work[256];
 	UINT	size;
 	BOOL	r;
 
@@ -99,7 +107,7 @@ ndthd_err:
 	return;
 }
 
-void newdisk_nhd(const char *fname, UINT hddsize) {
+void newdisk_nhd(const OEMCHAR *fname, UINT hddsize) {
 
 	FILEH	fh;
 	NHDHDR	nhd;
@@ -133,7 +141,7 @@ ndnhd_err:
 }
 
 // hddtype = 0:5MB / 1:10MB / 2:15MB / 3:20MB / 5:30MB / 6:40MB
-void newdisk_hdi(const char *fname, UINT hddtype) {
+void newdisk_hdi(const OEMCHAR *fname, UINT hddtype) {
 
 const SASIHDD	*sasi;
 	FILEH		fh;
@@ -171,7 +179,7 @@ ndhdi_err:
 	return;
 }
 
-void newdisk_vhd(const char *fname, UINT hddsize) {
+void newdisk_vhd(const OEMCHAR *fname, UINT hddsize) {
 
 	FILEH	fh;
 	VHDHDR	vhd;

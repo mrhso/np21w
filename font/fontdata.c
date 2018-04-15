@@ -5,23 +5,23 @@
 #include	"fontdata.res"
 
 
-const char pc88ankname[]	= "PC88.FNT";
-const char pc88knj1name[]	= "KANJI1.ROM";
-const char pc88knj2name[]	= "KANJI2.ROM";
-const char pc98fontname[]	= "FONT.BMP";
-const char v98fontname[]	= "FONT.ROM";
-const char fm7ankname[]		= "SUBSYS_C.ROM";
-const char fm7knjname[]		= "KANJI.ROM";
-const char x1ank1name[]		= "FNT0808.X1";
-const char x1ank2name[]		= "FNT0816.X1";
-const char x1knjname[]		= "FNT1616.X1";
-const char x68kfontname[]	= "CGROM.DAT";
+const OEMCHAR pc88ankname[]		= OEMTEXT("PC88.FNT");
+const OEMCHAR pc88knj1name[]	= OEMTEXT("KANJI1.ROM");
+const OEMCHAR pc88knj2name[]	= OEMTEXT("KANJI2.ROM");
+const OEMCHAR pc98fontname[]	= OEMTEXT("FONT.BMP");
+const OEMCHAR v98fontname[]		= OEMTEXT("FONT.ROM");
+const OEMCHAR fm7ankname[]		= OEMTEXT("SUBSYS_C.ROM");
+const OEMCHAR fm7knjname[]		= OEMTEXT("KANJI.ROM");
+const OEMCHAR x1ank1name[]		= OEMTEXT("FNT0808.X1");
+const OEMCHAR x1ank2name[]		= OEMTEXT("FNT0816.X1");
+const OEMCHAR x1knjname[]		= OEMTEXT("FNT1616.X1");
+const OEMCHAR x68kfontname[]	= OEMTEXT("CGROM.DAT");
 
 
-static void patch29(UINT jish, const BYTE *src) {
+static void patch29(UINT jish, const UINT8 *src) {
 
 	UINT	i;
-	BYTE	*p;
+	UINT8	*p;
 
 	p = fontrom + 0x21000 + (jish << 4);
 	for (i=0x21; i<0x7f; i++) {
@@ -35,8 +35,8 @@ static void patch2c(void) {
 
 	UINT	i;
 	UINT	j;
-const BYTE	*p;
-	BYTE	*q;
+const UINT8	*p;
+	UINT8	*q;
 
 	p = fontdata_2c;
 	q = fontrom + 0x240c0;
@@ -53,9 +53,9 @@ const BYTE	*p;
 
 // ----
 
-void fontdata_ank8store(const BYTE *ptr, UINT pos, UINT cnt) {
+void fontdata_ank8store(const UINT8 *ptr, UINT pos, UINT cnt) {
 
-	BYTE	*dat;
+	UINT8	*dat;
 
 	dat = fontrom + 0x82000 + (pos * 16);
 	while(cnt--) {

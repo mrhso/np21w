@@ -22,8 +22,8 @@ static void IOOUTCALL crtc_o7c(UINT port, REG8 dat) {
 	if (grcg.chip) {
 		grcg.modereg = (UINT8)dat;
 		grcg.counter = 0;
-		vramop.operate &= VOP_GRCGMASK;
-		vramop.operate |= ((dat & 0xc0) >> 4);
+		vramop.operate &= ~(3 << VOPBIT_GRCG);
+		vramop.operate |= ((dat & 0xc0) >> (6 - VOPBIT_GRCG));
 		if (grcg.chip >= 2) {
 			grcg.gdcwithgrcg = (dat >> 4) & 0x0c;
 		}
@@ -76,6 +76,13 @@ void crtc_biosreset(void) {
 		crtc.reg.ssl = 0;
 	}
 	gdcs.textdisp |= GDCSCRN_ALLDRAW;
+
+	grcg.modereg = 0;
+	grcg.counter = 0;
+	vramop.operate &= ~(3 << VOPBIT_GRCG);
+	grcg.gdcwithgrcg = 0;
+	ZeroMemory(grcg.tile, sizeof(grcg.tile));
+	i286_vram_dispatch(vramop.operate);
 }
 
 void crtc_reset(void) {

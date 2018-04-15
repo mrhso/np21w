@@ -6,7 +6,7 @@ enum {
 };
 
 typedef struct {
-	BYTE	*ptr;
+	UINT8	*ptr;
 	int		xalign;
 	int		yalign;
 	int		width;
@@ -32,10 +32,10 @@ enum {
 };
 
 typedef struct {
-	BYTE	flag;
-	BYTE	bpp;
-	BYTE	allflash;
-	BYTE	palchanged;
+	UINT8	flag;
+	UINT8	bpp;
+	UINT8	allflash;
+	UINT8	palchanged;
 } SCRNMNG;
 
 
@@ -46,12 +46,13 @@ extern "C" {
 extern	SCRNMNG		scrnmng;			// É}ÉNÉçóp
 
 void scrnmng_initialize(void);
-BOOL scrnmng_create(BYTE scrnmode);
+BRESULT scrnmng_create(UINT8 scrnmode);
 void scrnmng_destroy(void);
 
 void scrnmng_setwidth(int posx, int width);
 void scrnmng_setextend(int extend);
 void scrnmng_setheight(int posy, int height);
+#define scrnmng_setbpp(commendablebpp)
 const SCRNSURF *scrnmng_surflock(void);
 void scrnmng_surfunlock(const SCRNSURF *surf);
 void scrnmng_update(void);
@@ -70,6 +71,9 @@ RGB16 scrnmng_makepal16(RGB32 pal32);
 
 void scrnmng_setmultiple(int multiple);
 void scrnmng_querypalette(void);
+void scrnmng_setdefaultres(void);
+void scrnmng_setfullscreen(BOOL fullscreen);
+void scrnmng_setrotatemode(UINT type);
 void scrnmng_fullscrnmenu(int y);
 void scrnmng_topwinui(void);
 void scrnmng_clearwinui(void);

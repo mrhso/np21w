@@ -43,7 +43,7 @@ enum {
 extern "C" {
 #endif
 
-extern	BYTE	mem[0x200000];
+extern	UINT8	mem[0x200000];
 
 void MEMCALL i286_memorymap(UINT type);
 void MEMCALL i286_romareamap(UINT16 map);
@@ -51,8 +51,10 @@ void MEMCALL i286_vram_dispatch(UINT operate);
 
 REG8 MEMCALL i286_memoryread(UINT32 address);
 REG16 MEMCALL i286_memoryread_w(UINT32 address);
+UINT32 MEMCALL i286_memoryread_d(UINT32 address);
 void MEMCALL i286_memorywrite(UINT32 address, REG8 value);
 void MEMCALL i286_memorywrite_w(UINT32 address, REG16 value);
+void MEMCALL i286_memorywrite_d(UINT32 address, UINT32 value);
 
 REG8 MEMCALL meml_read8(UINT seg, UINT off);
 REG16 MEMCALL meml_read16(UINT seg, UINT off);

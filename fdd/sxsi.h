@@ -1,121 +1,91 @@
 
 #if defined(SUPPORT_SCSI)
 enum {
-	SASIHDD_MAX		= 2,
-	SCSIHDD_MAX		= 4
+	SASIHDD_MAX		= 4,
+	SCSIHDD_MAX		= 8
 };
 #else
 enum {
-	SASIHDD_MAX		= 2,
+	SASIHDD_MAX		= 4,
 	SCSIHDD_MAX		= 0
 };
 #endif
 
 enum {
-	SXSITYPE_NONE		= 0x0000,
+	SXSIDRV_UNITMASK	= 0x0f,
+	SXSIDRV_SASI		= 0x00,
+	SXSIDRV_SCSI		= 0x20,
+	SXSIDRV_IFMASK		= 0x20,
 
-	SXSITYPE_HDD		= 0x0001,
-	SXSITYPE_CDROM		= 0x0002,
-	SXSITYPE_MO			= 0x0003,
-	SXSITYPE_SCANNER	= 0x0004,
-	SXSITYPE_DEVMASK	= 0x000f,
+	SXSIDEV_NC			= 0x00,
+	SXSIDEV_HDD			= 0x01,
+	SXSIDEV_CDROM		= 0x02,
+	SXSIDEV_MO			= 0x03,
+	SXSIDEV_SCANNER		= 0x04,
 
-	SXSITYPE_REMOVE		= 0x0010,
-
-	SXSITYPE_SASIMASK	= 0x0700,
-
-	SXSITYPE_SASI		= 0x1000,
-	SXSITYPE_IDE		= 0x2000,
-	SXSITYPE_SCSI		= 0x3000,
-	SXSITYPE_IFMASK		= 0xf000
+	SXSIFLAG_READY		= 0x01,
+	SXSIFLAG_FILEOPENED	= 0x02
 };
 
 
-typedef struct {
-	UINT8	sectors;
-	UINT8	surfaces;
-	UINT16	cylinders;
-} SASIHDD;
+struct _sxsidev;
+typedef struct _sxsidev		_SXSIDEV;
+typedef struct _sxsidev		*SXSIDEV;
 
-typedef struct {
-	BYTE	cylinders[2];
-} THDHDR;
+#include	"sxsihdd.h"
+#include	"sxsicd.h"
 
-typedef struct {
-	char	sig[16];
-	char	comment[0x100];
-	BYTE	headersize[4];
-	BYTE	cylinders[4];
-	BYTE	surfaces[2];
-	BYTE	sectors[2];
-	BYTE	sectorsize[2];
-	BYTE	reserved[0xe2];
-} NHDHDR;
+struct _sxsidev {
+	UINT8	drv;
+	UINT8	devtype;
+	UINT8	flag;
+	UINT8	__caps;
 
-typedef struct {
-	BYTE	dummy[4];
-	BYTE	hddtype[4];
-	BYTE	headersize[4];
-	BYTE	hddsize[4];
-	BYTE	sectorsize[4];
-	BYTE	sectors[4];
-	BYTE	surfaces[4];
-	BYTE	cylinders[4];
-} HDIHDR;
+	BRESULT	(*reopen)(SXSIDEV sxsi);
+	REG8	(*read)(SXSIDEV sxsi, long pos, UINT8 *buf, UINT size);
+	REG8	(*write)(SXSIDEV sxsi, long pos, const UINT8 *buf, UINT size);
+	REG8	(*format)(SXSIDEV sxsi, long pos);
+	void	(*close)(SXSIDEV sxsi);
+	void	(*destroy)(SXSIDEV sxsi);
 
-typedef struct {
-	char	sig[3];
-	char	ver[4];
-	char	delimita;
-	char	comment[128];
-	BYTE	padding1[4];
-	BYTE	mbsize[2];
-	BYTE	sectorsize[2];
-	BYTE	sectors;
-	BYTE	surfaces;
-	BYTE	cylinders[2];
-	BYTE	totals[4];
-	BYTE	padding2[0x44];
-} VHDHDR;
-
-typedef struct {
+	INTPTR	hdl;
 	long	totals;
 	UINT16	cylinders;
 	UINT16	size;
 	UINT8	sectors;
 	UINT8	surfaces;
-	UINT16	type;
+	UINT8	mediatype;
+	UINT8	padding;
 	UINT32	headersize;
-	long	fh;
-	char	fname[MAX_PATH];
-} _SXSIDEV, *SXSIDEV;
+
+	OEMCHAR	fname[MAX_PATH];
+	UINT	ftype;
+};
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern const char sig_vhd[8];
-extern const char sig_nhd[15];
-extern const SASIHDD sasihdd[7];
-
 void sxsi_initialize(void);
+void sxsi_allflash(void);
+void sxsi_alltrash(void);
+BOOL sxsi_isconnect(SXSIDEV sxsi);
+BRESULT sxsi_prepare(SXSIDEV sxsi);
 
 SXSIDEV sxsi_getptr(REG8 drv);
-const char *sxsi_getname(REG8 drv);
-BOOL sxsi_hddopen(REG8 drv, const char *file);
-
-void sxsi_open(void);
-void sxsi_flash(void);
-void sxsi_trash(void);
+OEMCHAR *sxsi_getfilename(REG8 drv);
+BRESULT sxsi_setdevtype(REG8 drv, UINT8 dev);
+UINT8 sxsi_getdevtype(REG8 drv);
+BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname);
+void sxsi_devclose(REG8 drv);
+REG8 sxsi_read(REG8 drv, long pos, UINT8 *buf, UINT size);
+REG8 sxsi_write(REG8 drv, long pos, const UINT8 *buf, UINT size);
+REG8 sxsi_format(REG8 drv, long pos);
 
 BOOL sxsi_issasi(void);
 BOOL sxsi_isscsi(void);
 BOOL sxsi_iside(void);
-
-REG8 sxsi_read(REG8 drv, long pos, BYTE *buf, UINT size);
-REG8 sxsi_write(REG8 drv, long pos, const BYTE *buf, UINT size);
-REG8 sxsi_format(REG8 drv, long pos);
 
 #ifdef __cplusplus
 }

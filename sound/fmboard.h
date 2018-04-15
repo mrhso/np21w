@@ -13,30 +13,30 @@
 
 
 typedef struct {
-	BYTE	reg[0x400];
-	BYTE	opnreg;
-	BYTE	extreg;
-	BYTE	opn2reg;
-	BYTE	ext2reg;
-	BYTE	adpcmmask;
-	BYTE	channels;
-	BYTE	extend;
-	BYTE	padding;
+	UINT	addr;
+	UINT	addr2;
+	UINT8	data;
+	UINT8	data2;
 	UINT16	base;
+	UINT8	adpcmmask;
+	UINT8	channels;
+	UINT8	extend;
+	UINT8	_padding;
+	UINT8	reg[0x400];
 } OPN_T;
 
 typedef struct {
 	UINT16	port;
-	BYTE	psg3reg;
-	BYTE	rhythm;
+	UINT8	psg3reg;
+	UINT8	rhythm;
 } AMD98;
 
 typedef struct {
-	BYTE	porta;
-	BYTE	portb;
-	BYTE	portc;
-	BYTE	mask;
-	BYTE	key[8];
+	UINT8	porta;
+	UINT8	portb;
+	UINT8	portc;
+	UINT8	mask;
+	UINT8	key[8];
 	int		sync;
 	int		ch;
 } MUSICGEN;
@@ -55,13 +55,15 @@ extern	_TMS3631	tms3631;
 extern	_FMTIMER	fmtimer;
 extern	_OPNGEN		opngen;
 extern	OPNCH		opnch[OPNCH_MAX];
-extern	_PSGGEN		psg1;
-extern	_PSGGEN		psg2;
-extern	_PSGGEN		psg3;
+extern	_PSGGEN		__psg[3];
 extern	_RHYTHM		rhythm;
 extern	_ADPCM		adpcm;
 extern	_PCM86		pcm86;
 extern	_CS4231		cs4231;
+
+#define	psg1	__psg[0]
+#define	psg2	__psg[1]
+#define	psg3	__psg[2]
 
 
 REG8 fmboard_getjoy(PSGGEN psg);

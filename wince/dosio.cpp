@@ -1,4 +1,5 @@
 #include	"compiler.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 
 
@@ -11,55 +12,23 @@ static	OEMCHAR	*curfilep = curpath;
 void dosio_init(void) { }
 void dosio_term(void) { }
 
+
 											// ファイル操作
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-static HANDLE _CreateFile(const OEMCHAR *lpFileName,
-					DWORD dwDesiredAccess,
-					DWORD dwShareMode,
-					LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-					DWORD dwCreationDisposition,
-					DWORD dwFlagsAndAttributes,
-					HANDLE hTemplateFile) {
-
-	UINT16	ucs2[MAX_PATH];
-
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, lpFileName, -1,
-													ucs2, NELEMENTS(ucs2));
-	return(CreateFile(ucs2, dwDesiredAccess, dwShareMode,
-						lpSecurityAttributes, dwCreationDisposition,
-						dwFlagsAndAttributes, hTemplateFile));
-}
-#elif defined(OSLANG_UTF8)
-static HANDLE _CreateFile(const OEMCHAR *lpFileName,
-					DWORD dwDesiredAccess,
-					DWORD dwShareMode,
-					LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-					DWORD dwCreationDisposition,
-					DWORD dwFlagsAndAttributes,
-					HANDLE hTemplateFile) {
-
-	UINT16	ucs2[MAX_PATH];
-
-	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), lpFileName, (UINT)-1);
-	return(CreateFile(ucs2, dwDesiredAccess, dwShareMode,
-						lpSecurityAttributes, dwCreationDisposition,
-						dwFlagsAndAttributes, hTemplateFile));
-}
-#else
-#define	_CreateFile(a, b, c, d, e, f, g)	CreateFile(a, b, c, d, e, f, g)
-#endif
-
-
 FILEH file_open(const OEMCHAR *path) {
 
-	FILEH	ret;
-
-	if ((ret = _CreateFile(path, GENERIC_READ | GENERIC_WRITE,
-						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
-													== INVALID_HANDLE_VALUE) {
-		if ((ret = _CreateFile(path, GENERIC_READ,
-						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
-													== INVALID_HANDLE_VALUE) {
+#if defined(OEMCHAR_SAME_TCHAR)
+	const TCHAR *tcharpath = path;
+#else
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
+#endif
+	FILEH ret;
+	ret = CreateFile(tcharpath, GENERIC_READ | GENERIC_WRITE,
+						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (ret == INVALID_HANDLE_VALUE) {
+		ret = CreateFile(tcharpath, GENERIC_READ,
+						0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (ret == INVALID_HANDLE_VALUE) {
 			return(FILEH_INVALID);
 		}
 	}
@@ -68,26 +37,40 @@ FILEH file_open(const OEMCHAR *path) {
 
 FILEH file_open_rb(const OEMCHAR *path) {
 
-	FILEH	ret;
-
-	if ((ret = _CreateFile(path, GENERIC_READ, FILE_SHARE_READ, 0,
-								OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL))
-													== INVALID_HANDLE_VALUE) {
+#if defined(OEMCHAR_SAME_TCHAR)
+	const TCHAR *tcharpath = path;
+#else
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
+#endif
+	FILEH ret;
+	ret = CreateFile(tcharpath, GENERIC_READ, FILE_SHARE_READ, 0,
+								OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (ret != INVALID_HANDLE_VALUE) {
+		return(ret);
+	}
+	else {
 		return(FILEH_INVALID);
 	}
-	return(ret);
 }
 
 FILEH file_create(const OEMCHAR *path) {
 
-	FILEH	ret;
-
-	if ((ret = _CreateFile(path, GENERIC_READ | GENERIC_WRITE,
-						 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL))
-											== INVALID_HANDLE_VALUE) {
+#if defined(OEMCHAR_SAME_TCHAR)
+	const TCHAR *tcharpath = path;
+#else
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
+#endif
+	FILEH ret;
+	ret = CreateFile(tcharpath, GENERIC_READ | GENERIC_WRITE,
+						 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (ret != INVALID_HANDLE_VALUE) {
+		return(ret);
+	}
+	else {
 		return(FILEH_INVALID);
 	}
-	return(ret);
 }
 
 long file_seek(FILEH handle, long pointer, int method) {
@@ -131,7 +114,8 @@ UINT file_getsize(FILEH handle) {
 	return(GetFileSize(handle, NULL));
 }
 
-static BOOL cnvdatetime(FILETIME *file, DOSDATE *dosdate, DOSTIME *dostime) {
+static BRESULT cnvdatetime(const FILETIME *file,
+										DOSDATE *dosdate, DOSTIME *dostime) {
 
 	FILETIME	localtime;
 	SYSTEMTIME	systime;
@@ -166,50 +150,35 @@ short file_getdatetime(FILEH handle, DOSDATE *dosdate, DOSTIME *dostime) {
 
 short file_delete(const OEMCHAR *path) {
 
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-	UINT16	ucs2[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
-													ucs2, NELEMENTS(ucs2));
-	return(DeleteFile(ucs2)?0:-1);
-#elif defined(OSLANG_UTF8)
-	UINT16	ucs2[MAX_PATH];
-	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
-	return(DeleteFile(ucs2)?0:-1);
+#if defined(OEMCHAR_SAME_TCHAR)
+	const TCHAR *tcharpath = path;
 #else
-	return(DeleteFile(path)?0:-1);
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
 #endif
+	return(DeleteFile(tcharpath)?0:-1);
 }
 
 short file_attr(const OEMCHAR *path) {
 
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-	UINT16	ucs2[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
-													ucs2, NELEMENTS(ucs2));
-	return((short)GetFileAttributes(ucs2));
-#elif defined(OSLANG_UTF8)
-	UINT16	ucs2[MAX_PATH];
-	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
-	return((short)GetFileAttributes(ucs2));
+#if defined(OEMCHAR_SAME_TCHAR)
+const TCHAR *tcharpath = path;
 #else
-	return((short)GetFileAttributes(path));
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
 #endif
+	return((short)GetFileAttributes(tcharpath));
 }
 
 short file_dircreate(const OEMCHAR *path) {
 
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-	UINT16	ucs2[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
-													ucs2, NELEMENTS(ucs2));
-	return(CreateDirectory(ucs2, NULL)?0:-1);
-#elif defined(OSLANG_UTF8)
-	UINT16	ucs2[MAX_PATH];
-	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
-	return(CreateDirectory(ucs2, NULL)?0:-1);
+#if defined(OEMCHAR_SAME_TCHAR)
+	const TCHAR *tcharpath = path;
 #else
-	return(CreateDirectory(path, NULL)?0:-1);
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
 #endif
+	return(CreateDirectory(tcharpath, NULL)?0:-1);
 }
 
 
@@ -221,7 +190,7 @@ void file_setcd(const OEMCHAR *exepath) {
 	*curfilep = '\0';
 }
 
-char *file_getcd(const OEMCHAR *path) {
+OEMCHAR *file_getcd(const OEMCHAR *path) {
 
 	file_cpyname(curfilep, path, NELEMENTS(curpath) - (curfilep - curpath));
 	return(curpath);
@@ -261,25 +230,17 @@ short file_attr_c(const OEMCHAR *path) {
 // ----
 
 #if !defined(_WIN32_WCE)
-static const OEMCHAR str_selfdir[] = OEMTEXT(".");
-static const OEMCHAR str_parentdir[] = OEMTEXT("..");
+static const TCHAR str_selfdir[] = _T(".");
+static const TCHAR str_parentdir[] = _T("..");
 #endif
 static const OEMCHAR str_wildcard[] = OEMTEXT("*.*");
 
-static BOOL setflist(WIN32_FIND_DATA *w32fd, FLINFO *fli) {
+static BRESULT setflist(const WIN32_FIND_DATA *w32fd, FLINFO *fli) {
 
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-	WideCharToMultiByte(CP_ACP, 0, w32fd->cFileName, -1,
-								fli->path, NELEMENTS(fli->path), NULL, NULL);
-#elif defined(OSLANG_UTF8)
-	ucscnv_ucs2toutf8(fli->path, NELEMENTS(fli->path), w32fd->cFileName, -1);
-#else
-	file_cpyname(fli->path, w32fd->cFileName, NELEMENTS(fli->path));
-#endif
 #if !defined(_WIN32_WCE)
 	if ((w32fd->dwFileAttributes & FILEATTR_DIRECTORY) &&
-		((!file_cmpname(fli->path, str_selfdir)) ||
-		(!file_cmpname(fli->path, str_parentdir)))) {
+		((!lstrcmp(w32fd->cFileName, str_selfdir)) ||
+		(!lstrcmp(w32fd->cFileName, str_parentdir)))) {
 		return(FAILURE);
 	}
 #endif
@@ -287,32 +248,30 @@ static BOOL setflist(WIN32_FIND_DATA *w32fd, FLINFO *fli) {
 	fli->size = w32fd->nFileSizeLow;
 	fli->attr = w32fd->dwFileAttributes;
 	cnvdatetime(&w32fd->ftLastWriteTime, &fli->date, &fli->time);
+#if defined(OEMCHAR_SAME_TCHAR)
+	file_cpyname(fli->path, w32fd->cFileName, NELEMENTS(fli->path));
+#else
+	tchartooem(fli->path, NELEMENTS(fli->path), w32fd->cFileName, (UINT)-1);
+#endif
 	return(SUCCESS);
 }
 
 FLISTH file_list1st(const OEMCHAR *dir, FLINFO *fli) {
 
-	OEMCHAR			path[MAX_PATH];
-	HANDLE			hdl;
-	WIN32_FIND_DATA	w32fd;
-
+	OEMCHAR path[MAX_PATH];
 	file_cpyname(path, dir, NELEMENTS(path));
 	file_setseparator(path, NELEMENTS(path));
 	file_catname(path, str_wildcard, NELEMENTS(path));
 	TRACEOUT(("file_list1st %s", path));
-
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-	UINT16	ucs2[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1,
-													ucs2, NELEMENTS(ucs2));
-	hdl = FindFirstFile(ucs2, &w32fd);
-#elif defined(OSLANG_UTF8)
-	UINT16	ucs2[MAX_PATH];
-	ucscnv_utf8toucs2(ucs2, NELEMENTS(ucs2), path, (UINT)-1);
-	hdl = FindFirstFile(ucs2, &w32fd);
+#if defined(OEMCHAR_SAME_TCHAR)
+const TCHAR *tcharpath = path;
 #else
-	hdl = FindFirstFile(path, &w32fd);
+	TCHAR tcharpath[MAX_PATH];
+	oemtotchar(tcharpath, NELEMENTS(tcharpath), path, (UINT)-1);
 #endif
+	HANDLE hdl;
+	WIN32_FIND_DATA w32fd;
+	hdl = FindFirstFile(tcharpath, &w32fd);
 	if (hdl != INVALID_HANDLE_VALUE) {
 		do {
 			if (setflist(&w32fd, fli) == SUCCESS) {
@@ -324,7 +283,7 @@ FLISTH file_list1st(const OEMCHAR *dir, FLINFO *fli) {
 	return(FLISTH_INVALID);
 }
 
-BOOL file_listnext(FLISTH hdl, FLINFO *fli) {
+BRESULT file_listnext(FLISTH hdl, FLINFO *fli) {
 
 	WIN32_FIND_DATA	w32fd;
 
@@ -344,8 +303,8 @@ void file_listclose(FLISTH hdl) {
 
 OEMCHAR *file_getname(const OEMCHAR *path) {
 
-	int			csize;
 const OEMCHAR	*ret;
+	int			csize;
 
 	ret = path;
 	while((csize = milstr_charsize(path)) != 0) {
@@ -368,9 +327,9 @@ void file_cutname(OEMCHAR *path) {
 
 OEMCHAR *file_getext(const OEMCHAR *path) {
 
-	OEMCHAR	*p;
-	OEMCHAR	*q;
-	int		csize;
+const OEMCHAR	*p;
+const OEMCHAR	*q;
+	int			csize;
 
 	p = file_getname(path);
 	q = NULL;
@@ -380,7 +339,7 @@ OEMCHAR *file_getext(const OEMCHAR *path) {
 		}
 		p += csize;
 	}
-	if (!q) {
+	if (q == NULL) {
 		q = p;
 	}
 	return((OEMCHAR *)q);
@@ -409,7 +368,7 @@ void file_cutseparator(OEMCHAR *path) {
 
 	int		pos;
 
-	pos = strlen(path) - 1;
+	pos = OEMSTRLEN(path) - 1;
 	if ((pos > 0) &&							// 2文字以上でー
 		(path[pos] == '\\') &&					// ケツが \ でー
 		(!milstr_kanji2nd(path, pos)) &&		// 漢字の2バイト目ぢゃなくてー
@@ -423,7 +382,7 @@ void file_setseparator(OEMCHAR *path, int maxlen) {
 
 	int		pos;
 
-	pos = strlen(path) - 1;
+	pos = OEMSTRLEN(path) - 1;
 	if ((pos < 0) ||
 		((pos == 1) && (path[1] == ':')) ||
 		((path[pos] == '\\') && (!milstr_kanji2nd(path, pos))) ||

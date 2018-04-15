@@ -48,7 +48,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -66,6 +66,7 @@ LINK32=link.exe
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "Unicode"
 # PROP BASE Intermediate_Dir "Unicode"
+# PROP BASE Ignore_Export_Lib 0
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
@@ -74,7 +75,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_UNICODE" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "UNICODE" /D "_UNICODE" /D "OSLANG_UTF8" /D "RESOURCE_US" /D "ADDON_SOFTKBD" /D "TRACE" /D "MEMTRACE /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "UNICODE" /D "_UNICODE" /D "OSLANG_UCS2" /D "RESOURCE_US" /D "ADDON_SOFTKBD" /D "TRACE" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -92,6 +93,7 @@ LINK32=link.exe
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "VGA"
 # PROP BASE Intermediate_Dir "VGA"
+# PROP BASE Ignore_Export_Lib 0
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
@@ -100,7 +102,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGA" /D "TRACE" /D "MEMTRACE" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGA" /D "TRACE" /D "MEMTRACE" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -126,7 +128,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGA" /D "ADDON_SOFTKBD" /D "TRACE" /D "MEMTRACE" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGA" /D "ADDON_SOFTKBD" /D "TRACE" /D "MEMTRACE" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -152,7 +154,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "TRACE" /D "MEMTRACE" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "TRACE" /D "MEMTRACE" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -177,8 +179,8 @@ LINK32=link.exe
 # PROP Intermediate_Dir "..\obj\wince\vc\vgatest"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGATEST" /YX /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "SIZE_VGATEST" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "NDEBUG"
@@ -204,7 +206,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\i286c" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\lio" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "MEMTRACE" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I ".\\" /I ".\w32" /I ".\gx" /I "..\\" /I "..\common" /I "..\codecnv" /I "..\i286c" /I "..\mem" /I "..\io" /I "..\cbus" /I "..\bios" /I "..\lio" /I "..\vram" /I "..\sound" /I "..\sound\vermouth" /I "..\sound\getsnd" /I "..\fdd" /I "..\font" /I "..\generic" /I "..\embed" /I "..\embed\menu" /I "..\embed\menubase" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "MEMTRACE" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x411 /d "_DEBUG"
@@ -223,10 +225,10 @@ LINK32=link.exe
 # Name "np2 - Win32 Release"
 # Name "np2 - Win32 Unicode"
 # Name "np2 - Win32 VGA"
+# Name "np2 - Win32 VGA KBD"
 # Name "np2 - Win32 Trace"
 # Name "np2 - Win32 VGA test"
 # Name "np2 - Win32 Debug"
-# Name "np2 - Win32 VGA KBD"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -273,22 +275,22 @@ SOURCE=..\COMMON\STRRES.C
 
 SOURCE=..\COMMON\TEXTFILE.C
 # End Source File
+# End Group
+# Begin Group "codecnv"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\COMMON\UCSCNV.C
+SOURCE=..\CODECNV\UCS2UTF8.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\CODECNV\UTF8UCS2.C
 # End Source File
 # End Group
 # Begin Group "cpu"
 
 # PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\I286C\DMAP.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\I286C\EGCMEM.C
-# End Source File
 # Begin Source File
 
 SOURCE=..\I286C\I286C.C
@@ -332,6 +334,38 @@ SOURCE=..\I286C\MEMORY.C
 # Begin Source File
 
 SOURCE=..\I286C\V30PATCH.C
+# End Source File
+# End Group
+# Begin Group "mem"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\MEM\DMAV30.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\DMAX86.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\MEMEGC.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\MEMEMS.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\MEMEPP.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\MEMTRAM.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\MEM\MEMVRAM.C
 # End Source File
 # End Group
 # Begin Group "io"
@@ -540,6 +574,34 @@ SOURCE=..\BIOS\BIOS1F.C
 # Begin Source File
 
 SOURCE=..\BIOS\SXSIBIOS.C
+# End Source File
+# End Group
+# Begin Group "lio"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\LIO\GCIRCLE.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\LIO\GLINE.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\LIO\GPSET.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\LIO\GPUT1.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\LIO\GSCREEN.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\LIO\LIO.C
 # End Source File
 # End Group
 # Begin Group "vram"
@@ -753,33 +815,13 @@ SOURCE=..\FDD\NEWDISK.C
 
 SOURCE=..\FDD\SXSI.C
 # End Source File
-# End Group
-# Begin Group "lio"
-
-# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\LIO\GCIRCLE.C
+SOURCE=..\FDD\SXSICD.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\LIO\GLINE.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GPSET.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GPUT1.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\GSCREEN.C
-# End Source File
-# Begin Source File
-
-SOURCE=..\LIO\LIO.C
+SOURCE=..\FDD\SXSIHDD.C
 # End Source File
 # End Group
 # Begin Group "font"
@@ -820,86 +862,6 @@ SOURCE=..\FONT\FONTX1.C
 # Begin Source File
 
 SOURCE=..\FONT\FONTX68K.C
-# End Source File
-# End Group
-# Begin Group "wince"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\COMMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\DOSIO.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\FONTMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\GX\GX.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\INI.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\INPUTMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\JOYMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\MOUSEMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\NP2.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\W32\NP2.RC
-# End Source File
-# Begin Source File
-
-SOURCE=.\OEMTEXT.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\SCRNMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\SOUNDMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\SYSMENU.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\SYSMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\TASKMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\TIMEMNG.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\W32\TRACE.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=.\WINKBD.CPP
 # End Source File
 # End Group
 # Begin Group "generic"
@@ -996,6 +958,86 @@ SOURCE=..\embed\VRAMHDL.C
 # Begin Source File
 
 SOURCE=..\embed\VRAMMIX.C
+# End Source File
+# End Group
+# Begin Group "wince"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\COMMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\DOSIO.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\FONTMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\GX\GX.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\INI.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\INPUTMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\JOYMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\MOUSEMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\NP2.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\W32\NP2.RC
+# End Source File
+# Begin Source File
+
+SOURCE=.\OEMTEXT.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\SCRNMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\SOUNDMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\SYSMENU.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\SYSMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\TASKMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\TIMEMNG.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\W32\TRACE.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=.\WINKBD.CPP
 # End Source File
 # End Group
 # Begin Source File

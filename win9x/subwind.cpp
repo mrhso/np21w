@@ -49,28 +49,33 @@ typedef struct {
 typedef struct {
 	int		posx;
 	int		posy;
-	BYTE	mode;
-	BYTE	type;
+	UINT8	mode;
+	UINT8	type;
 } KDISPCFG;
 
 static	KDISPWIN	kdispwin;
 static	KDISPCFG	kdispcfg;
 
-static const char kdispapp[] = "Key Display";
-static const char kdispclass[] = "NP2-KeyDispWin";
-static const char str_kdclose[] = "&Close";
+static const TCHAR kdisptitle[] = _T("Key Display");
+static const TCHAR kdispclass[] = _T("NP2-KeyDispWin");
+static const TCHAR str_kdclose[] = _T("&Close");
 
 static const UINT32 kdisppal[KEYDISP_PALS] =
 									{0x00000000, 0xffffffff, 0xf9ff0000};
 
-static const INITBL kdispini[] = {
-	{"WindposX", INITYPE_SINT32,	&kdispcfg.posx,			0},
-	{"WindposY", INITYPE_SINT32,	&kdispcfg.posy,			0},
-	{"keydmode", INITYPE_UINT8,		&kdispcfg.mode,			0},
-	{"windtype", INITYPE_BOOL,		&kdispcfg.type,			0}};
+#if defined(OSLANG_UTF8)
+static const OEMCHAR kdispapp[] = OEMTEXT("Key Display");
+#else
+#define	kdispapp	kdisptitle
+#endif
+static const PFTBL kdispini[] = {
+				PFVAL("WindposX", PFTYPE_SINT32,	&kdispcfg.posx),
+				PFVAL("WindposY", PFTYPE_SINT32,	&kdispcfg.posy),
+				PFVAL("keydmode", PFTYPE_UINT8,		&kdispcfg.mode),
+				PFVAL("windtype", PFTYPE_BOOL,		&kdispcfg.type)};
 
 
-static BYTE kdgetpal8(CMNPALFN *self, UINT num) {
+static UINT8 kdgetpal8(CMNPALFN *self, UINT num) {
 
 	if (num < KEYDISP_PALS) {
 		return(kdisppal[num] >> 24);
@@ -127,7 +132,7 @@ static void kdsetwinsize(void) {
 	winlocex_destroy(wlex);
 }
 
-static void kdsetdispmode(BYTE mode) {
+static void kdsetdispmode(UINT8 mode) {
 
 	HMENU	hmenu;
 
@@ -305,14 +310,14 @@ BOOL kdispwin_initialize(HINSTANCE hPreInst) {
 void kdispwin_create(void) {
 
 	HWND		hwnd;
-	BYTE		mode;
+	UINT8		mode;
 	CMNPALFN	palfn;
 
 	if (kdispwin.hwnd != NULL) {
 		return;
 	}
 	ZeroMemory(&kdispwin, sizeof(kdispwin));
-	hwnd = CreateWindow(kdispclass, kdispapp,
+	hwnd = CreateWindow(kdispclass, kdisptitle,
 						WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 						WS_MINIMIZEBOX,
 						kdispcfg.posx, kdispcfg.posy,
@@ -368,9 +373,9 @@ HWND kdispwin_gethwnd(void) {
 	return(kdispwin.hwnd);
 }
 
-void kdispwin_draw(BYTE cnt) {
+void kdispwin_draw(UINT8 cnt) {
 
-	BYTE	flag;
+	UINT8	flag;
 
 	if (kdispwin.hwnd) {
 		if (!cnt) {
@@ -386,21 +391,21 @@ void kdispwin_draw(BYTE cnt) {
 
 void kdispwin_readini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	ZeroMemory(&kdispcfg, sizeof(kdispcfg));
 	kdispcfg.posx = CW_USEDEFAULT;
 	kdispcfg.posy = CW_USEDEFAULT;
-	initgetfile(path, sizeof(path));
-	ini_read(path, kdispapp, kdispini, sizeof(kdispini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_read(path, kdispapp, kdispini, NELEMENTS(kdispini));
 }
 
 void kdispwin_writeini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	initgetfile(path, sizeof(path));
-	ini_write(path, kdispapp, kdispini, sizeof(kdispini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_write(path, kdispapp, kdispini, NELEMENTS(kdispini));
 }
 #endif
 
@@ -426,12 +431,18 @@ typedef struct {
 static	MDBGWIN		mdbgwin;
 static	MDBGCFG		mdbgcfg;
 
-static const char mdbgapp[] = "Memory Map";
-static const char mdbgclass[] = "NP2-MemDbgWin";
-static const INITBL mdbgini[] = {
-	{"WindposX", INITYPE_SINT32,	&mdbgcfg.posx,			0},
-	{"WindposY", INITYPE_SINT32,	&mdbgcfg.posy,			0},
-	{"windtype", INITYPE_BOOL,		&mdbgcfg.type,			0}};
+static const TCHAR mdbgtitle[] = _T("Memory Map");
+static const TCHAR mdbgclass[] = _T("NP2-MemDbgWin");
+
+#if defined(OSLANG_UTF8)
+static const OEMCHAR mdbgapp[] = OEMTEXT("Memory Map");
+#else
+#define	mdbgapp		mdbgtitle
+#endif
+static const PFTBL mdbgini[] = {
+				PFVAL("WindposX", PFTYPE_SINT32,	&mdbgcfg.posx),
+				PFVAL("WindposY", PFTYPE_SINT32,	&mdbgcfg.posy),
+				PFVAL("windtype", PFTYPE_BOOL,		&mdbgcfg.type)};
 
 
 static void mdpalcnv(CMNPAL *dst, const RGB32 *src, UINT pals, UINT bpp) {
@@ -597,7 +608,7 @@ void mdbgwin_create(void) {
 	}
 	ZeroMemory(&mdbgwin, sizeof(mdbgwin));
 	memdbg32_getsize(&mdbgwin.width, &mdbgwin.height);
-	hwnd = CreateWindow(mdbgclass, mdbgapp,
+	hwnd = CreateWindow(mdbgclass, mdbgtitle,
 						WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 						WS_MINIMIZEBOX,
 						mdbgcfg.posx, mdbgcfg.posy,
@@ -645,20 +656,20 @@ HWND mdbgwin_gethwnd(void) {
 
 void mdbgwin_readini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	mdbgcfg.posx = CW_USEDEFAULT;
 	mdbgcfg.posy = CW_USEDEFAULT;
-	initgetfile(path, sizeof(path));
-	ini_read(path, mdbgapp, mdbgini, sizeof(mdbgini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_read(path, mdbgapp, mdbgini, NELEMENTS(mdbgini));
 }
 
 void mdbgwin_writeini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	initgetfile(path, sizeof(path));
-	ini_write(path, mdbgapp, mdbgini, sizeof(mdbgini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_write(path, mdbgapp, mdbgini, NELEMENTS(mdbgini));
 }
 #endif
 
@@ -683,12 +694,18 @@ typedef struct {
 static	SKBDWIN		skbdwin;
 static	SKBDCFG		skbdcfg;
 
-static const char skbdapp[] = "Soft Keyboard";
-static const char skbdclass[] = "NP2-SoftKBDWin";
-static const INITBL skbdini[] = {
-	{"WindposX", INITYPE_SINT32,	&skbdcfg.posx,			0},
-	{"WindposY", INITYPE_SINT32,	&skbdcfg.posy,			0},
-	{"windtype", INITYPE_BOOL,		&skbdcfg.type,			0}};
+static const TCHAR skbdtitle[] = _T("Soft Keyboard");
+static const TCHAR skbdclass[] = _T("NP2-SoftKBDWin");
+
+#if defined(OSLANG_UTF8)
+static const OEMCHAR skbdapp[] = OEMTEXT("Soft Keyboard");
+#else
+#define	skbdapp		skbdtitle
+#endif
+static const PFTBL skbdini[] = {
+				PFVAL("WindposX", PFTYPE_SINT32,	&skbdcfg.posx),
+				PFVAL("WindposY", PFTYPE_SINT32,	&skbdcfg.posy),
+				PFVAL("windtype", PFTYPE_BOOL,		&skbdcfg.type)};
 
 static void skpalcnv(CMNPAL *dst, const RGB32 *src, UINT pals, UINT bpp) {
 
@@ -874,7 +891,7 @@ void skbdwin_create(void) {
 	if (softkbd_getsize(&skbdwin.width, &skbdwin.height) != SUCCESS) {
 		return;
 	}
-	hwnd = CreateWindow(skbdclass, skbdapp,
+	hwnd = CreateWindow(skbdclass, skbdtitle,
 						WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 						WS_MINIMIZEBOX,
 						skbdcfg.posx, skbdcfg.posy,
@@ -922,20 +939,20 @@ void skbdwin_process(void) {
 
 void skbdwin_readini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	skbdcfg.posx = CW_USEDEFAULT;
 	skbdcfg.posy = CW_USEDEFAULT;
-	initgetfile(path, sizeof(path));
-	ini_read(path, skbdapp, skbdini, sizeof(skbdini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_read(path, skbdapp, skbdini, NELEMENTS(skbdini));
 }
 
 void skbdwin_writeini(void) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	initgetfile(path, sizeof(path));
-	ini_write(path, skbdapp, skbdini, sizeof(skbdini)/sizeof(INITBL));
+	initgetfile(path, NELEMENTS(path));
+	ini_write(path, skbdapp, skbdini, NELEMENTS(skbdini));
 }
 #endif
 

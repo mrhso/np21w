@@ -68,8 +68,16 @@ static	UINT8		ioterminate[0x100];
 static void IOOUTCALL defout8(UINT port, REG8 dat) {
 
 #if !defined(DISABLE_SOUND)
-	if ((port & 0xfff0) == cs4231.port) {
-		cs4231io_w8(port, dat);
+	UINT	tmp;
+
+	tmp = port - cs4231.port[0];
+	if (tmp < 8) {
+		cs4231io0_w8(port, dat);
+		return;
+	}
+	tmp = port - cs4231.port[5];
+	if (tmp < 2) {
+		cs4231io5_w8(port, dat);
 		return;
 	}
 #endif
@@ -83,8 +91,15 @@ static void IOOUTCALL defout8(UINT port, REG8 dat) {
 static REG8 IOINPCALL definp8(UINT port) {
 
 #if !defined(DISABLE_SOUND)
-	if ((port & 0xfff0) == cs4231.port) {
-		return(cs4231io_r8(port));
+	UINT	tmp;
+
+	tmp = port - cs4231.port[0];
+	if (tmp < 8) {
+		return(cs4231io0_r8(port));
+	}
+	tmp = port - cs4231.port[5];
+	if (tmp < 2) {
+		return(cs4231io5_r8(port));
 	}
 #endif
 	if ((port & 0xf0ff) == 0x801e) {
@@ -243,7 +258,7 @@ void iocore_attachsysinpex(UINT port, UINT mask,
 
 // ----
 
-static BOOL makesndiofunc(UINT port) {
+static BRESULT makesndiofunc(UINT port) {
 
 	IOFUNC	tbl[2];
 	UINT	num;
@@ -273,9 +288,9 @@ static BOOL makesndiofunc(UINT port) {
 	return(SUCCESS);
 }
 
-BOOL iocore_attachsndout(UINT port, IOOUT func) {
+BRESULT iocore_attachsndout(UINT port, IOOUT func) {
 
-	BOOL	r;
+	BRESULT	r;
 	UINT	num;
 
 	r = makesndiofunc(port);
@@ -289,9 +304,9 @@ BOOL iocore_attachsndout(UINT port, IOOUT func) {
 	return(r);
 }
 
-BOOL iocore_attachsndinp(UINT port, IOINP func) {
+BRESULT iocore_attachsndinp(UINT port, IOINP func) {
 
-	BOOL	r;
+	BRESULT	r;
 	UINT	num;
 
 	r = makesndiofunc(port);
@@ -324,7 +339,7 @@ static IOFUNC getextiofunc(UINT port) {
 	return(iof);
 }
 
-BOOL iocore_attachout(UINT port, IOOUT func) {
+BRESULT iocore_attachout(UINT port, IOOUT func) {
 
 	IOFUNC	iof;
 
@@ -338,7 +353,7 @@ BOOL iocore_attachout(UINT port, IOOUT func) {
 	}
 }
 
-BOOL iocore_attachinp(UINT port, IOINP func) {
+BRESULT iocore_attachinp(UINT port, IOINP func) {
 
 	IOFUNC	iof;
 
@@ -363,7 +378,7 @@ const UINT8	*p;
 
 	ZeroMemory(&iocore, sizeof(iocore));
 	ZeroMemory(ioterminate, sizeof(ioterminate));
-	for (i=0; i<(sizeof(termtbl)/sizeof(TERMTBL)); i++) {
+	for (i=0; i<NELEMENTS(termtbl); i++) {
 		p = termtbl[i].item;
 		r = termtbl[i].items;
 		do {
@@ -381,7 +396,7 @@ void iocore_destroy(void) {
 	ioc->iotbl = NULL;
 }
 
-BOOL iocore_build(void) {
+BRESULT iocore_build(void) {
 
 	IOCORE		ioc;
 	IOFUNC		cmn;
@@ -475,13 +490,13 @@ void iocore_cb(const IOCBFN *cbfn, UINT count) {
 
 void iocore_reset(void) {
 
-	iocore_cb(resetfn, sizeof(resetfn)/sizeof(IOCBFN));
+	iocore_cb(resetfn, NELEMENTS(resetfn));
 }
 
 void iocore_bind(void) {
 
 	iocore.busclock = pccore.multiple;
-	iocore_cb(bindfn, sizeof(bindfn)/sizeof(IOCBFN));
+	iocore_cb(bindfn, NELEMENTS(bindfn));
 }
 
 void IOOUTCALL iocore_out8(UINT port, REG8 dat) {

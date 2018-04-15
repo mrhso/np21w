@@ -21,14 +21,14 @@ extern void iptrace_out(void);
 #endif
 
 
-static const BYTE hdd_inquiry[0x20] = {
+static const UINT8 hdd_inquiry[0x20] = {
 			0x00,0x00,0x02,0x02,0x1c,0x00,0x00,0x18,
 			'N', 'E', 'C', 0x20,0x20,0x20,0x20,0x20,
 			'N', 'P', '2', '-', 'H', 'D', 'D', 0x20,
 			0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20};
 
 
-static UINT scsicmd_datain(SXSIDEV sxsi, BYTE *cdb) {
+static UINT scsicmd_datain(SXSIDEV sxsi, UINT8 *cdb) {
 
 	UINT	length;
 
@@ -75,14 +75,14 @@ REG8 scsicmd_select(REG8 id) {
 		return(0x42);
 	}
 	sxsi = sxsi_getptr((REG8)(0x20 + id));
-	if ((sxsi) && (sxsi->type)) {
+	if ((sxsi) && (sxsi->flag & SXSIFLAG_READY)) {
 		scsiio.phase = SCSIPH_COMMAND;
 		return(0x8a);			// Transfer Command—v‹
 	}
 	return(0x42);				// Timeout
 }
 
-REG8 scsicmd_transfer(REG8 id, BYTE *cdb) {
+REG8 scsicmd_transfer(REG8 id, UINT8 *cdb) {
 
 	SXSIDEV	sxsi;
 	UINT	leng;
@@ -92,7 +92,7 @@ REG8 scsicmd_transfer(REG8 id, BYTE *cdb) {
 	}
 
 	sxsi = sxsi_getptr((REG8)(0x20 + id));
-	if ((sxsi == NULL) || (sxsi->type == 0)) {
+	if ((sxsi == NULL) || (!(sxsi->flag & SXSIFLAG_READY))) {
 		return(0x42);
 	}
 
@@ -127,7 +127,7 @@ static REG8 scsicmd_cmd(REG8 id) {
 		return(0x42);
 	}
 	sxsi = sxsi_getptr((REG8)(0x20 + id));
-	if ((sxsi == NULL) || (sxsi->type == 0)) {
+	if ((sxsi == NULL) || (!(sxsi->flag & SXSIFLAG_READY))) {
 		return(0x42);
 	}
 	switch(scsiio.cmd[0]) {
@@ -144,7 +144,7 @@ static REG8 scsicmd_cmd(REG8 id) {
 	return(0xff);
 }
 
-BOOL scsicmd_send(void) {
+BRESULT scsicmd_send(void) {
 
 	switch(scsiio.phase) {
 		case SCSIPH_COMMAND:
@@ -165,7 +165,7 @@ static const UINT8 stat2ret[16] = {
 
 static REG8 bios1bc_seltrans(REG8 id) {
 
-	BYTE	cdb[16];
+	UINT8	cdb[16];
 	REG8	ret;
 
 	MEML_READSTR(CPU_DS, CPU_DX, cdb, 16);

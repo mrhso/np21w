@@ -7,12 +7,12 @@ typedef struct {
 } _CMPARA, *CMPARA;
 
 
-static UINT pararead(COMMNG self, BYTE *data) {
+static UINT pararead(COMMNG self, UINT8 *data) {
 
 	return(0);
 }
 
-static UINT parawrite(COMMNG self, BYTE data) {
+static UINT parawrite(COMMNG self, UINT8 data) {
 
 	CMPARA	para;
 	DWORD	writesize;
@@ -22,7 +22,7 @@ static UINT parawrite(COMMNG self, BYTE data) {
 	return(1);
 }
 
-static BYTE paragetstat(COMMNG self) {
+static UINT8 paragetstat(COMMNG self) {
 
 	return(0);
 }
@@ -49,12 +49,12 @@ static void pararelease(COMMNG self) {
 
 COMMNG cmpara_create(UINT port) {
 
-	char	commstr[16];
+	TCHAR	commstr[16];
 	HANDLE	hdl;
 	COMMNG	ret;
 	CMPARA	para;
 
-	wsprintf(commstr, "LPT%u", port);
+	wsprintf(commstr, _T("LPT%u"), port);
 	hdl = CreateFile(commstr, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, NULL);
 	if (hdl == INVALID_HANDLE_VALUE) {
 		goto cpcre_err1;

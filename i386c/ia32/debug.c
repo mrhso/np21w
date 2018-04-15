@@ -1,4 +1,4 @@
-/*	$Id: debug.c,v 1.11 2004/07/29 13:06:08 monaka Exp $	*/
+/*	$Id: debug.c,v 1.13 2005/03/12 12:32:54 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -12,8 +12,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -31,8 +29,8 @@
 
 #include "cpu.h"
 #include "memory.h"
-#ifdef USE_FPU
-#include "instructions/fpu/fpu.h"
+#if defined(USE_FPU)
+#include "instructions/fpu/fp.h"
 #endif
 
 
@@ -82,39 +80,6 @@ cpu_reg2str(void)
 	return buf;
 }
 
-#ifdef USE_FPU
-char *
-fpu_reg2str(void)
-{
-	static char buf[512];
-	char tmp[128];
-	int i;
-	int no;
-
-	strcpy(buf, "st=\n");
-	for (no = 0; no < 8; no++) {
-		for (i = 9; i >= 0; i--) {
-			snprintf(tmp, sizeof(tmp), "%02x", FPU_ST[no][i]);
-			strcat(buf, tmp);
-		}
-		strcat(buf, "\n");
-	}
-
-	snprintf(tmp, sizeof(tmp),
-	    "ctrl=%04x  status=%04x  tag=%04x\n"
-	    "inst=%08x%04x  data=%08x%04x  op=%03x\n",
-	    FPU_CTRLWORD,
-	    FPU_STATUSWORD,
-	    FPU_TAGWORD,
-	    FPU_INSTPTR_OFFSET, FPU_INSTPTR_SEG,
-	    FPU_DATAPTR_OFFSET, FPU_DATAPTR_SEG,
-	    FPU_LASTINSTOP);
-	strcat(buf, tmp);
-
-	return buf;
-}
-#endif
-
 static char *
 a20str(void)
 {
@@ -132,7 +97,7 @@ put_cpuinfo(void)
 
 	strcpy(buf, cpu_reg2str());
 	strcat(buf, "\n");
-#ifdef USE_FPU
+#if defined(USE_FPU)
 	strcat(buf, fpu_reg2str());
 	strcat(buf, "\n");
 #endif

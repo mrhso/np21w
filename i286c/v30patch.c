@@ -5,8 +5,11 @@
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"bios.h"
-#include	"dmap.h"
+#include	"dmav30.h"
 #include	"i286c.mcr"
+#if defined(ENABLE_TRAP)
+#include	"steptrap.h"
+#endif
 
 
 // victory30 patch
@@ -34,7 +37,7 @@ static	I286OPF6	v30ope0xf6_table[8];
 static	I286OPF6	v30ope0xf7_table[8];
 
 
-static const UINT8 shiftbase16[256] =
+static const UINT8 rotatebase16[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
@@ -52,7 +55,7 @@ static const UINT8 shiftbase16[256] =
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15};
 
-static const UINT8 shiftbase09[256] =
+static const UINT8 rotatebase09[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6,
 				 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4,
 				 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2,
@@ -70,7 +73,7 @@ static const UINT8 shiftbase09[256] =
 				 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5,
 				 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3};
 
-static const UINT8 shiftbase17[256] =
+static const UINT8 rotatebase17[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16,17, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
 				15,16,17, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,
@@ -240,26 +243,36 @@ I286FN v30shift_ea8_data8(void) {			// C0:	shift	EA8, DATA8
 		madr = CALC_EA(op);
 		if (madr >= I286_MEMWRITEMAX) {
 			GET_PCBYTE(cl)
-			if ((op & 0x30) == 0x10) {		// rotate with carry
-				cl = shiftbase09[cl];
+			I286_WORKCLOCK(cl);
+			if (!(op & 0x20)) {					// rotate
+				if (!(op & 0x10)) {
+					cl = rotatebase16[cl];
+				}
+				else {							// rotate with carry
+					cl = rotatebase09[cl];
+				}
 			}
 			else {
-				cl = shiftbase16[cl];
+				cl = max(cl, 9);
 			}
-			I286_WORKCLOCK(cl);
 			sft_e8cl_table[(op >> 3) & 7](madr, cl);
 			return;
 		}
 		out = mem + madr;
 	}
 	GET_PCBYTE(cl)
-	if ((op & 0x30) == 0x10) {		// rotate with carry
-		cl = shiftbase09[cl];
+	I286_WORKCLOCK(cl);
+	if (!(op & 0x20)) {					// rotate
+		if (!(op & 0x10)) {
+			cl = rotatebase16[cl];
+		}
+		else {							// rotate with carry
+			cl = rotatebase09[cl];
+		}
 	}
 	else {
-		cl = shiftbase16[cl];
+		cl = max(cl, 9);
 	}
-	I286_WORKCLOCK(cl);
 	sft_r8cl_table[(op >> 3) & 7](out, cl);
 }
 
@@ -280,26 +293,36 @@ I286FN v30shift_ea16_data8(void) {			// C1:	shift	EA16, DATA8
 		madr = CALC_EA(op);
 		if (INHIBIT_WORDP(madr)) {
 			GET_PCBYTE(cl);
-			if ((op & 0x30) == 0x10) {		// rotate with carry
-				cl = shiftbase17[cl];
-			}
-			else {
-				cl = shiftbase16[cl];
-			}
 			I286_WORKCLOCK(cl);
+			if (!(op & 0x20)) {					// rotate
+				if (!(op & 0x10)) {
+					cl = rotatebase16[cl];
+				}
+				else {							// with carry
+					cl = rotatebase17[cl];
+				}
+			}
+			else {								// shift
+				cl = max(cl, 17);
+			}
 			sft_e16cl_table[(op >> 3) & 7](madr, cl);
 			return;
 		}
 		out = (UINT16 *)(mem + madr);
 	}
 	GET_PCBYTE(cl);
-	if ((op & 0x30) == 0x10) {		// rotate with carry
-		cl = shiftbase17[cl];
-	}
-	else {
-		cl = shiftbase16[cl];
-	}
 	I286_WORKCLOCK(cl);
+	if (!(op & 0x20)) {					// rotate
+		if (!(op & 0x10)) {
+			cl = rotatebase16[cl];
+		}
+		else {							// with carry
+			cl = rotatebase17[cl];
+		}
+	}
+	else {								// shift
+		cl = max(cl, 17);
+	}
 	sft_r16cl_table[(op >> 3) & 7](out, cl);
 }
 
@@ -321,11 +344,16 @@ I286FN v30shift_ea8_cl(void) {				// D2:	shift EA8, cl
 		if (madr >= I286_MEMWRITEMAX) {
 			cl = I286_CL;
 			I286_WORKCLOCK(cl);
-			if ((op & 0x30) == 0x10) {		// rotate with carry
-				cl = shiftbase09[cl];
+			if (!(op & 0x20)) {					// rotate
+				if (!(op & 0x10)) {
+					cl = rotatebase16[cl];
+				}
+				else {							// rotate with carry
+					cl = rotatebase09[cl];
+				}
 			}
 			else {
-				cl = shiftbase16[cl];
+				cl = max(cl, 9);
 			}
 			sft_e8cl_table[(op >> 3) & 7](madr, cl);
 			return;
@@ -334,11 +362,16 @@ I286FN v30shift_ea8_cl(void) {				// D2:	shift EA8, cl
 	}
 	cl = I286_CL;
 	I286_WORKCLOCK(cl);
-	if ((op & 0x30) == 0x10) {		// rotate with carry
-		cl = shiftbase09[cl];
+	if (!(op & 0x20)) {					// rotate
+		if (!(op & 0x10)) {
+			cl = rotatebase16[cl];
+		}
+		else {							// rotate with carry
+			cl = rotatebase09[cl];
+		}
 	}
 	else {
-		cl = shiftbase16[cl];
+		cl = max(cl, 9);
 	}
 	sft_r8cl_table[(op >> 3) & 7](out, cl);
 }
@@ -361,11 +394,16 @@ I286FN v30shift_ea16_cl(void) {				// D3:	shift EA16, cl
 		if (INHIBIT_WORDP(madr)) {
 			cl = I286_CL;
 			I286_WORKCLOCK(cl);
-			if ((op & 0x30) == 0x10) {		// rotate with carry
-				cl = shiftbase17[cl];
+			if (!(op & 0x20)) {					// rotate
+				if (!(op & 0x10)) {
+					cl = rotatebase16[cl];
+				}
+				else {							// with carry
+					cl = rotatebase17[cl];
+				}
 			}
-			else {
-				cl = shiftbase16[cl];
+			else {								// shift
+				cl = max(cl, 17);
 			}
 			sft_e16cl_table[(op >> 3) & 7](madr, cl);
 			return;
@@ -374,11 +412,16 @@ I286FN v30shift_ea16_cl(void) {				// D3:	shift EA16, cl
 	}
 	cl = I286_CL;
 	I286_WORKCLOCK(cl);
-	if ((op & 0x30) == 0x10) {		// rotate with carry
-		cl = shiftbase17[cl];
+	if (!(op & 0x20)) {					// rotate
+		if (!(op & 0x10)) {
+			cl = rotatebase16[cl];
+		}
+		else {							// with carry
+			cl = rotatebase17[cl];
+		}
 	}
-	else {
-		cl = shiftbase16[cl];
+	else {								// shift
+		cl = max(cl, 17);
 	}
 	sft_r16cl_table[(op >> 3) & 7](out, cl);
 }
@@ -812,23 +855,32 @@ void v30c(void) {
 
 	if (I286_TRAP) {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			v30op[opcode]();
 			if (I286_TRAP) {
 				i286c_interrupt(1);
 			}
-			dmap_v30();
+			dmav30();
 		} while(I286_REMCLOCK > 0);
 	}
 	else if (dmac.working) {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			v30op[opcode]();
-			dmap_v30();
+			dmav30();
 		} while(I286_REMCLOCK > 0);
 	}
 	else {
 		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
 			GET_PCBYTE(opcode);
 			v30op[opcode]();
 		} while(I286_REMCLOCK > 0);
@@ -849,6 +901,6 @@ void v30c_step(void) {
 	if (I286_OV) {
 		I286_FLAG |= (O_FLAG);
 	}
-	dmap_v30();
+	dmav30();
 }
 

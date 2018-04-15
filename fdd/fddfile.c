@@ -10,7 +10,7 @@
 
 
 	_FDDFILE	fddfile[MAX_FDDFILE];
-	BYTE		fddlasterror;
+	UINT8		fddlasterror;
 
 
 // ----
@@ -30,12 +30,29 @@ void fddfile_reset2dmode(void) { 			// ver0.29
 #endif
 }
 
-const char *fdd_diskname(REG8 drv) {
+OEMCHAR *fdd_diskname(REG8 drv) {
 
 	if (drv >= MAX_FDDFILE) {
-		return(str_null);
+		return(NULL);
 	}
 	return(fddfile[drv].fname);
+}
+
+OEMCHAR *fdd_getfileex(REG8 drv, UINT *ftype, int *ro) {
+
+	FDDFILE	fdd;
+
+	if (drv >= MAX_FDDFILE) {
+		return((OEMCHAR *)str_null);
+	}
+	fdd = fddfile + drv;
+	if (ftype) {
+		*ftype = fdd->ftype;
+	}
+	if (ro) {
+		*ro = fdd->ro;
+	}
+	return(fdd->fname);
 }
 
 BOOL fdd_diskready(REG8 drv) {
@@ -57,44 +74,59 @@ BOOL fdd_diskprotect(REG8 drv) {
 
 // --------------------------------------------------------------------------
 
-BOOL fdd_set(REG8 drv, const char *fname, UINT ftype, int ro) {
+BRESULT fdd_set(REG8 drv, const OEMCHAR *fname, UINT ftype, int ro) {
 
 	FDDFILE		fdd;
-const char		*p;
+	UINT		fddtype;
+const OEMCHAR	*p;
+	BRESULT		r;
 
 	if (drv >= MAX_FDDFILE) {
 		return(FAILURE);
 	}
-	if (ftype == FTYPE_NONE) {
-		p = file_getext((char *)fname);
+	fddtype = ftype;
+	if (fddtype == FTYPE_NONE) {
+		p = file_getext(fname);
 		if ((!milstr_cmp(p, str_d88)) || (!milstr_cmp(p, str_88d)) ||
 			(!milstr_cmp(p, str_d98)) || (!milstr_cmp(p, str_98d))) {
-			ftype = FTYPE_D88;
+			fddtype = FTYPE_D88;
 		}
 		else if (!milstr_cmp(p, str_fdi)) {
-			ftype = FTYPE_FDI;
+			fddtype = FTYPE_FDI;
 		}
 		else {
-			ftype = FTYPE_BETA;
+			fddtype = FTYPE_BETA;
 		}
 	}
 	fdd = fddfile + drv;
-	switch(ftype) {
+	switch(fddtype) {
 		case FTYPE_FDI:
-			if (fddxdf_setfdi(fdd, fname, ro) == SUCCESS) {
-				return(SUCCESS);
+			r = fddxdf_setfdi(fdd, fname, ro);
+			if (r == SUCCESS) {
+				break;
 			}
+			/* FALLTHROUGH */
 
 		case FTYPE_BETA:
-			return(fddxdf_set(fdd, fname, ro));
+			r = fddxdf_set(fdd, fname, ro);
+			break;
 
 		case FTYPE_D88:
-			return(fddd88_set(fdd, fname, ro));
+			r = fddd88_set(fdd, fname, ro);
+			break;
+
+		default:
+			r = FAILURE;
+	}
+	if (r == SUCCESS) {
+		file_cpyname(fdd->fname, fname, NELEMENTS(fdd->fname));
+		fdd->ftype = ftype;
+		fdd->ro = ro;
 	}
 	return(FAILURE);
 }
 
-BOOL fdd_eject(REG8 drv) {
+BRESULT fdd_eject(REG8 drv) {
 
 	FDDFILE		fdd;
 
@@ -115,7 +147,7 @@ BOOL fdd_eject(REG8 drv) {
 
 // ----
 
-BOOL fdd_diskaccess(void) {
+BRESULT fdd_diskaccess(void) {
 
 	FDDFILE		fdd;
 
@@ -130,11 +162,12 @@ BOOL fdd_diskaccess(void) {
 	return(FAILURE);
 }
 
-BOOL fdd_seek(void) {
+BRESULT fdd_seek(void) {
 
+	BRESULT		ret;
 	FDDFILE		fdd;
-	BOOL		ret = FAILURE;
 
+	ret = FAILURE;
 	fdd = fddfile + fdc.us;
 	switch(fdd->type) {
 		case DISKTYPE_BETA:
@@ -149,7 +182,7 @@ BOOL fdd_seek(void) {
 	return(ret);
 }
 
-BOOL fdd_seeksector(void) {
+BRESULT fdd_seeksector(void) {
 
 	FDDFILE		fdd;
 
@@ -165,7 +198,7 @@ BOOL fdd_seeksector(void) {
 }
 
 
-BOOL fdd_read(void) {
+BRESULT fdd_read(void) {
 
 	FDDFILE		fdd;
 
@@ -181,7 +214,7 @@ BOOL fdd_read(void) {
 	return(FAILURE);
 }
 
-BOOL fdd_write(void) {
+BRESULT fdd_write(void) {
 
 	FDDFILE		fdd;
 
@@ -197,7 +230,7 @@ BOOL fdd_write(void) {
 	return(FAILURE);
 }
 
-BOOL fdd_readid(void) {
+BRESULT fdd_readid(void) {
 
 	FDDFILE		fdd;
 
@@ -213,7 +246,7 @@ BOOL fdd_readid(void) {
 	return(FAILURE);
 }
 
-BOOL fdd_formatinit(void) {
+BRESULT fdd_formatinit(void) {
 
 	if (fddfile[fdc.us].type == DISKTYPE_D88) {
 		return(fdd_formatinit_d88());
@@ -221,7 +254,7 @@ BOOL fdd_formatinit(void) {
 	return(FAILURE);
 }
 
-BOOL fdd_formating(const BYTE *ID) {
+BRESULT fdd_formating(const UINT8 *ID) {
 
 	sysmng_fddaccess(fdc.us);
 	if (fddfile[fdc.us].type == DISKTYPE_D88) {

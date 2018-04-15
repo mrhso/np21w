@@ -66,8 +66,8 @@ static void fetch_if4dos(void) {
 	REG16	seg;
 	IF4DOS	if4dos;
 
-	off = i286_memoryread_w(IF4DOSPTR_ADDR);
-	seg = i286_memoryread_w(IF4DOSPTR_ADDR + 2);
+	off = MEML_READ16(IF4DOSPTR_SEG, IF4DOSPTR_OFF + 0);
+	seg = MEML_READ16(IF4DOSPTR_SEG, IF4DOSPTR_OFF + 2);
 	MEML_READSTR(seg, off, &if4dos, sizeof(if4dos));
 	hostdrv.stat.drive_no = if4dos.drive_no;
 	hostdrv.stat.dosver_major = if4dos.dosver_major;
@@ -242,7 +242,7 @@ static void init_sft(SFTREC sft) {
 	else {
 		sft->open_mode[0] &= 0x0f;
 	}
-	sft->dev_info_word[0] = (BYTE)(0x40 | hostdrv.stat.drive_no);
+	sft->dev_info_word[0] = (UINT8)(0x40 | hostdrv.stat.drive_no);
 	sft->dev_info_word[1] = 0x80;
 	STOREINTELDWORD(sft->dev_drvr_ptr, 0);
 	STOREINTELDWORD(sft->file_pos, 0);
@@ -343,7 +343,7 @@ static BOOL read_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 
 	HDRVFILE	hdf;
 	FILEH		fh;
-	BYTE		work[1024];
+	UINT8		work[1024];
 	UINT		r;
 
 	hdf = (HDRVFILE)listarray_getitem(hostdrv.fhdl, num);
@@ -370,7 +370,7 @@ static BOOL write_data(UINT num, UINT32 pos, UINT size, UINT seg, UINT off) {
 
 	HDRVFILE	hdf;
 	FILEH		fh;
-	BYTE		work[1024];
+	UINT8		work[1024];
 	UINT		r;
 
 	hdf = (HDRVFILE)listarray_getitem(hostdrv.fhdl, num);
@@ -1294,7 +1294,7 @@ void hostdrv_intr(const void *arg1, long arg2) {
 
 	TRACEOUT(("hostdrv: AL=%.2x", intrst.r.b.al));
 
-	if ((intrst.r.b.al >= sizeof(intr_func) / sizeof(HDINTRFN)) ||
+	if ((intrst.r.b.al >= NELEMENTS(intr_func)) ||
 		(intr_func[intrst.r.b.al] == NULL)) {
 		return;
 	}
@@ -1319,15 +1319,15 @@ typedef struct {
 
 static BOOL fhdl_wr(void *vpItem, void *vpArg) {
 
-	char	*p;
+	OEMCHAR	*p;
 	UINT	len;
 
 	p = ((HDRVFILE)vpItem)->path;
-	len = strlen(p);
+	len = OEMSTRLEN(p);
 	statflag_write((STFLAGH)vpArg, &len, sizeof(len));
 	if (len) {
 		if (len < MAX_PATH) {
-			ZeroMemory(p + len, MAX_PATH - len);
+			ZeroMemory(p + len, (MAX_PATH - len) * sizeof(OEMCHAR));
 		}
 		statflag_write((STFLAGH)vpArg, vpItem, sizeof(_HDRVFILE));
 	}
@@ -1336,13 +1336,13 @@ static BOOL fhdl_wr(void *vpItem, void *vpArg) {
 
 static BOOL flist_wr(void *vpItem, void *vpArg) {
 
-	char	*p;
+	OEMCHAR	*p;
 	int		len;
 
 	p = ((HDRVLST)vpItem)->realname;
-	len = strlen(p);
+	len = OEMSTRLEN(p);
 	if (len < MAX_PATH) {
-		ZeroMemory(p + len, MAX_PATH - len);
+		ZeroMemory(p + len, (MAX_PATH - len) * sizeof(OEMCHAR));
 	}
 	statflag_write((STFLAGH)vpArg, vpItem, sizeof(_HDRVLST));
 	return(FALSE);

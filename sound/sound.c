@@ -68,7 +68,7 @@ static void streamprepare(UINT samples) {
 #if defined(SUPPORT_WAVEREC)
 // ---- wave rec
 
-BOOL sound_recstart(const char *filename) {
+BOOL sound_recstart(const OEMCHAR *filename) {
 
 	WAVEWR	rec;
 
@@ -98,7 +98,7 @@ static void streamfilewrite(UINT samples) {
 	CBTBL	*cb;
 	UINT	count;
 	SINT32	buf32[2*512];
-	BYTE	buf[2*2*512];
+	UINT8	buf[2*2*512];
 	UINT	r;
 	UINT	i;
 	SINT32	samp;
@@ -126,8 +126,8 @@ static void streamfilewrite(UINT samples) {
 				samp = -32768;
 			}
 			// little endian‚È‚Ì‚Å satuation_s16‚ÍŽg‚¦‚È‚¢
-			buf[i*2+0] = (BYTE)samp;
-			buf[i*2+1] = (BYTE)(samp >> 8);
+			buf[i*2+0] = (UINT8)samp;
+			buf[i*2+1] = (UINT8)(samp >> 8);
 		}
 		wavewr_write(sndstream.rec, buf, count * 4);
 		samples -= count;
@@ -305,7 +305,7 @@ void sound_sync(void) {
 	}
 	else
 #endif
-	streamprepare(length);
+		streamprepare(length);
 	soundcfg.lastclock += length * soundcfg.clockbase / soundcfg.hzbase;
 	beep_eventreset();
 	SNDCSEC_LEAVE;
@@ -372,10 +372,10 @@ void sound_pcmunlock(const SINT32 *hdl) {
 
 // ---- pcmmix
 
-BOOL pcmmix_regist(PMIXDAT *dat, void *datptr, UINT datsize, UINT rate) {
+BRESULT pcmmix_regist(PMIXDAT *dat, void *datptr, UINT datsize, UINT rate) {
 
 	GETSND	gs;
-	BYTE	tmp[256];
+	UINT8	tmp[256];
 	UINT	size;
 	UINT	r;
 	SINT16	*buf;
@@ -421,12 +421,12 @@ pmr_err1:
 	return(FAILURE);
 }
 
-BOOL pcmmix_regfile(PMIXDAT *dat, const char *fname, UINT rate) {
+BRESULT pcmmix_regfile(PMIXDAT *dat, const OEMCHAR *fname, UINT rate) {
 
 	FILEH	fh;
 	UINT	size;
-	BYTE	*ptr;
-	BOOL	r;
+	UINT8	*ptr;
+	BRESULT	r;
 
 	r = FAILURE;
 	fh = file_open_rb(fname);
@@ -437,7 +437,7 @@ BOOL pcmmix_regfile(PMIXDAT *dat, const char *fname, UINT rate) {
 	if (size == 0) {
 		goto pmrf_err2;
 	}
-	ptr = (BYTE *)_MALLOC(size, fname);
+	ptr = (UINT8 *)_MALLOC(size, fname);
 	if (ptr == NULL) {
 		goto pmrf_err2;
 	}

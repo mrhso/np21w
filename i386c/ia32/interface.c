@@ -1,4 +1,4 @@
-/*	$Id: interface.c,v 1.21 2004/05/23 15:01:45 yui Exp $	*/
+/*	$Id: interface.c,v 1.24 2005/03/12 12:32:54 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -12,8 +12,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -30,10 +28,13 @@
 #include "compiler.h"
 #include "cpu.h"
 #include "ia32.mcr"
+#if defined(USE_FPU)
+#include "instructions/fpu/fp.h"
+#endif
 
 #include "pccore.h"
 #include "iocore.h"
-#include "dmap.h"
+#include "dmax86.h"
 #include "bios.h"
 #if defined(IA32_REBOOT_ON_PANIC)
 #include "pccore.h"
@@ -50,9 +51,11 @@ ia32_initreg(void)
 	CPU_EDX = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
 	CPU_EFLAG = 2;
 	CPU_CR0 = CPU_CR0_CD | CPU_CR0_NW | CPU_CR0_ET;
-#ifndef USE_FPU
+#if defined(USE_FPU)
 	CPU_CR0 |= CPU_CR0_EM | CPU_CR0_NE;
 	CPU_CR0 &= ~CPU_CR0_MP;
+#else
+	CPU_CR0 |= CPU_CR0_ET;
 #endif
 	CPU_MXCSR = 0x1f80;
 	CPU_GDTR_LIMIT = 0xffff;
@@ -76,6 +79,9 @@ ia32_initreg(void)
 	CPU_ADRSMASK = 0x000fffff;
 
 	tlb_init();
+#if defined(USE_FPU)
+	fpu_init();
+#endif
 }
 
 void
@@ -131,7 +137,7 @@ ia32(void)
 	do {
 		exec_1step();
 		if (dmac.working) {
-			dmap();
+			dmax86();
 		}
 	} while (CPU_REMCLOCK > 0);
 #else
@@ -142,12 +148,12 @@ ia32(void)
 				CPU_DR6 |= CPU_DR6_BS;
 				INTERRUPT(1, TRUE, FALSE, 0);
 			}
-			dmap();
+			dmax86();
 		} while (CPU_REMCLOCK > 0);
 	} else if (dmac.working) {
 		do {
 			exec_1step();
-			dmap();
+			dmax86();
 		} while (CPU_REMCLOCK > 0);
 	} else {
 		do {
@@ -189,7 +195,7 @@ ia32_step(void)
 		}
 #endif
 		if (dmac.working) {
-			dmap();
+			dmax86();
 		}
 	} while (CPU_REMCLOCK > 0);
 }

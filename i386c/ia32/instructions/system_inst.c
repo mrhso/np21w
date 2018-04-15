@@ -1,4 +1,4 @@
-/*	$Id: system_inst.c,v 1.29 2004/06/16 12:49:01 monaka Exp $	*/
+/*	$Id: system_inst.c,v 1.31 2005/03/12 12:33:47 monaka Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -12,8 +12,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -288,11 +286,11 @@ MOV_CdRd(void)
 
 			reg = CPU_CR0;
 			src &= CPU_CR0_ALL;
-#ifndef USE_FPU
+#if defined(USE_FPU)
+			src |= CPU_CR0_ET;	/* FPU present */
+#else
 			src |= CPU_CR0_EM | CPU_CR0_NE;
 			src &= ~(CPU_CR0_MP | CPU_CR0_ET);
-#else
-			src |= CPU_CR0_ET;	/* FPU present */
 #endif
 			CPU_CR0 = src;
 			VERBOSE(("MOV_CdRd: %04x:%08x: cr0: 0x%08x <- 0x%08x(%s)", CPU_CS, CPU_PREV_EIP, reg, CPU_CR0, reg32_str[op & 7]));

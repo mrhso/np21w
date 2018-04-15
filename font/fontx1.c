@@ -6,11 +6,11 @@
 #include	"fontdata.h"
 
 
-static void x1knjcpy(BYTE *dst, const BYTE *src, int from, int to) {
+static void x1knjcpy(UINT8 *dst, const UINT8 *src, int from, int to) {
 
 	int		i, j, k;
-const BYTE	*p;
-	BYTE	*q;
+const UINT8	*p;
+	UINT8	*q;
 	UINT	sjis;
 
 	for (i=from; i<to; i++) {
@@ -40,22 +40,22 @@ const BYTE	*p;
 	}
 }
 
-BYTE fontx1_read(const char *filename, BYTE loading) {
+UINT8 fontx1_read(const OEMCHAR *filename, UINT8 loading) {
 
 	FILEH	fh;
-	BYTE	*work;
-	char	fname[MAX_PATH];
+	UINT8	*work;
+	OEMCHAR	fname[MAX_PATH];
 
-	work = (BYTE *)_MALLOC(306176, "x1font");
+	work = (UINT8 *)_MALLOC(306176, "x1font");
 	if (work == NULL) {
 		goto frx1_err1;
 	}
-	file_cpyname(fname, filename, sizeof(fname));
+	file_cpyname(fname, filename, NELEMENTS(fname));
 
 	// 8dot ANKを読み込む必要はある？
 	if (loading & FONT_ANK8) {
 		file_cutname(fname);
-		file_catname(fname, x1ank1name, sizeof(fname));
+		file_catname(fname, x1ank1name, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 			if (file_read(fh, work, 2048) == 2048) {
@@ -70,7 +70,7 @@ BYTE fontx1_read(const char *filename, BYTE loading) {
 	// 16dot ANKを読み込む必要はあるか？
 	if (loading & FONTLOAD_ANK) {
 		file_cutname(fname);
-		file_catname(fname, x1ank2name, sizeof(fname));
+		file_catname(fname, x1ank2name, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 			if (file_read(fh, work, 4096) == 4096) {
@@ -96,7 +96,7 @@ BYTE fontx1_read(const char *filename, BYTE loading) {
 	// 漢字を読み込む必要はあるか？
 	if (loading & (FONT_KNJ1 | FONT_KNJ2)) {
 		file_cutname(fname);
-		file_catname(fname, x1knjname, sizeof(fname));
+		file_catname(fname, x1knjname, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 			if (file_read(fh, work, 306176) == 306176) {

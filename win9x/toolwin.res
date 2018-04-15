@@ -1,16 +1,16 @@
 
-static const char np2toolclass[] = "np2-toolwin";
-static const char np2tooltitle[] = "NP2 tool";
+static const TCHAR np2tooltitle[] = _T("NP2 tool");
+static const TCHAR np2toolclass[] = _T("np2-toolwin");
 
-static const char str_deffont[] = "‚l‚r ‚oƒSƒVƒbƒN";
-static const char str_browse[] = "...";
-static const char str_eject[] = "Eject";
-static const char str_reset[] = "Reset";
-static const char str_power[] = "Power";
+static const OEMCHAR str_deffont[] = OEMTEXT("‚l‚r ‚oƒSƒVƒbƒN");
+static const OEMCHAR str_browse[] = OEMTEXT("...");
+static const OEMCHAR str_eject[] = OEMTEXT("Eject");
+static const OEMCHAR str_reset[] = OEMTEXT("Reset");
+static const OEMCHAR str_power[] = OEMTEXT("Power");
 
-static const char str_static[] = "STATIC";
-static const char str_combobox[] = "COMBOBOX";
-static const char str_button[] = "BUTTON";
+static const TCHAR str_static[] = _T("STATIC");
+static const TCHAR str_combobox[] = _T("COMBOBOX");
+static const TCHAR str_button[] = _T("BUTTON");
 
 static const SUBITEM defsubitem[IDC_MAXITEMS] = {
 		{TCTL_STATIC,	NULL,		 49, 44,   8,   3, 0, 0},
@@ -27,27 +27,28 @@ static const SUBITEM defsubitem[IDC_MAXITEMS] = {
 
 // ----
 
-static const char skintitle[] = "ToolWindow";
+static const OEMCHAR skintitle[] = OEMTEXT("ToolWindow");
 
-static const INITBL skinini1[] = {
-	{"MAIN",		INITYPE_STR,	toolskin.main,	sizeof(toolskin.main)},
-	{"FONT",		INITYPE_STR,	toolskin.font,	sizeof(toolskin.font)},
-	{"FONTSIZE",	INITYPE_SINT32,	&toolskin.fontsize,					0},
-	{"COLOR1",		INITYPE_HEX32,	&toolskin.color1,					0},
-	{"COLOR2",		INITYPE_HEX32,	&toolskin.color2,					0}};
+static const PFTBL skinini1[] = {
+	PFSTR("MAIN",		PFTYPE_STR,		toolskin.main),
+	PFSTR("FONT",		PFTYPE_STR,		toolskin.font),
+	PFVAL("FONTSIZE",	PFTYPE_SINT32,	&toolskin.fontsize),
+	PFVAL("COLOR1",		PFTYPE_HEX32,	&toolskin.color1),
+	PFVAL("COLOR2",		PFTYPE_HEX32,	&toolskin.color2)};
 
-static const INITBL skinini2[] = {
-	{"HDDACC",		INITYPE_ARGS16,	&subitem[IDC_TOOLHDDACC].posx,		5},
-	{"FD1ACC",		INITYPE_ARGS16,	&subitem[IDC_TOOLFDD1ACC].posx,		5},
-	{"FD1LIST",		INITYPE_ARGS16,	&subitem[IDC_TOOLFDD1LIST].posx,	5},
-	{"FD1BROWSE",	INITYPE_ARGS16,	&subitem[IDC_TOOLFDD1BROWSE].posx,	5},
-	{"FD1EJECT",	INITYPE_ARGS16,	&subitem[IDC_TOOLFDD1EJECT].posx,	5},
-	{"FD2ACC",		INITYPE_ARGS16,	&subitem[IDC_TOOLFDD2ACC].posx,		5},
-	{"FD2LIST",		INITYPE_ARGS16,	&subitem[IDC_TOOLFDD2LIST].posx,	5},
-	{"FD2BROWSE",	INITYPE_ARGS16,	&subitem[IDC_TOOLFDD2BROWSE].posx,	5},
-	{"FD2EJECT",	INITYPE_ARGS16,	&subitem[IDC_TOOLFDD2EJECT].posx,	5},
-	{"RESETBTN",	INITYPE_ARGS16,	&subitem[IDC_TOOLRESET].posx,		5},
-	{"POWERBTN",	INITYPE_ARGS16,	&subitem[IDC_TOOLPOWER].posx,		5}};
+static const PFTBL skinini2[] = {
+	PFEXT("HDDACC",		PFTYPE_ARGS16,	&subitem[IDC_TOOLHDDACC].posx,		5),
+	PFEXT("FD1ACC",		PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD1ACC].posx,		5),
+	PFEXT("FD1LIST",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD1LIST].posx,	5),
+	PFEXT("FD1BROWSE",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD1BROWSE].posx,	5),
+	PFEXT("FD1EJECT",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD1EJECT].posx,	5),
+	PFEXT("FD2ACC",		PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD2ACC].posx,		5),
+	PFEXT("FD2LIST",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD2LIST].posx,	5),
+	PFEXT("FD2BROWSE",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD2BROWSE].posx,	5),
+	PFEXT("FD2EJECT",	PFTYPE_ARGS16,	&subitem[IDC_TOOLFDD2EJECT].posx,	5),
+	PFEXT("RESETBTN",	PFTYPE_ARGS16,	&subitem[IDC_TOOLRESET].posx,		5),
+	PFEXT("POWERBTN",	PFTYPE_ARGS16,	&subitem[IDC_TOOLPOWER].posx,		5)
+};
 
 
 // static const DWORD mvccol[MVC_MAXCOLOR] = {
@@ -56,16 +57,16 @@ static const INITBL skinini2[] = {
 
 // ----
 
-static const char str_skindef[] = "<&Base Skin>";
-static const char str_skinsel[] = "&Select Skin...";
-static const char str_toolskin[] = "&Skins";
-static const char str_toolclose[] = "&Close";
+static const TCHAR str_skindef[] = _T("<&Base Skin>");
+static const TCHAR str_skinsel[] = _T("&Select Skin...");
+static const TCHAR str_toolskin[] = _T("&Skins");
+static const TCHAR str_toolclose[] = _T("&Close");
 
-static const char skinui_title[] = "Select skin file";
-static const char skinui_filter[] =								\
-								"ini files (*.ini)\0*.ini\0"	\
-								"text files (*.txt)\0*.txt\0"	\
-								"All files (*.*)\0*.*\0";
-static const char skinui_ext[] = "ini";
+static const TCHAR skinui_title[] = _T("Select skin file");
+static const TCHAR skinui_filter[] =								\
+					_T("ini files (*.ini)\0*.ini\0")				\
+					_T("text files (*.txt)\0*.txt\0")				\
+					_T("All files (*.*)\0*.*\0");
+static const TCHAR skinui_ext[] = _T("ini");
 static const FILESEL skinui = {skinui_title, skinui_ext, skinui_filter, 1};
 

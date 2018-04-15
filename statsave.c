@@ -61,18 +61,19 @@ enum {
 	STATFLAG_CGW,
 #endif
 	STATFLAG_COM,
-	STATFLAG_DISK,
 	STATFLAG_DMA,
 	STATFLAG_EGC,
 	STATFLAG_EPSON,
 	STATFLAG_EVT,
 	STATFLAG_EXT,
+	STATFLAG_FDD,
 	STATFLAG_FM,
 	STATFLAG_GIJ,
 #if defined(SUPPORT_HOSTDRV)
 	STATFLAG_HDRV,
 #endif
-	STATFLAG_MEM
+	STATFLAG_MEM,
+	STATFLAG_SXSI
 };
 
 typedef struct {
@@ -96,41 +97,9 @@ extern	COMMNG	cm_mpu98;
 extern	COMMNG	cm_rs232c;
 
 typedef struct {
-	char	*buf;
+	OEMCHAR	*buf;
 	int		remain;
 } ERR_BUF;
-
-
-// ----
-
-// 関数ポインタを intに変更。
-static BOOL proc2num(void *func, const PROCTBL *tbl, int size) {
-
-	int		i;
-
-	for (i=0; i<size; i++) {
-		if (*(long *)func == (long)tbl->proc) {
-			*(long *)func = (long)tbl->id;
-			return(SUCCESS);
-		}
-		tbl++;
-	}
-	return(FAILURE);
-}
-
-static BOOL num2proc(void *func, const PROCTBL *tbl, int size) {
-
-	int		i;
-
-	for (i=0; i<size; i++) {
-		if (*(long *)func == (long)tbl->id) {
-			*(long *)func = (long)tbl->proc;
-			return(SUCCESS);
-		}
-		tbl++;
-	}
-	return(FAILURE);
-}
 
 
 // ----
@@ -149,7 +118,7 @@ typedef struct {
 	NP2FHDR		f;
 } _SFFILEH, *SFFILEH;
 
-static SFFILEH statflag_open(const char *filename, char *err, int errlen) {
+static SFFILEH statflag_open(const OEMCHAR *filename, OEMCHAR *err, int errlen) {
 
 	FILEH	fh;
 	SFFILEH	ret;
@@ -186,7 +155,7 @@ sfo_err1:
 static int statflag_closesection(SFFILEH sffh) {
 
 	UINT	leng;
-	BYTE	zero[16];
+	UINT8	zero[16];
 
 	if (sffh == NULL) {
 		goto sfcs_err1;
@@ -261,7 +230,7 @@ sfr_err:
 	return(STATFLAG_FAILURE);
 }
 
-static SFFILEH statflag_create(const char *filename) {
+static SFFILEH statflag_create(const OEMCHAR *filename) {
 
 	SFFILEH	ret;
 	FILEH	fh;
@@ -355,12 +324,109 @@ static void statflag_close(SFFILEH sffh) {
 	}
 }
 
-void statflag_seterr(STFLAGH sfh, const char *str) {
+void statflag_seterr(STFLAGH sfh, const OEMCHAR *str) {
 
 	if ((sfh) && (sfh->errlen)) {
 		milstr_ncat(sfh->err, str, sfh->errlen);
 		milstr_ncat(sfh->err, CRCONST, sfh->errlen);
 	}
+}
+
+
+// ---- function
+
+// 関数ポインタを intに変更。
+static BRESULT proc2num(void *func, const PROCTBL *tbl, int size) {
+
+	int		i;
+
+	for (i=0; i<size; i++) {
+		if (*(long *)func == (long)tbl->proc) {
+			*(long *)func = (long)tbl->id;
+			return(SUCCESS);
+		}
+		tbl++;
+	}
+	return(FAILURE);
+}
+
+static BRESULT num2proc(void *func, const PROCTBL *tbl, int size) {
+
+	int		i;
+
+	for (i=0; i<size; i++) {
+		if (*(long *)func == (long)tbl->id) {
+			*(long *)func = (long)tbl->proc;
+			return(SUCCESS);
+		}
+		tbl++;
+	}
+	return(FAILURE);
+}
+
+
+// ---- file
+
+typedef struct {
+	OEMCHAR	path[MAX_PATH];
+	UINT	ftype;
+	int		readonly;
+	DOSDATE	date;
+	DOSTIME	time;
+} STATPATH;
+
+static const OEMCHAR str_updated[] = OEMTEXT("%s: updated");
+static const OEMCHAR str_notfound[] = OEMTEXT("%s: not found");
+
+static int statflag_writepath(STFLAGH sfh, const OEMCHAR *path,
+												UINT ftype, int readonly) {
+
+	STATPATH	sp;
+	FILEH		fh;
+
+	ZeroMemory(&sp, sizeof(sp));
+	if ((path) && (path[0])) {
+		file_cpyname(sp.path, path, NELEMENTS(sp.path));
+		sp.ftype = ftype;
+		sp.readonly = readonly;
+		fh = file_open_rb(path);
+		if (fh != FILEH_INVALID) {
+			file_getdatetime(fh, &sp.date, &sp.time);
+			file_close(fh);
+		}
+	}
+	return(statflag_write(sfh, &sp, sizeof(sp)));
+}
+
+static int statflag_checkpath(STFLAGH sfh, const OEMCHAR *devname) {
+
+	int			ret;
+	STATPATH	sp;
+	FILEH		fh;
+	OEMCHAR		buf[256];
+	DOSDATE		date;
+	DOSTIME		time;
+
+	ret = statflag_read(sfh, &sp, sizeof(sp));
+	if (sp.path[0]) {
+		fh = file_open_rb(sp.path);
+		if (fh != FILEH_INVALID) {
+			file_getdatetime(fh, &date, &time);
+			file_close(fh);
+			if ((memcmp(&sp.date, &date, sizeof(date))) ||
+				(memcmp(&sp.time, &time, sizeof(time)))) {
+				ret |= STATFLAG_DISKCHG;
+				OEMSPRINTF(buf, str_updated, devname);
+				statflag_seterr(sfh, buf);
+			}
+		}
+		else {
+			ret |= STATFLAG_DISKCHG;
+			OEMSPRINTF(buf, str_notfound, devname);
+			statflag_seterr(sfh, buf);
+		}
+	}
+	return(ret);
 }
 
 
@@ -547,7 +613,7 @@ static int nevent_write(STFLAGH sfh, int num) {
 	UINT		i;
 
 	ZeroMemory(&nit, sizeof(nit));
-	for (i=0; i<sizeof(evtnum)/sizeof(ENUMTBL); i++) {
+	for (i=0; i<NELEMENTS(evtnum); i++) {
 		if (evtnum[i].num == num) {
 			nit.id = evtnum[i].id;
 			break;
@@ -591,12 +657,12 @@ static int nevent_read(STFLAGH sfh, UINT *tbl, UINT *pos) {
 
 	ret = statflag_read(sfh, &nit, sizeof(nit));
 
-	for (i=0; i<sizeof(evtnum)/sizeof(ENUMTBL); i++) {
+	for (i=0; i<NELEMENTS(evtnum); i++) {
 		if (nit.id == evtnum[i].id) {
 			break;
 		}
 	}
-	if (i < (sizeof(evtnum)/sizeof(ENUMTBL))) {
+	if (i < NELEMENTS(evtnum)) {
 		num = evtnum[i].num;
 		nevent.item[num].clock = nit.clock;
 		nevent.item[num].flag = nit.flag;
@@ -671,7 +737,7 @@ static int flagsave_gij(STFLAGH sfh, const SFENTRY *tbl) {
 	int		ret;
 	int		i;
 	int		j;
-const BYTE	*fnt;
+const UINT8	*fnt;
 
 	ret = STATFLAG_SUCCESS;
 	for (i=0; i<2; i++) {
@@ -690,7 +756,7 @@ static int flagload_gij(STFLAGH sfh, const SFENTRY *tbl) {
 	int		ret;
 	int		i;
 	int		j;
-	BYTE	*fnt;
+	UINT8	*fnt;
 
 	ret = 0;
 	for (i=0; i<2; i++) {
@@ -725,8 +791,8 @@ enum {
 };
 
 typedef struct {
-	BYTE	keyreg[OPNCH_MAX];
-	BYTE	extop[4];
+	UINT8	keyreg[OPNCH_MAX];
+	UINT8	extop[4];
 } OPNKEY;
 
 static int flagsave_fm(STFLAGH sfh, const SFENTRY *tbl) {
@@ -925,137 +991,153 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *t) {
 #endif
 
 
-// ---- disk
+// ---- fdd
 
-typedef struct {
-	char	path[MAX_PATH];
-	int		readonly;
-	DOSDATE	date;
-	DOSTIME	time;
-} STATDISK;
+static const OEMCHAR str_fddx[] = OEMTEXT("FDD%u");
 
-static const char str_fddx[] = "FDD%u";
-static const char str_sasix[] = "SASI%u";
-static const char str_scsix[] = "SCSI%u";
-static const char str_updated[] = "%s: updated";
-static const char str_notfound[] = "%s: not found";
-
-static int disksave(STFLAGH sfh, const char *path, int readonly) {
-
-	STATDISK	st;
-	FILEH		fh;
-
-	ZeroMemory(&st, sizeof(st));
-	if ((path) && (path[0])) {
-		file_cpyname(st.path, path, sizeof(st.path));
-		st.readonly = readonly;
-		fh = file_open_rb(path);
-		if (fh != FILEH_INVALID) {
-			file_getdatetime(fh, &st.date, &st.time);
-			file_close(fh);
-		}
-	}
-	return(statflag_write(sfh, &st, sizeof(st)));
-}
-
-static int flagsave_disk(STFLAGH sfh, const SFENTRY *tbl) {
-
-	int		ret;
-	BYTE	i;
-
-	sxsi_flash();
-	ret = STATFLAG_SUCCESS;
-	for (i=0; i<4; i++) {
-		ret |= disksave(sfh, fdd_diskname(i), fdd_diskprotect(i));
-	}
-	for (i=0x00; i<0x02; i++) {
-		ret |= disksave(sfh, sxsi_getname(i), 0);
-	}
-	for (i=0x20; i<0x24; i++) {
-		ret |= disksave(sfh, sxsi_getname(i), 0);
-	}
-	(void)tbl;
-	return(ret);
-}
-
-static int diskcheck(STFLAGH sfh, const char *name) {
-
-	int			ret;
-	FILEH		fh;
-	STATDISK	st;
-	char		buf[256];
-	DOSDATE		date;
-	DOSTIME		time;
-
-	ret = statflag_read(sfh, &st, sizeof(st));
-	if (st.path[0]) {
-		fh = file_open_rb(st.path);
-		if (fh != FILEH_INVALID) {
-			file_getdatetime(fh, &date, &time);
-			file_close(fh);
-			if ((memcmp(&st.date, &date, sizeof(date))) ||
-				(memcmp(&st.time, &time, sizeof(time)))) {
-				ret |= STATFLAG_DISKCHG;
-				SPRINTF(buf, str_updated, name);
-				statflag_seterr(sfh, buf);
-			}
-		}
-		else {
-			ret |= STATFLAG_DISKCHG;
-			SPRINTF(buf, str_notfound, name);
-			statflag_seterr(sfh, buf);
-		}
-	}
-	return(ret);
-}
-
-static int flagcheck_disk(STFLAGH sfh, const SFENTRY *tbl) {
-
-	int		ret;
-	int		i;
-	char	buf[8];
-
-	ret = 0;
-	for (i=0; i<4; i++) {
-		SPRINTF(buf, str_fddx, i+1);
-		ret |= diskcheck(sfh, buf);
-	}
-	sxsi_flash();
-	for (i=0; i<2; i++) {
-		SPRINTF(buf, str_sasix, i+1);
-		ret |= diskcheck(sfh, buf);
-	}
-	for (i=0; i<4; i++) {
-		SPRINTF(buf, str_scsix, i);
-		ret |= diskcheck(sfh, buf);
-	}
-	(void)tbl;
-	return(ret);
-}
-
-static int flagload_disk(STFLAGH sfh, const SFENTRY *tbl) {
+static int flagsave_fdd(STFLAGH sfh, const SFENTRY *tbl) {
 
 	int			ret;
 	UINT8		i;
-	STATDISK	st;
+const OEMCHAR	*path;
+	UINT		ftype;
+	int			ro;
 
-	ret = 0;
+	ret = STATFLAG_SUCCESS;
 	for (i=0; i<4; i++) {
-		ret |= statflag_read(sfh, &st, sizeof(st));
-		if (st.path[0]) {
-			fdd_set(i, st.path, FTYPE_NONE, st.readonly);
+		path = fdd_getfileex(i, &ftype, &ro);
+		ret |= statflag_writepath(sfh, path, ftype, ro);
+	}
+	(void)tbl;
+	return(ret);
+}
+
+static int flagcheck_fdd(STFLAGH sfh, const SFENTRY *tbl) {
+
+	int		ret;
+	int		i;
+	OEMCHAR	buf[8];
+
+	ret = STATFLAG_SUCCESS;
+	for (i=0; i<4; i++) {
+		OEMSPRINTF(buf, str_fddx, i+1);
+		ret |= statflag_checkpath(sfh, buf);
+	}
+	(void)tbl;
+	return(ret);
+}
+
+static int flagload_fdd(STFLAGH sfh, const SFENTRY *tbl) {
+
+	int			ret;
+	UINT8		i;
+	STATPATH	sp;
+
+	ret = STATFLAG_SUCCESS;
+	for (i=0; i<4; i++) {
+		ret |= statflag_read(sfh, &sp, sizeof(sp));
+		if (sp.path[0]) {
+			fdd_set(i, sp.path, sp.ftype, sp.readonly);
 		}
 	}
-	for (i=0x00; i<0x02; i++) {
-		ret |= statflag_read(sfh, &st, sizeof(st));
-		if (st.path[0]) {
-			sxsi_hddopen(i, st.path);
+	(void)tbl;
+	return(ret);
+}
+
+
+// ---- sxsi
+
+typedef struct {
+	UINT8	ide[4];
+	UINT8	scsi[8];
+} SXSIDEVS;
+
+static const OEMCHAR str_sasix[] = OEMTEXT("SASI%u");
+static const OEMCHAR str_scsix[] = OEMTEXT("SCSI%u");
+
+static int flagsave_sxsi(STFLAGH sfh, const SFENTRY *tbl) {
+
+	int			ret;
+	UINT		i;
+	SXSIDEVS	sds;
+const OEMCHAR	*path;
+
+	sxsi_allflash();
+	ret = STATFLAG_SUCCESS;
+	for (i=0; i<NELEMENTS(sds.ide); i++) {
+		sds.ide[i] = sxsi_getdevtype((REG8)i);
+	}
+	for (i=0; i<NELEMENTS(sds.scsi); i++) {
+		sds.scsi[i] = sxsi_getdevtype((REG8)(i + 0x20));
+	}
+	ret = statflag_write(sfh, &sds, sizeof(sds));
+	for (i=0; i<NELEMENTS(sds.ide); i++) {
+		if (sds.ide[i] != SXSIDEV_NC) {
+			path = sxsi_getfilename((REG8)i);
+			ret |= statflag_writepath(sfh, path, FTYPE_NONE, 0);
 		}
 	}
-	for (i=0x20; i<0x24; i++) {
-		ret |= statflag_read(sfh, &st, sizeof(st));
-		if (st.path[0]) {
-			sxsi_hddopen(i, st.path);
+	for (i=0; i<NELEMENTS(sds.scsi); i++) {
+		if (sds.scsi[i] != SXSIDEV_NC) {
+			path = sxsi_getfilename((REG8)(i + 0x20));
+			ret |= statflag_writepath(sfh, path, FTYPE_NONE, 0);
+		}
+	}
+	(void)tbl;
+	return(ret);
+}
+
+static int flagcheck_sxsi(STFLAGH sfh, const SFENTRY *tbl) {
+
+	int			ret;
+	SXSIDEVS	sds;
+	UINT		i;
+	OEMCHAR		buf[8];
+
+	sxsi_allflash();
+	ret = statflag_read(sfh, &sds, sizeof(sds));
+	for (i=0; i<NELEMENTS(sds.ide); i++) {
+		if (sds.ide[i] != SXSIDEV_NC) {
+			OEMSPRINTF(buf, str_sasix, i+1);
+			ret |= statflag_checkpath(sfh, buf);
+		}
+	}
+	for (i=0; i<NELEMENTS(sds.scsi); i++) {
+		if (sds.scsi[i] != SXSIDEV_NC) {
+			OEMSPRINTF(buf, str_scsix, i);
+			ret |= statflag_checkpath(sfh, buf);
+		}
+	}
+	(void)tbl;
+	return(ret);
+}
+
+static int flagload_sxsi(STFLAGH sfh, const SFENTRY *tbl) {
+
+	int			ret;
+	SXSIDEVS	sds;
+	UINT		i;
+	REG8		drv;
+	STATPATH	sp;
+
+	ret = statflag_read(sfh, &sds, sizeof(sds));
+	if (ret != STATFLAG_SUCCESS) {
+		return(ret);
+	}
+	for (i=0; i<NELEMENTS(sds.ide); i++) {
+		drv = (REG8)i;
+		sxsi_setdevtype(drv, sds.ide[i]);
+		if (sds.ide[i] != SXSIDEV_NC) {
+			ret |= statflag_read(sfh, &sp, sizeof(sp));
+			sxsi_devopen(drv, sp.path);
+		}
+	}
+	for (i=0; i<NELEMENTS(sds.scsi); i++) {
+		drv = (REG8)(i + 0x20);
+		sxsi_setdevtype(drv, sds.scsi[i]);
+		if (sds.scsi[i] != SXSIDEV_NC) {
+			ret |= statflag_read(sfh, &sp, sizeof(sp));
+			sxsi_devopen(drv, sp.path);
 		}
 	}
 	(void)tbl;
@@ -1173,7 +1255,7 @@ static int flagcheck_veronly(STFLAGH sfh, const SFENTRY *tbl) {
 
 // ----
 
-int statsave_save(const char *filename) {
+int statsave_save(const OEMCHAR *filename) {
 
 	SFFILEH		sffh;
 	int			ret;
@@ -1187,7 +1269,7 @@ const SFENTRY	*tblterm;
 
 	ret = STATFLAG_SUCCESS;
 	tbl = np2tbl;
-	tblterm = tbl + (sizeof(np2tbl)/sizeof(SFENTRY));
+	tblterm = tbl + NELEMENTS(np2tbl);
 	while(tbl < tblterm) {
 		ret |= statflag_createsection(sffh, tbl);
 		switch(tbl->type) {
@@ -1204,10 +1286,6 @@ const SFENTRY	*tblterm;
 
 			case STATFLAG_COM:
 				ret |= flagsave_com(&sffh->sfh, tbl);
-				break;
-
-			case STATFLAG_DISK:
-				ret |= flagsave_disk(&sffh->sfh, tbl);
 				break;
 
 			case STATFLAG_DMA:
@@ -1230,6 +1308,10 @@ const SFENTRY	*tblterm;
 				ret |= flagsave_ext(&sffh->sfh, tbl);
 				break;
 
+			case STATFLAG_FDD:
+				ret |= flagsave_fdd(&sffh->sfh, tbl);
+				break;
+
 #if !defined(DISABLE_SOUND)
 			case STATFLAG_FM:
 				ret |= flagsave_fm(&sffh->sfh, tbl);
@@ -1249,6 +1331,10 @@ const SFENTRY	*tblterm;
 			case STATFLAG_MEM:
 				ret |= flagsave_mem(&sffh->sfh, tbl);
 				break;
+
+			case STATFLAG_SXSI:
+				ret |= flagsave_sxsi(&sffh->sfh, tbl);
+				break;
 		}
 		tbl++;
 	}
@@ -1256,7 +1342,7 @@ const SFENTRY	*tblterm;
 	return(ret);
 }
 
-int statsave_check(const char *filename, char *buf, int size) {
+int statsave_check(const OEMCHAR *filename, OEMCHAR *buf, int size) {
 
 	SFFILEH		sffh;
 	int			ret;
@@ -1274,7 +1360,7 @@ const SFENTRY	*tblterm;
 	while((!done) && (ret != STATFLAG_FAILURE)) {
 		ret |= statflag_readsection(sffh);
 		tbl = np2tbl;
-		tblterm = tbl + (sizeof(np2tbl)/sizeof(SFENTRY));
+		tblterm = tbl + NELEMENTS(np2tbl);
 		while(tbl < tblterm) {
 			if (!memcmp(sffh->sfh.hdr.index, tbl->index, 10)) {
 				break;
@@ -1311,8 +1397,12 @@ const SFENTRY	*tblterm;
 					ret |= flagcheck_veronly(&sffh->sfh, tbl);
 					break;
 
-				case STATFLAG_DISK:
-					ret |= flagcheck_disk(&sffh->sfh, tbl);
+				case STATFLAG_FDD:
+					ret |= flagcheck_fdd(&sffh->sfh, tbl);
+					break;
+
+				case STATFLAG_SXSI:
+					ret |= flagcheck_sxsi(&sffh->sfh, tbl);
 					break;
 
 				default:
@@ -1328,7 +1418,7 @@ const SFENTRY	*tblterm;
 	return(ret);
 }
 
-int statsave_load(const char *filename) {
+int statsave_load(const OEMCHAR *filename) {
 
 	SFFILEH		sffh;
 	int			ret;
@@ -1353,7 +1443,7 @@ const SFENTRY	*tblterm;
 	rs232c_midipanic();
 	mpu98ii_midipanic();
 	pc9861k_midipanic();
-	sxsi_trash();
+	sxsi_alltrash();
 
 	ret |= flagload_common(&sffh->sfh, np2tbl);
 
@@ -1374,7 +1464,7 @@ const SFENTRY	*tblterm;
 	while((!done) && (ret != STATFLAG_FAILURE)) {
 		ret |= statflag_readsection(sffh);
 		tbl = np2tbl + 1;
-		tblterm = np2tbl + (sizeof(np2tbl)/sizeof(SFENTRY));
+		tblterm = np2tbl + NELEMENTS(np2tbl);
 		while(tbl < tblterm) {
 			if (!memcmp(sffh->sfh.hdr.index, tbl->index, 10)) {
 				break;
@@ -1401,10 +1491,6 @@ const SFENTRY	*tblterm;
 					ret |= flagload_com(&sffh->sfh, tbl);
 					break;
 
-				case STATFLAG_DISK:
-					ret |= flagload_disk(&sffh->sfh, tbl);
-					break;
-
 				case STATFLAG_DMA:
 					ret |= flagload_dma(&sffh->sfh, tbl);
 					break;
@@ -1425,6 +1511,10 @@ const SFENTRY	*tblterm;
 					ret |= flagload_ext(&sffh->sfh, tbl);
 					break;
 
+				case STATFLAG_FDD:
+					ret |= flagload_fdd(&sffh->sfh, tbl);
+					break;
+
 #if !defined(DISABLE_SOUND)
 				case STATFLAG_FM:
 					ret |= flagload_fm(&sffh->sfh, tbl);
@@ -1443,6 +1533,10 @@ const SFENTRY	*tblterm;
 
 				case STATFLAG_MEM:
 					ret |= flagload_mem(&sffh->sfh, tbl);
+					break;
+
+				case STATFLAG_SXSI:
+					ret |= flagload_sxsi(&sffh->sfh, tbl);
 					break;
 
 				default:
@@ -1475,6 +1569,7 @@ const SFENTRY	*tblterm;
 	FONTPTR_HIGH = fontrom + cgwindow.high;
 #endif
 	i286_vram_dispatch(vramop.operate);
+	fddmtr_reset();
 	soundmng_play();
 
 	return(ret);

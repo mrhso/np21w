@@ -11,12 +11,16 @@
 #include	"i286xea.mcr"
 #include	"v30patch.h"
 #include	"bios.h"
-#include	"dmap.h"
+#include	"dmax86.h"
+#if defined(ENABLE_TRAP)
+#include	"steptrap.h"
+#include	"inttrap.h"
+#endif
 
 
 	I286CORE	i286core;
 
-const BYTE iflags[256] = {					// Z_FLAG, S_FLAG, P_FLAG
+const UINT8 iflags[256] = {					// Z_FLAG, S_FLAG, P_FLAG
 			0x44, 0x00, 0x00, 0x04, 0x00, 0x04, 0x04, 0x00,
 			0x00, 0x04, 0x04, 0x00, 0x04, 0x00, 0x00, 0x04,
 			0x00, 0x04, 0x04, 0x00, 0x04, 0x00, 0x00, 0x04,
@@ -95,7 +99,7 @@ void i286x_setextsize(UINT32 size) {
 			CPU_EXTMEM = NULL;
 		}
 		if (size) {
-			CPU_EXTMEM = (BYTE *)_MALLOC(size + 16, "EXTMEM");
+			CPU_EXTMEM = (UINT8 *)_MALLOC(size + 16, "EXTMEM");
 			if (CPU_EXTMEM == NULL) {
 				size = 0;
 			}
@@ -110,7 +114,7 @@ void i286x_setextsize(UINT32 size) {
 
 void i286x_setemm(UINT frame, UINT32 addr) {
 
-	BYTE	*ptr;
+	UINT8	*ptr;
 
 	frame &= 3;
 	if (addr < USE_HIMEM) {
@@ -138,7 +142,7 @@ LABEL void i286x_resetprefetch(void) {
 	}
 }
 
-LABEL void __fastcall i286x_interrupt(BYTE vect) {
+LABEL void __fastcall i286x_interrupt(UINT8 vect) {
 
 	__asm {
 				pushad
@@ -264,7 +268,13 @@ LABEL void i286x(void) {
 				cmp		dmac.working, 0
 				jne		short i286_dma_mnlp
 
-i286_mnlp:		movzx	eax, bl
+i286_mnlp:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	i286op[eax*4]
 				cmp		I286_REMCLOCK, 0
 				jg		i286_mnlp
@@ -274,9 +284,15 @@ i286_mnlp:		movzx	eax, bl
 				ret
 
 				align	16
-i286_dma_mnlp:	movzx	eax, bl
+i286_dma_mnlp:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	i286op[eax*4]
-				call	dmap_i286
+				call	dmax86
 				cmp		I286_REMCLOCK, 0
 				jg		i286_dma_mnlp
 				mov		dword ptr (i286core.s.prefetchque), ebx
@@ -285,7 +301,13 @@ i286_dma_mnlp:	movzx	eax, bl
 				ret
 
 				align	16
-i286_trapping:	movzx	eax, bl
+i286_trapping:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	i286op[eax*4]
 				cmp		I286_TRAP, 0
 				je		i286notrap
@@ -307,6 +329,12 @@ LABEL void i286x_step(void) {
 				mov		ebx, dword ptr (i286core.s.prefetchque)
 				movzx	esi, I286_IP
 
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+
 				movzx	eax, bl
 				call	i286op[eax*4]
 
@@ -318,7 +346,7 @@ nexts:
 				mov		dword ptr (i286core.s.prefetchque), ebx
 				mov		I286_IP, si
 
-				call	dmap_i286
+				call	dmax86
 				popad
 				ret
 		}
@@ -3431,7 +3459,7 @@ I286 mov_ea8_data8(void) {						// C6: mov EA8, DATA8
 				bt		bp, 2
 				rcl		ebp, 1
 				and		ebp, 7
-				GET_NEXTPRE2
+				GET_NEXTPRE3
 				mov		byte ptr I286_REG[ebp], dh
 				ret
 				align	16
@@ -3487,7 +3515,7 @@ I286 _enter(void) {								// C8: enter DATA16, DATA8
 				je		enter0
 				dec		eax
 				je		enter1
-				lea		ecx, [eax*4 + 12]
+				lea		ecx, [eax*4 + 12 + 4]
 				I286CLOCK(ecx)
 				push	ebx
 				movzx	ebx, I286_BP
@@ -3635,6 +3663,13 @@ I286 int_data8(void) {							// CD: int DATA8
 				lea		ecx, [edi + ebp]
 				mov		dx, I286_CS
 				call	i286_memorywrite_w
+#if defined(ENABLE_TRAP)
+				movzx	eax, bh
+				push	eax
+				lea		edx, [esi - 1]
+				movzx	ecx, I286_CS
+				call	softinttrap
+#endif
 				movzx	eax, bh
 				sub		bp, 2
 				mov		I286_SP, bp

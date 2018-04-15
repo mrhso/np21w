@@ -6,6 +6,7 @@
 #include	"resource.h"
 #include	"strres.h"
 #include	"np2.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 #include	"commng.h"
 #include	"inputmng.h"
@@ -36,8 +37,8 @@
 #include	"softkbd.h"
 
 
-static const TCHAR szAppCaption[] = STRLITERAL("Neko Project II");
-static const TCHAR szClassName[] = STRLITERAL("NP2-MainWindow");
+static const TCHAR szAppCaption[] = _T("Neko Project II");
+static const TCHAR szClassName[] = _T("NP2-MainWindow");
 
 
 		NP2OSCFG	np2oscfg = {0, 0, 0, 0,
@@ -67,7 +68,7 @@ static	UINT		framemax = 1;
 
 // ---- resume
 
-static void getstatfilename(char *path, const char *ext, int size) {
+static void getstatfilename(OEMCHAR *path, const OEMCHAR *ext, int size) {
 
 	file_cpyname(path, modulefile, size);
 	file_cutext(path);
@@ -75,12 +76,12 @@ static void getstatfilename(char *path, const char *ext, int size) {
 	file_catname(path, ext, size);
 }
 
-static int flagsave(const char *ext) {
+static int flagsave(const OEMCHAR *ext) {
 
 	int		ret;
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	getstatfilename(path, ext, sizeof(path));
+	getstatfilename(path, ext, NELEMENTS(path));
 	ret = statsave_save(path);
 	if (ret) {
 		file_delete(path);
@@ -88,31 +89,31 @@ static int flagsave(const char *ext) {
 	return(ret);
 }
 
-static void flagdelete(const char *ext) {
+static void flagdelete(const OEMCHAR *ext) {
 
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
-	getstatfilename(path, ext, sizeof(path));
+	getstatfilename(path, ext, NELEMENTS(path));
 	file_delete(path);
 }
 
-static int flagload(const char *ext, const char *title, BOOL force) {
+static int flagload(const OEMCHAR *ext, const OEMCHAR *title, BOOL force) {
 
 	int		ret;
 	int		id;
-	char	path[MAX_PATH];
-	char	buf[1024];
-	char	buf2[1024 + 256];
+	OEMCHAR	path[MAX_PATH];
+	OEMCHAR	buf[1024];
+	OEMCHAR	buf2[1024 + 256];
 
-	getstatfilename(path, ext, sizeof(path));
+	getstatfilename(path, ext, NELEMENTS(path));
 	id = DID_YES;
-	ret = statsave_check(path, buf, sizeof(buf));
+	ret = statsave_check(path, buf, NELEMENTS(buf));
 	if (ret & (~STATFLAG_DISKCHG)) {
-		menumbox("Couldn't restart", title, MBOX_OK | MBOX_ICONSTOP);
+		menumbox(OEMTEXT("Couldn't restart"), title, MBOX_OK | MBOX_ICONSTOP);
 		id = DID_NO;
 	}
 	else if ((!force) && (ret & STATFLAG_DISKCHG)) {
-		SPRINTF(buf2, "Conflict!\n\n%s\nContinue?", buf);
+		OEMSPRINTF(buf2, OEMTEXT("Conflict!\n\n%s\nContinue?"), buf);
 		id = menumbox(buf2, title, MBOX_YESNOCAN | MBOX_ICONQUESTION);
 	}
 	if (id == DID_YES) {
@@ -308,38 +309,6 @@ static void processwait(UINT cnt) {
 
 // ----
 
-#if defined(UNICODE) && defined(OSLANG_SJIS)
-static DWORD _GetModuleFileName(HMODULE hModule,
-										OEMCHAR *lpFileName, DWORD nSize) {
-
-	UINT16	ucs2[MAX_PATH];
-
-	GetModuleFileName(hModule, ucs2, NELEMENTS(ucs2));
-	nSize = WideCharToMultiByte(CP_ACP, 0, ucs2, -1,
-										lpFileName, nSize, NULL, NULL);
-	if (nSize) {
-		nSize--;
-	}
-	return(nSize);
-}
-#elif defined(OSLANG_UTF8)
-static DWORD _GetModuleFileName(HMODULE hModule,
-										OEMCHAR *lpFileName, DWORD nSize) {
-
-	UINT16	ucs2[MAX_PATH];
-
-	GetModuleFileName(hModule, ucs2, NELEMENTS(ucs2));
-	nSize = ucscnv_ucs2toutf8(lpFileName, nSize, ucs2, (UINT)-1);
-	if (nSize) {
-		nSize--;
-	}
-	return(nSize);
-}
-#else
-#define	_GetModuleFileName(a, b, c)		GetModuleFileName(a, b, c)
-#endif
-
-
 #if defined(_WIN32_WCE)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 										LPWSTR lpszCmdLine, int nCmdShow)
@@ -368,7 +337,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 		return(0);
 	}
 
-	_GetModuleFileName(NULL, modulefile, sizeof(modulefile));
+#if defined(OEMCHAR_SAME_TCHAR)
+	GetModuleFileName(NULL, modulefile, NELEMENTS(modulefile));
+#else
+	TCHAR _modulefile[MAX_PATH];
+	GetModuleFileName(NULL, _modulefile, NELEMENTS(_modulefile));
+	tchartooem(modulefile, NELEMENTS(modulefile), _modulefile, (UINT)-1);
+#endif
 	dosio_init();
 	file_setcd(modulefile);
 	initload();
@@ -429,7 +404,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	}
 	if (scrnmng_create(hWnd, FULLSCREEN_WIDTH, FULLSCREEN_HEIGHT)
 																!= SUCCESS) {
-		MessageBox(hWnd, STRLITERAL("Couldn't create DirectDraw Object"),
+		MessageBox(hWnd, _T("Couldn't create DirectDraw Object"),
 									szAppCaption, MB_OK | MB_ICONSTOP);
 		DestroyWindow(hWnd);
 		goto np2main_err2;

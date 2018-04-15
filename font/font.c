@@ -8,16 +8,16 @@
 
 
 #ifndef FONTMEMORYBIND
-	BYTE	__font[0x84000];
+	UINT8	__font[0x84000];
 #endif
 
-static const char fonttmpname[] = "font.tmp";
+static const OEMCHAR fonttmpname[] = OEMTEXT("font.tmp");
 
 
 void font_initialize(void) {
 
-	BYTE	*p;
-	BYTE	*q;
+	UINT8	*p;
+	UINT8	*q;
 	UINT	i;
 	UINT	j;
 	UINT32	dbit;
@@ -43,15 +43,15 @@ void font_initialize(void) {
 	}
 }
 
-static BYTE fonttypecheck(const char *fname) {
+static UINT8 fonttypecheck(const OEMCHAR *fname) {
 
-const char	*p;
+const OEMCHAR	*p;
 
-	p = file_getext((char *)fname);
+	p = file_getext(fname);
 	if (!file_cmpname(p, str_bmp)) {
 		return(FONTTYPE_PC98);
 	}
-	p = file_getname((char *)fname);
+	p = file_getname(fname);
 	if (!file_cmpname(p, v98fontname)) {
 		return(FONTTYPE_V98);
 	}
@@ -75,18 +75,18 @@ const char	*p;
 	return(FONTTYPE_NONE);
 }
 
-BYTE font_load(const char *filename, BOOL force) {
+UINT8 font_load(const OEMCHAR *filename, BOOL force) {
 
 	UINT	i;
-const BYTE	*p;
-	BYTE	*q;
+const UINT8	*p;
+	UINT8	*q;
 	UINT	j;
-	char	fname[MAX_PATH];
-	BYTE	type;
-	BYTE	loading;
+	OEMCHAR	fname[MAX_PATH];
+	UINT8	type;
+	UINT8	loading;
 
 	if (filename) {
-		file_cpyname(fname, filename, sizeof(fname));
+		file_cpyname(fname, filename, NELEMENTS(fname));
 	}
 	else {
 		fname[0] = '\0';
@@ -146,7 +146,7 @@ const BYTE	*p;
 	loading = fontv98_read(file_getcd(v98fontname), loading);
 	loading = fontpc88_read(file_getcd(pc88ankname), loading);
 	if (loading & FONTLOAD_16) {
-		file_cpyname(fname, file_getcd(fonttmpname), sizeof(fname));
+		file_cpyname(fname, file_getcd(fonttmpname), NELEMENTS(fname));
 		if (file_attr(fname) == -1) {
 			makepc98bmp(fname);
 		}

@@ -10,7 +10,10 @@
 #include	"iocore.h"
 #include	"i286x.mcr"
 #include	"i286xea.mcr"
-#include	"dmap.h"
+#include	"dmax86.h"
+#if defined(ENABLE_TRAP)
+#include	"steptrap.h"
+#endif
 
 
 typedef struct {
@@ -25,7 +28,7 @@ static	I286TBL	v30ope0xf6_xtable[8];
 static	I286TBL v30ope0xf7_xtable[8];
 
 
-static const BYTE shiftbase16[256] =
+static const UINT8 rotatebase16[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
@@ -43,7 +46,7 @@ static const BYTE shiftbase16[256] =
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15};
 
-static const BYTE shiftbase09[256] =
+static const UINT8 rotatebase09[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6,
 				 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4,
 				 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2,
@@ -61,7 +64,7 @@ static const BYTE shiftbase09[256] =
 				 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5,
 				 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3};
 
-static const BYTE shiftbase17[256] =
+static const UINT8 rotatebase17[256] =
 				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
 				16,17, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
 				15,16,17, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,
@@ -78,6 +81,24 @@ static const BYTE shiftbase17[256] =
 				 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17, 1, 2,
 				 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17, 1,
 				 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17};
+
+static const UINT8 shiftbase[256] =
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
+				16,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,
+				17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17};
 
 
 
@@ -257,7 +278,7 @@ I286 v30_popf(void) {							// 9D: popf
 I286 rol_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				rol		byte ptr [edx], cl
 				FLAG_STORE_OC
 				ret
@@ -267,7 +288,7 @@ I286 rol_r8_v30(void) {
 I286 ror_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				ror		byte ptr [edx], cl
 				FLAG_STORE_OC
 				ret
@@ -277,7 +298,7 @@ I286 ror_r8_v30(void) {
 I286 rcl_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase09[ecx]
+				mov		cl, rotatebase09[ecx]
 				CFLAG_LOAD
 				rcl		byte ptr [edx], cl
 				FLAG_STORE_OC
@@ -288,7 +309,7 @@ I286 rcl_r8_v30(void) {
 I286 rcr_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase09[ecx]
+				mov		cl, rotatebase09[ecx]
 				CFLAG_LOAD
 				rcr		byte ptr [edx], cl
 				FLAG_STORE_OC
@@ -299,7 +320,7 @@ I286 rcr_r8_v30(void) {
 I286 shl_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shl		byte ptr [edx], cl
 				FLAG_STORE_OF
 				ret
@@ -309,7 +330,7 @@ I286 shl_r8_v30(void) {
 I286 shr_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shr		byte ptr [edx], cl
 				FLAG_STORE_OF
 				ret
@@ -319,7 +340,7 @@ I286 shr_r8_v30(void) {
 I286 sar_r8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				sar		byte ptr [edx], cl
 				FLAG_STORE0
 				ret
@@ -333,7 +354,7 @@ static void (*sftreg8v30_table[])(void) = {
 I286 rol_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				rol		dl, cl
 				FLAG_STORE_OC
 				mov		ecx, ebp
@@ -344,7 +365,7 @@ I286 rol_ext8_v30(void) {
 I286 ror_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				ror		dl, cl
 				FLAG_STORE_OC
 				mov		ecx, ebp
@@ -355,7 +376,7 @@ I286 ror_ext8_v30(void) {
 I286 rcl_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase09[ecx]
+				mov		cl, rotatebase09[ecx]
 				CFLAG_LOAD
 				rcl		dl, cl
 				FLAG_STORE_OC
@@ -367,7 +388,7 @@ I286 rcl_ext8_v30(void) {
 I286 rcr_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase09[ecx]
+				mov		cl, rotatebase09[ecx]
 				CFLAG_LOAD
 				rcr		dl, cl
 				FLAG_STORE_OC
@@ -379,7 +400,7 @@ I286 rcr_ext8_v30(void) {
 I286 shl_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shl		dl, cl
 				FLAG_STORE_OF
 				mov		ecx, ebp
@@ -390,7 +411,7 @@ I286 shl_ext8_v30(void) {
 I286 shr_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shr		dl, cl
 				FLAG_STORE_OF
 				mov		ecx, ebp
@@ -401,7 +422,7 @@ I286 shr_ext8_v30(void) {
 I286 sar_ext8_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				sar		dl, cl
 				FLAG_STORE0
 				mov		ecx, ebp
@@ -465,7 +486,7 @@ I286 v30shift_ea8_data8(void) {					// C0: shift EA8, DATA8
 I286 rol_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				rol		word ptr [edx], cl
 				FLAG_STORE_OC
 				ret
@@ -475,7 +496,7 @@ I286 rol_r16_v30(void) {
 I286 ror_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				ror		word ptr [edx], cl
 				FLAG_STORE_OC
 				ret
@@ -485,7 +506,7 @@ I286 ror_r16_v30(void) {
 I286 rcl_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase17[ecx]
+				mov		cl, rotatebase17[ecx]
 				CFLAG_LOAD
 				rcl		word ptr [edx], cl
 				FLAG_STORE_OC
@@ -496,7 +517,7 @@ I286 rcl_r16_v30(void) {
 I286 rcr_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase17[ecx]
+				mov		cl, rotatebase17[ecx]
 				CFLAG_LOAD
 				rcr		word ptr [edx], cl
 				FLAG_STORE_OC
@@ -507,7 +528,7 @@ I286 rcr_r16_v30(void) {
 I286 shl_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shl		word ptr [edx], cl
 				FLAG_STORE_OF
 				ret
@@ -517,7 +538,7 @@ I286 shl_r16_v30(void) {
 I286 shr_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shr		word ptr [edx], cl
 				FLAG_STORE_OF
 				ret
@@ -527,7 +548,7 @@ I286 shr_r16_v30(void) {
 I286 sar_r16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				sar		word ptr [edx], cl
 				FLAG_STORE0
 				ret
@@ -541,7 +562,7 @@ static void (*sftreg16v30_table[])(void) = {
 I286 rol_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				rol		dx, cl
 				FLAG_STORE_OC
 				mov		ecx, ebp
@@ -552,7 +573,7 @@ I286 rol_ext16_v30(void) {
 I286 ror_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, rotatebase16[ecx]
 				ror		dx, cl
 				FLAG_STORE_OC
 				mov		ecx, ebp
@@ -563,7 +584,7 @@ I286 ror_ext16_v30(void) {
 I286 rcl_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase17[ecx]
+				mov		cl, rotatebase17[ecx]
 				CFLAG_LOAD
 				rcl		dx, cl
 				FLAG_STORE_OC
@@ -575,7 +596,7 @@ I286 rcl_ext16_v30(void) {
 I286 rcr_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase17[ecx]
+				mov		cl, rotatebase17[ecx]
 				CFLAG_LOAD
 				rcr		dx, cl
 				FLAG_STORE_OC
@@ -587,7 +608,7 @@ I286 rcr_ext16_v30(void) {
 I286 shl_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shl		dx, cl
 				FLAG_STORE_OF
 				mov		ecx, ebp
@@ -598,7 +619,7 @@ I286 shl_ext16_v30(void) {
 I286 shr_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				shr		dx, cl
 				FLAG_STORE_OF
 				mov		ecx, ebp
@@ -609,7 +630,7 @@ I286 shr_ext16_v30(void) {
 I286 sar_ext16_v30(void) {
 
 		__asm {
-				mov		cl, shiftbase16[ecx]
+				mov		cl, shiftbase[ecx]
 				sar		dx, cl
 				FLAG_STORE0
 				mov		ecx, ebp
@@ -1184,7 +1205,13 @@ LABEL void v30x(void) {
 				jne		short v30_dma_mnlp
 
 				align	4
-v30_mnlp:		movzx	eax, bl
+v30_mnlp:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	v30op[eax*4]
 				cmp		I286_REMCLOCK, 0
 				jg		v30_mnlp
@@ -1194,9 +1221,15 @@ v30_mnlp:		movzx	eax, bl
 				ret
 
 				align	4
-v30_dma_mnlp:	movzx	eax, bl
+v30_dma_mnlp:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	v30op[eax*4]
-				call	dmap_i286
+				call	dmax86
 				cmp		I286_REMCLOCK, 0
 				jg		v30_dma_mnlp
 				mov		dword ptr (i286core.s.prefetchque), ebx
@@ -1205,7 +1238,13 @@ v30_dma_mnlp:	movzx	eax, bl
 				ret
 
 				align	4
-v30_trapping:	movzx	eax, bl
+v30_trapping:
+#if defined(ENABLE_TRAP)
+				mov		edx, esi
+				movzx	ecx, I286_CS
+				call	steptrap
+#endif
+				movzx	eax, bl
 				call	v30op[eax*4]
 				cmp		I286_TRAP, 0
 				je		v30notrap
@@ -1236,7 +1275,7 @@ nexts:
 				mov		dword ptr (i286core.s.prefetchque), ebx
 				mov		I286_IP, si
 
-				call	dmap_i286
+				call	dmax86
 				popad
 				ret
 		}

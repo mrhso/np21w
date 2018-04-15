@@ -5,13 +5,13 @@
 #include	"fontdata.h"
 
 
-static void pc88knjcpy1(BYTE *dst, const BYTE *src, int from, int to) {
+static void pc88knjcpy1(UINT8 *dst, const UINT8 *src, int from, int to) {
 
 	int		i;
 	int		j;
 	int		k;
-const BYTE	*p;
-	BYTE	*q;
+const UINT8	*p;
+	UINT8	*q;
 
 	for (i=from; i<to; i++) {
 		q = dst + 0x21000 + (i << 4);
@@ -42,11 +42,11 @@ const BYTE	*p;
 	}
 }
 
-static void pc88knjcpy2(BYTE *dst, const BYTE *src, int from, int to) {
+static void pc88knjcpy2(UINT8 *dst, const UINT8 *src, int from, int to) {
 
 	int		i, j, k;
-const BYTE	*p;
-	BYTE	*q;
+const UINT8	*p;
+	UINT8	*q;
 
 	for (i=from; i<to; i++) {
 		q = dst + 0x21000 + (i << 4);
@@ -78,24 +78,24 @@ const BYTE	*p;
 	}
 }
 
-BYTE fontpc88_read(const char *filename, BYTE loading) {
+UINT8 fontpc88_read(const OEMCHAR *filename, UINT8 loading) {
 
 	FILEH	fh;
-	BYTE	*work;
-	char	fname[MAX_PATH];
+	UINT8	*work;
+	OEMCHAR	fname[MAX_PATH];
 
-	work = (BYTE *)_MALLOC(0x20000, "pc88font");
+	work = (UINT8 *)_MALLOC(0x20000, "pc88font");
 	if (work == NULL) {
 		goto fr88_err1;
 	}
-	file_cpyname(fname, filename, sizeof(fname));
+	file_cpyname(fname, filename, NELEMENTS(fname));
 
 	// 第２水準以外を読む必要はある？
 	if (loading & (FONT_ANK8 | FONTLOAD_ANK | FONT_KNJ1)) {
 
 		// あったら読み込んでみる
 		file_cutname(fname);
-		file_catname(fname, pc88knj1name, sizeof(fname));
+		file_catname(fname, pc88knj1name, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 			if (file_read(fh, work, 0x20000) == 0x20000) {
@@ -136,7 +136,7 @@ BYTE fontpc88_read(const char *filename, BYTE loading) {
 
 		// あったら読み込んでみる
 		file_cutname(fname);
-		file_catname(fname, pc88knj2name, sizeof(fname));
+		file_catname(fname, pc88knj2name, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 			if (file_read(fh, work, 0x20000) == 0x20000) {
@@ -155,7 +155,7 @@ BYTE fontpc88_read(const char *filename, BYTE loading) {
 
 		// あったら読み込んでみる
 		file_cutname(fname);
-		file_catname(fname, pc88ankname, sizeof(fname));
+		file_catname(fname, pc88ankname, NELEMENTS(fname));
 		fh = file_open_rb(fname);
 		if (fh != FILEH_INVALID) {
 

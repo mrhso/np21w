@@ -5,61 +5,58 @@ enum {
 };
 
 typedef struct {
-	BYTE	adc_l;				// 0
-	BYTE	adc_r;				// 1
-	BYTE	aux1_l;				// 2
-	BYTE	aux1_r;				// 3
-	BYTE	aux2_l;				// 4
-	BYTE	aux2_r;				// 5
-	BYTE	dac_l;				// 6
-	BYTE	dac_r;				// 7
-	BYTE	datafmt;			// 8
-	BYTE	iface;				// 9
-	BYTE	pinctrl;			// a
-	BYTE	errorstatus;
-	BYTE	mode_id;
-	BYTE	loopctrl;
-	BYTE	playcount[2];
+	UINT8	adc_l;				// 0
+	UINT8	adc_r;				// 1
+	UINT8	aux1_l;				// 2
+	UINT8	aux1_r;				// 3
+	UINT8	aux2_l;				// 4
+	UINT8	aux2_r;				// 5
+	UINT8	dac_l;				// 6
+	UINT8	dac_r;				// 7
+	UINT8	datafmt;			// 8
+	UINT8	iface;				// 9
+	UINT8	pinctrl;			// a
+	UINT8	errorstatus;
+	UINT8	mode_id;
+	UINT8	loopctrl;
+	UINT8	playcount[2];
 
-	BYTE	featurefunc[2];
-	BYTE	line_l;
-	BYTE	line_r;
-	BYTE	timer[2];
-	BYTE	reserved1;
-	BYTE	reserved2;
-	BYTE	featurestatus;
-	BYTE	chipid;
-	BYTE	monoinput;
-	BYTE	reserved3;
-	BYTE	cap_datafmt;
-	BYTE	reserved4;
-	BYTE	cap_basecount[2];
+	UINT8	featurefunc[2];
+	UINT8	line_l;
+	UINT8	line_r;
+	UINT8	timer[2];
+	UINT8	reserved1;
+	UINT8	reserved2;
+	UINT8	featurestatus;
+	UINT8	chipid;
+	UINT8	monoinput;
+	UINT8	reserved3;
+	UINT8	cap_datafmt;
+	UINT8	reserved4;
+	UINT8	cap_basecount[2];
 } CS4231REG;
 
 typedef struct {
 	UINT		bufsize;
 	UINT		bufdatas;
 	UINT		bufpos;
-//	UINT32		curtime;
-//	UINT32		step;
-//	SINT32		pcmdata[2];
 	UINT32		pos12;
 	UINT32		step12;
 
 	UINT8		enable;
 	UINT8		portctrl;
-	UINT16		port;
 	UINT8		dmairq;
 	UINT8		dmach;
+	UINT16		port[8];
 	UINT8		adrs;
 	UINT8		index;
 	UINT8		intflag;
 	UINT8		outenable;
 	UINT8		extfunc;
-	UINT8		padding;
+	UINT8		extindex;
 
 	CS4231REG	reg;
-	BYTE		buffer[CS4231_BUFFERS];
+	UINT8		buffer[CS4231_BUFFERS];
 } _CS4231, *CS4231;
 
 typedef struct {

@@ -2,6 +2,7 @@
 #include	"strres.h"
 #include	"resource.h"
 #include	"np2.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 #include	"sysmng.h"
 #include	"dialog.h"
@@ -9,19 +10,19 @@
 #include	"pccore.h"
 
 
-static const char str_2halfmhz[] = "2.4576MHz";
-static const char str_2mhz[] = "1.9968MHz";
-static const char *basecstr[2] = {str_2mhz, str_2halfmhz};
+static const TCHAR str_2halfmhz[] = _T("2.4576MHz");
+static const TCHAR str_2mhz[] = _T("1.9968MHz");
+static const TCHAR *basecstr[2] = {str_2mhz, str_2halfmhz};
 static const UINT32 mulval[10] = {1, 2, 4, 5, 6, 8, 10, 12, 16, 20};
-static const char str_clockfmt[] = "%2u.%.4u";
+static const TCHAR str_clockfmt[] = _T("%2u.%.4u");
 
 
 static void setclock(HWND hWnd, UINT multiple) {
 
 	UINT32	clock;
-	char	work[32];
+	TCHAR	work[32];
 
-	GetDlgItemText(hWnd, IDC_BASECLOCK, work, sizeof(work));
+	GetDlgItemText(hWnd, IDC_BASECLOCK, work, NELEMENTS(work));
 	if (work[0] == '1') {
 		clock = PCBASECLOCK20 / 100;
 	}
@@ -29,8 +30,8 @@ static void setclock(HWND hWnd, UINT multiple) {
 		clock = PCBASECLOCK25 / 100;
 	}
 	if (multiple == 0) {
-		GetDlgItemText(hWnd, IDC_MULTIPLE, work, sizeof(work));
-		multiple = (UINT)milstr_solveINT(work);
+		GetDlgItemText(hWnd, IDC_MULTIPLE, work, NELEMENTS(work));
+		multiple = (UINT)miltchar_solveINT(work);
 	}
 	if (multiple < 1) {
 		multiple = 1;
@@ -45,7 +46,7 @@ static void setclock(HWND hWnd, UINT multiple) {
 
 static void cfgcreate(HWND hWnd) {
 
-	char	work[32];
+	TCHAR	work[32];
 	UINT	val;
 
 	SETLISTSTR(hWnd, IDC_BASECLOCK, basecstr);
@@ -57,7 +58,7 @@ static void cfgcreate(HWND hWnd) {
 	}
 	SendDlgItemMessage(hWnd, IDC_BASECLOCK, CB_SETCURSEL, val, 0);
 	SETLISTUINT32(hWnd, IDC_MULTIPLE, mulval);
-	wsprintf(work, str_u, np2cfg.multiple);
+	wsprintf(work, tchar_u, np2cfg.multiple);
 	SetDlgItemText(hWnd, IDC_MULTIPLE, work);
 
 	if (!milstr_cmp(np2cfg.model, str_VM)) {
@@ -81,7 +82,7 @@ static void cfgcreate(HWND hWnd) {
 		val = IDC_RATE44;
 	}
 	SetDlgItemCheck(hWnd, val, TRUE);
-	wsprintf(work, str_u, np2cfg.delayms);
+	wsprintf(work, tchar_u, np2cfg.delayms);
 	SetDlgItemText(hWnd, IDC_SOUNDBUF, work);
 
 	SetDlgItemCheck(hWnd, IDC_ALLOWRESIZE, np2oscfg.thickframe);
@@ -100,13 +101,13 @@ static void cfgcreate(HWND hWnd) {
 
 static void cfgupdate(HWND hWnd) {
 
-	UINT	update;
-	char	work[32];
-	UINT	val;
-const char	*str;
+	UINT		update;
+	TCHAR		work[32];
+	UINT		val;
+const OEMCHAR	*str;
 
 	update = 0;
-	GetDlgItemText(hWnd, IDC_BASECLOCK, work, sizeof(work));
+	GetDlgItemText(hWnd, IDC_BASECLOCK, work, NELEMENTS(work));
 	if (work[0] == '1') {
 		val = PCBASECLOCK20;
 	}
@@ -119,7 +120,7 @@ const char	*str;
 	}
 
 	GetDlgItemText(hWnd, IDC_MULTIPLE, work, sizeof(work));
-	val = (UINT)milstr_solveINT(work);
+	val = (UINT)miltchar_solveINT(work);
 	if (val < 1) {
 		val = 1;
 	}
@@ -141,7 +142,7 @@ const char	*str;
 		str = str_VX;
 	}
 	if (milstr_cmp(np2cfg.model, str)) {
-		milstr_ncpy(np2cfg.model, str, sizeof(np2cfg.model));
+		milstr_ncpy(np2cfg.model, str, NELEMENTS(np2cfg.model));
 		update |= SYS_UPDATECFG;
 	}
 
@@ -160,8 +161,8 @@ const char	*str;
 		soundrenewal = 1;
 	}
 
-	GetDlgItemText(hWnd, IDC_SOUNDBUF, work, sizeof(work));
-	val = (UINT)milstr_solveINT(work);
+	GetDlgItemText(hWnd, IDC_SOUNDBUF, work, NELEMENTS(work));
+	val = (UINT)miltchar_solveINT(work);
 	if (val < 40) {
 		val = 40;
 	}
@@ -175,15 +176,15 @@ const char	*str;
 	}
 
 	val = GetDlgItemCheck(hWnd, IDC_ALLOWRESIZE);
-	if (np2oscfg.thickframe != (BYTE)val) {
-		np2oscfg.thickframe = (BYTE)val;
+	if (np2oscfg.thickframe != (UINT8)val) {
+		np2oscfg.thickframe = (UINT8)val;
 		update |= SYS_UPDATEOSCFG;
 	}
 
 	if (!(mmxflag & MMXFLAG_NOTSUPPORT)) {
 		val = GetDlgItemCheck(hWnd, IDC_DISABLEMMX);
-		if (np2oscfg.disablemmx != (BYTE)val) {
-			np2oscfg.disablemmx = (BYTE)val;
+		if (np2oscfg.disablemmx != (UINT8)val) {
+			np2oscfg.disablemmx = (UINT8)val;
 			mmxflag &= ~MMXFLAG_DISABLE;
 			mmxflag |= (val)?MMXFLAG_DISABLE:0;
 			update |= SYS_UPDATEOSCFG;
@@ -191,14 +192,14 @@ const char	*str;
 	}
 
 	val = GetDlgItemCheck(hWnd, IDC_COMFIRM);
-	if (np2oscfg.comfirm != (BYTE)val) {
-		np2oscfg.comfirm = (BYTE)val;
+	if (np2oscfg.comfirm != (UINT8)val) {
+		np2oscfg.comfirm = (UINT8)val;
 		update |= SYS_UPDATEOSCFG;
 	}
 
 	val = GetDlgItemCheck(hWnd, IDC_RESUME);
-	if (np2oscfg.resume != (BYTE)val) {
-		np2oscfg.resume = (BYTE)val;
+	if (np2oscfg.resume != (UINT8)val) {
+		np2oscfg.resume = (UINT8)val;
 		update |= SYS_UPDATEOSCFG;
 	}
 	sysmng_update(update);
@@ -212,7 +213,7 @@ LRESULT CALLBACK CfgDialogProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			return(FALSE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDOK:
 					cfgupdate(hWnd);
 					EndDialog(hWnd, IDOK);
@@ -231,7 +232,7 @@ LRESULT CALLBACK CfgDialogProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 						UINT val;
 						val = (UINT)SendDlgItemMessage(hWnd, IDC_MULTIPLE,
 														CB_GETCURSEL, 0, 0);
-						if (val < sizeof(mulval)/sizeof(UINT32)) {
+						if (val < NELEMENTS(mulval)) {
 							setclock(hWnd, mulval[val]);
 						}
 					}

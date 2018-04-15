@@ -1,12 +1,12 @@
 
 typedef struct {
 	UINT16	timera;
-	BYTE	timerb;
-	BYTE	status;
-	BYTE	reg;
-	BYTE	intr;
-	BYTE	irq;
-	BYTE	intdisabel;
+	UINT8	timerb;
+	UINT8	status;
+	UINT8	reg;
+	UINT8	intr;
+	UINT8	irq;
+	UINT8	intdisabel;
 } _FMTIMER, *FMTIMER;
 
 
@@ -18,7 +18,7 @@ void fmport_a(NEVENTITEM item);
 void fmport_b(NEVENTITEM item);
 
 void fmtimer_reset(UINT irq);
-void fmtimer_setreg(REG8 reg, REG8 value);
+void fmtimer_setreg(UINT reg, REG8 value);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,8 @@
 #include	"compiler.h"
 #include	"strres.h"
+#if defined(OSLANG_UCS2)
+#include	"oemtext.h"
+#endif
 #include	"taskmng.h"
 #include	"cpucore.h"
 #include	"pccore.h"
@@ -38,16 +41,25 @@ const void	*arg1;
 	long	arg2;
 } SYSPCMD;
 
-static const char str_80286[] = "80286";
-static const char str_v30[] = "V30";
-static const char str_pentium[] = "PENTIUM";
-static const char str_mhz[] = "%uMHz";
+static const OEMCHAR str_80286[] = OEMTEXT("80286");
+static const OEMCHAR str_v30[] = OEMTEXT("V30");
+static const OEMCHAR str_pentium[] = OEMTEXT("PENTIUM");
+static const OEMCHAR str_mhz[] = OEMTEXT("%uMHz");
 
+
+static void setoutstr(const OEMCHAR *str) {
+
+#if defined(OSLANG_UCS2)
+	oemtext_oemtosjis(np2sysp.outstr, sizeof(np2sysp.outstr), str, -1);
+#else
+	milstr_ncpy(np2sysp.outstr, str, sizeof(np2sysp.outstr));
+#endif
+	np2sysp.outpos = 0;
+}
 
 void np2sysp_outstr(const void *arg1, long arg2) {
 
-	milstr_ncpy(np2sysp.outstr, (char *)arg1, sizeof(np2sysp.outstr));
-	np2sysp.outpos = 0;
+	setoutstr((OEMCHAR *)arg1);
 	(void)arg2;
 }
 
@@ -63,14 +75,14 @@ static void np2sysp_cpu(const void *arg1, long arg2) {
 	// CPUを返す
 #if 1											// 80286 or V30
 	if (!(CPU_TYPE & CPUTYPE_V30)) {
-		np2sysp_outstr(str_80286, 0);
+		setoutstr(str_80286);
 	}
 	else {
-		np2sysp_outstr(str_v30, 0);
+		setoutstr(str_v30);
 	}
 #else
 	// 386機以降の場合 V30モードはエミュレーションだから固定(?)
-	np2sysp_outstr(str_pentium, 0);
+	setoutstr(str_pentium);
 #endif
 	(void)arg1;
 	(void)arg2;
@@ -78,16 +90,20 @@ static void np2sysp_cpu(const void *arg1, long arg2) {
 
 static void np2sysp_clock(const void *arg1, long arg2) {
 
-	SPRINTF(np2sysp.outstr, str_mhz, (pccore.realclock + 500000) / 1000000);
-	np2sysp.outpos = 0;
+	OEMCHAR	str[16];
+
+	OEMSPRINTF(str, str_mhz, (pccore.realclock + 500000) / 1000000);
+	setoutstr(str);
 	(void)arg1;
 	(void)arg2;
 }
 
 static void np2sysp_multiple(const void *arg1, long arg2) {
 
-	SPRINTF(np2sysp.outstr, str_u, pccore.multiple);
-	np2sysp.outpos = 0;
+	OEMCHAR	str[16];
+
+	OEMSPRINTF(str, str_u, pccore.multiple);
+	setoutstr(str);
 	(void)arg1;
 	(void)arg2;
 }
@@ -102,88 +118,96 @@ static void np2sysp_hwreset(const void *arg1, long arg2) {
 
 // ----
 
-static const char str_np2[] = "NP2";
-static const char str_ver[] = "ver";
-static const char str_poweroff[] = "poweroff";
-static const char str_credit[] = "credit";
-static const char str_cpu[] = "cpu";
-static const char str_clock[] = "clock";
-static const char str_multiple[] = "multiple";
-static const char str_hwreset[] = "hardwarereset";
-static const char str_sasibios[] = "sasibios";
-static const char str_scsibios[] = "scsibios";
-static const char str_scsidev[] = "scsi_dev";
-static const char str_hdrvcheck[] = "check_hostdrv";
-static const char str_hdrvopen[] = "open_hostdrv";
-static const char str_hdrvclose[] = "close_hostdrv";
-static const char str_hdrvintr[] = "intr_hostdrv";
+static const char cmd_np2[] = "NP2";
+static const OEMCHAR rep_np2[] = OEMTEXT("NP2");
 
+static const char cmd_ver[] = "ver";
+static const char cmd_poweroff[] = "poweroff";
+static const char cmd_credit[] = "credit";
+static const char cmd_cpu[] = "cpu";
+static const char cmd_clock[] = "clock";
+static const char cmd_multiple[] = "multiple";
+static const char cmd_hwreset[] = "hardwarereset";
+#if defined(SUPPORT_IDEIO) || defined(SUPPORT_SASI)
+static const char cmd_sasibios[] = "sasibios";
+#endif
+#if defined(SUPPORT_SCSI)
+static const char cmd_scsibios[] = "scsibios";
+static const char cmd_scsidev[] = "scsi_dev";
+#endif
+#if defined(SUPPORT_HOSTDRV)
+static const char cmd_hdrvcheck[] = "check_hostdrv";
+static const char cmd_hdrvopen[] = "open_hostdrv";
+static const char cmd_hdrvclose[] = "close_hostdrv";
+static const char cmd_hdrvintr[] = "intr_hostdrv";
+static const OEMCHAR rep_hdrvcheck[] = OEMTEXT("0.74");
+#endif
 
 #if defined(NP2SYSP_VER)
-static const char str_syspver[] = NP2SYSP_VER;
+static const OEMCHAR str_syspver[] = OEMTEXT(NP2SYSP_VER);
 #else
 #define	str_syspver		str_null
 #endif
 
 #if defined(NP2SYSP_CREDIT)
-static const char str_syspcredit[] = NP2SYSP_CREDIT;
+static const OEMCHAR str_syspcredit[] = OEMTEXT(NP2SYSP_CREDIT);
 #else
 #define	str_syspcredit	str_null
 #endif
 
 
 static const SYSPCMD np2spcmd[] = {
-			{str_np2,		np2sysp_outstr,		str_np2,		0},
-			{str_ver,		np2sysp_outstr,		str_syspver,	0},
+			{cmd_np2,		np2sysp_outstr,		rep_np2,		0},
+			{cmd_ver,		np2sysp_outstr,		str_syspver,	0},
 
 // version:A
-			{str_poweroff,	np2sysp_poweroff,	NULL,			0},
+			{cmd_poweroff,	np2sysp_poweroff,	NULL,			0},
 
 // version:B
-			{str_credit,	np2sysp_outstr,		str_syspcredit,	0},
-			{str_cpu,		np2sysp_cpu,		NULL,			0},
-			{str_clock,		np2sysp_clock,		NULL,			0},
-			{str_multiple,	np2sysp_multiple,	NULL,			0},
+			{cmd_credit,	np2sysp_outstr,		str_syspcredit,	0},
+			{cmd_cpu,		np2sysp_cpu,		NULL,			0},
+			{cmd_clock,		np2sysp_clock,		NULL,			0},
+			{cmd_multiple,	np2sysp_multiple,	NULL,			0},
 
 // version:C
-			{str_hwreset,	np2sysp_hwreset,	NULL,			0},
+			{cmd_hwreset,	np2sysp_hwreset,	NULL,			0},
 
 // extension
 #if defined(SUPPORT_IDEIO) || defined(SUPPORT_SASI)
-			{str_sasibios,	np2sysp_sasi,		NULL,			0},
+			{cmd_sasibios,	np2sysp_sasi,		NULL,			0},
 #endif
 #if defined(SUPPORT_SCSI)
-			{str_scsibios,	np2sysp_scsi,		NULL,			0},
-			{str_scsidev,	np2sysp_scsidev,	NULL,			0},
+			{cmd_scsibios,	np2sysp_scsi,		NULL,			0},
+			{cmd_scsidev,	np2sysp_scsidev,	NULL,			0},
 #endif
 
 #if defined(SUPPORT_HOSTDRV)
-			{str_hdrvcheck,	np2sysp_outstr,		"0.74",			0},
-			{str_hdrvopen,	hostdrv_mount,		NULL,			0},
-			{str_hdrvclose,	hostdrv_unmount,	NULL,			0},
-			{str_hdrvintr,	hostdrv_intr,		NULL,			0},
+			{cmd_hdrvcheck,	np2sysp_outstr,		rep_hdrvcheck,	0},
+			{cmd_hdrvopen,	hostdrv_mount,		NULL,			0},
+			{cmd_hdrvclose,	hostdrv_unmount,	NULL,			0},
+			{cmd_hdrvintr,	hostdrv_intr,		NULL,			0},
 #endif
 };
 
 
-static BOOL np2syspcmp(const char *p) {
+static BRESULT np2syspcmp(const char *p) {
 
 	int		len;
 	int		pos;
 
-	len = strlen(p);
+	len = STRLEN(p);
 	if (!len) {
-		return(TRUE);
+		return(FAILURE);
 	}
 	pos = np2sysp.strpos;
 	while(len--) {
 		if (p[len] != np2sysp.substr[pos]) {
-			return(TRUE);
+			return(FAILURE);
 		}
 		pos--;
 		pos &= NP2SYSP_MASK;
 	}
-	return(FALSE);
+	return(SUCCESS);
 }
 
 static void IOOUTCALL np2sysp_o7ed(UINT port, REG8 dat) {
@@ -199,7 +223,7 @@ const SYSPCMD	*cmdterm;
 
 	np2sysp.substr[np2sysp.strpos] = (char)dat;
 	cmd = np2spcmd;
-	cmdterm = cmd + (sizeof(np2spcmd) / sizeof(SYSPCMD));
+	cmdterm = cmd + NELEMENTS(np2spcmd);
 	while(cmd < cmdterm) {
 		if (!np2syspcmp(cmd->key)) {
 			cmd->func(cmd->arg1, cmd->arg2);
@@ -235,6 +259,19 @@ static REG8 IOINPCALL np2sysp_i7ef(UINT port) {
 	return(ret);
 }
 
+#if defined(NP2APPDEV)
+static void IOOUTCALL np2sysp_o0e9(UINT port, REG8 dat) {
+
+	APPDEVOUT(dat);
+	(void)port;
+}
+
+static REG8 IOINPCALL np2sysp_i0e9(UINT port) {
+
+	return((UINT8)port);
+}
+#endif
+
 
 // ---- I/F
 
@@ -249,5 +286,10 @@ void np2sysp_bind(void) {
 	iocore_attachout(0x07ef, np2sysp_o7ef);
 	iocore_attachinp(0x07ef, np2sysp_i7ed);
 	iocore_attachinp(0x07ef, np2sysp_i7ef);
+
+#if defined(NP2APPDEV)
+	iocore_attachout(0x00e9, np2sysp_o0e9);
+	iocore_attachinp(0x00e9, np2sysp_i0e9);
+#endif
 }
 

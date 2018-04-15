@@ -3,7 +3,7 @@
 #include	"wavefile.h"
 
 
-static BOOL headwrite(WAVEWR hdl) {
+static BRESULT headwrite(WAVEWR hdl) {
 
 	RIFF_HEADER		rif;
 	WAVE_HEADER		hdr;
@@ -62,7 +62,7 @@ static void dataflash(WAVEWR hdl) {
 
 // ----
 
-WAVEWR wavewr_open(const char *filename, UINT rate, UINT bits, UINT ch) {
+WAVEWR wavewr_open(const OEMCHAR *filename, UINT rate, UINT bits, UINT ch) {
 
 	FILEH	fh;
 	WAVEWR	ret;
@@ -119,7 +119,7 @@ UINT wavewr_write(WAVEWR hdl, const void *buf, UINT size) {
 		wr = min(hdl->remain, size);
 		CopyMemory(hdl->ptr, buf, wr);
 		size -= wr;
-		buf = ((BYTE *)buf) + wr;
+		buf = ((UINT8 *)buf) + wr;
 		hdl->ptr += wr;
 		hdl->remain -= wr;
 		if (!hdl->remain) {

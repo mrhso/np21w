@@ -6,12 +6,13 @@
 #include	"cpucore.h"
 
 
-static	char		np2viewclass[] = "NP2-ViewWindow";
-		NP2VIEW_T	np2view[NP2VIEW_MAX];
-extern	HINSTANCE	hInst;
+static	const TCHAR		np2viewclass[] = _T("NP2-ViewWindow");
+		const TCHAR		np2viewfont[] = _T("‚l‚r ƒSƒVƒbƒN");
+		NP2VIEW_T		np2view[NP2VIEW_MAX];
+extern	HINSTANCE		hInst;
 
 
-static void viewer_segmode(HWND hwnd, BYTE type) {
+static void viewer_segmode(HWND hwnd, UINT8 type) {
 
 	NP2VIEW_T	*view;
 
@@ -113,7 +114,7 @@ LRESULT CALLBACK ViewProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_VSCROLL:
 			view = viewcmn_find(hWnd);
 			if (view) {
-				DWORD newpos = view->pos;
+				UINT32 newpos = view->pos;
 				switch(LOWORD(wParam)) {
 					case SB_LINEUP:
 						if (newpos) {
@@ -225,7 +226,7 @@ void viewer_open(void) {
 	view = np2view;
 	for (i=0; i<NP2VIEW_MAX; i++, view++) {
 		if (!view->alive) {
-			char buf[256];
+			TCHAR buf[256];
 			viewcmn_caption(view, buf);
 			ZeroMemory(view, sizeof(NP2VIEW_T));
 			view->alive = TRUE;
@@ -262,8 +263,8 @@ void viewer_allclose(void) {
 
 void viewer_allreload(BOOL force) {
 
-static	DWORD	last = 0;
-		DWORD	now;
+static UINT32	last = 0;
+	UINT32		now;
 
 	now = GetTickCount();
 	if ((force) || ((now - last) >= 200)) {

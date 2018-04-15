@@ -4,6 +4,7 @@
 #include	"strres.h"
 #include	"resource.h"
 #include	"np2.h"
+#include	"oemtext.h"
 #include	"scrnmng.h"
 #include	"sysmng.h"
 #include	"np2class.h"
@@ -15,14 +16,14 @@
 #include	"palettes.h"
 
 
-static const char str_scropt[] = "Screen option";
+static const TCHAR str_scropt[] = _T("Screen option");
 
 
 static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 													WPARAM wp, LPARAM lp) {
-	char	work[32];
-	WORD	ret;
-	BYTE	b;
+	TCHAR	work[32];
+	UINT16	ret;
+	UINT8	b;
 	int		renewal;
 
 	switch(msg) {
@@ -36,12 +37,12 @@ static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 											MAKELONG(0, 255));
 			SendDlgItemMessage(hWnd, IDC_SKIPLIGHT, TBM_SETPOS, TRUE,
 											np2cfg.skiplight);
-			wsprintf(work, str_d, np2cfg.skiplight);
+			wsprintf(work, tchar_u, np2cfg.skiplight);
 			SetDlgItemText(hWnd, IDC_LIGHTSTR, work);
 			return(TRUE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDC_LCD:
 					EnableWindow(GetDlgItem(hWnd, IDC_LCDX),
 											GetDlgItemCheck(hWnd, IDC_LCD));
@@ -52,9 +53,9 @@ static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 		case WM_HSCROLL:
 			switch(GetDlgCtrlID((HWND)lp)) {
 				case IDC_SKIPLIGHT:
-					ret = (WORD)SendDlgItemMessage(hWnd, IDC_SKIPLIGHT,
+					ret = (UINT16)SendDlgItemMessage(hWnd, IDC_SKIPLIGHT,
 													TBM_GETPOS, 0, 0);
-					wsprintf(work, str_d, ret);
+					wsprintf(work, tchar_u, ret);
 					SetDlgItemText(hWnd, IDC_LIGHTSTR, work);
 					break;
 			}
@@ -63,13 +64,14 @@ static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 		case WM_NOTIFY:
 			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				renewal = 0;
-				b = GetDlgItemCheck(hWnd, IDC_SKIPLINE);
+				b = (UINT8)GetDlgItemCheck(hWnd, IDC_SKIPLINE);
 				if (np2cfg.skipline != b) {
 					np2cfg.skipline = b;
 					renewal = 1;
 				}
-				if ((ret = (WORD)SendDlgItemMessage(hWnd, IDC_SKIPLIGHT,
-												TBM_GETPOS, 0, 0)) > 255) {
+				ret = (UINT16)SendDlgItemMessage(hWnd, IDC_SKIPLIGHT,
+														TBM_GETPOS, 0, 0);
+				if (ret > 255) {
 					ret = 255;
 				}
 				if (np2cfg.skiplight != ret) {
@@ -79,8 +81,8 @@ static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 				if (renewal) {
 					pal_makeskiptable();
 				}
-				b = GetDlgItemCheck(hWnd, IDC_LCD) |
-					(GetDlgItemCheck(hWnd, IDC_LCDX) << 1);
+				b = (GetDlgItemCheck(hWnd, IDC_LCD)?0x01:0x00) |
+					(GetDlgItemCheck(hWnd, IDC_LCDX)?0x02:0x00);
 				if (np2cfg.LCD_MODE != b) {
 					np2cfg.LCD_MODE = b;
 					pal_makelcdpal();
@@ -102,7 +104,7 @@ static const int gdcchip[4] = {IDC_GRCGNON, IDC_GRCG, IDC_GRCG2, IDC_EGC};
 static LRESULT CALLBACK Scropt2DlgProc(HWND hWnd, UINT msg,
 													WPARAM wp, LPARAM lp) {
 
-	BYTE	b;
+	UINT8	b;
 	UINT	update;
 
 	switch(msg) {
@@ -128,7 +130,7 @@ static LRESULT CALLBACK Scropt2DlgProc(HWND hWnd, UINT msg,
 		case WM_NOTIFY:
 			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				update = 0;
-				b = GetDlgItemCheck(hWnd, IDC_GDC72020);
+				b = (UINT8)GetDlgItemCheck(hWnd, IDC_GDC72020);
 				if (np2cfg.uPD72020 != b) {
 					np2cfg.uPD72020 = b;
 					update |= SYS_UPDATECFG;
@@ -141,7 +143,7 @@ static LRESULT CALLBACK Scropt2DlgProc(HWND hWnd, UINT msg,
 					update |= SYS_UPDATECFG;
 					gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 				}
-				b = GetDlgItemCheck(hWnd, IDC_PC980124);
+				b = (UINT8)GetDlgItemCheck(hWnd, IDC_PC980124);
 				if (np2cfg.color16 != b) {
 					np2cfg.color16 = b;
 					update |= SYS_UPDATECFG;
@@ -157,9 +159,9 @@ static LRESULT CALLBACK Scropt2DlgProc(HWND hWnd, UINT msg,
 static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 													WPARAM wp, LPARAM lp) {
 
-	char	work[32];
-	BYTE	value[6];
-	BYTE	b;
+	TCHAR	work[32];
+	UINT8	value[6];
+	UINT8	b;
 	UINT	update;
 
 	switch(msg) {
@@ -168,26 +170,26 @@ static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 											MAKELONG(0, 32));
 			SendDlgItemMessage(hWnd, IDC_TRAMWAIT, TBM_SETPOS, TRUE,
 											np2cfg.wait[0]);
-			wsprintf(work, str_u, np2cfg.wait[0]);
+			wsprintf(work, tchar_u, np2cfg.wait[0]);
 			SetDlgItemText(hWnd, IDC_TRAMSTR, work);
 			SendDlgItemMessage(hWnd, IDC_VRAMWAIT, TBM_SETRANGE, TRUE,
 											MAKELONG(0, 32));
 			SendDlgItemMessage(hWnd, IDC_VRAMWAIT, TBM_SETPOS, TRUE,
 											np2cfg.wait[2]);
-			wsprintf(work, str_u, np2cfg.wait[2]);
+			wsprintf(work, tchar_u, np2cfg.wait[2]);
 			SetDlgItemText(hWnd, IDC_VRAMSTR, work);
 			SendDlgItemMessage(hWnd, IDC_GRCGWAIT, TBM_SETRANGE, TRUE,
 											MAKELONG(0, 32));
 			SendDlgItemMessage(hWnd, IDC_GRCGWAIT, TBM_SETPOS, TRUE,
 											np2cfg.wait[4]);
-			wsprintf(work, str_u, np2cfg.wait[4]);
+			wsprintf(work, tchar_u, np2cfg.wait[4]);
 			SetDlgItemText(hWnd, IDC_GRCGSTR, work);
 
 			SendDlgItemMessage(hWnd, IDC_REALPAL, TBM_SETRANGE, TRUE,
 											MAKELONG(0, 64));
 			SendDlgItemMessage(hWnd, IDC_REALPAL, TBM_SETPOS, TRUE,
 											np2cfg.realpal);
-			wsprintf(work, str_d, (int)np2cfg.realpal - 32);
+			wsprintf(work, tchar_d, (int)np2cfg.realpal - 32);
 			SetDlgItemText(hWnd, IDC_REALPALSTR, work);
 
 			return(TRUE);
@@ -195,27 +197,30 @@ static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 		case WM_HSCROLL:
 			switch(GetDlgCtrlID((HWND)lp)) {
 				case IDC_TRAMWAIT:
-					b = (BYTE)SendDlgItemMessage(hWnd, IDC_TRAMWAIT,
+					b = (UINT8)SendDlgItemMessage(hWnd, IDC_TRAMWAIT,
 													TBM_GETPOS, 0, 0);
-					wsprintf(work, str_u, b);
+					wsprintf(work, tchar_u, b);
 					SetDlgItemText(hWnd, IDC_TRAMSTR, work);
 					break;
+
 				case IDC_VRAMWAIT:
-					b = (BYTE)SendDlgItemMessage(hWnd, IDC_VRAMWAIT,
+					b = (UINT8)SendDlgItemMessage(hWnd, IDC_VRAMWAIT,
 													TBM_GETPOS, 0, 0);
-					wsprintf(work, str_u, b);
+					wsprintf(work, tchar_u, b);
 					SetDlgItemText(hWnd, IDC_VRAMSTR, work);
 					break;
+
 				case IDC_GRCGWAIT:
-					b = (BYTE)SendDlgItemMessage(hWnd, IDC_GRCGWAIT,
+					b = (UINT8)SendDlgItemMessage(hWnd, IDC_GRCGWAIT,
 													TBM_GETPOS, 0, 0);
-					wsprintf(work, str_u, b);
+					wsprintf(work, tchar_u, b);
 					SetDlgItemText(hWnd, IDC_GRCGSTR, work);
 					break;
+
 				case IDC_REALPAL:
-					b = (BYTE)SendDlgItemMessage(hWnd, IDC_REALPAL,
+					b = (UINT8)SendDlgItemMessage(hWnd, IDC_REALPAL,
 													TBM_GETPOS, 0, 0);
-					wsprintf(work, str_d, (int)b - 32);
+					wsprintf(work, tchar_d, (int)b - 32);
 					SetDlgItemText(hWnd, IDC_REALPALSTR, work);
 			}
 			break;
@@ -224,17 +229,17 @@ static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				update = 0;
 				ZeroMemory(value, sizeof(value));
-				value[0] = (BYTE)SendDlgItemMessage(hWnd, IDC_TRAMWAIT,
+				value[0] = (UINT8)SendDlgItemMessage(hWnd, IDC_TRAMWAIT,
 													TBM_GETPOS, 0, 0);
 				if (value[0]) {
 					value[1] = 1;
 				}
-				value[2] = (BYTE)SendDlgItemMessage(hWnd, IDC_VRAMWAIT,
+				value[2] = (UINT8)SendDlgItemMessage(hWnd, IDC_VRAMWAIT,
 													TBM_GETPOS, 0, 0);
 				if (value[2]) {
 					value[3] = 1;
 				}
-				value[4] = (BYTE)SendDlgItemMessage(hWnd, IDC_GRCGWAIT,
+				value[4] = (UINT8)SendDlgItemMessage(hWnd, IDC_GRCGWAIT,
 													TBM_GETPOS, 0, 0);
 				if (value[4]) {
 					value[5] = 1;
@@ -245,7 +250,7 @@ static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 						update |= SYS_UPDATECFG;
 					}
 				}
-				b = (BYTE)SendDlgItemMessage(hWnd, IDC_REALPAL,
+				b = (UINT8)SendDlgItemMessage(hWnd, IDC_REALPAL,
 														TBM_GETPOS, 0, 0);
 				if (np2cfg.realpal != b) {
 					np2cfg.realpal = b;

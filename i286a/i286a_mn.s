@@ -24,7 +24,7 @@
 	IMPORT		iocore_out8
 	IMPORT		iocore_out16
 
-	IMPORT		dmap_i286
+	IMPORT		dmax86
 	IMPORT		biosfunc
 
 	IMPORT		i286a_cts
@@ -96,7 +96,7 @@ adc_r16_ea		OP_R16_EA	ADC16, #2, #7
 adc_al_d8		OP_AL_D8	ADC8, #3
 adc_ax_d16		OP_AX_D16	ADC16, #3
 push_ss			REGPUSH		#CPU_SS, #3
-pop_ss			SEGPOPFIX	#CPU_SS, #CPU_SS_BASE, #CPU_SS_FIX, #5
+; pop_ss
 
 sbb_ea_r8		OP_EA_R8	SBB8, #2, #7
 sbb_ea_r16		OP_EA_R16	SBB16, #2, #7
@@ -105,7 +105,7 @@ sbb_r16_ea		OP_R16_EA	SBB16, #2, #7
 sbb_al_d8		OP_AL_D8	SBB8, #3
 sbb_ax_d16		OP_AX_D16	SBB16, #3
 push_ds			REGPUSH		#CPU_DS, #3
-pop_ds			SEGPOPFIX	#CPU_DS, #CPU_DS_BASE, #CPU_DS_FIX, #5
+; pop_ds		SEGPOPFIX	#CPU_DS, #CPU_DS_BASE, #CPU_DS_FIX, #5
 
 and_ea_r8		OP_EA_R8	AND8, #2, #7
 and_ea_r16		OP_EA_R16	AND16, #2, #7
@@ -134,8 +134,8 @@ xor_ax_d16		OP_AX_D16	XOR16, #3
 ; segprefix_ss		!
 ; aaa			*
 
-cmp_ea_r8		S_EA_R8		SUB8, #2, #7
-cmp_ea_r16		S_EA_R16	SUB16, #2, #7
+cmp_ea_r8		S_EA_R8		SUB8, #2, #6
+cmp_ea_r16		S_EA_R16	SUB16, #2, #6
 cmp_r8_ea		S_R8_EA		SUB8, #2, #6
 cmp_r16_ea		S_R16_EA	SUB16, #2, #6
 cmp_al_d8		S_AL_D8		SUB8, #3
@@ -190,18 +190,18 @@ pop_di			REGPOP		#CPU_DI, #5
 ; outsb			*
 ; outsw			*
 
-jo_short		JMPNE		#O_FLAG, #2, #7
-jno_short		JMPEQ		#O_FLAG, #2, #7
-jc_short		JMPNE		#C_FLAG, #2, #7
-jnc_short		JMPEQ		#C_FLAG, #2, #7
-jz_short		JMPNE		#Z_FLAG, #2, #7
-jnz_short		JMPEQ		#Z_FLAG, #2, #7
-jna_short		JMPNE		#(Z_FLAG + C_FLAG), #2, #7
-ja_short		JMPEQ		#(Z_FLAG + C_FLAG), #2, #7
-js_short		JMPNE		#S_FLAG, #2, #7
-jns_short		JMPEQ		#S_FLAG, #2, #7
-jp_short		JMPNE		#P_FLAG, #2, #7
-jnp_short		JMPEQ		#P_FLAG, #2, #7
+jo_short		JMPNE		#O_FLAG, #3, #7
+jno_short		JMPEQ		#O_FLAG, #3, #7
+jc_short		JMPNE		#C_FLAG, #3, #7
+jnc_short		JMPEQ		#C_FLAG, #3, #7
+jz_short		JMPNE		#Z_FLAG, #3, #7
+jnz_short		JMPEQ		#Z_FLAG, #3, #7
+jna_short		JMPNE		#(Z_FLAG + C_FLAG), #3, #7
+ja_short		JMPEQ		#(Z_FLAG + C_FLAG), #3, #7
+js_short		JMPNE		#S_FLAG, #3, #7
+jns_short		JMPEQ		#S_FLAG, #3, #7
+jp_short		JMPNE		#P_FLAG, #3, #7
+jnp_short		JMPEQ		#P_FLAG, #3, #7
 ; jl_short		+
 ; jnl_short		+
 ; jle_short		+
@@ -340,6 +340,12 @@ jmp_short		JMPS	#7
 reserved		mov		r6, #6
 				sub		r8, r8, #(1 << 16)
 				b		i286a_localint
+
+pop_ss			SEGPOPFIX	#CPU_SS, #CPU_SS_BASE, #CPU_SS_FIX, #5
+				NEXT_OPCODE
+
+pop_ds			SEGPOPFIX	#CPU_DS, #CPU_DS_BASE, #CPU_DS_FIX, #5
+				mov		pc, r11
 
 daa				ldrb	r0, [r9, #CPU_AL]
 				bic		r8, r8, #O_FLAG
@@ -650,7 +656,7 @@ jle_short		tst		r8, #Z_FLAG
 jl_short		eor		r0, r8, r8 lsr #4
 				tst		r0, #S_FLAG
 				bne		jmps
-nojmps			CPUWORK	#2
+nojmps			CPUWORK	#3
 				add		r8, r8, #(1 << 16)
 				mov		pc, r11
 
@@ -1301,7 +1307,7 @@ enterlv1		cmp		r0, #1
 				strh	r2, [r9, #CPU_SP]
 				bl		i286a_memorywrite_w
 enterlv2		mov		r1, r0, lsl #2
-				add		r1, r1, #12
+				add		r1, r1, #(12 + 4)
 				CPUWORK	r1
 				strh	r4, [r9, #CPU_BP]
 				str		r11, [sp, #-4]!
@@ -1735,7 +1741,7 @@ i286a_step		stmdb	sp!, {r4 - r11, lr}
 				mov		r11, pc
 				mov		pc, r1
 
-				bl		dmap_i286
+				bl		dmax86
 				CPUSV
 				ldmia	sp!, {r4 - r11, pc}
 
@@ -1777,7 +1783,7 @@ i286awithdma	adr		r4, optbl1
 				add		r8, r8, #(1 << 16)
 				mov		r11, pc
 				mov		pc, r1
-				bl		dmap_i286
+				bl		dmax86
 				CPUDBGL
 				cmp		r7, #0
 				ldrgt	r5, [r9, #CPU_CS_BASE]
@@ -1792,7 +1798,7 @@ i286awithtrap	adr		r4, optbl1
 				add		r8, r8, #(1 << 16)
 				mov		r11, pc
 				mov		pc, r1
-				bl		dmap_i286
+				bl		dmax86
 				and		r0, r8, #(I_FLAG + T_FLAG)
 				cmp		r0, #(I_FLAG + T_FLAG)
 				bleq	i286a_trapint

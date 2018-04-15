@@ -9,7 +9,7 @@ typedef struct {
 	int		insert;
 	UINT	cnt;
 	UINT	pos[FDDLIST_MAX];
-	char	name[FDDLIST_MAX][MAX_PATH];
+	OEMCHAR	name[FDDLIST_MAX][MAX_PATH];
 } TOOLFDD;
 
 typedef struct {
@@ -17,8 +17,8 @@ typedef struct {
 	int		posy;
 	BOOL	type;
 	TOOLFDD	fdd[FDDLIST_DRV];
-	char	skin[MAX_PATH];
-	char	skinmru[SKINMRU_MAX][MAX_PATH];
+	OEMCHAR	skin[MAX_PATH];
+	OEMCHAR	skinmru[SKINMRU_MAX][MAX_PATH];
 } NP2TOOL;
 
 
@@ -29,17 +29,17 @@ void toolwin_create(void);
 void toolwin_destroy(void);
 HWND toolwin_gethwnd(void);
 
-void toolwin_setfdd(BYTE drv, const char *name);
+void toolwin_setfdd(UINT8 drv, const OEMCHAR *name);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-void toolwin_fddaccess(BYTE drv);
-void toolwin_hddaccess(BYTE drv);
+void toolwin_fddaccess(UINT8 drv);
+void toolwin_hddaccess(UINT8 drv);
 #ifdef __cplusplus
 }
 #endif
-void toolwin_draw(BYTE frame);
+void toolwin_draw(UINT8 frame);
 
 void toolwin_readini(void);
 void toolwin_writeini(void);

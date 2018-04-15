@@ -141,12 +141,23 @@ static void pccore_set(void) {
 	// HDDの接続 (I/Oの使用状態が変わるので..
 	if (np2cfg.dipsw[1] & 0x20) {
 		pccore.hddif |= PCHDD_IDE;
+#if defined(SUPPORT_IDEIO)
+		sxsi_setdevtype(0x02, SXSIDEV_CDROM);
+#endif
+	}
+	else {
+		sxsi_setdevtype(0x02, SXSIDEV_NC);
 	}
 
 	// 拡張メモリ
 	extsize = 0;
 	if (!(np2cfg.dipsw[2] & 0x80)) {
-		extsize = min(np2cfg.EXTMEM, 13);
+		extsize = np2cfg.EXTMEM;
+#if defined(CPUCORE_IA32)
+		extsize = min(extsize, 63);
+#else
+		extsize = min(extsize, 13);
+#endif
 	}
 	pccore.extmem = extsize;
 	CopyMemory(pccore.dipsw, np2cfg.dipsw, 3);
@@ -260,7 +271,7 @@ void pccore_term(void) {
 	mpu98ii_destruct();
 	rs232c_destruct();
 
-	sxsi_trash();
+	sxsi_alltrash();
 
 	CPU_DEINITIALIZE();
 }
@@ -320,7 +331,8 @@ void pccore_reset(void) {
 	}
 
 	// HDDセット
-	sxsi_open();
+	diskdrv_hddbind();
+	// SASI/IDEどっち？
 #if defined(SUPPORT_SASI)
 	if (sxsi_issasi()) {
 		pccore.hddif &= ~PCHDD_IDE;
@@ -374,6 +386,10 @@ void pccore_reset(void) {
 
 	timing_reset();
 	soundmng_play();
+
+#if 0 && defined(SUPPORT_IDEIO)	// Test!
+	sxsi_devopen(0x02, OEMTEXT("e:\\pn\\pn.iso"));
+#endif
 }
 
 static void drawscreen(void) {
@@ -502,7 +518,7 @@ static void drawscreen(void) {
 		}
 	}
 	if (screenupdate) {
-		screenupdate = scrndraw_draw((BYTE)(screenupdate & 2));
+		screenupdate = scrndraw_draw((UINT8)(screenupdate & 2));
 		drawcount++;
 	}
 }
@@ -548,44 +564,12 @@ void screenvsync(NEVENTITEM item) {
 
 // ---------------------------------------------------------------------------
 
-// #define	IPTRACE			(1 << 12)
-
-#if defined(TRACE) && IPTRACE
-static	UINT	trpos = 0;
-static	UINT32	treip[IPTRACE];
-
-void iptrace_out(void) {
-
-	FILEH	fh;
-	UINT	s;
-	UINT32	eip;
-	char	buf[32];
-
-	s = trpos;
-	if (s > IPTRACE) {
-		s -= IPTRACE;
-	}
-	else {
-		s = 0;
-	}
-	fh = file_create_c("his.txt");
-	while(s < trpos) {
-		eip = treip[s & (IPTRACE - 1)];
-		s++;
-		SPRINTF(buf, "%.4x:%.4x\r\n", (eip >> 16), eip & 0xffff);
-		file_write(fh, buf, strlen(buf));
-	}
-	file_close(fh);
-}
-#endif
-
+// #define SINGLESTEPONLY
 
 #if defined(TRACE)
 static int resetcnt = 0;
 static int execcnt = 0;
 int piccnt = 0;
-int tr = 0;
-UINT	cflg;
 #endif
 
 
@@ -620,7 +604,6 @@ void pccore_exec(BOOL draw) {
 			CPU_RESETREQ = 0;
 			CPU_SHUT();
 		}
-
 #if !defined(SINGLESTEPONLY)
 		if (CPU_REMCLOCK > 0) {
 			if (!(CPU_TYPE & CPUTYPE_V30)) {
@@ -632,13 +615,7 @@ void pccore_exec(BOOL draw) {
 		}
 #else
 		while(CPU_REMCLOCK > 0) {
-#if IPTRACE
-			treip[trpos & (IPTRACE - 1)] = (CPU_CS << 16) + CPU_IP;
-			trpos++;
-#endif
-//			TRACEOUT(("%.4x:%.4x", CPU_CS, CPU_IP));
-			i286x_step();
-//			i286c_step();
+			CPU_STEPEXEC();
 		}
 #endif
 		nevent_progress();

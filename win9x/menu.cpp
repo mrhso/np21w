@@ -23,7 +23,7 @@ void menu_addmenubar(HMENU popup, HMENU menubar) {
 	UINT			pos;
 	UINT			i;
 	MENUITEMINFO	mii;
-	char			str[128];
+	TCHAR			str[128];
 	HMENU			hSubMenu;
 
 	cnt = GetMenuItemCount(menubar);
@@ -34,7 +34,7 @@ void menu_addmenubar(HMENU popup, HMENU menubar) {
 		mii.fMask = MIIM_TYPE | MIIM_STATE | MIIM_ID | MIIM_SUBMENU |
 																	MIIM_DATA;
 		mii.dwTypeData = str;
-		mii.cch = sizeof(str);
+		mii.cch = NELEMENTS(str);
 		if (GetMenuItemInfo(menubar, i, TRUE, &mii)) {
 			if (mii.hSubMenu) {
 				hSubMenu = CreatePopupMenu();
@@ -48,11 +48,11 @@ void menu_addmenubar(HMENU popup, HMENU menubar) {
 }
 
 static void insertresmenu(HMENU menu, UINT pos, UINT flag,
-													UINT item, UINT str) {
+													UINT32 item, UINT str) {
 
-	char	tmp[128];
+	TCHAR	tmp[128];
 
-	if (LoadString(hInst, str, tmp, sizeof(tmp))) {
+	if (LoadString(hInst, str, tmp, NELEMENTS(tmp))) {
 		InsertMenu(menu, pos, flag, item, tmp);
 	}
 }
@@ -115,14 +115,13 @@ void sysmenu_initialize(void) {
 	HMENU	hMenu;
 
 	hMenu = GetSystemMenu(hWndMain, FALSE);
-	insertresmenus(hMenu, 0, smenuitem, sizeof(smenuitem)/sizeof(MENUITEMS));
+	insertresmenus(hMenu, 0, smenuitem, NELEMENTS(smenuitem));
 	if (np2oscfg.I286SAVE) {
-		insertresmenus(hMenu, 0, smenuitem2,
-										sizeof(smenuitem2)/sizeof(MENUITEMS));
+		insertresmenus(hMenu, 0, smenuitem2, NELEMENTS(smenuitem2));
 	}
 }
 
-void sysmenu_settoolwin(BYTE value) {
+void sysmenu_settoolwin(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.toolwin = value;
@@ -130,7 +129,7 @@ void sysmenu_settoolwin(BYTE value) {
 											IDM_TOOLWIN, MFCHECK(value));
 }
 
-void sysmenu_setkeydisp(BYTE value) {
+void sysmenu_setkeydisp(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.keydisp = value;
@@ -138,7 +137,7 @@ void sysmenu_setkeydisp(BYTE value) {
 											IDM_KEYDISP, MFCHECK(value));
 }
 
-void sysmenu_setwinsnap(BYTE value) {
+void sysmenu_setwinsnap(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.WINSNAP = value;
@@ -146,7 +145,7 @@ void sysmenu_setwinsnap(BYTE value) {
 											IDM_SNAPENABLE, MFCHECK(value));
 }
 
-void sysmenu_setbackground(BYTE value) {
+void sysmenu_setbackground(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -163,7 +162,7 @@ void sysmenu_setbackground(BYTE value) {
 	}
 }
 
-void sysmenu_setbgsound(BYTE value) {
+void sysmenu_setbgsound(UINT8 value) {
 
 	np2oscfg.background &= 1;
 	np2oscfg.background |= (value & 2);
@@ -171,7 +170,7 @@ void sysmenu_setbgsound(BYTE value) {
 									IDM_BGSOUND, MFCHECK((value & 2) ^ 2));
 }
 
-void sysmenu_setscrnmul(BYTE value) {
+void sysmenu_setscrnmul(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -190,68 +189,87 @@ void sysmenu_setscrnmul(BYTE value) {
 
 typedef struct {
 	UINT16		title;
+	UINT16		items;
+	MENUITEMS	item[1];
+} SUBMITEMS;
+
+typedef struct {
+	UINT16		title;
+	UINT16		items;
 	MENUITEMS	item[3];
-} DISKMENU;
+} SUBMITEM3;
 
-static const DISKMENU fddmenu[4] = {
-		{IDS_FDD1,	{{IDM_FDD1OPEN,		IDS_OPEN},
-					{0,					0},
-					{IDM_FDD1EJECT,		IDS_EJECT}}},
-		{IDS_FDD2,	{{IDM_FDD2OPEN,		IDS_OPEN},
-					{0,					0},
-					{IDM_FDD2EJECT,		IDS_EJECT}}},
-		{IDS_FDD3,	{{IDM_FDD3OPEN,		IDS_OPEN},
-					{0,					0},
-					{IDM_FDD3EJECT,		IDS_EJECT}}},
-		{IDS_FDD4,	{{IDM_FDD4OPEN,		IDS_OPEN},
-					{0,					0},
-					{IDM_FDD4EJECT,		IDS_EJECT}}}};
+static const SUBMITEM3 fddmenu[4] = {
+		{IDS_FDD1, 3,
+			{{IDM_FDD1OPEN, IDS_OPEN}, {0, 0}, {IDM_FDD1EJECT, IDS_EJECT}}},
+		{IDS_FDD2, 3,
+			{{IDM_FDD2OPEN, IDS_OPEN}, {0, 0}, {IDM_FDD2EJECT, IDS_EJECT}}},
+		{IDS_FDD3, 3,
+			{{IDM_FDD3OPEN, IDS_OPEN}, {0, 0}, {IDM_FDD3EJECT, IDS_EJECT}}},
+		{IDS_FDD4, 3,
+			{{IDM_FDD4OPEN, IDS_OPEN}, {0, 0}, {IDM_FDD4EJECT, IDS_EJECT}}}};
 
-static void insdiskmenu(HMENU hMenu, UINT pos, const DISKMENU *m) {
-
-	HMENU	hSubMenu;
-
-	hSubMenu = CreatePopupMenu();
-	insertresmenus(hSubMenu, 0, m->item, 3);
-	insertresmenu(hMenu, pos, MF_BYPOSITION | MF_POPUP,
-											(UINT)hSubMenu, m->title);
-}
-
-#if defined(SUPPORT_SCSI)
-static const DISKMENU scsimenu[4] = {
-		{IDS_SCSI0,	{{IDM_SCSI0OPEN,	IDS_OPEN},
-					{0,					0},
-					{IDM_SCSI0EJECT,	IDS_REMOVE}}},
-		{IDS_SCSI1,	{{IDM_SCSI1OPEN,	IDS_OPEN},
-					{0,					0},
-					{IDM_SCSI1EJECT,	IDS_REMOVE}}},
-		{IDS_SCSI2,	{{IDM_SCSI2OPEN,	IDS_OPEN},
-					{0,					0},
-					{IDM_SCSI2EJECT,	IDS_REMOVE}}},
-		{IDS_SCSI3,	{{IDM_SCSI3OPEN,	IDS_OPEN},
-					{0,					0},
-					{IDM_SCSI3EJECT,	IDS_REMOVE}}}};
+#if defined(SUPPORT_IDEIO)
+static const SUBMITEM3 side[3] = {
+		{IDS_IDE0, 3,
+			{{IDM_IDE0OPEN, IDS_OPEN}, {0, 0}, {IDM_IDE0EJECT, IDS_REMOVE}}},
+		{IDS_IDE1, 3,
+			{{IDM_IDE1OPEN, IDS_OPEN}, {0, 0}, {IDM_IDE1EJECT, IDS_REMOVE}}},
+		{IDS_IDE2, 3,
+			{{IDM_IDE2OPEN, IDS_OPEN}, {0, 0}, {IDM_IDE2EJECT, IDS_EJECT}}}};
+#else
+static const SUBMITEM3 ssasi[2] = {
+		{IDS_SASI1, 3,
+			{{IDM_IDE0OPEN, IDS_OPEN}, {0, 0}, {IDM_IDE0EJECT, IDS_REMOVE}}},
+		{IDS_SASI2, 3,
+			{{IDM_IDE1OPEN, IDS_OPEN}, {0, 0}, {IDM_IDE1EJECT, IDS_REMOVE}}}};
 #endif
 
+#if defined(SUPPORT_SCSI)
+static const SUBMITEM3 sscsi[4] = {
+	{IDS_SCSI0, 3,
+		{{IDM_SCSI0OPEN, IDS_OPEN}, {0, 0}, {IDM_SCSI0EJECT, IDS_REMOVE}}},
+	{IDS_SCSI1, 3,
+		{{IDM_SCSI1OPEN, IDS_OPEN}, {0, 0}, {IDM_SCSI1EJECT, IDS_REMOVE}}},
+	{IDS_SCSI2, 3,
+		{{IDM_SCSI2OPEN, IDS_OPEN}, {0, 0}, {IDM_SCSI2EJECT, IDS_REMOVE}}},
+	{IDS_SCSI3, 3,
+		{{IDM_SCSI3OPEN, IDS_OPEN}, {0, 0}, {IDM_SCSI3EJECT, IDS_REMOVE}}}};
+#endif
+
+
+static void insdiskmenu(HMENU hMenu, UINT pos, const void *item) {
+
+	HMENU		hSubMenu;
+const SUBMITEMS	*smi;
+
+	hSubMenu = CreatePopupMenu();
+	smi = (SUBMITEMS *)item;
+	insertresmenus(hSubMenu, 0, smi->item, smi->items);
+	insertresmenu(hMenu, pos, MF_BYPOSITION | MF_POPUP,
+											(UINT)hSubMenu, smi->title);
+}
+
+
 #if defined(SUPPORT_STATSAVE)
-static const char xmenu_stat[] = "S&tat";
-static const char xmenu_statsave[] = "Save %u";
-static const char xmenu_statload[] = "Load %u";
+static const TCHAR xmenu_stat[] = _T("S&tat");
+static const TCHAR xmenu_statsave[] = _T("Save %u");
+static const TCHAR xmenu_statload[] = _T("Load %u");
 
 static void addstatsavemenu(HMENU hMenu, UINT pos) {
 
 	HMENU	hSubMenu;
 	UINT	i;
-	char	buf[16];
+	TCHAR	buf[16];
 
 	hSubMenu = CreatePopupMenu();
 	for (i=0; i<SUPPORT_STATSAVE; i++) {
-		SPRINTF(buf, xmenu_statsave, i);
+		wsprintf(buf, xmenu_statsave, i);
 		AppendMenu(hSubMenu, MF_STRING, IDM_FLAGSAVE + i, buf);
 	}
 	AppendMenu(hSubMenu, MF_MENUBARBREAK, 0, NULL);
 	for (i=0; i<SUPPORT_STATSAVE; i++) {
-		SPRINTF(buf, xmenu_statload, i);
+		wsprintf(buf, xmenu_statload, i);
 		AppendMenu(hSubMenu, MF_STRING, IDM_FLAGLOAD + i, buf);
 	}
 	InsertMenu(hMenu, pos, MF_BYPOSITION | MF_POPUP,
@@ -263,29 +281,44 @@ void xmenu_initialize(void) {
 
 	HMENU	hMenu;
 	HMENU	hSubMenu;
+	UINT	subpos;
 	UINT	i;
 
 	hMenu = np2class_gethmenu(hWndMain);
 	if (np2oscfg.I286SAVE) {
-		hSubMenu = GetSubMenu(hMenu, 4);
+		hSubMenu = GetSubMenu(hMenu, 3);
 		insertresmenu(hSubMenu, 10, MF_BYPOSITION | MF_STRING,
-												IDM_I286SAVE, IDS_I286SAVE);
+												IDM_CPUSAVE, IDS_CPUSAVE);
 	}
 #if defined(SUPPORT_WAVEREC)
-	hSubMenu = GetSubMenu(hMenu, 4);
+	hSubMenu = GetSubMenu(hMenu, 3);
 	insertresmenu(hSubMenu, 2, MF_BYPOSITION | MF_STRING,
 												IDM_WAVEREC, IDS_WAVEREC);
 #endif
 
-#if defined(SUPPORT_SCSI)
-	hSubMenu = GetSubMenu(hMenu, 1);
-	AppendMenu(hSubMenu, MF_SEPARATOR, 0, NULL);
-	for (i=0; i<4; i++) {
-		insdiskmenu(hSubMenu, i + 3, scsimenu + i);
+	hSubMenu = CreatePopupMenu();
+	subpos = 0;
+#if defined(SUPPORT_IDEIO)
+	for (i=0; i<NELEMENTS(side); i++) {
+		insdiskmenu(hSubMenu, subpos++, side + i);
+	}
+#else
+	for (i=0; i<NELEMENTS(ssasi); i++) {
+		insdiskmenu(hSubMenu, subpos++, ssasi + i);
 	}
 #endif
+#if defined(SUPPORT_SCSI)
+	AppendMenu(hSubMenu, MF_SEPARATOR, 0, NULL);
+	subpos++;
+	for (i=0; i<NELEMENTS(sscsi); i++) {
+		insdiskmenu(hSubMenu, subpos++, sscsi + i);
+	}
+#endif
+	insertresmenu(hMenu, 1, MF_BYPOSITION | MF_POPUP,
+												(UINT32)hSubMenu, IDS_HDD);
 
-	for (i=4; i--;) {
+	for (i=4; i>0;) {
+		i--;
 		if (np2cfg.fddequip & (1 << i)) {
 			insdiskmenu(hMenu, 1, fddmenu + i);
 		}
@@ -307,7 +340,7 @@ void xmenu_disablewindow(void) {
 	EnableMenuItem(hmenu, IDM_FULLSCREEN, MF_GRAYED);
 }
 
-void xmenu_setroltate(BYTE value) {
+void xmenu_setroltate(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -317,28 +350,28 @@ void xmenu_setroltate(BYTE value) {
 	CheckMenuItem(hmenu, IDM_ROLRIGHT, MFCHECK(value == 2));
 }
 
-void xmenu_setdispmode(BYTE value) {
+void xmenu_setdispmode(UINT8 value) {
 
 	value &= 1;
 	np2cfg.DISPSYNC = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_DISPSYNC, MFCHECK(value));
 }
 
-void xmenu_setraster(BYTE value) {
+void xmenu_setraster(UINT8 value) {
 
 	value &= 1;
 	np2cfg.RASTER = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_RASTER, MFCHECK(value));
 }
 
-void xmenu_setwaitflg(BYTE value) {
+void xmenu_setwaitflg(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.NOWAIT = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_NOWAIT, MFCHECK(value));
 }
 
-void xmenu_setframe(BYTE value) {
+void xmenu_setframe(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -351,7 +384,7 @@ void xmenu_setframe(BYTE value) {
 	CheckMenuItem(hmenu, IDM_15FPS, MFCHECK(value == 4));
 }
 
-void xmenu_setkey(BYTE value) {
+void xmenu_setkey(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -365,7 +398,7 @@ void xmenu_setkey(BYTE value) {
 	CheckMenuItem(hmenu, IDM_JOY2, MFCHECK(value == 2));
 }
 
-void xmenu_setxshift(BYTE value) {
+void xmenu_setxshift(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -376,7 +409,7 @@ void xmenu_setxshift(BYTE value) {
 	CheckMenuItem(hmenu, IDM_XGRPH, MFCHECK(value & 4));
 }
 
-void xmenu_setf12copy(BYTE value) {
+void xmenu_setf12copy(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -394,7 +427,7 @@ void xmenu_setf12copy(BYTE value) {
 	CheckMenuItem(hmenu, IDM_USERKEY2, MFCHECK(value == 6));
 }
 
-void xmenu_setbeepvol(BYTE value) {
+void xmenu_setbeepvol(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -407,7 +440,7 @@ void xmenu_setbeepvol(BYTE value) {
 	CheckMenuItem(hmenu, IDM_BEEPHIGH, MFCHECK(value == 3));
 }
 
-void xmenu_setsound(BYTE value) {
+void xmenu_setsound(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -426,21 +459,21 @@ void xmenu_setsound(BYTE value) {
 	CheckMenuItem(hmenu, IDM_AMD98, MFCHECK(value == 0x80));
 }
 
-void xmenu_setjastsound(BYTE value) {
+void xmenu_setjastsound(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.jastsnd = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_JASTSOUND, MFCHECK(value));
 }
 
-void xmenu_setmotorflg(BYTE value) {
+void xmenu_setmotorflg(UINT8 value) {
 
 	value &= 1;
 	np2cfg.MOTOR = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_SEEKSND, MFCHECK(value));
 }
 
-void xmenu_setextmem(BYTE value) {
+void xmenu_setextmem(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -455,7 +488,7 @@ void xmenu_setextmem(BYTE value) {
 	CheckMenuItem(hmenu, IDM_MEM136, MFCHECK(value == 13));
 }
 
-void xmenu_setmouse(BYTE value) {
+void xmenu_setmouse(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.MOUSE_SW = value;
@@ -463,7 +496,7 @@ void xmenu_setmouse(BYTE value) {
 }
 
 #if defined(SUPPORT_S98)
-void xmenu_sets98logging(BYTE value) {
+void xmenu_sets98logging(UINT8 value) {
 
 	CheckMenuItem(np2class_gethmenu(hWndMain),
 											IDM_S98LOGGING, MFCHECK(value));
@@ -471,14 +504,14 @@ void xmenu_sets98logging(BYTE value) {
 #endif
 
 #if defined(SUPPORT_WAVEREC)
-void xmenu_setwaverec(BYTE value) {
+void xmenu_setwaverec(UINT8 value) {
 
 	CheckMenuItem(np2class_gethmenu(hWndMain),
 											IDM_WAVEREC, MFCHECK(value));
 }
 #endif
 
-void xmenu_setshortcut(BYTE value) {
+void xmenu_setshortcut(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -488,7 +521,7 @@ void xmenu_setshortcut(BYTE value) {
 	CheckMenuItem(hmenu, IDM_ALTF4, MFCHECK(value & 2));
 }
 
-void xmenu_setdispclk(BYTE value) {
+void xmenu_setdispclk(UINT8 value) {
 
 	HMENU	hmenu;
 
@@ -501,28 +534,28 @@ void xmenu_setdispclk(BYTE value) {
 	sysmng_updatecaption(3);
 }
 
-void xmenu_setbtnmode(BYTE value) {
+void xmenu_setbtnmode(UINT8 value) {
 
 	value &= 1;
 	np2cfg.BTN_MODE = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_JOYX, MFCHECK(value));
 }
 
-void xmenu_setbtnrapid(BYTE value) {
+void xmenu_setbtnrapid(UINT8 value) {
 
 	value &= 1;
 	np2cfg.BTN_RAPID = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_RAPID, MFCHECK(value));
 }
 
-void xmenu_setmsrapid(BYTE value) {
+void xmenu_setmsrapid(UINT8 value) {
 
 	value &= 1;
 	np2cfg.MOUSERAPID = value;
 	CheckMenuItem(np2class_gethmenu(hWndMain), IDM_MSRAPID, MFCHECK(value));
 }
 
-void xmenu_setsstp(BYTE value) {
+void xmenu_setsstp(UINT8 value) {
 
 	value &= 1;
 	np2oscfg.sstp = value;

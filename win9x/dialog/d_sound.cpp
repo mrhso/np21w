@@ -1,10 +1,10 @@
 #include	"compiler.h"
-#include	<windowsx.h>
 #include	<commctrl.h>
 #include	<prsht.h>
 #include	"strres.h"
 #include	"resource.h"
 #include	"np2.h"
+#include	"oemtext.h"
 #include	"dosio.h"
 #include	"joymng.h"
 #include	"sysmng.h"
@@ -20,37 +20,58 @@
 #include	"dipswbmp.h"
 
 
-static const char *sndioport[4] = {"0088", "0188", "0288", "0388"};
-static const char *sndinterrupt[4] = {str_int0, str_int4, str_int5, str_int6};
-static const char *sndromaddr[5] = {"C8000", "CC000", "D0000", "D4000", "N/C"};
-static const char *sndid[8] = {"0x", "1x", "2x", "3x", "4x", "5x", "6x", "7x"};
+static const TCHAR str_0088[] = _T("0088");
+static const TCHAR str_0188[] = _T("0188");
+static const TCHAR str_0288[] = _T("0288");
+static const TCHAR str_0388[] = _T("0388");
+static const TCHAR str_c8000[] = _T("C8000");
+static const TCHAR str_cc000[] = _T("CC000");
+static const TCHAR str_d0000[] = _T("D0000");
+static const TCHAR str_d4000[] = _T("D4000");
+static const TCHAR str_n0x[] = _T("0x");
+static const TCHAR str_n1x[] = _T("1x");
+static const TCHAR str_n2x[] = _T("2x");
+static const TCHAR str_n3x[] = _T("3x");
+static const TCHAR str_n4x[] = _T("4x");
+static const TCHAR str_n5x[] = _T("5x");
+static const TCHAR str_n6x[] = _T("6x");
+static const TCHAR str_n7x[] = _T("7x");
+static const TCHAR *sndioport[4] =
+						{str_0088, str_0188, str_0288, str_0388};
+static const TCHAR *sndinterrupt[4] =
+						{str_int0, str_int4, str_int5, str_int6};
+static const TCHAR *sndromaddr[5] =
+						{str_c8000, str_cc000, str_d0000, str_d4000, str_nc};
+static const TCHAR *sndid[8] =
+						{str_n0x, str_n1x, str_n2x, str_n3x,
+						 str_n4x, str_n5x, str_n6x, str_n7x};
 
-static const char str_sndopt[] = "Sound board option";
+static const TCHAR str_sndopt[] = _T("Sound board option");
 
 
 typedef struct {
 	UINT16	res;
 	UINT16	resstr;
-	BYTE	*value;
+	UINT8	*value;
 	UINT16	min;
 	UINT16	max;
 } SLIDERTBL;
 
-static void slidersetvaluestr(HWND hWnd, const SLIDERTBL *item, BYTE value) {
+static void slidersetvaluestr(HWND hWnd, const SLIDERTBL *item, UINT8 value) {
 
-	char	work[32];
+	TCHAR	work[32];
 
-	wsprintf(work, str_d, value);
+	wsprintf(work, tchar_d, value);
 	SetDlgItemText(hWnd, item->resstr, work);
 }
 
-static void slidersetvalue(HWND hWnd, const SLIDERTBL *item, BYTE value) {
+static void slidersetvalue(HWND hWnd, const SLIDERTBL *item, UINT8 value) {
 
-	if (value > (BYTE)(item->max)) {
-		value = (BYTE)(item->max);
+	if (value > (UINT8)item->max) {
+		value = (UINT8)item->max;
 	}
-	else if (value < (BYTE)(item->min)) {
-		value = (BYTE)(item->min);
+	else if (value < (UINT8)item->min) {
+		value = (UINT8)item->min;
 	}
 	SendDlgItemMessage(hWnd, item->res, TBM_SETPOS, TRUE, value);
 	slidersetvaluestr(hWnd, item, value);
@@ -65,29 +86,29 @@ static void sliderinit(HWND hWnd, const SLIDERTBL *item) {
 
 static void sliderresetpos(HWND hWnd, const SLIDERTBL *item) {
 
-	BYTE	value;
+	UINT8	value;
 
-	value = (BYTE)SendDlgItemMessage(hWnd, item->res, TBM_GETPOS, 0, 0);
-	if (value > (BYTE)(item->max)) {
-		value = (BYTE)(item->max);
+	value = (UINT8)SendDlgItemMessage(hWnd, item->res, TBM_GETPOS, 0, 0);
+	if (value > (UINT8)item->max) {
+		value = (UINT8)item->max;
 	}
-	else if (value < (BYTE)(item->min)) {
-		value = (BYTE)(item->min);
+	else if (value < (UINT8)item->min) {
+		value = (UINT8)item->min;
 	}
 	slidersetvaluestr(hWnd, item, value);
 }
 
-static BYTE sliderrestore(HWND hWnd, const SLIDERTBL *item) {
+static UINT8 sliderrestore(HWND hWnd, const SLIDERTBL *item) {
 
-	BYTE	value;
-	BYTE	ret;
+	UINT8	value;
+	UINT8	ret;
 
-	value = (BYTE)SendDlgItemMessage(hWnd, item->res, TBM_GETPOS, 0, 0);
-	if (value > (BYTE)(item->max)) {
-		value = (BYTE)(item->max);
+	value = (UINT8)SendDlgItemMessage(hWnd, item->res, TBM_GETPOS, 0, 0);
+	if (value > (UINT8)item->max) {
+		value = (UINT8)item->max;
 	}
-	else if (value < (BYTE)(item->min)) {
-		value = (BYTE)(item->min);
+	else if (value < (UINT8)item->min) {
+		value = (UINT8)item->min;
 	}
 	ret = (*(item->value)) - value;
 	if (ret) {
@@ -119,7 +140,7 @@ static LRESULT CALLBACK SndmixDlgProc(HWND hWnd, UINT msg,
 			return(TRUE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDC_SNDMIXDEF:
 					for (i=0; i<5; i++) {
 						slidersetvalue(hWnd, &sndmixitem[i], 64);
@@ -214,30 +235,30 @@ static LRESULT CALLBACK Snd14optDlgProc(HWND hWnd, UINT msg,
 
 static const UINT snd26paranum[4] = {0, 3, 1, 2};
 
-static void setsnd26iopara(HWND hWnd, BYTE value) {
+static void setsnd26iopara(HWND hWnd, UINT8 value) {
 
 	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)((value >> 4) & 1), (LPARAM)0);
 }
 
-static BYTE getsnd26io(HWND hWnd, WORD res) {
+static UINT8 getsnd26io(HWND hWnd, UINT16 res) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
-	return((BYTE)((work[1] == '1')?0x10:0x00));
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
+	return((UINT8)((work[1] == '1')?0x10:0x00));
 }
 
-static void setsnd26intpara(HWND hWnd, BYTE value) {
+static void setsnd26intpara(HWND hWnd, UINT8 value) {
 
 	SendMessage(hWnd, CB_SETCURSEL,
 						(WPARAM)snd26paranum[(value >> 6) & 3], (LPARAM)0);
 }
 
-static BYTE getsnd26int(HWND hWnd, WORD res) {
+static UINT8 getsnd26int(HWND hWnd, UINT16 res) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
 	switch(work[3]) {
 		case '0':
 			return(0x00);
@@ -251,7 +272,7 @@ static BYTE getsnd26int(HWND hWnd, WORD res) {
 	return(0xc0);
 }
 
-static void setsnd26rompara(HWND hWnd, BYTE value) {
+static void setsnd26rompara(HWND hWnd, UINT8 value) {
 
 	int		para;
 
@@ -262,15 +283,15 @@ static void setsnd26rompara(HWND hWnd, BYTE value) {
 	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)para, (LPARAM)0);
 }
 
-static BYTE getsnd26rom(HWND hWnd, WORD res) {
+static UINT8 getsnd26rom(HWND hWnd, UINT16 res) {
 
-	char	work[8];
-	DWORD	adrs;
+	TCHAR	work[8];
+	UINT32	adrs;
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
-	adrs = ((DWORD)milstr_solveHEX(work) - 0xc8000) >> 14;
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
+	adrs = ((UINT32)miltchar_solveHEX(work) - 0xc8000) >> 14;
 	if (adrs < 4) {
-		return((BYTE)adrs);
+		return((UINT8)adrs);
 	}
 	return(4);
 }
@@ -278,10 +299,9 @@ static BYTE getsnd26rom(HWND hWnd, WORD res) {
 
 // ---- PC-9801-26
 
-static	BYTE	snd26 = 0;
+static	UINT8	snd26 = 0;
 
-
-static void set26jmp(HWND hWnd, BYTE value, BYTE bit) {
+static void set26jmp(HWND hWnd, UINT8 value, UINT8 bit) {
 
 	if ((snd26 ^ value) & bit) {
 		snd26 &= ~bit;
@@ -296,8 +316,8 @@ static void snd26cmdjmp(HWND hWnd) {
 	RECT	rect2;
 	POINT	p;
 	BOOL	redraw;
-	BYTE	b;
-	BYTE	bit;
+	UINT8	b;
+	UINT8	bit;
 
 	GetWindowRect(GetDlgItem(hWnd, IDC_SND26JMP), &rect1);
 	GetClientRect(GetDlgItem(hWnd, IDC_SND26JMP), &rect2);
@@ -311,7 +331,7 @@ static void snd26cmdjmp(HWND hWnd) {
 		return;
 	}
 	if ((p.x >= 2) && (p.x < 7)) {
-		b = (BYTE)(p.x - 2);
+		b = (UINT8)(p.x - 2);
 		if ((snd26 ^ b) & 7) {
 			snd26 &= ~0x07;
 			snd26 |= b;
@@ -342,7 +362,7 @@ static void snd26cmdjmp(HWND hWnd) {
 		}
 	}
 	else if ((p.x >= 15) && (p.x < 17)) {
-		b = (BYTE)((p.x - 15) << 4);
+		b = (UINT8)((p.x - 15) << 4);
 		if ((snd26 ^ b) & 0x10) {
 			snd26 &= ~0x10;
 			snd26 |= b;
@@ -375,7 +395,7 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 			return(TRUE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDC_SND26IO:
 					set26jmp(hWnd, getsnd26io(hWnd, IDC_SND26IO), 0x10);
 					break;
@@ -425,35 +445,35 @@ static LRESULT CALLBACK Snd26optDlgProc(HWND hWnd, UINT msg,
 
 // ---- PC-9801-86
 
-static	BYTE	snd86 = 0;
+static	UINT8	snd86 = 0;
 
 static const UINT snd86paranum[4] = {0, 1, 3, 2};
 
 
-static void setsnd86iopara(HWND hWnd, BYTE value) {
+static void setsnd86iopara(HWND hWnd, UINT8 value) {
 
 	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)((~value) & 1), (LPARAM)0);
 }
 
-static BYTE getsnd86io(HWND hWnd, WORD res) {
+static UINT8 getsnd86io(HWND hWnd, UINT16 res) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	GetDlgItemText(hWnd, res, work, sizeof(work));
-	return((BYTE)((work[1] == '1')?0x01:0x00));
+	GetDlgItemText(hWnd, res, work, NELEMENTS(work));
+	return((UINT8)((work[1] == '1')?0x01:0x00));
 }
 
-static void setsnd86intpara(HWND hWnd, BYTE value) {
+static void setsnd86intpara(HWND hWnd, UINT8 value) {
 
 	SendMessage(hWnd, CB_SETCURSEL,
 						(WPARAM)snd86paranum[(value >> 2) & 3], (LPARAM)0);
 }
 
-static BYTE getsnd86int(HWND hWnd) {
+static UINT8 getsnd86int(HWND hWnd) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	Edit_GetText(hWnd, work, sizeof(work));
+	GetWindowText(hWnd, work, NELEMENTS(work));
 	switch(work[3]) {
 		case '0':
 			return(0x00);
@@ -467,20 +487,20 @@ static BYTE getsnd86int(HWND hWnd) {
 	return(0x0c);
 }
 
-static void setsnd86idpara(HWND hWnd, BYTE value) {
+static void setsnd86idpara(HWND hWnd, UINT8 value) {
 
 	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)(((~value) >> 5) & 7), (LPARAM)0);
 }
 
-static BYTE getsnd86id(HWND hWnd) {
+static UINT8 getsnd86id(HWND hWnd) {
 
-	char	work[8];
+	TCHAR	work[8];
 
-	Edit_GetText(hWnd, work, sizeof(work));
+	GetWindowText(hWnd, work, NELEMENTS(work));
 	return((~work[0] & 7) << 5);
 }
 
-static void set86jmp(HWND hWnd, BYTE value, BYTE bit) {
+static void set86jmp(HWND hWnd, UINT8 value, UINT8 bit) {
 
 	if ((snd86 ^ value) & bit) {
 		snd86 &= ~bit;
@@ -514,7 +534,7 @@ static void snd86cmddipsw(HWND hWnd) {
 			break;
 
 		case 1:
-			Button_SetCheck(GetDlgItem(hWnd, IDC_SND86ROM), snd86 & 2);
+			SetDlgItemCheck(hWnd, IDC_SND86ROM, snd86 & 2);
 			break;
 
 		case 2:
@@ -523,7 +543,7 @@ static void snd86cmddipsw(HWND hWnd) {
 			break;
 
 		case 4:
-			Button_SetCheck(GetDlgItem(hWnd, IDC_SND86INT), snd86 & 0x10);
+			SetDlgItemCheck(hWnd, IDC_SND86INT, snd86 & 0x10);
 			break;
 
 		case 5:
@@ -545,12 +565,12 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 			snd86 = np2cfg.snd86opt;
 			SETnLISTSTR(hWnd, IDC_SND86IO, sndioport+1, 2);
 			setsnd86iopara(GetDlgItem(hWnd, IDC_SND86IO), snd86);
-			Button_SetCheck(GetDlgItem(hWnd, IDC_SND86INT), snd86 & 0x10);
+			SetDlgItemCheck(hWnd, IDC_SND86INT, snd86 & 0x10);
 			SETLISTSTR(hWnd, IDC_SND86INTA, sndinterrupt);
 			setsnd86intpara(GetDlgItem(hWnd, IDC_SND86INTA), snd86);
 			SETLISTSTR(hWnd, IDC_SND86ID, sndid);
 			setsnd86idpara(GetDlgItem(hWnd, IDC_SND86ID), snd86);
-			Button_SetCheck(GetDlgItem(hWnd, IDC_SND86ROM), snd86 & 2);
+			SetDlgItemCheck(hWnd, IDC_SND86ROM, snd86 & 2);
 
 			sub = GetDlgItem(hWnd, IDC_SND86DIP);
 			SetWindowLong(sub, GWL_STYLE, SS_OWNERDRAW +
@@ -558,14 +578,14 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 			return(TRUE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDC_SND86IO:
 					set86jmp(hWnd, getsnd86io(hWnd, IDC_SND86IO), 0x01);
 					break;
 				case IDC_SND86INT:
 					set86jmp(hWnd,
-						((Button_GetCheck(GetDlgItem(hWnd, IDC_SND86INT)))
-														?0x10:0x00), 0x10);
+							(GetDlgItemCheck(hWnd, IDC_SND86INT))?0x10:0x00,
+																		0x10);
 					break;
 				case IDC_SND86INTA:
 					set86jmp(hWnd,
@@ -573,8 +593,8 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 					break;
 				case IDC_SND86ROM:
 					set86jmp(hWnd,
-						((Button_GetCheck(GetDlgItem(hWnd, IDC_SND86ROM)))
-														?0x02:0x00), 0x02);
+							(GetDlgItemCheck(hWnd, IDC_SND86ROM))?0x02:0x00,
+																		0x02);
 					break;
 				case IDC_SND86ID:
 					set86jmp(hWnd,
@@ -584,10 +604,10 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 				case IDC_SND86DEF:
 					snd86 = 0x7f;
 					setsnd86iopara(GetDlgItem(hWnd, IDC_SND86IO), snd86);
-					Button_SetCheck(GetDlgItem(hWnd, IDC_SND86INT), TRUE);
+					SetDlgItemCheck(hWnd, IDC_SND86INT, TRUE);
 					setsnd86intpara(GetDlgItem(hWnd, IDC_SND86INTA), snd86);
 					setsnd86idpara(GetDlgItem(hWnd, IDC_SND86ID), snd86);
-					Button_SetCheck(GetDlgItem(hWnd, IDC_SND86ROM), TRUE);
+					SetDlgItemCheck(hWnd, IDC_SND86ROM, TRUE);
 					InvalidateRect(GetDlgItem(hWnd, IDC_SND86DIP), NULL, TRUE);
 					break;
 
@@ -620,14 +640,13 @@ static LRESULT CALLBACK Snd86optDlgProc(HWND hWnd, UINT msg,
 
 // ---- Speak board
 
-static	BYTE	spb = 0;
-static	BYTE	spbvrc = 0;
-
+static	UINT8	spb = 0;
+static	UINT8	spbvrc = 0;
 
 static void setspbVRch(HWND hWnd) {
 
-	Button_SetCheck(GetDlgItem(hWnd, IDC_SPBVRL), spbvrc & 1);
-	Button_SetCheck(GetDlgItem(hWnd, IDC_SPBVRR), spbvrc & 2);
+	SetDlgItemCheck(hWnd, IDC_SPBVRL, spbvrc & 1);
+	SetDlgItemCheck(hWnd, IDC_SPBVRR, spbvrc & 2);
 }
 
 static void spbcreate(HWND hWnd) {
@@ -647,7 +666,7 @@ static void spbcreate(HWND hWnd) {
 															MAKELONG(0, 24));
 	SendDlgItemMessage(hWnd, IDC_SPBVRLEVEL, TBM_SETPOS, TRUE,
 															np2cfg.spb_vrl);
-	Button_SetCheck(GetDlgItem(hWnd, IDC_SPBREVERSE), np2cfg.spb_x);
+	SetDlgItemCheck(hWnd, IDC_SPBREVERSE, np2cfg.spb_x);
 
 	sub = GetDlgItem(hWnd, IDC_SPBJMP);
 	SetWindowLong(sub, GWL_STYLE, SS_OWNERDRAW +
@@ -660,8 +679,8 @@ static void spbcmdjmp(HWND hWnd) {
 	RECT	rect2;
 	POINT	p;
 	BOOL	redraw;
-	BYTE	b;
-	BYTE	bit;
+	UINT8	b;
+	UINT8	bit;
 
 	GetWindowRect(GetDlgItem(hWnd, IDC_SPBJMP), &rect1);
 	GetClientRect(GetDlgItem(hWnd, IDC_SPBJMP), &rect2);
@@ -701,7 +720,7 @@ static void spbcmdjmp(HWND hWnd) {
 		redraw = TRUE;
 	}
 	else if ((p.x >= 10) && (p.x < 12)) {
-		b = (BYTE)((p.x - 10) << 4);
+		b = (UINT8)((p.x - 10) << 4);
 		if ((spb ^ b) & 0x10) {
 			spb &= ~0x10;
 			spb |= b;
@@ -710,7 +729,7 @@ static void spbcmdjmp(HWND hWnd) {
 		}
 	}
 	else if ((p.x >= 14) && (p.x < 19)) {
-		b = (BYTE)(p.x - 14);
+		b = (UINT8)(p.x - 14);
 		if ((spb ^ b) & 7) {
 			spb &= ~0x07;
 			spb |= b;
@@ -719,7 +738,7 @@ static void spbcmdjmp(HWND hWnd) {
 		}
 	}
 	else if ((p.x >= 21) && (p.x < 24)) {
-		spbvrc ^= (BYTE)(3 - p.y);
+		spbvrc ^= (UINT8)(3 - p.y);
 		setspbVRch(hWnd);
 		redraw = TRUE;
 	}
@@ -728,7 +747,7 @@ static void spbcmdjmp(HWND hWnd) {
 	}
 }
 
-static void setspbjmp(HWND hWnd, BYTE value, BYTE bit) {
+static void setspbjmp(HWND hWnd, UINT8 value, UINT8 bit) {
 
 	if ((spb ^ value) & bit) {
 		spb &= ~bit;
@@ -737,15 +756,15 @@ static void setspbjmp(HWND hWnd, BYTE value, BYTE bit) {
 	}
 }
 
-static BYTE getspbVRch(HWND hWnd) {
+static UINT8 getspbVRch(HWND hWnd) {
 
-	BYTE	ret;
+	UINT8	ret;
 
 	ret = 0;
-	if (Button_GetCheck(GetDlgItem(hWnd, IDC_SPBVRL))) {
-		ret++;
+	if (GetDlgItemCheck(hWnd, IDC_SPBVRL)) {
+		ret += 1;
 	}
-	if (Button_GetCheck(GetDlgItem(hWnd, IDC_SPBVRR))) {
+	if (GetDlgItemCheck(hWnd, IDC_SPBVRR)) {
 		ret += 2;
 	}
 	return(ret);
@@ -753,7 +772,7 @@ static BYTE getspbVRch(HWND hWnd) {
 
 static LRESULT CALLBACK SPBoptDlgProc(HWND hWnd, UINT msg,
 													WPARAM wp, LPARAM lp) {
-	BYTE	b;
+	UINT8	b;
 	UINT	update;
 
 	switch(msg) {
@@ -762,7 +781,7 @@ static LRESULT CALLBACK SPBoptDlgProc(HWND hWnd, UINT msg,
 			return(TRUE);
 
 		case WM_COMMAND:
-			switch (LOWORD(wp)) {
+			switch(LOWORD(wp)) {
 				case IDC_SPBIO:
 					setspbjmp(hWnd, getsnd26io(hWnd, IDC_SPBIO), 0x10);
 					break;
@@ -812,14 +831,14 @@ static LRESULT CALLBACK SPBoptDlgProc(HWND hWnd, UINT msg,
 					np2cfg.spb_vrc = spbvrc;
 					update |= SYS_UPDATECFG;
 				}
-				b = (BYTE)SendDlgItemMessage(hWnd, IDC_SPBVRLEVEL,
+				b = (UINT8)SendDlgItemMessage(hWnd, IDC_SPBVRLEVEL,
 															TBM_GETPOS, 0, 0);
 				if (np2cfg.spb_vrl != b) {
 					np2cfg.spb_vrl = b;
 					update |= SYS_UPDATECFG;
 				}
 				opngen_setVR(np2cfg.spb_vrc, np2cfg.spb_vrl);
-				b = (BYTE)(Button_GetCheck(GetDlgItem(hWnd, IDC_SPBREVERSE))?																			1:0);
+				b = (UINT8)GetDlgItemCheck(hWnd, IDC_SPBREVERSE);
 				if (np2cfg.spb_x != b) {
 					np2cfg.spb_x = b;
 					update |= SYS_UPDATECFG;
@@ -845,7 +864,7 @@ static LRESULT CALLBACK SPBoptDlgProc(HWND hWnd, UINT msg,
 typedef struct {
 	UINT16	res;
 	UINT16	bit;
-	BYTE	*ptr;
+	UINT8	*ptr;
 } CHECKTBL;
 
 static const CHECKTBL pad1opt[13] = {
@@ -866,18 +885,17 @@ static const CHECKTBL pad1opt[13] = {
 
 static void checkbtnres_load(HWND hWnd, const CHECKTBL *item) {
 
-	Button_SetCheck(GetDlgItem(hWnd, item->res),
-								(*(item->ptr)) & (1 << (item->bit)));
+	SetDlgItemCheck(hWnd, item->res, (*(item->ptr)) & (1 << (item->bit)));
 }
 
-static BYTE checkbtnres_store(HWND hWnd, const CHECKTBL *item) {
+static UINT8 checkbtnres_store(HWND hWnd, const CHECKTBL *item) {
 
-	BYTE	value;
-	BYTE	bit;
-	BYTE	ret;
+	UINT8	value;
+	UINT8	bit;
+	UINT8	ret;
 
 	bit = 1 << (item->bit);
-	value = ((Button_GetCheck(GetDlgItem(hWnd, item->res)))?0xff:0) & bit;
+	value = GetDlgItemCheck(hWnd, item->res)?bit:0;
 	ret = ((*(item->ptr)) ^ value) & bit;
 	if (ret) {
 		(*(item->ptr)) ^= bit;
@@ -889,7 +907,7 @@ static LRESULT CALLBACK PAD1optDlgProc(HWND hWnd, UINT msg,
 													WPARAM wp, LPARAM lp) {
 
 	int		i;
-	BYTE	renewal;
+	UINT8	renewal;
 
 	switch(msg) {
 		case WM_INITDIALOG:
@@ -897,7 +915,7 @@ static LRESULT CALLBACK PAD1optDlgProc(HWND hWnd, UINT msg,
 				checkbtnres_load(hWnd, pad1opt + i);
 			}
 			if (np2oscfg.JOYPAD1 & 2) {
-				Button_Enable(GetDlgItem(hWnd, IDC_JOYPAD1), FALSE);
+				EnableWindow(GetDlgItem(hWnd, IDC_JOYPAD1), FALSE);
 			}
 			return(TRUE);
 
@@ -977,25 +995,25 @@ void dialog_sndopt(HWND hWnd) {
 // ----
 
 #if defined(SUPPORT_S98)
-static const char s98ui_file[] = "NP2_%04d.S98";
-static const char s98ui_title[] = "Save as S98 log";
-static const char s98ui_ext[] = "s98";
-static const char s98ui_filter[] = "S98 log (*.s98)\0*.s98\0";
+static const OEMCHAR s98ui_file[] = OEMTEXT("NP2_%04d.S98");
+static const TCHAR s98ui_title[] = _T("Save as S98 log");
+static const TCHAR s98ui_ext[] = _T("s98");
+static const TCHAR s98ui_filter[] = _T("S98 log (*.s98)\0*.s98\0");
 static const FILESEL s98ui = {s98ui_title, s98ui_ext, s98ui_filter, 1};
 
 void dialog_s98(HWND hWnd) {
 
 	BOOL	check;
-	char	path[MAX_PATH];
+	OEMCHAR	path[MAX_PATH];
 
 	S98_close();
 	check = FALSE;
-	file_cpyname(path, bmpfilefolder, sizeof(path));
+	file_cpyname(path, bmpfilefolder, NELEMENTS(path));
 	file_cutname(path);
-	file_catname(path, s98ui_file, sizeof(path));
-	if ((dlgs_selectwritenum(hWnd, &s98ui, path, sizeof(path))) &&
+	file_catname(path, s98ui_file, NELEMENTS(path));
+	if ((dlgs_selectwritenum(hWnd, &s98ui, path, NELEMENTS(path))) &&
 		(S98_open(path) == SUCCESS)) {
-		file_cpyname(bmpfilefolder, path, sizeof(bmpfilefolder));
+		file_cpyname(bmpfilefolder, path, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
 		check = TRUE;
 	}
@@ -1007,25 +1025,25 @@ void dialog_s98(HWND hWnd) {
 // ----
 
 #if defined(SUPPORT_WAVEREC)
-static const char wrui_file[] = "NP2_%04d.WAV";
-static const char wrui_title[] = "Save as Sound";
-static const char wrui_ext[] = "WAV";
-static const char wrui_filter[] = "Wave files (*.wav)\0*.wav\0";
+static const OEMCHAR wrui_file[] = OEMTEXT("NP2_%04d.WAV");
+static const TCHAR wrui_title[] = _T("Save as Sound");
+static const TCHAR wrui_ext[] = _T("WAV");
+static const TCHAR wrui_filter[] = _T("Wave files (*.wav)\0*.wav\0");
 static const FILESEL wrui = {wrui_title, wrui_ext, wrui_filter, 1};
 
 void dialog_waverec(HWND hWnd) {
 
-	BYTE	check;
-	char	path[MAX_PATH];
+	UINT8	check;
+	OEMCHAR	path[MAX_PATH];
 
 	check = FALSE;
 	sound_recstop();
-	file_cpyname(path, bmpfilefolder, sizeof(path));
+	file_cpyname(path, bmpfilefolder, NELEMENTS(path));
 	file_cutname(path);
-	file_catname(path, wrui_file, sizeof(path));
-	if ((dlgs_selectwritenum(hWnd, &wrui, path, sizeof(path))) &&
+	file_catname(path, wrui_file, NELEMENTS(path));
+	if ((dlgs_selectwritenum(hWnd, &wrui, path, NELEMENTS(path))) &&
 		(sound_recstart(path) == SUCCESS)) {
-		file_cpyname(bmpfilefolder, path, sizeof(bmpfilefolder));
+		file_cpyname(bmpfilefolder, path, NELEMENTS(bmpfilefolder));
 		sysmng_update(SYS_UPDATEOSCFG);
 		check = TRUE;
 	}

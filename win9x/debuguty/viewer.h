@@ -1,9 +1,10 @@
+
 #define	NP2VIEW_MAX	8
 
 typedef struct {
-	BYTE	vram;
-	BYTE	itf;
-	BYTE	A20;
+	UINT8	vram;
+	UINT8	itf;
+	UINT8	A20;
 } VIEWMEM_T;
 
 enum {
@@ -26,9 +27,9 @@ enum {
 };
 
 typedef struct {
-	DWORD	type;
-	DWORD	arg;
-	DWORD	size;
+	UINT32	type;
+	UINT32	arg;
+	UINT32	size;
 	void	*ptr;
 } VIEWMEMBUF;
 
@@ -36,21 +37,22 @@ typedef struct {
 	HWND		hwnd;
 	VIEWMEMBUF	buf1;
 	VIEWMEMBUF	buf2;
-	DWORD		pos;
-	DWORD		maxline;
-	WORD		step;
-	WORD		mul;
-	BYTE		alive;
-	BYTE		type;
-	BYTE		lock;
-	BYTE		active;
-	WORD		seg;
-	WORD		off;
+	UINT32		pos;
+	UINT32		maxline;
+	UINT16		step;
+	UINT16		mul;
+	UINT8		alive;
+	UINT8		type;
+	UINT8		lock;
+	UINT8		active;
+	UINT16		seg;
+	UINT16		off;
 	VIEWMEM_T	dmem;
 	SCROLLINFO	si;
 } NP2VIEW_T;
 
-extern	NP2VIEW_T	np2view[NP2VIEW_MAX];
+extern	const TCHAR		np2viewfont[];
+extern	NP2VIEW_T		np2view[NP2VIEW_MAX];
 
 
 BOOL viewer_init(HINSTANCE hPreInst);
