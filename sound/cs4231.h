@@ -64,7 +64,7 @@ typedef struct {
 	UINT8		extfunc;
 	UINT8		extindex;
 	
-	UINT16		timer;
+	UINT16		timer; // îpé~
 	SINT32		timercounter;
 
 	CS4231REG	reg;

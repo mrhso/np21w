@@ -323,7 +323,7 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 		}
 		(*cs4231fn[cs->reg.datafmt >> 4])(cs, pcm, count);
 		//// CS4231タイマー割り込み（手抜き）
-		//if ((cs->reg.pinctrl & 2) && (cs->dmairq != 0xff) && (cs->timer)) {
+		//if ((cs->reg.pinctrl & 2) && (cs->dmairq != 0xff) && LOADINTELWORD(cs->reg.timer)) {
 		//	static double timercount = 0;
 		//	int decval = 0;
 		//	timercount += (double)count/44100 * 1000 * 100; // 10usec timer
@@ -331,7 +331,7 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 		//	timercount -= (double)decval;
 		//	cs->timercounter -= decval;
 		//	if(cs->timercounter < 0){
-		//		cs->timercounter = 3000;//cs->timer;
+		//		cs->timercounter = LOADINTELWORD(cs->reg.timer);
 		//		cs->intflag |= INt;
 		//		cs->reg.featurestatus |= PI;
 		//		pic_setirq(cs->dmairq);

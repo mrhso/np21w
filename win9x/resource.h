@@ -90,6 +90,7 @@
 #define IDC_HDDADVANCED_SS              12207
 #define IDC_HDDADVANCED_FIXSIZE         12210
 #define IDC_HDDADVANCED_DYNSIZE         12211
+#define IDC_HDDADVANCED_BLANK           12212
 #define IDC_HDDCREATE_PROGRESS          12290
 #define IDC_HDDCREATE_VAL	            12291
 #define IDC_NEWSASI5MB                  12301

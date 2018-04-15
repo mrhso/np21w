@@ -194,6 +194,7 @@ struct tagNP2Config
 #endif
 	
 	UINT8	winntfix;
+	UINT16	sysiomsk;
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

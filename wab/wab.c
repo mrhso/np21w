@@ -629,8 +629,8 @@ BRESULT np2wab_getbmp(BMPFILE *lpbf, BMPINFO *lpbi, UINT8 **lplppal, UINT8 **lpl
 	BMPINFO		bi;
 	BMPINFO		bitmp;
 	UINT		align;
-	int			r;
-	int			x;
+	//int			r;
+	//int			x;
 	UINT8		*dstpix;
 	LPVOID      lpbits;
 	UINT8       *buf;
@@ -654,9 +654,9 @@ BRESULT np2wab_getbmp(BMPFILE *lpbf, BMPINFO *lpbi, UINT8 **lplppal, UINT8 **lpl
 	STOREINTELDWORD(bi.biClrImportant, 0);
 	align = bmpdata_getalign(&bi);
 	CopyMemory(lpbi, &bi, sizeof(bi));
-	*lplppal = (UINT8*)_MALLOC(0); // freeで解放されても大丈夫なように（大抵NULLが入る）
+	*lplppal = (UINT8*)malloc(0); // freeで解放されても大丈夫なように（大抵NULLが入る）
 
-	*lplppixels = (UINT8*)_MALLOC(bmpdata_getalign(&bi) * bd.height);
+	*lplppixels = (UINT8*)malloc(bmpdata_getalign(&bi) * bd.height);
 	dstpix = *lplppixels;
 
 	// Copy Pixels
@@ -722,9 +722,9 @@ sswb_err3:
 	_MFREE(lppal);
 	_MFREE(lppixels);
 
-sswb_err2:
-	file_close(fh);
-	file_delete(filename);
+//sswb_err2:
+//	file_close(fh);
+//	file_delete(filename);
 
 sswb_err1:
 	return(FAILURE);

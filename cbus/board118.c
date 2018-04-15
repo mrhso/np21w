@@ -73,6 +73,7 @@ static void IOOUTCALL sb16_o29d2(UINT port, REG8 dat) {
 
 static REG8 IOINPCALL sb16_i20d2(UINT port) {
 	(void)port;
+	if(g_opl.reg[0x4] == 1) return 0x02;
 	return YMF262Read(opl3, 0);
 }
 

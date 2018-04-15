@@ -106,7 +106,7 @@ void cs4231_dma(NEVENTITEM item) {
 
 			// まだデータがありそうならNEVENTをセット
 			if ((dmach->leng.w) && (cs4231cfg.rate)) {
-				cnt = pccore.realclock * 4 / cs4231cfg.rate;
+				cnt = pccore.realclock * 32 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_RELATIVE);
 			}
 		}
@@ -143,7 +143,12 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 				//cs4231.bufpos = cs4231.bufwpos;
 				//cs4231.bufdatas = 0;
 				cs4231_totalsample = 0;
-				cnt = pccore.realclock * 4 / cs4231cfg.rate;
+				//if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
+				//	cs4231.intflag |= INt;
+				//	cs4231.reg.featurestatus |= PI;
+				//	pic_setirq(cs4231.dmairq);
+				//}
+				cnt = pccore.realclock * 32 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
 			}
 			break;
@@ -341,6 +346,10 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 	while(size > 0) {
 		leng = min(dmach->leng.w, size);
 		if (leng) {
+			int playcount = (cs4231.reg.playcount[1]|(cs4231.reg.playcount[0] << 8)) * cs4231_playcountshift[cs4231.reg.datafmt >> 4];
+			if(cs4231_totalsample + leng > playcount){
+				leng = playcount - cs4231_totalsample;
+			}
 			addr = dmach->adrs.d; // 現在のメモリ読み取り位置
 			if (!(dmach->mode & 0x20)) {			// dir +
 				// +方向にDMA転送
@@ -379,7 +388,6 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 			
 			// Playback Countだけデータを転送したら割り込みを発生させる
 			if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
-				int playcount = (cs4231.reg.playcount[1]|(cs4231.reg.playcount[0] << 8)) * cs4231_playcountshift[cs4231.reg.datafmt >> 4];
 				// 読み取り数カウント
 				cs4231_totalsample += leng;
 			
@@ -388,6 +396,7 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 					cs4231.intflag |= INt;
 					cs4231.reg.featurestatus |= PI;
 					pic_setirq(cs4231.dmairq);
+					break;
 				}
 			}
 			//// XXX: 一定バイト数読む毎に割り込みする（あまり根拠のない実装･･･）
