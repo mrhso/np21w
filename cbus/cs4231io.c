@@ -342,20 +342,25 @@ REG8 IOINPCALL cs4231io0_r8(UINT port) {
 		case 0x04://Index address
 			return(cs4231.index & ~(INIT|TRD|MCE));
 		case 0x05://Index Data
-			switch (cs4231.index & 0x1f){
-				case 0x0b://featurestatus
-					if(acicounter){
+			{
+				switch (cs4231.index & 0x1f){
+					case 0x0b: //Error Status and Initialization
+						if(acicounter){
 							TRACEOUT(("acicounter"));
 							acicounter -= 1;
 							cs4231.reg.errorstatus |= ACI;
-					}else cs4231.reg.errorstatus &= ~ACI;
-					break;	
-				case 0x0d:return 0;					
-				default:
-					break;
+						}else{
+							cs4231.reg.errorstatus &= ~ACI;
+						}
+						break;	
+					case 0x0d:
+						return 0;					
+					default:
+						break;
+				}
+				return(*(((UINT8 *)(&cs4231.reg)) + (cs4231.index & 0x1f)));
 			}
-			return(*(((UINT8 *)(&cs4231.reg)) + (cs4231.index & 0x1f)));
-		case 0x06:
+		case 0x06://Status
 			if (cs4231.reg.errorstatus & (1 << 6)) cs4231.intflag |= SER;
 			return (cs4231.intflag);
 		case 0x07:

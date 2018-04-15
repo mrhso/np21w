@@ -71,6 +71,8 @@ typedef struct {
 	UINT8		buffer[CS4231_BUFFERS];
 
 	UINT8		devvolume[0x100];
+
+	SINT32		totalsample;
 } _CS4231, *CS4231;
 
 typedef struct {

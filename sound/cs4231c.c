@@ -15,8 +15,6 @@
 
 	CS4231CFG	cs4231cfg;
 
-	static SINT32 cs4231_totalsample = 0;
-
 enum {
 	CS4231REG_LINPUT	= 0x00,
 	CS4231REG_RINPUT	= 0x01,
@@ -96,6 +94,7 @@ void cs4231_dma(NEVENTITEM item) {
 
 			// バッファに空きがあればデータを読み出す
 			if (cs4231.bufsize-4 > cs4231.bufdatas) {
+				//cs4231.intflag &= ~0x20;
 				rem = min(cs4231.bufsize - 4 - cs4231.bufdatas, 512); //読み取り単位は16bitステレオの1サンプル分(4byte)にしておかないと雑音化する
 				pos = cs4231.bufwpos & CS4231_BUFMASK; // バッファ書き込み位置
 				size = min(rem, dmach->startcount); // バッファ書き込みサイズ
@@ -142,12 +141,8 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 				//dmach->adrs.d = dmach->startaddr;
 				//cs4231.bufpos = cs4231.bufwpos;
 				//cs4231.bufdatas = 0;
-				cs4231_totalsample = 0;
-				//if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
-				//	cs4231.intflag |= INt;
-				//	cs4231.reg.featurestatus |= PI;
-				//	pic_setirq(cs4231.dmairq);
-				//}
+				cs4231.totalsample = 0;
+				//cs4231.intflag |= 0x20;
 				cnt = pccore.realclock * 32 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
 			}
@@ -182,7 +177,7 @@ void cs4231_reset(void) {
 	cs4231.dmach = 0xff;
 	cs4231.dmairq = 0xff;
 	//cs4231.timer = 200; // XXX: 何も入れてくれないのでそれっぽいのを入れる･･･(10usec単位)
-	cs4231_totalsample = 0;
+	cs4231.totalsample = 0;
 	FillMemory(cs4231.port, sizeof(cs4231.port), 0xff);
 }
 
@@ -221,6 +216,16 @@ void cs4231_control(UINT idx, REG8 dat) {
 	case 0xb://ErrorStatus 
 	case 0x19://Version ID
 		return;
+	case CS4231REG_IRQSTAT:
+		// バッファオーバーラン・アンダーランや割り込みを検出するためのレジスタ？　Alternate Feature Status (I24)
+		modify = ((UINT8 *)&cs4231.reg)[idx] & (~(dat|0x0f));
+		((UINT8 *)&cs4231.reg)[idx] &= dat|0x0f;
+		if (modify & (PI|TI|CI)) {
+			/* XXX: TI CI */
+			pic_resetirq (cs4231.dmairq);
+			cs4231.intflag &= ~INt;
+		}
+        return;
 	default:
 		break;
 
@@ -268,14 +273,14 @@ void cs4231_control(UINT idx, REG8 dat) {
 			}
 		}
 		break;
-	case CS4231REG_IRQSTAT:
-		// バッファオーバーラン・アンダーランや割り込みを検出するためのレジスタ？　Alternate Feature Status (I24)
-		if (modify & PI) {
-			/* XXX: TI CI */
-			pic_resetirq (cs4231.dmairq);
-			cs4231.intflag &= ~INt;
-		}
-        break;
+	//case CS4231REG_IRQSTAT:
+	//	// バッファオーバーラン・アンダーランや割り込みを検出するためのレジスタ？　Alternate Feature Status (I24)
+	//	if (modify & PI) {
+	//		/* XXX: TI CI */
+	//		pic_resetirq (cs4231.dmairq);
+	//		cs4231.intflag &= ~INt;
+	//	}
+ //       break;
 	case CS4231REG_PLAYCNTM:
 		// Playback Upper Base (I14)
 		// cs4231.reg.playcount[0]
@@ -347,8 +352,8 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 		leng = min(dmach->leng.w, size);
 		if (leng) {
 			int playcount = (cs4231.reg.playcount[1]|(cs4231.reg.playcount[0] << 8)) * cs4231_playcountshift[cs4231.reg.datafmt >> 4];
-			if(cs4231_totalsample + leng > playcount){
-				leng = playcount - cs4231_totalsample;
+			if(cs4231.totalsample + leng > playcount){
+				leng = playcount - cs4231.totalsample;
 			}
 			addr = dmach->adrs.d; // 現在のメモリ読み取り位置
 			if (!(dmach->mode & 0x20)) {			// dir +
@@ -389,26 +394,17 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 			// Playback Countだけデータを転送したら割り込みを発生させる
 			if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
 				// 読み取り数カウント
-				cs4231_totalsample += leng;
+				cs4231.totalsample += leng;
 			
-				if(cs4231_totalsample >= playcount){
-					cs4231_totalsample -= playcount;
+				if(cs4231.totalsample >= playcount){
+					//cs4231.intflag |= 0x20;
+					cs4231.totalsample -= playcount;
 					cs4231.intflag |= INt;
 					cs4231.reg.featurestatus |= PI;
 					pic_setirq(cs4231.dmairq);
 					break;
 				}
 			}
-			//// XXX: 一定バイト数読む毎に割り込みする（あまり根拠のない実装･･･）
-			//sampleirq = cs4231_irqsamples[cs4231.reg.datafmt >> 4] * ((cs4231.step12*cs4231cfg.rate)>>12) / 32; // * 1100/1000; //XXX: 割り込み間隔実験式
-			//if(cs4231_totalsample >= sampleirq){
-			//	if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
-			//		//cs4231.intflag |= INt;
-			//		//cs4231.reg.featurestatus |= PI;
-			//		//pic_setirq(cs4231.dmairq);
-			//	}
-			//	cs4231_totalsample -= sampleirq;
-			//}
 		}else{
 			break;
 		}
