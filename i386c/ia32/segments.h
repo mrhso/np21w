@@ -1,4 +1,4 @@
-/*	$Id: segments.h,v 1.2 2003/12/12 15:06:18 monaka Exp $	*/
+/*	$Id: segments.h,v 1.6 2004/02/05 16:43:44 monaka Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -35,14 +35,6 @@ extern "C" {
 #endif
 
 /*
- * segment selector
- */
-#define	CPU_SEGMENT_SELECTOR_INDEX_MASK	~7
-#define	CPU_SEGMENT_SELECTOR_RPL_MASK	3
-#define	CPU_SEGMENT_TABLE_IND		(1 << 2)	/* 0 = GDT, 1 = LDT */
-
-
-/*
  * segment descriptor
  */
 typedef struct {
@@ -69,25 +61,35 @@ typedef struct {
 		} gate;
 	} u;
 
-	DWORD	addr;	/* descriptor addr */
-	DWORD	l;	/* low dword cache */
-	DWORD	h;	/* high dword cache */
-
 	BYTE	valid;	/* descriptor valid flag */
 	BYTE	p;	/* avail flag */
 
 	BYTE	type;	/* descriptor type */
 	BYTE	dpl;	/* DPL */
+	BYTE	rpl;	/* RPL */
 	BYTE	s;	/* 0 = system, 1 = code/data */
 	BYTE	d;	/* 0 = 16bit, 1 = 32bit */
 
 	BYTE	flag;
-#define	CPU_DESC_READABLE	(1 << 0)
-#define	CPU_DESC_WRITABLE	(1 << 1)
-
-	BYTE	b_pad;
+#define	CPU_DESC_FLAG_READABLE	(1 << 0)
+#define	CPU_DESC_FLAG_WRITABLE	(1 << 1)
 } descriptor_t;
 
+
+/*
+ * セグメント・ディスクリプタ
+ *
+ *  31            24 23 22 21 20 19   16 15 14 13 12 11    8 7             0
+ * +----------------+--+--+--+--+-------+--+-----+--+-------+---------------+
+ * |  Base  31..16  | G|DB| 0| A|limit_h| P| DPL | S|  type |  Base  23:16  | 4
+ * +----------------+--+--+--+--+-------+--+-----+--+-------+---------------+
+ *  31                                16 15                                0
+ * +------------------------------------+-----------------------------------+
+ * |           Base  15..00             |            limit  15..0           | 0
+ * +------------------------------------+-----------------------------------+
+ */
+
+/* descriptor common */
 #define	CPU_DESC_H_TYPE		(0xf <<  8)
 #define	CPU_DESC_H_S		(  1 << 12)	/* 0 = system, 1 = code/data */
 #define	CPU_DESC_H_DPL		(  3 << 13)
@@ -103,7 +105,7 @@ typedef struct {
 #define	CPU_GATEDESC_H_D	(  1 << 11)
 
 /* for tss descriptor */
-#define	CPU_TSS_H_BUSY		(  1 << 10)
+#define	CPU_TSS_H_BUSY		(  1 <<  9)
 
 /*
  * descriptor type
@@ -132,6 +134,7 @@ typedef struct {
 /*	CPU_SYSDESC_TYPE_TASK		0x05	*/
 #define	CPU_SYSDESC_TYPE_INTR		0x06
 #define	CPU_SYSDESC_TYPE_TRAP		0x07
+#define	CPU_SYSDESC_TYPE_MASKBIT	0x07
 
 #define	CPU_SYSDESC_TYPE_TSS_BUSY_IND	0x02
 
@@ -143,49 +146,58 @@ do { \
 	(dscp)->u.seg.g = 0; \
 	(dscp)->valid = 1; \
 	(dscp)->p = 1; \
-	(dscp)->type = ((idx) == CPU_CS_INDEX) ? 0x0a : \
-	              (((idx) == CPU_SS_INDEX) ? 0x06 : 0x02); \
+	(dscp)->type = 0x02; /* writable */ \
 	(dscp)->dpl = 0; \
 	(dscp)->s = 1;	/* code/data */ \
-	(dscp)->d = 0; \
-	(dscp)->flag = 0; \
+	(dscp)->d = 0; /* 16bit */ \
+	(dscp)->flag = CPU_DESC_FLAG_READABLE|CPU_DESC_FLAG_WRITABLE; \
 } while (/*CONSTCOND*/ 0)
 
-#define	CPU_SET_SEGDESC_POSTPART(dscp) \
+#define	CPU_SET_TASK_BUSY(selector, dscp) \
 do { \
-	if ((dscp)->s) { \
-		if (!((dscp)->h & CPU_SEGDESC_H_A)) { \
-			(dscp)->h |= CPU_SEGDESC_H_A; \
-			cpu_lmemorywrite_d((dscp)->addr + 4, (dscp)->h); \
-		} \
-	} \
-} while (/*CONSTCOND*/ 0)
-
-#define	CPU_SET_TASK_BUSY(dscp) \
-do { \
+	DWORD addr; \
 	DWORD h; \
-	h = cpu_lmemoryread_d((dscp)->addr + 4); \
+	addr = CPU_GDTR_BASE + ((selector) & CPU_SEGMENT_SELECTOR_INDEX_MASK); \
+	h = cpu_kmemoryread_d(addr + 4); \
 	if (!(h & CPU_TSS_H_BUSY)) { \
 		(dscp)->type |= CPU_SYSDESC_TYPE_TSS_BUSY_IND; \
 		h |= CPU_TSS_H_BUSY; \
-		cpu_lmemorywrite_d((dscp)->addr + 4, h); \
+		cpu_kmemorywrite_d(addr + 4, h); \
 	} else { \
-		ia32_panic("CPU_SET_TASK_BUSY: already busy (%x)", h); \
+		ia32_panic("CPU_SET_TASK_BUSY: already busy (%04x:%08x)", selector, h); \
 	} \
 } while (/*CONSTCOND*/ 0)
 
-#define	CPU_SET_TASK_FREE(dscp) \
+#define	CPU_SET_TASK_FREE(selector, dscp) \
 do { \
+	DWORD addr; \
 	DWORD h; \
-	h = cpu_lmemoryread_d((dscp)->addr + 4); \
+	addr = CPU_GDTR_BASE + ((selector) & CPU_SEGMENT_SELECTOR_INDEX_MASK); \
+	h = cpu_kmemoryread_d(addr + 4); \
 	if (h & CPU_TSS_H_BUSY) { \
 		(dscp)->type &= ~CPU_SYSDESC_TYPE_TSS_BUSY_IND; \
 		h &= ~CPU_TSS_H_BUSY; \
-		cpu_lmemorywrite_d((dscp)->addr + 4, h); \
+		cpu_kmemorywrite_d(addr + 4, h); \
 	} else { \
-		ia32_panic("CPU_SET_TASK_FREE: already free (%x)", h); \
+		ia32_panic("CPU_SET_TASK_FREE: already free (%04x:%08x)", selector, h); \
 	} \
 } while (/*CONSTCOND*/ 0)
+
+void load_descriptor(descriptor_t *descp, DWORD addr);
+
+#define	CPU_SET_SEGREG(idx, selector)	load_segreg(idx, selector, GP_EXCEPTION)
+void load_segreg(int idx, WORD selector, int exc);
+void load_ss(WORD selector, descriptor_t* sdp, DWORD cpl);
+void load_cs(WORD selector, descriptor_t* sdp, DWORD cpl);
+void load_ldtr(WORD selector, int exc);
+
+
+/*
+ * segment selector
+ */
+#define	CPU_SEGMENT_SELECTOR_INDEX_MASK	(~7)
+#define	CPU_SEGMENT_SELECTOR_RPL_MASK	(3)
+#define	CPU_SEGMENT_TABLE_IND		(1 << 2)	/* 0 = GDT, 1 = LDT */
 
 typedef struct {
 	WORD		selector;
@@ -194,21 +206,13 @@ typedef struct {
 	BYTE		ldt;
 	BYTE		pad;
 
+	DWORD		addr;		/* descriptor linear address */
+
 	descriptor_t	desc;
 } selector_t;
 
-int parse_selector(selector_t* ssp, WORD selector);
-int selector_is_not_present(selector_t* ssp);
-
-#define	CPU_SET_SEGDESC(descp, addr)	load_descriptor(descp, addr)
-#define	CPU_SET_GATEDESC(descp, addr)	load_descriptor(descp, addr)
-void load_descriptor(descriptor_t* descp, DWORD addr);
-
-#define	CPU_SET_SEGREG(idx, selector)	load_segreg(idx, selector, GP_EXCEPTION)
-void load_segreg(int idx, WORD selector, int exc);
-void load_ss(WORD selector, descriptor_t* sdp, BYTE cpl);
-void load_cs(WORD selector, descriptor_t* sdp, BYTE cpl);
-void load_ldtr(WORD selector, int exc);
+int parse_selector(selector_t *ssp, WORD selector);
+int selector_is_not_present(selector_t *ssp);
 
 #ifdef __cplusplus
 }

@@ -5,6 +5,144 @@
 　mov SS直後に割り込みが発生するとか不都合があります。
 　これについては、直す気力があれば(286コードを追っかける時だけだし…)
 
+// ---- IA-32 info
+
+  ・CPU panic や警告表示時に msgbox() という API を使用します。
+    compiler.h あたりで適当に定義してください。
+
+  ・sigsetjmp(3), siglongjmp(3) が無いアーキテクチャは以下の define を
+    compiler.h あたりに追加してください。
+
+-------------------------------------------------------------------------------
+#define	sigjmp_buf		jmp_buf
+#define	sigsetjmp(env, mask)	setjmp(env)
+#define	siglongjmp(env, val)	longjmp(env, val)
+-------------------------------------------------------------------------------
+
+// ----
+
+　ver0.73 → ver0.74
+
+　・I/OレベルでのSASIに対応(INT3/DMA#0/BIOS:d0000-d0fff)
+　・SCSI HDDに対応
+　・np2qn形式 HOSTDRVに対応
+　・拡張メモリの修正 (80286)
+　・VRAM - 通常ディスプレイ時にメモリを破壊するバグを修正
+　・GDC - GDCクロック 1.79MHzのサポート
+　・GDC - 走査周波数を可変にした
+　・GDC - マスクが左右反転していたのを修正
+　・GDC - テキスト処理を修正(uPD7220A? cmd:05)
+　・GDC - VECTEコマンド(R)を修正 (undocumented Tを追加)
+　・GDC - TEXTEコマンド(SL/T)を修正 (undocumented L/C/Rを追加)
+　・GDC - GRCG/EGC動作中の挙動を修正
+　・EGC - マスクフラグを修正
+　・FDC - DMAとステータスを修正
+　・SERIAL - キーボードステータスの修正
+　・uPD4990 - ホールド時の出力が不定になっていたのを修正
+　・RHYTHM - レジュームが反映されなかった不都合を修正
+　・ADPCM - サンプルリードがMSB/LSB逆転していたのを修正
+　・BIOS - ブート時にディップスイッチで指定した画面モードを反映
+　・BIOS - 1840h/1841h/1842h/1847hの結果をワークメモリへ反映するようにした
+　・BIOS - 1847h マスクを左右反転させていなかったのを修正
+　・BIOS - 1848h/1849h/184ahをサポート
+　・ITF - PC-9801VM/PC-286時に BEEPが初期化されない不都合を修正
+　・ITF - SSP終了時にハードウェアリセットをかけるように修正
+　・IDE - ディップスイッチ内容(SW2-6)を反映するように修正
+
+
+　(Windows)
+　　・(I286X) sidt命令の修正
+　　・(I286X) テキストRAMアクセスの修正
+　　・(I286X) 割り込みの修正
+　　・(I286X) EGCシフタを修正
+　　・Aboutダイアログの修正
+　　・ろみおとか…
+
+　(MacOS9)
+　　・テンキーの [+] [/] の修正
+　　・file_attr()で FILEATTR_READONLY を返すように…
+
+　(MacOSX)
+　　・テンキーの [+] [/] の修正
+　　・file_attr()で FILEATTR_READONLY を返すように…
+　　・ツールウィンドウ修正
+　　・FDIイメージ対応（仕事早いよー＞ゆいさん）
+　　・フルスクリーン修正（たぶん・・）
+　　・マウスドラッグに対応（タコミス・汗）
+
+
+　・Userkeyについて
+　　userkey1, userkey2は、cfgを書換えることによりキーを自由に変更することが
+　　出来ます。
+　　書式)
+　　　userkey1 = [key1] (key2) (key3)...
+　　　　フルキー 0～9 A～Z - ^ \ @ [ ] ; : , . / _
+　　　　         STOP COPY ESC TAB BS RET SPC XFER NFER
+                 INS DEL RLUP RLDN HMCL HELP
+　　　　ファンク F1～F10 VF1～VF5
+　　　　テンキー [0]～[9] [-] [/] [*] [+] [=] [,] [.]
+　　　　シフト   SHIFT CAPS KANA GRPH CTRL
+
+　　　例:
+　　　　userkey1 = CTRL XFER   (CTRL+XFER FEP切り替え用)
+　　　　userkey2 = D O A Z     (D+O+A+Z 同時押し)
+
+　　本機能は 簡易的な実装であり ver0.75で変更されます。
+　　また、ver0.74ではシフト系は不整合が発生する可能性があります。
+
+
+
+　・内部変更
+　　　pccore.h の中で statsave.hをインクルード
+　　　　→ #include "statsave.h" をトル
+
+　　　io/extmem を io/emsioに変更
+　　　(IA32は emsioは要らないが、NEC EMSバンク形式で必要になるかも)
+
+　　　np2cfg.hddfile[2] -> np2cfg.sasihdd[2]
+
+　　　void diskdrv_sethdd(REG8 drv, const char *fname);
+　　　　drv = BIOSのデバイス番号
+　　　　　0x00～0x01  SASI #0-1
+　　　　　0x20～0x23  SCSI #0-3  (SUPPORT_SCSIを定義した時のみ)
+
+　　　bios/sxsibios.c はリンク必須
+　　　cbus/sasiio.c - SUPPORT_SCSIを定義した時にリンク
+　　　cbus/scsiio.c cbus/scsicmd.c - SUPPORT_SCSIを定義した時にリンク
+
+　　　IA32でハードウェアEMSを禁止しました。
+　　　　　→ #define CPU_SETEXTSIZE() init_mem() に変更 (済)
+　　　　　→ memory.cの EMM部分をトル (済)
+　　　　　→ cpumem extmem_size を CPU_EXTMEM, CPU_EXTMEMSIZEに変更(済)
+　　　　　→ protectmem_sizeをトル (済)
+
+　　　しかし emm386.exeが使えないから ハードウェアEMSを有効にした
+　　　ほーがいいかな？　辻褄は合いそうだし。
+　　　386以降に乗っかってる NEC EMSバンク方式だと あまりにアホだし。
+
+　　　dosio.hの FTYPEを common.hへ移動。
+　　　こそーり fdiを読めるよーにしてみたり。
+
+　　　フロッピードライブについて np2cfg.fddequipを見に行くようにしました
+　　　デフォルトで２基
+　　　np2cfg.fddequip = 0x03 (ドライブ1 = ビット0 ～ ドライブ4 = ビット3)
+　　　(実際に動作中の装備状態は fdc.equipで リセット時に更新されます)
+　　　必要によって main()で変える、cfgに書き出す等してください。
+
+　　　S98について SUPPORT_S98定義時のみリンクするようにしました。
+　　　(Win9x, MacOSX, x11(USE_GTK))
+
+　　　PC9861Kについて SUPPORT_PC9861K定義時のみリンクするようにしました。
+　　　(シリアル通信に対応していなければ無意味な機能です)
+
+　　　userkey
+　　　　ini.cで profile_setkeys, profile_getkeysで np2cfg.userkeyを更新
+　　　　キーボードのどこかにキーに キーコード 0x76,0x77を追加
+
+
+　メモ
+　　実機で FDでVRAMクリアされるのは何故？
+
 
 // ----
 

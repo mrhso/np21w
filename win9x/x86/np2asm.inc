@@ -1,6 +1,6 @@
 
 USE_EGCASM		equ		1
-USE_HIMEM		equ		1
+USE_HIMEM		equ		0110000h
 
 EARG1			equ		4
 EARG2			equ		(EARG1+4)
@@ -78,6 +78,7 @@ GDCCMD_MAX		equ		32
 
 .ext			resd	1
 .extsize		resd	1
+.ems			resd	4
 .repbak			resd	1
 .inport			resd	1
 				endstruc
@@ -99,18 +100,23 @@ GDCCMD_MAX		equ		32
 .s				resb	gdcd_t_size
 .mode1			resb	1
 .mode2			resb	1
+.clock			resb	1
+.crt15khz		resb	1
+.m_drawing		resb	1
+.s_drawing		resb	1
 .vsync			resb	1
 .vsyncint		resb	1
+.display		resb	1
+.bitac			resb	1
+.reserved		resb	2
 .analog			resd	1
 .palnum			resd	1
 .degpal			resb	4
 .anapal			resd	16
-.clock			resb	1
-.display		resb	1
-.bitac			resb	1
-.m_drawing		resb	1
-.s_drawing		resb	1
-.reserved		resb	3
+.dispclock		resd	1
+.vsyncclock		resd	1
+.rasterclock	resd	1
+.hsyncclock		resd	1
 				endstruc
 
 				struc	gdcs_t
@@ -131,13 +137,6 @@ GDCCMD_MAX		equ		32
 .tile_r			resw	1
 .tile_g			resw	1
 .tile_e			resw	1
-				endstruc
-
-				struc	extmem_t
-.maxmem			resd	1
-.pageptr		resd	4
-.target			resd	1
-.page			resd	4
 				endstruc
 
 				struc	cgwin_t

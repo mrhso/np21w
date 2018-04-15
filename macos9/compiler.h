@@ -66,8 +66,11 @@ typedef unsigned char	BYTE;
 // #define SUPPORT_NORMALDISP
 #define	MEMOPTIMIZE		1
 
+#define	SUPPORT_CRT15KHZ
 #define	SUPPORT_WAVEMIX
 #define	SUPPORT_HOSTDRV
+#define	SUPPORT_SASI
+#define	SUPPORT_SCSI
 
 #define	SOUNDRESERVE	80
 

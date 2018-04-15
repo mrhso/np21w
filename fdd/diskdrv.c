@@ -11,19 +11,37 @@
 
 #define	DISK_DELAY	20			// (0.4sec)
 
-	int		diskdrv_delay[4];							// ver0.26
-	int		diskdrv_ro[4];								// ver0.26
-	char	diskdrv_fname[4][MAX_PATH];					// ver0.26
+	int		diskdrv_delay[4];
+	int		diskdrv_ro[4];
+	char	diskdrv_fname[4][MAX_PATH];
 
 
-void diskdrv_sethdd(BYTE drv, const char *fname) {
+void diskdrv_sethdd(REG8 drv, const char *fname) {
 
+	UINT	num;
 	char	*p;
+	int		leng;
 
-	if (drv < 2) {
-		p = np2cfg.hddfile[drv];
+	num = drv & 0x0f;
+	p = NULL;
+	leng = 0;
+	if (!(drv & 0x20)) {			// SASI or IDE
+		if (num < 2) {
+			p = np2cfg.sasihdd[num];
+			leng = sizeof(np2cfg.sasihdd[0]);
+		}
+	}
+#if defined(SUPPORT_SCSI)
+	else {							// SCSI
+		if (num < 4) {
+			p = np2cfg.scsihdd[num];
+			leng = sizeof(np2cfg.scsihdd[0]);
+		}
+	}
+#endif
+	if (p) {
 		if (fname) {
-			file_cpyname(p, fname, sizeof(np2cfg.hddfile[0]));
+			file_cpyname(p, fname, leng);
 		}
 		else {
 			p[0] = '\0';
@@ -32,7 +50,7 @@ void diskdrv_sethdd(BYTE drv, const char *fname) {
 	}
 }
 
-void diskdrv_setfdd(BYTE drv, const char *fname, int readonly) {
+void diskdrv_setfdd(REG8 drv, const char *fname, int readonly) {
 
 	if (drv < 4) {
 		fdd_eject(drv);
@@ -52,7 +70,7 @@ void diskdrv_setfdd(BYTE drv, const char *fname, int readonly) {
 
 void diskdrv_callback(void) {
 
-	BYTE	drv;
+	REG8	drv;
 
 	for (drv=0; drv<4; drv++) {
 		if (diskdrv_delay[drv]) {

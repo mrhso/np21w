@@ -38,6 +38,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -112,7 +113,10 @@ typedef	int			BOOL;
 #define	roundup(x, y)	((((x)+((y)-1))/(y))*(y))
 #endif
 
+#ifndef	UNUSED
 #define	UNUSED(v)	((void)(v))
+#endif
+
 #define	FASTCALL
 #define	SOUNDCALL
 #define	MEMCALL
@@ -139,8 +143,17 @@ UINT32 gettick();
 #define	GETRAND()	random()
 #define	SPRINTF		sprintf
 
+#if defined(CPUCORE_IA32)
+void toolkit_msgbox(const char *title, const char *msg);
+#define	msgbox(title, msg)	toolkit_msgbox(title, msg);
+#endif
+
 #if defined(i386) || defined(__i386__)
 #undef	MEMOPTIMIZE
+#define LOADINTELDWORD(a)	(*((UINT32 *)(a)))
+#define LOADINTELWORD(a)	(*((UINT16 *)(a)))
+#define STOREINTELDWORD(a, b)	*(UINT32 *)(a) = (b)
+#define STOREINTELWORD(a, b)	*(UINT16 *)(a) = (b)
 #elif defined(arm) || defined (__arm__)
 #define	MEMOPTIMIZE	2
 #define	REG8		UINT
@@ -157,11 +170,17 @@ UINT32 gettick();
 #define	SUPPORT_32BPP
 #define	SUPPORT_NORMALDISP
 
-#if defined(USE_GTK)
+#define	SUPPORT_HOSTDRV
+
+#undef	SUPPORT_SASI
+#undef	SUPPORT_SCSI
+
+#if USE_GTK > 0
+#define	SUPPORT_S98
 #define	SUPPORT_KEYDISP
 #endif
 
-#if defined(USE_SDL)
+#if USE_SDL > 0
 #define	USE_SYSMENU
 #define	SCREEN_BPP	16
 #undef	SUPPORT_24BPP

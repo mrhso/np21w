@@ -2,8 +2,10 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"scsicmd.h"
 #include	"bios.h"
 #include	"biosmem.h"
+#include	"sxsibios.h"
 #include	"fddfile.h"
 #include	"fdd_mtr.h"
 #include	"sxsi.h"
@@ -15,22 +17,47 @@ enum {
 };
 
 
-		char	fdmode = 0;
-static	BYTE	work[65536];
 static	BYTE	mtr_c = 0;
 static	UINT	mtr_r = 0;
 
 
 // ---- FDD
 
-static void init_fdd_equip(void) {
+static BOOL setfdcmode(REG8 drv, REG8 type, REG8 rpm) {
 
-	UINT16	diskequip;
+	if (drv >= 4) {
+		return(FAILURE);
+	}
+	if ((rpm) && (!fdc.support144)) {
+		return(FAILURE);
+	}
+	fdc.chgreg = type;
+	fdc.rpm[drv] = rpm;
+	if (type & 2) {
+		CTRL_FDMEDIA = DISKTYPE_2HD;
+	}
+	else {
+		CTRL_FDMEDIA = DISKTYPE_2DD;
+	}
+	return(SUCCESS);
+}
+
+void fddbios_equip(REG8 type, BOOL clear) {
+
+	REG16	diskequip;
 
 	diskequip = GETBIOSMEM16(MEMW_DISK_EQUIP);
-	diskequip &= 0x0f00;
-	diskequip |= (UINT16)(~fdmode) & 3;
-	diskequip |= (UINT16)fdmode << 12;
+	if (clear) {
+		diskequip &= 0x0f00;
+	}
+	if (type & 1) {
+		diskequip &= 0xfff0;
+		diskequip |= (fdc.equip & 0x0f);
+	}
+	else {
+		diskequip &= 0x0fff;
+		diskequip |= (fdc.equip & 0x0f) << 12;
+	}
 	SETBIOSMEM16(MEMW_DISK_EQUIP, diskequip);
 }
 
@@ -59,7 +86,7 @@ static void biosfd_resultout(UINT32 result) {
 }
 #endif
 
-static BOOL biosfd_seek(BYTE track, BOOL ndensity) {
+static BOOL biosfd_seek(REG8 track, BOOL ndensity) {
 
 	if (ndensity) {
 		if (track < 42) {
@@ -77,7 +104,7 @@ static BOOL biosfd_seek(BYTE track, BOOL ndensity) {
 	return(SUCCESS);
 }
 
-static UINT16 fdfmt_biospara(BYTE fmt, BYTE rpm) {					// ver0.31
+static UINT16 fdfmt_biospara(REG8 type, REG8 rpm, REG8 fmt) {
 
 	UINT	seg;
 	UINT	off;
@@ -87,7 +114,7 @@ static UINT16 fdfmt_biospara(BYTE fmt, BYTE rpm) {					// ver0.31
 	if (n >= 4) {
 		n = 3;
 	}
-	if (CTRL_FDMEDIA == DISKTYPE_2HD) {
+	if (type & 2) {
 		seg = GETBIOSMEM16(MEMW_F2HD_P_SEG);
 		off = GETBIOSMEM16(MEMW_F2HD_P_OFF);
 	}
@@ -107,16 +134,8 @@ static UINT16 fdfmt_biospara(BYTE fmt, BYTE rpm) {					// ver0.31
 	if (fmt) {
 		off += 2;
 	}
-	return(i286_memword_read(seg, LOW16(off)));
+	return(i286_memword_read(seg, off));
 }
-
-static void change_rpm(BYTE rpm) {									// ver0.31
-
-	if (np2cfg.usefd144) {
-		fdc.rpm = rpm;
-	}
-}
-
 
 
 enum {
@@ -146,6 +165,7 @@ static void fdd_int(int result) {
 		case 0x0a:								// READ ID
 		case 0x0d:								// フォーマット
 			break;
+
 		default:
 			return;
 	}
@@ -182,7 +202,17 @@ static void fdd_int(int result) {
 			fdc.stat[fdc.us] |= FDCRLT_IC0 | FDCRLT_NW;
 			fdcsend_error7();
 			break;
+
+		default:
+			return;
 	}
+	if (fdc.chgreg & 1) {
+		mem[0x0055e] &= ~(0x01 << fdc.us);
+	}
+	else {
+		mem[0x0055f] &= ~(0x10 << fdc.us);
+	}
+	CPU_IP = BIOSOFST_WAIT;
 }
 
 #if 1
@@ -255,9 +285,9 @@ static void b0clr(void) {
 }
 #endif
 
-static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
+static REG8 fdd_operate(REG8 type, REG8 rpm, BOOL ndensity) {
 
-	BYTE	ret_ah = 0x60;
+	REG8	ret_ah = 0x60;
 	UINT16	size;
 	UINT16	pos;
 	UINT16	accesssize;
@@ -272,29 +302,28 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 	mtr_c = 0xff;
 	mtr_r = 0;
 
-
 	// とりあえずBIOSの時は無視する
 	fdc.mf = 0xff;						// ver0.29
 
 //	TRACE_("int 1Bh", CPU_AH);
 
-	change_rpm(rpm);												// ver0.31
+	if (setfdcmode((REG8)(CPU_AL & 3), type, rpm) != SUCCESS) {
+		return(0x40);
+	}
+
 	if ((CPU_AH & 0x0f) != 0x0a) {
 		fdc.crcn = 0;
 	}
 	if ((CPU_AH & 0x0f) != 0x03) {
-		CTRL_FDMEDIA = type;
-		switch(type) {
-			case DISKTYPE_2HD:
-				if (pic.pi[1].imr & PIC_INT42) {
-					return(0xd0);
-				}
-				break;
-			case DISKTYPE_2DD:
-				if (pic.pi[1].imr & PIC_INT41) {
-					return(0xd0);
-				}
-				break;
+		if (type & 2) {
+			if (pic.pi[1].imr & PIC_INT42) {
+				return(0x40);
+			}
+		}
+		else {
+			if (pic.pi[1].imr & PIC_INT41) {
+				return(0x40);
+			}
 		}
 		if (fdc.us != (CPU_AL & 0x03)) {
 			fdc.us = CPU_AL & 0x03;
@@ -311,7 +340,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				return(0x68);			// 新センスは 両用ドライブ情報も
 			}
 			if (CPU_AH == 0xc4) {								// ver0.31
-				if (np2cfg.usefd144) {
+				if (fdc.support144) {
 					return(0x6c);
 				}
 				return(0x68);
@@ -352,7 +381,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				}
 			}
 			biosfd_setchrn();
-			para = fdfmt_biospara(0, rpm);
+			para = fdfmt_biospara(type, rpm, 0);
 			if (!para) {
 				ret_ah = 0xd0;
 				break;
@@ -376,7 +405,8 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				}
 				size -= accesssize;
 				mtr_r += accesssize;						// ver0.26
-				if ((fdc.R++ == (BYTE)para) && (CPU_AH & 0x80) && (!fdc.hd)) {
+				if ((fdc.R++ == (UINT8)para) &&
+					(CPU_AH & 0x80) && (!fdc.hd)) {
 					fdc.hd = 1;
 					fdc.H = 1;
 					fdc.R = 1;
@@ -396,7 +426,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 			break;
 
 		case 0x03:								// 初期化
-			init_fdd_equip();
+			fddbios_equip(type, FALSE);
 			ret_ah = 0x00;
 			break;
 
@@ -421,8 +451,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 			}
 			if (CPU_AH & 0x80) {				// ver0.30
 				ret_ah |= 8;					// 1MB/640KB両用ドライブ
-				if ((CPU_AH & 0x40) &&
-					(np2cfg.usefd144)) {		// ver0.31
+				if ((CPU_AH & 0x40) && (fdc.support144)) {
 					ret_ah |= 4;				// 1.44対応ドライブ
 				}
 			}
@@ -440,7 +469,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				}
 			}
 			biosfd_setchrn();
-			para = fdfmt_biospara(0, rpm);
+			para = fdfmt_biospara(type, rpm, 0);
 			if (!para) {
 				ret_ah = 0xd0;
 				break;
@@ -472,7 +501,8 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				addr += accesssize;
 				size -= accesssize;
 				mtr_r += accesssize;						// ver0.26
-				if ((fdc.R++ == (BYTE)para) && (CPU_AH & 0x80) && (!fdc.hd)) {
+				if ((fdc.R++ == (UINT8)para) &&
+					(CPU_AH & 0x80) && (!fdc.hd)) {
 					fdc.hd = 1;
 					fdc.H = 1;
 					fdc.R = 1;
@@ -504,7 +534,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				}
 			}
 			biosfd_setchrn();
-			para = fdfmt_biospara(0, rpm);
+			para = fdfmt_biospara(type, rpm, 0);
 			if (!para) {
 				ret_ah = 0xd0;
 				break;
@@ -537,7 +567,7 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 				addr += accesssize;
 				size -= accesssize;
 				mtr_r += accesssize;						// ver0.26
-				if (fdc.R++ == (BYTE)para) {
+				if (fdc.R++ == (UINT8)para) {
 					if ((CPU_AH & 0x80) && (!fdc.hd)) {
 						fdc.hd = 1;
 						fdc.H = 1;
@@ -625,205 +655,46 @@ static BYTE fdd_operate(BYTE type, BOOL ndensity, BYTE rpm) {		// ver0.31
 			}
 			fdc.d = CPU_DL;
 			fdc.N = CPU_CH;
-			para = fdfmt_biospara(1, rpm);
+			para = fdfmt_biospara(type, rpm, 1);
 			if (!para) {
 				ret_ah = 0xd0;
 				break;
 			}
-			fdc.sc = (BYTE)para;
+			fdc.sc = (UINT8)para;
 			fdd_formatinit();
 			pos = CPU_BP;
 			for (s=0; s<fdc.sc; s++) {
 				i286_memstr_read(CPU_ES, pos, ID, 4);
 				fdd_formating(ID);
 				pos += 4;
+				if (ID[3] < 8) {
+					mtr_r += 128 << ID[3];
+				}
+				else {
+					mtr_r += 128 << 8;
+				}
 			}
 			ret_ah = 0x00;
 			break;
 	}
 	fdd_int(result);
 	fddmtr_seek(fdc.us, mtr_c, mtr_r);
-	CPU_IP = BIOSOFST_WAIT;											// ver0.30
-	return(ret_ah);
-}
-
-
-// ---- SASI
-
-static void init_sasi_equip(void) {
-
-	UINT16	diskequip;
-	UINT	i;
-	UINT16	bit;
-
-	diskequip = GETBIOSMEM16(MEMW_DISK_EQUIP);
-	diskequip &= 0xf0ff;
-	for (i=0, bit=0x0100; i<2; i++, bit<<=1) {
-		if (sxsi_hd[i].fname[0]) {
-			diskequip |= bit;
-		}
-	}
-	SETBIOSMEM16(MEMW_DISK_EQUIP, diskequip);
-}
-
-static void init_scsi_equip(void) {
-
-	UINT	i;
-	BYTE	bit;
-	UINT16	w;
-
-	mem[MEMB_DISK_EQUIPS] = 0;
-	ZeroMemory(&mem[0x00460], 0x20);
-	for (i=0, bit=1; i<2; i++, bit<<=1) {
-		if (sxsi_hd[i+2].fname[0]) {
-			mem[MEMB_DISK_EQUIPS] |= bit;
-			mem[0x00460+i*4] = sxsi_hd[i+2].sectors;
-			mem[0x00461+i*4] = sxsi_hd[i+2].surfaces;
-			switch(sxsi_hd[i+2].size) {
-				case 256:
-					w = 0 << 12;
-					break;
-
-				case 512:
-					w = 1 << 12;
-					break;
-
-				default:
-					w = 2 << 12;
-					break;
-			}
-			w |= sxsi_hd[i+2].tracks;
-			SETBIOSMEM16(0x00462+i*4, w);
-		}
-	}
-}
-
-static BYTE sxsi_pos(long *pos) {
-
-	SXSIHDD	sxsi;
-	int		np2drv;
-
-	*pos = 0;
-	np2drv = (CPU_AL & 0x20) >> 4;
-	if ((CPU_AL & 0x0f) >= 2) {
-		return(0x60);
-	}
-	np2drv |= (CPU_AL & 1);
-	sxsi = &sxsi_hd[np2drv];
-	if (CPU_AL & 0x80) {
-		if ((CPU_DL >= sxsi->sectors) ||
-			(CPU_DH >= sxsi->surfaces) ||
-			(CPU_CX >= sxsi->tracks)) {
-			return(0xd0);
-		}
-		(*pos) = ((CPU_CX * sxsi->surfaces) + CPU_DH) * sxsi->sectors
-															+ CPU_DL;
-	}
-	else {
-		*pos = (CPU_DL << 16) | CPU_CX;
-		if (!(CPU_AL & 0x20)) {
-			(*pos) &= 0x1fffff;
-		}
-		if ((*pos) >= sxsi->totals) {
-			return(0xd0);
-		}
-	}
-	return(0x00);
-}
-
-
-UINT8 sxsi_operate(UINT8 type) {
-
-	BYTE	ret_ah = 0x00;
-	BYTE	drv;
-	long	pos;
-//	int		i;
-
-	drv = (CPU_AL & 0x20) >> 4;
-	if ((CPU_AL & 0x0f) >= 2) {
-		return(0x60);
-	}
-	drv |= (CPU_AL & 1);
-
-	switch(CPU_AH & 0x0f) {
-		case 0x01:						// ベリファイ
-		case 0x07:						// リトラクト
-		case 0x0f:						// リトラクト
-			break;
-
-   		case 0x03:						// イニシャライズ
-			if (type == HDDTYPE_SASI) {
-				init_sasi_equip();
-			}
-			else if (type == HDDTYPE_SCSI) {
-				init_scsi_equip();
-			}
-			break;
-
-   		case 0x04:						// センス
-			ret_ah = 0x00;
-			if ((CPU_AH == 0x04) && (type == HDDTYPE_SASI)) {
-				ret_ah = 0x04;
-			}
-			else if ((CPU_AH == 0x44) && (type == HDDTYPE_SCSI)) {
-				CPU_BX = 1;
-			}
-			else if (CPU_AH == 0x84) {
-				CPU_BX = sxsi_hd[drv].size;
-				CPU_CX = sxsi_hd[drv].tracks;
-				CPU_DH = sxsi_hd[drv].surfaces;
-				CPU_DL = sxsi_hd[drv].sectors;
-			}
-			break;
-
-		case 0x05:						// データの書き込み
-			i286_memx_read(ES_BASE + CPU_BP, work, CPU_BX);
-			ret_ah = sxsi_pos(&pos);
-			if (!ret_ah) {
-				ret_ah = sxsi_write(CPU_AL, pos, work, CPU_BX);
-			}
-			break;
-
-		case 0x06:						// データの読み込み
-			ret_ah = sxsi_pos(&pos);
-			if (!ret_ah) {
-				ret_ah = sxsi_read(CPU_AL, pos, work, CPU_BX);
-				if (ret_ah < 0x20) {
-					i286_memx_write(ES_BASE + CPU_BP, work, CPU_BX);
-				}
-			}
-			break;
-
-		case 0x0d:						// フォーマット
-			if (CPU_DL) {
-				ret_ah = 0x30;
-				break;
-			}
-			i286_memstr_read(CPU_ES, CPU_BP, work, CPU_BX);
-			ret_ah = sxsi_pos(&pos);
-			if (!ret_ah) {
-				ret_ah = sxsi_format(CPU_AL, pos);
-			}
-			break;
-
-		default:
-			ret_ah = 0x40;
-			break;
-	}
 	return(ret_ah);
 }
 
 
 // -------------------------------------------------------------------- BIOS
 
-static UINT16 boot_fd1(BYTE rpm) {									// ver0.31
+static UINT16 boot_fd1(REG8 type, REG8 rpm) {
 
 	UINT	remain;
 	UINT	size;
 	UINT32	pos;
 	UINT16	bootseg;
 
-	change_rpm(rpm);												// ver0.31
+	if (setfdcmode(fdc.us, type, rpm) != SUCCESS) {
+		return(0);
+	}
 	if (biosfd_seek(0, 0)) {
 		return(0);
 	}
@@ -867,50 +738,50 @@ static UINT16 boot_fd1(BYTE rpm) {									// ver0.31
 	return(bootseg);
 }
 
-static UINT16 boot_fd(BYTE drv, BYTE type) {						// ver0.27
+static UINT16 boot_fd(REG8 drv, REG8 type) {						// ver0.27
 
 	UINT16	bootseg;
 
 	if (drv >= 4) {
 		return(0);
 	}
-	fdc.us = drv & 3;
+	fdc.us = drv;
 	if (!fdd_diskready(fdc.us)) {
 		return(0);
 	}
 
 	// 2HD
 	if (type & 1) {
-		CTRL_FDMEDIA = DISKTYPE_2HD;
 		// 1.25MB
-		bootseg = boot_fd1(0);
+		bootseg = boot_fd1(3, 0);
 		if (bootseg) {
-			mem[MEMB_DISK_BOOT] = (BYTE)(0x90+drv);
+			mem[MEMB_DISK_BOOT] = (UINT8)(0x90 + drv);
+			fddbios_equip(3, TRUE);
 			return(bootseg);
 		}
 		// 1.44MB
-		bootseg = boot_fd1(1);
+		bootseg = boot_fd1(3, 1);
 		if (bootseg) {
-			mem[MEMB_DISK_BOOT] = (BYTE)(0x30+drv);
+			mem[MEMB_DISK_BOOT] = (UINT8)(0x30 + drv);
+			fddbios_equip(3, TRUE);
 			return(bootseg);
 		}
 	}
 	if (type & 2) {										// ver0.29
 		// 2DD
-		CTRL_FDMEDIA = DISKTYPE_2DD;
-		bootseg = boot_fd1(0);
+		bootseg = boot_fd1(0, 0);
 		if (bootseg) {
-			mem[MEMB_DISK_BOOT] = (BYTE)(0x70+drv);
-			fdmode = 3;
+			mem[MEMB_DISK_BOOT] = (BYTE)(0x70 + drv);
+			fddbios_equip(0, TRUE);
 			return(bootseg);
 		}
 	}
 	return(0);
 }
 
-static UINT16 boot_hd(BYTE drv) {									// ver0.27
+static REG16 boot_hd(REG8 drv) {
 
-	BYTE	ret;
+	REG8	ret;
 
 	ret = sxsi_read(drv, 0, mem + 0x1fc00, 0x400);
 	if (ret < 0x20) {
@@ -920,16 +791,17 @@ static UINT16 boot_hd(BYTE drv) {									// ver0.27
 	return(0);
 }
 
-UINT16 bootstrapload(void) {										// ver0.27
+REG16 bootstrapload(void) {
 
 	BYTE	i;
-	UINT16	bootseg;
+	REG16	bootseg;
 
-	fdmode = 0;
+//	fdmode = 0;
 	bootseg = 0;
 	switch(mem[MEMB_MSW5] & 0xf0) {		// うぐぅ…本当はALレジスタの値から
 		case 0x00:					// ノーマル
 			break;
+
 		case 0x20:					// 640KB FDD
 			for (i=0; (i<4) && (!bootseg); i++) {
 				if (fdd_diskready(i)) {
@@ -937,6 +809,7 @@ UINT16 bootstrapload(void) {										// ver0.27
 				}
 			}
 			break;
+
 		case 0x40:					// 1.2MB FDD
 			for (i=0; (i<4) && (!bootseg); i++) {
 				if (fdd_diskready(i)) {
@@ -944,25 +817,24 @@ UINT16 bootstrapload(void) {										// ver0.27
 				}
 			}
 			break;
+
 		case 0x60:					// MO
 			break;
+
 		case 0xa0:					// SASI 1
-			if (sxsi_hd[0].fname[0]) {
-				bootseg = boot_hd(0x80);
-			}
+			bootseg = boot_hd(0x80);
 			break;
+
 		case 0xb0:					// SASI 2
-			if (sxsi_hd[1].fname[0]) {
-				bootseg = boot_hd(0x81);
-			}
+			bootseg = boot_hd(0x81);
 			break;
+
 		case 0xc0:					// SCSI
-			for (i=0; (i<2) && (!bootseg); i++) {
-				if (sxsi_hd[i+2].fname[0]) {
-					bootseg = boot_hd((BYTE)(0xa0 | i));
-				}
+			for (i=0; (i<4) && (!bootseg); i++) {
+				bootseg = boot_hd((REG8)(0xa0 + i));
 			}
 			break;
+
 		default:					// ROM
 			return(0);
 	}
@@ -972,30 +844,35 @@ UINT16 bootstrapload(void) {										// ver0.27
 		}
 	}
 	for (i=0; (i<2) && (!bootseg); i++) {
-		if (sxsi_hd[i].fname[0]) {
-			bootseg = boot_hd((BYTE)(0x80 | i));
-		}
+		bootseg = boot_hd((REG8)(0x80 + i));
 	}
-	for (i=0; (i<2) && (!bootseg); i++) {
-		if (sxsi_hd[i+2].fname[0]) {
-			bootseg = boot_hd((BYTE)(0xa0 | i));
-		}
+	for (i=0; (i<4) && (!bootseg); i++) {
+		bootseg = boot_hd((REG8)(0xa0 + i));
 	}
-
-	init_fdd_equip();
-	init_sasi_equip();
-	init_scsi_equip();
 	return(bootseg);
 }
+
 
 // --------------------------------------------------------------------------
 
 void bios0x1b(void) {
 
-	BYTE	ret_ah;
+	REG8	ret_ah;
 	REG8	flag;
 
-#if 0			// bypass to disk bios
+#if defined(SUPPORT_SCSI)
+	if ((CPU_AL & 0xf0) == 0xc0) {
+		TRACEOUT(("%.4x:%.4x AX=%.4x BX=%.4x CX=%.4x DX=%.4 ES=%.4x BP=%.4x",
+							i286_memword_read(CPU_SS, CPU_SP+2),
+							i286_memword_read(CPU_SS, CPU_SP),
+							CPU_AX, CPU_BX, CPU_CX, CPU_DX, CPU_ES, CPU_BP));
+		scsicmd_bios();
+		return;
+	}
+#endif
+
+#if 1			// bypass to disk bios
+{
 	REG8	seg;
 	UINT	sp;
 
@@ -1014,10 +891,12 @@ void bios0x1b(void) {
 		i286_memword_write(CPU_SS, sp - 14, CPU_CX);		// +4
 		i286_memword_write(CPU_SS, sp - 16, CPU_BX);		// +2
 		i286_memword_write(CPU_SS, sp - 18, CPU_AX);		// +0
+#if 0
 		TRACEOUT(("bypass to %.4x:0018", seg << 8));
 		TRACEOUT(("AX=%04x BX=%04x %02x:%02x:%02x:%02x ES=%04x BP=%04x",
 							CPU_AX, CPU_BX, CPU_CL, CPU_DH, CPU_DL, CPU_CH,
 							CPU_ES, CPU_BP));
+#endif
 		sp -= 18;
 		CPU_SP = sp;
 		CPU_BP = sp;
@@ -1028,36 +907,41 @@ void bios0x1b(void) {
 		CPU_IP = 0x18;
 		return;
 	}
+}
 #endif
 
 	switch(CPU_AL & 0xf0) {
 		case 0x90:
-			ret_ah = fdd_operate(DISKTYPE_2HD, 0, 0);
+			ret_ah = fdd_operate(3, 0, 0);
 			break;
 
 		case 0x30:
 		case 0xb0:
-			ret_ah = fdd_operate(DISKTYPE_2HD, 0, 1);
+			ret_ah = fdd_operate(3, 1, 0);
 			break;
 
 		case 0x10:
+			ret_ah = fdd_operate(1, 0, 0);
+			break;
+
 		case 0x70:
 		case 0xf0:
-			ret_ah = fdd_operate(DISKTYPE_2DD, 0, 0);
+			ret_ah = fdd_operate(0, 0, 0);
 			break;
 
 		case 0x50:
-			ret_ah = fdd_operate(DISKTYPE_2DD, 1, 0);
+			ret_ah = fdd_operate(0, 0, 1);
 			break;
 
 		case 0x00:
 		case 0x80:
-			ret_ah = sxsi_operate(HDDTYPE_SASI);
+			ret_ah = sasibios_operate();
 			break;
-#if 0
+
+#if defined(SUPPORT_SCSI)
 		case 0x20:
 		case 0xa0:
-			ret_ah = sxsi_operate(HDDTYPE_SCSI);
+			ret_ah = scsibios_operate();
 			break;
 #endif
 
@@ -1065,19 +949,6 @@ void bios0x1b(void) {
 			ret_ah = 0x40;
 			break;
 	}
-#if 0
-	{
-		static BYTE p = 0;
-		if ((CPU_CL == 0x4d) && (ret_ah == 0xe0)) {
-			if (!p) {
-				trace_sw = 1;
-				p++;
-				debug_status();
-				memorydump();
-			}
-		}
-	}
-#endif
 #if 0
 	TRACEOUT(("%04x:%04x AX=%04x BX=%04x %02x:%02x:%02x:%02x\n"	\
 						"ES=%04x BP=%04x \nret=%02x",

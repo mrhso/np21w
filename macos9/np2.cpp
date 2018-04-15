@@ -28,7 +28,6 @@
 #include	"s98.h"
 #include	"diskdrv.h"
 #include	"fddfile.h"
-#include	"statsave.h"
 
 
 #define	USE_RESUME
@@ -110,8 +109,30 @@ static void MenuBarInit(void) {
 	if (hmenu) {
 		AppendResMenu(hmenu, 'DRVR');
 	}
+#if !defined(SUPPORT_SCSI)
+	hmenu = GetMenuHandle(IDM_HARDDISK);
+	if (hmenu) {
+		DeleteMenuItem(hmenu, 7);
+		DeleteMenuItem(hmenu, 6);
+		DeleteMenuItem(hmenu, 5);
+		DeleteMenuItem(hmenu, 4);
+		DeleteMenuItem(hmenu, 3);
+	}
+#endif
+	if (!np2oscfg.I286SAVE) {
+		hmenu = GetMenuHandle(IDM_OTHER);
+		if (hmenu) {
+			DeleteMenuItem(hmenu, 9);
+		}
+	}
 	InsertMenu(GetMenu(IDM_SASI1), -1);
 	InsertMenu(GetMenu(IDM_SASI2), -1);
+#if defined(SUPPORT_SCSI)
+	InsertMenu(GetMenu(IDM_SCSI0), -1);
+	InsertMenu(GetMenu(IDM_SCSI1), -1);
+	InsertMenu(GetMenu(IDM_SCSI2), -1);
+	InsertMenu(GetMenu(IDM_SCSI3), -1);
+#endif
 	InsertMenu(GetMenu(IDM_KEYBOARD), -1);
 	InsertMenu(GetMenu(IDM_SOUND), -1);
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
@@ -186,19 +207,51 @@ static void HandleMenuChoice(long wParam) {
 			break;
 
 		case IDM_SASI1OPEN:
-			dialog_changehdd(0);
+			dialog_changehdd(0x00);
 			break;
 
 		case IDM_SASI1REMOVE:
-			diskdrv_sethdd(0, NULL);
+			diskdrv_sethdd(0x00, NULL);
 			break;
 
 		case IDM_SASI2OPEN:
-			dialog_changehdd(1);
+			dialog_changehdd(0x01);
 			break;
 
 		case IDM_SASI2REMOVE:
-			diskdrv_sethdd(1, NULL);
+			diskdrv_sethdd(0x01, NULL);
+			break;
+
+		case IDM_SCSI0OPEN:
+			dialog_changehdd(0x20);
+			break;
+
+		case IDM_SCSI0REMOVE:
+			diskdrv_sethdd(0x20, NULL);
+			break;
+
+		case IDM_SCSI1OPEN:
+			dialog_changehdd(0x21);
+			break;
+
+		case IDM_SCSI1REMOVE:
+			diskdrv_sethdd(0x21, NULL);
+			break;
+
+		case IDM_SCSI2OPEN:
+			dialog_changehdd(0x22);
+			break;
+
+		case IDM_SCSI2REMOVE:
+			diskdrv_sethdd(0x22, NULL);
+			break;
+
+		case IDM_SCSI3OPEN:
+			dialog_changehdd(0x23);
+			break;
+
+		case IDM_SCSI3REMOVE:
+			diskdrv_sethdd(0x23, NULL);
 			break;
 
 		case IDM_ROLNORMAL:
@@ -334,6 +387,12 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATEOSCFG;
 			break;
 
+		case IDM_F11USER:
+			menu_setf11key(4);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
 		case IDM_F12MOUSE:
 			menu_setf12key(0);
 			mackbd_resetf12();
@@ -348,6 +407,12 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_F12XFER:
 			menu_setf12key(3);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F12USER:
+			menu_setf12key(4);
 			mackbd_resetf12();
 			update |= SYS_UPDATEOSCFG;
 			break;
@@ -458,6 +523,10 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_BMPSAVE:
 			dialog_writebmp();
+			break;
+
+		case IDM_CALENDAR:
+			CalendarDialogProc();
 			break;
 
 		case IDM_DISPCLOCK:

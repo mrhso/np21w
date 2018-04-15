@@ -1,4 +1,5 @@
 #include	"compiler.h"
+#include	"strres.h"
 #include	"dosio.h"
 #include	"sysmng.h"
 #include	"cpucore.h"
@@ -6,41 +7,46 @@
 #include	"sxsi.h"
 
 
-typedef struct {
-	char	vhd[3];
-	char	ver[4];
-	char	delimita;
-	char	comment[128];
-	BYTE	padding[4];
-	BYTE	mbsize[2];
-	BYTE	sectorsize[2];
-	BYTE	sectors;
-	BYTE	surfaces;
-	BYTE	tracks[2];
-	BYTE	totals[4];
-} V98SCSIHDR;
+const char sig_vhd[8] = "VHD1.00";
+const char sig_nhd[15] = "T98HDDIMAGE.R0";
 
-typedef struct {
-	BYTE	tracks[2];
-} THDHDR;
+const SASIHDD sasihdd[7] = {
+				{33, 4, 153},			// 5MB
+				{33, 4, 310},			// 10MB
+				{33, 6, 310},			// 15MB
+				{33, 8, 310},			// 20MB
+				{33, 4, 615},			// 20MB (not used!)
+				{33, 6, 615},			// 30MB
+				{33, 8, 615}};			// 40MB
 
-typedef struct {
-	BYTE	dummy[8];
-	BYTE	headersize[4];
-	BYTE	filesize[4];
-	BYTE	sectorsize[4];
-	BYTE	sectors[4];
-	BYTE	surfaces[4];
-	BYTE	tracks[4];
-} HDIHDR;
-
-static const _SXSIHDD defsasi = {615*33*8, 615, 256, 33, 8,
-											HDDTYPE_SASI, 256, 0, {0x00}};
-static const _SXSIHDD defscsi = {40*16*32*8, 40*16, 256, 32, 8,
-											HDDTYPE_SCSI, 220, 0, {0x00}};
+#if 0
+static const _SXSIDEV defide = {615*33*8, 615, 256, 33, 8,
+								SXSITYPE_IDE | SXSITYPE_HDD, 256, 0, {0x00}};
+static const _SXSIDEV defscsi = {40*16*32*8, 40*16, 256, 32, 8,
+								SXSITYPE_SCSI | SXSITYPE_HDD, 220, 0, {0x00}};
+#endif
 
 
-	_SXSIHDD	sxsi_hd[4];
+	_SXSIDEV	sxsi_dev[SASIHDD_MAX + SCSIHDD_MAX];
+
+
+// SASI規格HDDかチェック
+static void sasihddcheck(SXSIDEV sxsi) {
+
+const SASIHDD	*sasi;
+	UINT		i;
+
+	sasi = sasihdd;
+	for (i=0; i<sizeof(sasihdd)/sizeof(SASIHDD); i++, sasi++) {
+		if ((sxsi->size == 256) &&
+			(sxsi->sectors == sasi->sectors) &&
+			(sxsi->surfaces == sasi->surfaces) &&
+			(sxsi->cylinders == sasi->cylinders)) {
+			sxsi->type = (UINT16)(SXSITYPE_SASI + (i << 8) + SXSITYPE_HDD);
+			break;
+		}
+	}
+}
 
 
 // ----
@@ -49,27 +55,35 @@ void sxsi_initialize(void) {
 
 	UINT	i;
 
-	ZeroMemory(sxsi_hd, sizeof(sxsi_hd));
-	for (i=0; i<(sizeof(sxsi_hd)/sizeof(_SXSIHDD)); i++) {
-		sxsi_hd[i].fh = (long)FILEH_INVALID;
+	ZeroMemory(sxsi_dev, sizeof(sxsi_dev));
+	for (i=0; i<(sizeof(sxsi_dev)/sizeof(_SXSIDEV)); i++) {
+		sxsi_dev[i].fh = (long)FILEH_INVALID;
 	}
 }
 
-SXSIHDD sxsi_getptr(BYTE drv) {
+SXSIDEV sxsi_getptr(REG8 drv) {
 
 	UINT	num;
 
 	num = drv & 0x0f;
-	if (num >= 2) {
-		return(NULL);
+	if (!(drv & 0x20)) {					// SASI or IDE
+		if (num < SASIHDD_MAX) {
+			return(sxsi_dev + num);
+		}
 	}
-	num += (drv & 0x20) >> 4;
-	return(sxsi_hd + num);
+#if defined(SUPPORT_SCSI)
+	else {
+		if (num < SCSIHDD_MAX) {			// SCSI
+			return(sxsi_dev + SASIHDD_MAX + num);
+		}
+	}
+#endif
+	return(NULL);
 }
 
-const char *sxsi_getname(BYTE drv) {
+const char *sxsi_getname(REG8 drv) {
 
-	SXSIHDD	sxsi;
+	SXSIDEV	sxsi;
 
 	sxsi = sxsi_getptr(drv);
 	if (sxsi) {
@@ -78,103 +92,152 @@ const char *sxsi_getname(BYTE drv) {
 	return(NULL);
 }
 
-BOOL sxsi_hddopen(BYTE drv, const char *file) {
+BOOL sxsi_hddopen(REG8 drv, const char *file) {
 
-	SXSIHDD		sxsi;
-const char		*ext;
-	FILEH		fh;
-	THDHDR		thd;
-	HDIHDR		hdi;
-	V98SCSIHDR	v98;
+	SXSIDEV	sxsi;
+	FILEH	fh;
+const char	*ext;
+	UINT16	type;
+	long	totals;
+	UINT32	headersize;
+	UINT32	surfaces;
+	UINT32	cylinders;
+	UINT32	sectors;
+	UINT32	size;
 
 	if ((file == NULL) || (file[0] == '\0')) {
-		goto sxsiope_err;
+		goto sxsiope_err1;
 	}
 	sxsi = sxsi_getptr(drv);
 	if (sxsi == NULL) {
-		goto sxsiope_err;
+		goto sxsiope_err1;
+	}
+	fh = file_open(file);
+	if (fh == FILEH_INVALID) {
+		goto sxsiope_err1;
 	}
 	ext = file_getext((char *)file);
-	if ((!file_cmpname(ext, "thd")) && (!(drv & 0x20))) {
-		fh = file_open(file);								// T98 HDD (SASI)
-		if (fh == FILEH_INVALID) {
-			goto sxsiope_err;
+	type = SXSITYPE_HDD;
+	if ((!file_cmpname(ext, str_thd)) && (!(drv & 0x20))) {
+		THDHDR thd;						// T98 HDD (IDE)
+		if (file_read(fh, &thd, sizeof(thd)) != sizeof(thd)) {
+			goto sxsiope_err2;
 		}
-		if (file_read(fh, &thd, sizeof(thd)) == sizeof(thd)) {
-			*sxsi = defsasi;
-			sxsi->tracks = LOADINTELWORD(thd.tracks);
-			sxsi->totals = sxsi->tracks * sxsi->sectors * sxsi->surfaces;
-			file_cpyname(sxsi->fname, file, sizeof(sxsi->fname));
-			sxsi->fh = (long)fh;
-			return(SUCCESS);
-		}
-		file_close(fh);
+		headersize = 256;
+		surfaces = 8;
+		cylinders = LOADINTELWORD(thd.cylinders);
+		sectors = 33;
+		size = 256;
+		totals = cylinders * sectors * surfaces;
 	}
-	else if ((!file_cmpname(ext, "hdi")) && (!(drv & 0x20))) {
-		fh = file_open(file);				// ANEX86 HDD (SASI) thanx Mamiya
-		if (fh == FILEH_INVALID) {
-			goto sxsiope_err;
+	else if ((!file_cmpname(ext, str_nhd)) && (!(drv & 0x20))) {
+		NHDHDR nhd;						// T98Next HDD (IDE)
+		if ((file_read(fh, &nhd, sizeof(nhd)) != sizeof(nhd)) ||
+			(memcmp(nhd.sig, sig_nhd, 15))) {
+			goto sxsiope_err2;
 		}
-		if (file_read(fh, &hdi, sizeof(hdi)) == sizeof(hdi)) {
-			*sxsi = defsasi;
-			sxsi->size = LOADINTELWORD(hdi.sectorsize);
-			sxsi->headersize = LOADINTELDWORD(hdi.headersize);
-			sxsi->tracks = LOADINTELWORD(hdi.tracks);
-			sxsi->surfaces = hdi.surfaces[0];
-			sxsi->sectors = hdi.sectors[0];
-			sxsi->totals = sxsi->tracks * sxsi->sectors * sxsi->surfaces;
-			file_cpyname(sxsi->fname, file, sizeof(sxsi->fname));
-			sxsi->fh = (long)fh;
-			return(SUCCESS);
-		}
-		file_close(fh);
+		headersize = LOADINTELDWORD(nhd.headersize);
+		surfaces = LOADINTELWORD(nhd.surfaces);
+		cylinders = LOADINTELDWORD(nhd.cylinders);
+		sectors = LOADINTELWORD(nhd.sectors);
+		size = LOADINTELWORD(nhd.sectorsize);
+		totals = cylinders * sectors * surfaces;
 	}
-	else if ((!file_cmpname(ext, "hdd")) && (drv & 0x20)) {
-		fh = file_open(file);						// Virtual98 HDD (SCSI)
-		if (fh == FILEH_INVALID) {
-			goto sxsiope_err;
+	else if ((!file_cmpname(ext, str_hdi)) && (!(drv & 0x20))) {
+		HDIHDR hdi;						// ANEX86 HDD (SASI) thanx Mamiya
+		if (file_read(fh, &hdi, sizeof(hdi)) != sizeof(hdi)) {
+			goto sxsiope_err2;
 		}
-		if ((file_read(fh, &v98, sizeof(v98)) == sizeof(v98)) &&
-			(!memcmp(v98.vhd, "VHD", 3))) {
-			sxsi = &sxsi_hd[drv+2];
-			*sxsi = defscsi;
-			sxsi->totals = (SINT32)LOADINTELDWORD(v98.totals);
-			sxsi->tracks = LOADINTELWORD(v98.tracks);
-			sxsi->size = LOADINTELWORD(v98.sectorsize);
-			sxsi->sectors = v98.sectors;
-			sxsi->surfaces = v98.surfaces;
-			file_cpyname(sxsi->fname, file, sizeof(sxsi->fname));
-			sxsi->fh = (long)fh;
-			return(SUCCESS);
+		headersize = LOADINTELDWORD(hdi.headersize);
+		surfaces = LOADINTELDWORD(hdi.surfaces);
+		cylinders = LOADINTELDWORD(hdi.cylinders);
+		sectors = LOADINTELDWORD(hdi.sectors);
+		size = LOADINTELDWORD(hdi.sectorsize);
+		totals = cylinders * sectors * surfaces;
+	}
+	else if ((!file_cmpname(ext, str_hdd)) && (drv & 0x20)) {
+		VHDHDR vhd;						// Virtual98 HDD (SCSI)
+		if ((file_read(fh, &vhd, sizeof(vhd)) != sizeof(vhd)) ||
+			(memcmp(vhd.sig, sig_vhd, 5))) {
+			goto sxsiope_err2;
 		}
-		file_close(fh);
+		headersize = sizeof(vhd);
+		surfaces = vhd.surfaces;
+		cylinders = LOADINTELWORD(vhd.cylinders);
+		sectors = vhd.sectors;
+		size = LOADINTELWORD(vhd.sectorsize);
+		totals = (SINT32)LOADINTELDWORD(vhd.totals);
+	}
+	else {
+		goto sxsiope_err2;
 	}
 
-sxsiope_err:
+	// フォーマット確認～
+	if ((surfaces == 0) || (surfaces >= 256) ||
+		(cylinders == 0) || (cylinders >= 65536) ||
+		(sectors == 0) || (sectors >= 256) ||
+		(size == 0) || ((size & (size - 1)) != 0)) {
+		goto sxsiope_err2;
+	}
+	if (!(drv & 0x20)) {
+		type |= SXSITYPE_IDE;
+	}
+	else {
+		type |= SXSITYPE_SCSI;
+		if (!(size & 0x700)) {			// not 256,512,1024
+			goto sxsiope_err2;
+		}
+	}
+	sxsi->totals = totals;
+	sxsi->cylinders = (UINT16)cylinders;
+	sxsi->size = (UINT16)size;
+	sxsi->sectors = (UINT8)sectors;
+	sxsi->surfaces = (UINT8)surfaces;
+	sxsi->type = type;
+	sxsi->headersize = headersize;
+	sxsi->fh = (long)fh;
+	file_cpyname(sxsi->fname, file, sizeof(sxsi->fname));
+	if (type == (SXSITYPE_IDE | SXSITYPE_HDD)) {
+		sasihddcheck(sxsi);
+	}
+	return(SUCCESS);
+
+sxsiope_err2:
+	file_close(fh);
+
+sxsiope_err1:
 	return(FAILURE);
 }
 
 void sxsi_open(void) {
 
 	int		i;
-	BYTE	sasi;
+	REG8	drv;
 
 	sxsi_trash();
-	sasi = 0;
+	drv = 0;
 	for (i=0; i<2; i++) {
-		if (sxsi_hddopen(sasi, np2cfg.hddfile[i]) == SUCCESS) {
-			sasi++;
+		if (sxsi_hddopen(drv, np2cfg.sasihdd[i]) == SUCCESS) {
+			drv++;
 		}
 	}
+#if defined(SUPPORT_SCSI)
+	drv = 0x20;
+	for (i=0; i<4; i++) {
+		if (sxsi_hddopen(drv, np2cfg.scsihdd[i]) == SUCCESS) {
+			drv++;
+		}
+	}
+#endif
 }
 
 void sxsi_flash(void) {
 
-	SXSIHDD	sxsi;
-	SXSIHDD	sxsiterm;
+	SXSIDEV	sxsi;
+	SXSIDEV	sxsiterm;
 
-	sxsi = sxsi_hd;
-	sxsiterm = sxsi + (sizeof(sxsi_hd)/sizeof(_SXSIHDD));
+	sxsi = sxsi_dev;
+	sxsiterm = sxsi + (sizeof(sxsi_dev)/sizeof(_SXSIDEV));
 	while(sxsi < sxsiterm) {
 		if ((FILEH)sxsi->fh != FILEH_INVALID) {
 			file_close((FILEH)sxsi->fh);
@@ -186,33 +249,27 @@ void sxsi_flash(void) {
 
 void sxsi_trash(void) {
 
-	SXSIHDD	sxsi;
-	SXSIHDD	sxsiterm;
+	SXSIDEV	sxsi;
+	SXSIDEV	sxsiterm;
 
-	sxsi = sxsi_hd;
-	sxsiterm = sxsi + (sizeof(sxsi_hd)/sizeof(_SXSIHDD));
+	sxsi = sxsi_dev;
+	sxsiterm = sxsi + (sizeof(sxsi_dev)/sizeof(_SXSIDEV));
 	while(sxsi < sxsiterm) {
 		if ((FILEH)sxsi->fh != FILEH_INVALID) {
 			file_close((FILEH)sxsi->fh);
-			sxsi->fh = (long)FILEH_INVALID;
 		}
-		sxsi->fname[0] = '\0';
+		ZeroMemory(sxsi, sizeof(_SXSIDEV));
+		sxsi->fh = (long)FILEH_INVALID;
 		sxsi++;
 	}
 }
 
-static SXSIHDD getdrive(BYTE drv) {
+static SXSIDEV getdrive(REG8 drv) {
 
-	UINT	num;
-	SXSIHDD	ret;
+	SXSIDEV	ret;
 
-	num = drv & 0x0f;
-	if (num >= 2) {
-		return(NULL);
-	}
-	num += (drv & 0x20) >> 4;
-	ret = sxsi_hd + num;
-	if (ret->fname[0] == '\0') {
+	ret = sxsi_getptr(drv);
+	if ((ret == NULL) || (ret->fname[0] == '\0')) {
 		return(NULL);
 	}
 	if ((FILEH)ret->fh == FILEH_INVALID) {
@@ -226,11 +283,63 @@ static SXSIHDD getdrive(BYTE drv) {
 	return(ret);
 }
 
-BYTE sxsi_read(BYTE drv, long pos, BYTE *buf, UINT16 size) {
+BOOL sxsi_issasi(void) {
 
-const _SXSIHDD	*sxsi;
+	REG8	drv;
+	SXSIDEV	sxsi;
+	BOOL	ret;
+	UINT	sxsiif;
+
+	ret = FALSE;
+	for (drv=0x00; drv<0x04; drv++) {
+		sxsi = sxsi_getptr(drv);
+		if (sxsi) {
+			sxsiif = sxsi->type & SXSITYPE_IFMASK;
+			if (sxsiif == SXSITYPE_SASI) {
+				ret = TRUE;
+			}
+			else if (sxsiif == SXSITYPE_IDE) {
+				ret = FALSE;
+				break;
+			}
+		}
+	}
+	return(ret);
+}
+
+BOOL sxsi_isscsi(void) {
+
+	REG8	drv;
+	SXSIDEV	sxsi;
+
+	for (drv=0x20; drv<0x28; drv++) {
+		sxsi = sxsi_getptr(drv);
+		if ((sxsi) && (sxsi->type)) {
+			return(TRUE);
+		}
+	}
+	return(FALSE);
+}
+
+BOOL sxsi_iside(void) {
+
+	REG8	drv;
+	SXSIDEV	sxsi;
+
+	for (drv=0x00; drv<0x04; drv++) {
+		sxsi = sxsi_getptr(drv);
+		if ((sxsi) && (sxsi->type)) {
+			return(TRUE);
+		}
+	}
+	return(FALSE);
+}
+
+REG8 sxsi_read(REG8 drv, long pos, BYTE *buf, UINT size) {
+
+const _SXSIDEV	*sxsi;
 	long		r;
-	UINT16		rsize;
+	UINT		rsize;
 
 	sxsi = getdrive(drv);
 	if (sxsi == NULL) {
@@ -256,11 +365,11 @@ const _SXSIHDD	*sxsi;
 	return(0x00);
 }
 
-BYTE sxsi_write(BYTE drv, long pos, const BYTE *buf, UINT16 size) {
+REG8 sxsi_write(REG8 drv, long pos, const BYTE *buf, UINT size) {
 
-const _SXSIHDD	*sxsi;
+const _SXSIDEV	*sxsi;
 	long		r;
-	UINT16		wsize;
+	UINT		wsize;
 
 	sxsi = getdrive(drv);
 	if (sxsi == NULL) {
@@ -286,9 +395,9 @@ const _SXSIHDD	*sxsi;
 	return(0x00);
 }
 
-BYTE sxsi_format(BYTE drv, long pos) {
+REG8 sxsi_format(REG8 drv, long pos) {
 
-const _SXSIHDD	*sxsi;
+const _SXSIDEV	*sxsi;
 	long		r;
 	UINT16		i;
 	BYTE		work[256];

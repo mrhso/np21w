@@ -2,6 +2,7 @@
 #include	<windowsx.h>
 #include	<io.h>
 #include	"strres.h"
+#include	"profile.h"
 #include	"np2.h"
 #include	"np2arg.h"
 #include	"dosio.h"
@@ -179,7 +180,7 @@ const INITBL	*pterm;
 			case INITYPE_UINT8:
 				val = (BYTE)GetPrivateProfileInt(title, p->item,
 												*(BYTE *)p->value, path);
-				*(BYTE *)p->value = (BYTE)val;
+				*(UINT8 *)p->value = (UINT8)val;
 				break;
 
 			case INITYPE_SINT16:
@@ -201,7 +202,7 @@ const INITBL	*pterm;
 				GetPrivateProfileString(title, p->item, work,
 												work, sizeof(work), path);
 				val = (BYTE)milstr_solveHEX(work);
-				*(BYTE *)p->value = (BYTE)val;
+				*(UINT8 *)p->value = (UINT8)val;
 				break;
 
 			case INITYPE_HEX16:
@@ -224,6 +225,13 @@ const INITBL	*pterm;
 				GetPrivateProfileString(title, p->item, str_null,
 												work, sizeof(work), path);
 				inirdbyte3(work, p);
+				break;
+
+			case INITYPE_USERKEY:
+				GetPrivateProfileString(title, p->item, str_null,
+												work, sizeof(work), path);
+				((NKEYM)p->value)->keys = (UINT8)profile_setkeys(work,
+												((NKEYM)p->value)->key, 15);
 				break;
 
 			case INITYPE_KB:
@@ -264,7 +272,7 @@ const char		*set;
 					break;
 
 				case INITYPE_SINT8:
-					SPRINTF(work, str_d, *((char *)p->value));
+					SPRINTF(work, str_d, *((SINT8 *)p->value));
 					break;
 
 				case INITYPE_SINT16:
@@ -276,7 +284,7 @@ const char		*set;
 					break;
 
 				case INITYPE_UINT8:
-					SPRINTF(work, str_u, *((BYTE *)p->value));
+					SPRINTF(work, str_u, *((UINT8 *)p->value));
 					break;
 
 				case INITYPE_UINT16:
@@ -288,7 +296,7 @@ const char		*set;
 					break;
 
 				case INITYPE_HEX8:
-					SPRINTF(work, str_x, *((BYTE *)p->value));
+					SPRINTF(work, str_x, *((UINT8 *)p->value));
 					break;
 
 				case INITYPE_HEX16:
@@ -297,6 +305,11 @@ const char		*set;
 
 				case INITYPE_HEX32:
 					SPRINTF(work, str_x, *((UINT32 *)p->value));
+					break;
+
+				case INITYPE_USERKEY:
+					profile_getkeys(work, sizeof(work),
+							((NKEYM)p->value)->key, ((NKEYM)p->value)->keys);
 					break;
 
 				default:
@@ -357,9 +370,14 @@ static const INITBL iniitem[] = {
 	{"ExMemory", INIMAX_UINT8,		&np2cfg.EXTMEM,			13},
 	{"ITF_WORK", INIRO_BOOL,		&np2cfg.ITF_WORK,		0},
 
-	{"HDD1FILE", INITYPE_STR,		np2cfg.hddfile[0],		MAX_PATH},
-	{"HDD2FILE", INITYPE_STR,		np2cfg.hddfile[1],		MAX_PATH},
-//	{"Removabl", INI_EX|1,	0,		&np2cfg.REMOVEHD,		0},
+	{"HDD1FILE", INITYPE_STR,		np2cfg.sasihdd[0],		MAX_PATH},
+	{"HDD2FILE", INITYPE_STR,		np2cfg.sasihdd[1],		MAX_PATH},
+#if defined(SUPPORT_SCSI)
+	{"SCSIHDD0", INITYPE_STR,		np2cfg.scsihdd[0],		MAX_PATH},
+	{"SCSIHDD1", INITYPE_STR,		np2cfg.scsihdd[1],		MAX_PATH},
+	{"SCSIHDD2", INITYPE_STR,		np2cfg.scsihdd[2],		MAX_PATH},
+	{"SCSIHDD3", INITYPE_STR,		np2cfg.scsihdd[3],		MAX_PATH},
+#endif
 
 	{"SampleHz", INITYPE_UINT16,	&np2cfg.samplingrate,	0},
 	{"Latencys", INITYPE_UINT16,	&np2cfg.delayms,		0},
@@ -414,6 +432,9 @@ static const INITBL iniitem[] = {
 
 	{"calendar", INITYPE_BOOL,		&np2cfg.calendar,		0},
 	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0},
+	{"userkey1", INITYPE_USERKEY,	np2cfg.userkey+0,		0},
+	{"userkey2", INITYPE_USERKEY,	np2cfg.userkey+1,		0},
+
 
 	// OSàÀë∂ÅH
 	{"keyboard", INIRO_KB,			&np2oscfg.KEYBOARD,		0},
@@ -465,6 +486,7 @@ static const INITBL iniitem[] = {
 	{"toolwind", INITYPE_BOOL,		&np2oscfg.toolwin,		0},		// ver0.38
 	{"keydispl", INITYPE_BOOL,		&np2oscfg.keydisp,		0},
 	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
+	{"useromeo", INITYPE_BOOL,		&np2oscfg.useromeo,		0},		// ver0.74
 	{"I286SAVE", INIRO_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 

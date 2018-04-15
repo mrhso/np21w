@@ -57,6 +57,15 @@ void i286x_initialize(void) {
 	v30xinit();
 }
 
+void i286x_deinitialize(void) {
+
+	if (CPU_EXTMEM) {
+		_MFREE(CPU_EXTMEM);
+		CPU_EXTMEM = NULL;
+		CPU_EXTMEMSIZE = 0;
+	}
+}
+
 static void i286x_initreg(void) {
 
 	I286_CS = 0xf000;
@@ -76,6 +85,44 @@ void i286x_shut(void) {
 
 	ZeroMemory(&i286core.s, offsetof(I286STAT, cpu_type));
 	i286x_initreg();
+}
+
+void i286x_setextsize(UINT32 size) {
+
+	if (CPU_EXTMEMSIZE != size) {
+		if (CPU_EXTMEM) {
+			_MFREE(CPU_EXTMEM);
+			CPU_EXTMEM = NULL;
+		}
+		if (size) {
+			CPU_EXTMEM = (BYTE *)_MALLOC(size + 16, "EXTMEM");
+			if (CPU_EXTMEM == NULL) {
+				size = 0;
+			}
+		}
+		CPU_EXTMEMSIZE = size;
+	}
+	i286core.e.ems[0] = mem + 0xc0000;
+	i286core.e.ems[1] = mem + 0xc4000;
+	i286core.e.ems[2] = mem + 0xc8000;
+	i286core.e.ems[3] = mem + 0xcc000;
+}
+
+void i286x_setemm(UINT frame, UINT32 addr) {
+
+	BYTE	*ptr;
+
+	frame &= 3;
+	if (addr < USE_HIMEM) {
+		ptr = mem + addr;
+	}
+	else if ((addr - 0x100000 + 0x4000) <= CPU_EXTMEMSIZE) {
+		ptr = CPU_EXTMEM + (addr - 0x100000);
+	}
+	else {
+		ptr = mem + 0xc0000 + (frame << 14);
+	}
+	i286core.e.ems[frame] = ptr;
 }
 
 
@@ -2714,14 +2761,12 @@ I286 _popf(void) {								// 9D: popf
 				je		irqcheck				// fast_intr
 				test	ah, 2
 				je		nextop
-				cmp		pic.ext_irq, 0
-				jne		nextop
-				mov		al, pic.pi[0].imr
-				mov		ah, pic.pi[1].imr
+				mov		al, pic.pi[0 * (type _PICITEM)].imr
+				mov		ah, pic.pi[1 * (type _PICITEM)].imr
 				not		ax
-				test	al, pic.pi[0].irr
+				test	al, pic.pi[0 * (type _PICITEM)].irr
 				jne		irqcheck
-				test	ah, pic.pi[1].irr
+				test	ah, pic.pi[1 * (type _PICITEM)].irr
 				jne		irqcheck
 nextop:			ret
 
@@ -3612,7 +3657,6 @@ I286 _into(void) {								// CE: into
 I286 _iret(void) {								// CF: iret
 
 		__asm {
-				call	extirq_pop
 				I286CLOCK(31)
 				mov		edi, SS_BASE
 				movzx	ebx, I286_SP
@@ -3642,14 +3686,12 @@ I286 _iret(void) {								// CF: iret
 				jne		irqcheck
 				test	I286_FLAG, I_FLAG
 				je		nextop
-				cmp		pic.ext_irq, 0
-				jne		nextop
-				mov		al, pic.pi[0].imr
-				mov		ah, pic.pi[1].imr
+				mov		al, pic.pi[0 * (type _PICITEM)].imr
+				mov		ah, pic.pi[1 * (type _PICITEM)].imr
 				not		ax
-				test	al, pic.pi[0].irr
+				test	al, pic.pi[0 * (type _PICITEM)].irr
 				jne		irqcheck
-				test	ah, pic.pi[1].irr
+				test	ah, pic.pi[1 * (type _PICITEM)].irr
 				jne		irqcheck
 nextop:			ret
 
@@ -4226,14 +4268,12 @@ I286 _sti(void) {								// FB: sti
 				setne	I286_TRAP
 
 				jne		nextopandexit			// fast_intr
-				cmp		pic.ext_irq, 0
-				jne		jmp_nextop
-				mov		al, pic.pi[0].imr
-				mov		ah, pic.pi[1].imr
+				mov		al, pic.pi[0 * (type _PICITEM)].imr
+				mov		ah, pic.pi[1 * (type _PICITEM)].imr
 				not		ax
-				test	al, pic.pi[0].irr
+				test	al, pic.pi[0 * (type _PICITEM)].irr
 				jne		nextopandexit
-				test	ah, pic.pi[1].irr
+				test	ah, pic.pi[1 * (type _PICITEM)].irr
 				jne		nextopandexit
 jmp_nextop:		jmp		i286op[ebp*4]
 

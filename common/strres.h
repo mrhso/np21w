@@ -17,8 +17,13 @@ extern const char str_sav[];
 extern const char str_bmp[];
 extern const char str_d88[];
 extern const char str_d98[];
+extern const char str_88d[];
+extern const char str_98d[];
 extern const char str_thd[];
 extern const char str_hdi[];
+extern const char str_fdi[];
+extern const char str_hdd[];
+extern const char str_nhd[];
 
 extern const char str_d[];
 extern const char str_u[];

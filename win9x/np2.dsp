@@ -187,6 +187,10 @@ InputName=PARTS
 # End Source File
 # Begin Source File
 
+SOURCE=..\COMMON\PROFILE.C
+# End Source File
+# Begin Source File
+
 SOURCE=..\COMMON\STRRES.C
 # End Source File
 # Begin Source File
@@ -401,6 +405,10 @@ SOURCE=..\BIOS\BIOS1B.C
 # Begin Source File
 
 SOURCE=..\BIOS\BIOS1C.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\BIOS\SXSIBIOS.C
 # End Source File
 # End Group
 # Begin Group "sound"
@@ -1001,11 +1009,11 @@ SOURCE=..\IO\EGC.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\EPSONIO.C
+SOURCE=..\IO\EMSIO.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\EXTMEM.C
+SOURCE=..\IO\EPSONIO.C
 # End Source File
 # Begin Source File
 
@@ -1081,7 +1089,7 @@ SOURCE=..\CBUS\AMD98.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\CBUS\BOARD118.C
+SOURCE=.\BOARD118.C
 # End Source File
 # Begin Source File
 
@@ -1122,6 +1130,18 @@ SOURCE=..\CBUS\PC9861K.C
 # Begin Source File
 
 SOURCE=..\CBUS\PCM86IO.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\CBUS\SASIIO.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\CBUS\SCSICMD.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\CBUS\SCSIIO.C
 # End Source File
 # End Group
 # Begin Group "vram"

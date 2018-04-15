@@ -4,6 +4,7 @@
 
 
 #include	"compiler.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"fddfile.h"
@@ -19,19 +20,25 @@ static const UINT8 FDCCMD_TABLE[32] = {
 
 
 #define FDC_FORCEREADY (1)
-#define	FDC_MAXDRIVE	2
 #define	FDC_DELAYERROR7
+
+
+void fdc_intwait(NEVENTITEM item) {
+
+	if (item->flag & NEVENT_SETEVENT) {
+		fdc.intreq = TRUE;
+		if (fdc.chgreg & 1) {
+			pic_setirq(0x0b);
+		}
+		else {
+			pic_setirq(0x0a);
+		}
+	}
+}
 
 void fdc_interrupt(void) {
 
-	fdc.intreq = TRUE;
-	if (CTRL_FDMEDIA == DISKTYPE_2HD) {
-		pic_setirq(0x0b);
-	}
-	else {
-		pic_setirq(0x0a);
-	}
-	nevent_forceexit();
+	nevent_set(NEVENT_FDCINT, 512, fdc_intwait, NEVENT_ABSOLUTE);
 }
 
 static void fdc_interruptreset(void) {
@@ -46,6 +53,7 @@ static BOOL fdc_isfdcinterrupt(void) {
 
 REG8 DMACCALL fdc_dmafunc(REG8 func) {
 
+//	TRACEOUT(("fdc_dmafunc = %d", func));
 	switch(func) {
 		case DMAEXT_START:
 			return(1);
@@ -59,32 +67,13 @@ REG8 DMACCALL fdc_dmafunc(REG8 func) {
 
 static void fdc_dmaready(REG8 enable) {
 
-	if (CTRL_FDMEDIA == DISKTYPE_2HD) {
+	if (fdc.chgreg & 1) {
 		dmac.dmach[FDC_DMACH2HD].ready = enable;
 	}
 	else {
 		dmac.dmach[FDC_DMACH2DD].ready = enable;
 	}
 }
-
-void fdcbusy_error7(NEVENTITEM item) {
-
-	if (item->flag & NEVENT_SETEVENT) {
-		if (fdc.event == FDCEVENT_BUSY) {
-			fdcsend_error7();
-		}
-	}
-}
-
-#if 0		// ↑イベントは残しとく...
-static void fdcderay_error7(SINT16 ms) {							// ver0.27
-
-	fdc.busy = 1;
-	fdc.event = FDCEVENT_BUSY;
-	fdc.status &= ~FDCSTAT_RQM;
-	nevent_setbyms(NEVENT_FDCBUSY, ms, fdcbusy_error7, NEVENT_ABSOLUTE);
-}
-#endif
 
 
 // ----------------------------------------------------------------------
@@ -249,21 +238,22 @@ static void FDC_SenseDeviceStatus(void) {				// cmd: 04
 			get_hdus();
 			fdc.buf[0] = (fdc.hd << 2) | fdc.us;
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
-			if (fdc.us < FDC_MAXDRIVE) {
-				fdc.buf[0] |= 0x20;
-				if (!fddfile[fdc.us].fname[0]) {
-					fdc.buf[0] |= 0x08;
-				}
-				else if (fddfile[fdc.us].protect) {
-					fdc.buf[0] |= 0x40;
-				}
+			if (fdc.equip & (1 << fdc.us)) {
+				fdc.buf[0] |= 0x08;
 				if (!fdc.treg[fdc.us]) {
 					fdc.buf[0] |= 0x10;
+				}
+				if (fddfile[fdc.us].fname[0]) {
+					fdc.buf[0] |= 0x20;
+				}
+				if (fddfile[fdc.us].protect) {
+					fdc.buf[0] |= 0x40;
 				}
 			}
 			else {
 				fdc.buf[0] |= 0x80;
 			}
+//			TRACEOUT(("FDC_SenseDeviceStatus %.2x", fdc.buf[0]));
 			fdc.event = FDCEVENT_BUFSEND;
 			fdc.bufcnt = 1;
 			fdc.bufp = 0;
@@ -412,8 +402,11 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 			fdc.ncn = 0;
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
 			fdc.stat[fdc.us] |= FDCRLT_SE;
-			if ((fdc.us >= FDC_MAXDRIVE) || (!fddfile[fdc.us].fname[0])) {
+			if (!(fdc.equip & (1 << fdc.us))) {
 				fdc.stat[fdc.us] |= FDCRLT_NR | FDCRLT_IC0;
+			}
+			else if (!fddfile[fdc.us].fname[0]) {
+				fdc.stat[fdc.us] |= FDCRLT_NR;
 			}
 			else {
 				fdd_seek();
@@ -441,6 +434,7 @@ static void FDC_SenceintStatus(void) {					// cmd: 08
 			fdc.buf[1] = fdc.treg[fdc.us];
 			fdc.bufcnt = 2;
 			fdc.stat[fdc.us] = 0;
+//			TRACEOUT(("fdc stat - %d [%.2x]", fdc.us, fdc.buf[0]));
 		}
 		else {
 			for (; i<4; i++) {
@@ -449,6 +443,7 @@ static void FDC_SenceintStatus(void) {					// cmd: 08
 					fdc.buf[1] = fdc.treg[i];
 					fdc.bufcnt = 2;
 					fdc.stat[i] = 0;
+//					TRACEOUT(("fdc stat - %d [%.2x]", i, fdc.buf[0]));
 					break;
 				}
 			}
@@ -458,7 +453,7 @@ static void FDC_SenceintStatus(void) {					// cmd: 08
 				break;
 			}
 		}
-		if (i>=4) {
+		if (i >= 4) {
 			fdc_interruptreset();
 		}
 	}
@@ -557,7 +552,8 @@ static void FDC_Seek(void) {							// cmd: 0f
 			fdc.ncn = fdc.cmds[1];
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
 			fdc.stat[fdc.us] |= FDCRLT_SE;
-			if ((fdc.us >= FDC_MAXDRIVE) || (!fddfile[fdc.us].fname[0])) {
+			if ((!(fdc.equip & (1 << fdc.us))) ||
+				(!fddfile[fdc.us].fname[0])) {
 				fdc.stat[fdc.us] |= FDCRLT_NR | FDCRLT_IC0;
 			}
 			else {
@@ -632,7 +628,7 @@ static void fdcstatusreset(void) {
 	fdc.status = FDCSTAT_RQM;
 }
 
-void DMACCALL fdc_DataRegWrite(REG8 data) {
+void DMACCALL fdc_datawrite(REG8 data) {
 
 //	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO)) == FDCSTAT_RQM) {
 		switch(fdc.event) {
@@ -671,7 +667,7 @@ void DMACCALL fdc_DataRegWrite(REG8 data) {
 //	}
 }
 
-REG8 DMACCALL fdc_DataRegRead(void) {
+REG8 DMACCALL fdc_dataread(void) {
 
 //	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO))
 //									== (FDCSTAT_RQM | FDCSTAT_DIO)) {
@@ -686,7 +682,6 @@ REG8 DMACCALL fdc_DataRegRead(void) {
 
 			case FDCEVENT_BUFSEND2:
 				if (fdc.bufcnt) {
-//					TRACE_("read data", fdc.bufp);
 					fdc.lastdata = fdc.buf[fdc.bufp++];
 					fdc.bufcnt--;
 				}
@@ -717,33 +712,39 @@ REG8 DMACCALL fdc_DataRegRead(void) {
 
 static void IOOUTCALL fdc_o92(UINT port, REG8 dat) {
 
-//	TRACEOUT(("fdc out %x %x", port, dat));
-	CTRL_FDMEDIA = DISKTYPE_2HD;
-	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO)) == FDCSTAT_RQM) {
-		fdc_DataRegWrite(dat);
+//	TRACEOUT(("fdc out %.2x %.2x [%.4x:%.4x]", port, dat, CPU_CS, CPU_IP));
+
+	if (((port >> 4) ^ fdc.chgreg) & 1) {
+		return;
 	}
-	(void)port;
+	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO)) == FDCSTAT_RQM) {
+		fdc_datawrite(dat);
+	}
 }
 
 static void IOOUTCALL fdc_o94(UINT port, REG8 dat) {
 
-//	TRACEOUT(("fdc out %x %x", port, dat));
-	CTRL_FDMEDIA = DISKTYPE_2HD;
+//	TRACEOUT(("fdc out %.2x %.2x [%.4x:%.4x]", port, dat, CPU_CS, CPU_IP));
+
+	if (((port >> 4) ^ fdc.chgreg) & 1) {
+		return;
+	}
 	if ((fdc.ctrlreg ^ dat) & 0x10) {
 		fdcstatusreset();
 		fdc_dmaready(0);
 		dmac_check();
 	}
 	fdc.ctrlreg = dat;
-	(void)port;
 }
 
 static REG8 IOINPCALL fdc_i90(UINT port) {
 
-//	TRACEOUT(("fdc in %x %x", port, fdc.status));
-	CTRL_FDMEDIA = DISKTYPE_2HD;
+//	TRACEOUT(("fdc in %.2x %.2x [%.4x:%.4x]", port, fdc.status,
+//															CPU_CS, CPU_IP));
 
-	(void)port;
+	if (((port >> 4) ^ fdc.chgreg) & 1) {
+		return(0xff);
+	}
 	return(fdc.status);
 }
 
@@ -751,73 +752,38 @@ static REG8 IOINPCALL fdc_i92(UINT port) {
 
 	REG8	ret;
 
-	CTRL_FDMEDIA = DISKTYPE_2HD;
+	if (((port >> 4) ^ fdc.chgreg) & 1) {
+		return(0xff);
+	}
 	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO))
 										== (FDCSTAT_RQM | FDCSTAT_DIO)) {
-		ret = fdc_DataRegRead();
+		ret = fdc_dataread();
 	}
 	else {
 		ret = fdc.lastdata;
 	}
-	(void)port;
-//	TRACEOUT(("fdc in %x %x", port, ret));
+//	TRACEOUT(("fdc in %.2x %.2x [%.4x:%.4x]", port, ret, CPU_CS, CPU_IP));
 	return(ret);
 }
 
 static REG8 IOINPCALL fdc_i94(UINT port) {
 
-	CTRL_FDMEDIA = DISKTYPE_2HD;
-
-	(void)port;
+	if (((port >> 4) ^ fdc.chgreg) & 1) {
+		return(0xff);
+	}
 	return(0x40);
-}
-
-
-static void IOOUTCALL fdc_oca(UINT port, REG8 dat) {
-
-	CTRL_FDMEDIA = DISKTYPE_2DD;
-	fdc_DataRegWrite(dat);
-	(void)port;
-}
-
-static void IOOUTCALL fdc_occ(UINT port, REG8 dat) {
-
-	CTRL_FDMEDIA = DISKTYPE_2DD;
-	fdc.ctrlreg = dat;
-	(void)port;
-}
-
-static REG8 IOINPCALL fdc_ic8(UINT port) {
-
-	CTRL_FDMEDIA = DISKTYPE_2DD;
-
-	(void)port;
-	return(fdc.status);
-}
-
-static REG8 IOINPCALL fdc_ica(UINT port) {
-
-	REG8	ret;
-
-	CTRL_FDMEDIA = DISKTYPE_2DD;
-	ret = fdc_DataRegRead();
-
-	(void)port;
-	return(ret);
-}
-
-static REG8 IOINPCALL fdc_icc(UINT port) {
-
-	CTRL_FDMEDIA = DISKTYPE_2DD;
-
-	(void)port;
-	return(0x74);
 }
 
 
 static void IOOUTCALL fdc_obe(UINT port, REG8 dat) {
 
 	fdc.chgreg = dat;
+	if (fdc.chgreg & 2) {
+		CTRL_FDMEDIA = DISKTYPE_2HD;
+	}
+	else {
+		CTRL_FDMEDIA = DISKTYPE_2DD;
+	}
 	(void)port;
 }
 
@@ -827,6 +793,21 @@ static REG8 IOINPCALL fdc_ibe(UINT port) {
 	return((fdc.chgreg & 3) | 8);
 }
 
+static void IOOUTCALL fdc_o4be(UINT port, REG8 dat) {
+
+	fdc.reg144 = dat;
+	if (dat & 0x10) {
+		fdc.rpm[(dat >> 5) & 3] = dat & 1;
+	}
+	(void)port;
+}
+
+static REG8 IOINPCALL fdc_i4be(UINT port) {
+
+	(void)port;
+	return(fdc.rpm[(fdc.reg144 >> 5) & 3] | 0xf0);
+}
+
 
 // ---- I/F
 
@@ -834,30 +815,32 @@ static const IOOUT fdco90[4] = {
 					NULL,		fdc_o92,	fdc_o94,	NULL};
 static const IOINP fdci90[4] = {
 					fdc_i90,	fdc_i92,	fdc_i94,	NULL};
-static const IOOUT fdcoc8[4] = {
-					NULL,		fdc_oca,	fdc_occ,	NULL};
-static const IOINP fdcic8[4] = {
-					fdc_ic8,	fdc_ica,	fdc_icc,	NULL};
-
 static const IOOUT fdcobe[1] = {fdc_obe};
 static const IOINP fdcibe[1] = {fdc_ibe};
 
 void fdc_reset(void) {
 
 	ZeroMemory(&fdc, sizeof(fdc));
+	fdc.equip = np2cfg.fddequip;
+	fdc.support144 = np2cfg.usefd144;
 	fdcstatusreset();
-	CTRL_FDMEDIA = DISKTYPE_2HD;
 	dmac_attach(DMADEV_2HD, FDC_DMACH2HD);
 	dmac_attach(DMADEV_2DD, FDC_DMACH2DD);
+	CTRL_FDMEDIA = DISKTYPE_2HD;
+	fdc.chgreg = 3;
 }
 
 void fdc_bind(void) {
 
 	iocore_attachcmnoutex(0x0090, 0x00f9, fdco90, 4);
 	iocore_attachcmninpex(0x0090, 0x00f9, fdci90, 4);
-	iocore_attachcmnoutex(0x00c8, 0x00f9, fdcoc8, 4);
-	iocore_attachcmninpex(0x00c8, 0x00f9, fdcic8, 4);
+	iocore_attachcmnoutex(0x00c8, 0x00f9, fdco90, 4);
+	iocore_attachcmninpex(0x00c8, 0x00f9, fdci90, 4);
 
+	if (fdc.support144) {
+		iocore_attachout(0x04be, fdc_o4be);
+		iocore_attachinp(0x04be, fdc_i4be);
+	}
 	iocore_attachsysoutex(0x00be, 0x0cff, fdcobe, 1);
 	iocore_attachsysinpex(0x00be, 0x0cff, fdcibe, 1);
 }

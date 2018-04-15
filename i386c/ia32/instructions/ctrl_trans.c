@@ -1,4 +1,4 @@
-/*	$Id: ctrl_trans.c,v 1.3 2003/12/25 19:58:24 yui Exp $	*/
+/*	$Id: ctrl_trans.c,v 1.10 2004/02/12 15:46:14 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -34,9 +34,6 @@
 
 #include "ctrl_trans.h"
 
-#include "pccore.h"
-#include "iocore.h"
-
 
 /*
  * JMP
@@ -54,10 +51,10 @@ JMP_Jb(void)
 void
 JMP_Jw(void)
 {
-	WORD ip;
+	DWORD ip;
 
 	CPU_WORKCLOCK(7);
-	GET_PCWORD(ip);
+	GET_PCWORDS(ip);
 	ADD_EIP(ip);
 }
 
@@ -75,7 +72,7 @@ void
 JMP_Ew(DWORD op)
 {
 	DWORD madr;
-	WORD new_ip;
+	DWORD new_ip;
 
 	if (op >= 0xc0) {
 		CPU_WORKCLOCK(7);
@@ -110,7 +107,7 @@ JMP_Ed(DWORD op)
 void
 JMP16_Ap(void)
 {
-	WORD new_ip;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(11);
@@ -149,12 +146,12 @@ void
 JMP16_Ep(DWORD op)
 {
 	DWORD madr;
-	WORD new_ip;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(11);
 	if (op < 0xc0) {
-		madr = get_ea(op);
+		madr = calc_ea_dst(op);
 		new_ip = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr);
 		new_cs = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr + 2);
 		if (!CPU_STAT_PM || CPU_STAT_VM86) {
@@ -179,7 +176,7 @@ JMP32_Ep(DWORD op)
 
 	CPU_WORKCLOCK(11);
 	if (op < 0xc0) {
-		madr = get_ea(op);
+		madr = calc_ea_dst(op);
 		new_ip = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, madr);
 		new_cs = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, madr + 4);
 		if (!CPU_STAT_PM || CPU_STAT_VM86) {
@@ -832,10 +829,10 @@ LOOP_Jb(void)
 void
 CALL_Aw(void)
 {
-	WORD ip;
+	DWORD ip;
 
 	CPU_WORKCLOCK(7);
-	GET_PCWORD(ip);
+	GET_PCWORDS(ip);
 	PUSH0_16(CPU_IP);
 	ADD_EIP(ip);
 }
@@ -855,7 +852,7 @@ void
 CALL_Ew(DWORD op)
 {
 	DWORD madr;
-	WORD new_ip;
+	DWORD new_ip;
 
 	if (op >= 0xc0) {
 		CPU_WORKCLOCK(7);
@@ -890,7 +887,7 @@ CALL_Ed(DWORD op)
 void
 CALL16_Ap(void)
 {
-	WORD new_ip;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(13);
@@ -935,12 +932,12 @@ void
 CALL16_Ep(DWORD op)
 {
 	DWORD ad;
-	WORD new_ip;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(16);
 	if (op < 0xc0) {
-		ad = get_ea(op);
+		ad = calc_ea_dst(op);
 		new_ip = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, ad);
 		new_cs = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, ad + 2);
 		if (!CPU_STAT_PM || CPU_STAT_VM86) {
@@ -968,7 +965,7 @@ CALL32_Ep(DWORD op)
 
 	CPU_WORKCLOCK(16);
 	if (op < 0xc0) {
-		ad = get_ea(op);
+		ad = calc_ea_dst(op);
 		new_ip = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, ad);
 		new_cs = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, ad + 4);
 		if (!CPU_STAT_PM || CPU_STAT_VM86) {
@@ -993,7 +990,7 @@ CALL32_Ep(DWORD op)
 void
 RETnear16(void)
 {
-	WORD new_ip;
+	DWORD new_ip;
 
 	CPU_WORKCLOCK(11);
 	POP0_16(new_ip);
@@ -1013,14 +1010,18 @@ RETnear32(void)
 void
 RETnear16_Iw(void)
 {
-	WORD new_ip;
-	WORD ad;
+	DWORD new_ip;
+	DWORD ad;
 
 	CPU_WORKCLOCK(11);
 	GET_PCWORD(ad);
 	POP0_16(new_ip);
 	SET_EIP(new_ip);
-	CPU_SP += ad;
+	if (!CPU_STAT_SS32) {
+		CPU_SP += ad;
+	} else {
+		CPU_ESP += ad;
+	}
 }
 
 void
@@ -1030,16 +1031,20 @@ RETnear32_Iw(void)
 	DWORD ad;
 
 	CPU_WORKCLOCK(11);
-	GET_PCDWORD(ad);
+	GET_PCWORD(ad);
 	POP0_32(new_ip);
 	SET_EIP(new_ip);
-	CPU_ESP += ad;
+	if (CPU_STAT_SS32) {
+		CPU_ESP += ad;
+	} else {
+		CPU_SP += ad;
+	}
 }
 
 void
 RETfar16(void)
 {
-	WORD new_ip;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(15);
@@ -1079,8 +1084,8 @@ RETfar32(void)
 void
 RETfar16_Iw(void)
 {
-	WORD ad;
-	WORD new_ip;
+	DWORD ad;
+	DWORD new_ip;
 	WORD new_cs;
 
 	CPU_WORKCLOCK(15);
@@ -1089,10 +1094,15 @@ RETfar16_Iw(void)
 		/* Real mode or VM86 mode */
 		POP0_16(new_ip);
 		POP0_16(new_cs);
-		CPU_SP += ad;
 
 		CPU_SET_SEGREG(CPU_CS_INDEX, new_cs);
 		SET_EIP(new_ip);
+
+		if (!CPU_STAT_SS32) {
+			CPU_SP += ad;
+		} else {
+			CPU_ESP += ad;
+		}
 	} else {
 		/* Protected mode */
 		RETfar_pm(ad);
@@ -1107,15 +1117,20 @@ RETfar32_Iw(void)
 	WORD new_cs;
 
 	CPU_WORKCLOCK(15);
-	GET_PCDWORD(ad);
+	GET_PCWORD(ad);
 	if (!CPU_STAT_PM || CPU_STAT_VM86) {
 		/* Real mode or VM86 mode */
 		POP0_32(new_ip);
 		POP0_32(new_cs);
-		CPU_ESP += ad;
 
 		CPU_SET_SEGREG(CPU_CS_INDEX, new_cs);
 		SET_EIP(new_ip);
+
+		if (CPU_STAT_SS32) {
+			CPU_ESP += ad;
+		} else {
+			CPU_SP += ad;
+		}
 	} else {
 		/* Protected mode */
 		RETfar_pm(ad);
@@ -1125,49 +1140,26 @@ RETfar32_Iw(void)
 void
 IRET(void)
 {
-	WORD new_ip;
-	WORD flag;
-	WORD new_cs;
-
-	extirq_pop();
-	CPU_WORKCLOCK(31);
-	if (!CPU_STAT_PM) {
-		/* Real mode */
-		POP0_16(new_ip);
-		POP0_16(new_cs);
-		POP0_16(flag);
-
-		CPU_FLAG = flag & 0x7fd5;
-		CPU_OV = CPU_FLAG & O_FLAG;
-		CPU_TRAP = (CPU_FLAG & (I_FLAG|T_FLAG)) == (I_FLAG|T_FLAG);
-
-		CPU_SET_SEGREG(CPU_CS_INDEX, new_cs);
-		SET_EIP(new_ip);
-	} else {
-		/* Protected mode */
-		IRET_pm();
-	}
-	IRQCHECKTERM();
-}
-
-void
-IRETD(void)
-{
 	DWORD new_ip;
-	DWORD flag;
+	DWORD new_flags;
+	DWORD mask;
 	WORD new_cs;
 
-	extirq_pop();
 	CPU_WORKCLOCK(31);
 	if (!CPU_STAT_PM) {
 		/* Real mode */
-		POP0_32(new_ip);
-		POP0_32(new_cs);
-		POP0_32(flag);
-
-		CPU_EFLAG = (flag & 0x00257fd5) | (REAL_EFLAGREG & 0x1a0000);
-		CPU_OV = CPU_FLAG & O_FLAG;
-		CPU_TRAP = (CPU_FLAG & (I_FLAG|T_FLAG)) == (I_FLAG|T_FLAG);
+		mask = I_FLAG|IOPL_FLAG;
+		if (!CPU_INST_OP32) {
+			POP0_16(new_ip);
+			POP0_16(new_cs);
+			POP0_16(new_flags);
+		} else {
+			POP0_32(new_ip);
+			POP0_32(new_cs);
+			POP0_32(new_flags);
+			mask |= RF_FLAG;
+		}
+		set_eflags(new_flags, mask);
 
 		CPU_SET_SEGREG(CPU_CS_INDEX, new_cs);
 		SET_EIP(new_ip);
@@ -1273,8 +1265,11 @@ BOUND_GdMa(void)
  * STACK
  */
 void
-ENTER_IwIb(void)
+ENTER16_IwIb(void)
 {
+	DWORD sp, bp;
+	DWORD size;
+	DWORD val;
 	WORD dimsize;
 	BYTE level;
 
@@ -1284,29 +1279,19 @@ ENTER_IwIb(void)
 
 	/* check stack room size */
 	if (CPU_STAT_PM) {
-		DWORD size = dimsize;
-		DWORD sp;
-		if (CPU_INST_OP32) {
-			size = (level + 1) * 4;
-		} else {
-			size = (level + 1) * 2;
-		}
-		if (CPU_STAT_SS32) {
-			sp = CPU_ESP;
-		} else {
+		size = dimsize + (level + 1) * 2;
+		if (!CPU_STAT_SS32) {
 			sp = CPU_SP;
+		} else {
+			sp = CPU_ESP;
 		}
 		CHECK_STACK_PUSH(&CPU_STAT_SREG(CPU_SS_INDEX), sp, size);
 	}
 
-	XPUSH0(CPU_EBP);
+	PUSH0_16(CPU_BP);
 	if (level == 0) {			/* enter level=0 */
 		CPU_WORKCLOCK(11);
-		if (!CPU_INST_OP32) {
-			CPU_BP = CPU_SP;
-		} else {
-			CPU_EBP = CPU_ESP;
-		}
+		CPU_BP = CPU_SP;
 		if (!CPU_STAT_SS32) {
 			CPU_SP -= dimsize;
 		} else {
@@ -1316,135 +1301,143 @@ ENTER_IwIb(void)
 		--level;
 		if (level == 0) {		/* enter level=1 */
 			CPU_WORKCLOCK(15);
-			if (!CPU_INST_OP32) {
-				WORD tmp = CPU_SP;
-				PUSH0_16(tmp);
-				CPU_BP = tmp;
+			sp = CPU_SP;
+			PUSH0_16(sp);
+			CPU_BP = sp;
+			if (!CPU_STAT_SS32) {
 				CPU_SP -= dimsize;
 			} else {
-				DWORD tmp;
-				if (!CPU_STAT_SS32) {
-					tmp = CPU_SP;
-					REGPUSH0_32_16(tmp);
-					CPU_EBP = (WORD)tmp;
-					CPU_ESP -= dimsize;
-				} else {
-					tmp = CPU_ESP;
-					REGPUSH0_32(tmp);
-					CPU_EBP = tmp;
-					CPU_ESP -= dimsize;
-				}
+				CPU_ESP -= dimsize;
 			}
 		} else {			/* enter level=2-31 */
 			CPU_WORKCLOCK(12 + level * 4);
-			if (!CPU_INST_OP32) {
-				WORD bp = CPU_BP;
-				WORD val;
-
+			if (!CPU_STAT_SS32) {
+				bp = CPU_BP;
 				CPU_BP = CPU_SP;
-				if (!CPU_STAT_SS32) {
-					while (level--) {
-						bp -= 2;
-						CPU_SP -= 2;
-						val = cpu_vmemoryread_w(CPU_SS_INDEX, bp);
-						cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP, val);
-					}
-					REGPUSH0(CPU_BP);
-					CPU_SP -= dimsize;
-				} else {
-					while (level--) {
-						bp -= 2;
-						CPU_ESP -= 2;
-						val = cpu_vmemoryread_w(CPU_SS_INDEX, bp);
-						cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_ESP, val);
-					}
-					REGPUSH0_16_32(CPU_EBP);
-					CPU_ESP -= dimsize;
+				while (level--) {
+					bp -= 2;
+					CPU_SP -= 2;
+					val = cpu_vmemoryread_w(CPU_SS_INDEX, bp);
+					cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP, val);
 				}
+				REGPUSH0(CPU_BP);
+				CPU_SP -= dimsize;
 			} else {
-				DWORD ebp = CPU_EBP;
-				DWORD val;
-
-				if (!CPU_STAT_SS32) {
-					CPU_EBP = CPU_SP;
-					while (level--) {
-						ebp -= 4;
-						CPU_SP -= 4;
-						val = cpu_vmemoryread_d(CPU_SS_INDEX, ebp);
-						cpu_vmemorywrite_d(CPU_SS_INDEX, CPU_SP, val);
-					}
-					REGPUSH0_32_16(CPU_EBP);
-					CPU_SP -= dimsize;
-				} else {
-					CPU_EBP = CPU_ESP;
-					while (level--) {
-						ebp -= 4;
-						CPU_ESP -= 4;
-						val = cpu_vmemoryread_d(CPU_SS_INDEX, ebp);
-						cpu_vmemorywrite(CPU_SS_INDEX, CPU_ESP, val);
-					}
-					REGPUSH0_32(CPU_EBP);
-					CPU_ESP -= dimsize;
+				bp = CPU_EBP;
+				CPU_BP = CPU_SP;
+				while (level--) {
+					bp -= 2;
+					CPU_ESP -= 2;
+					val = cpu_vmemoryread_w(CPU_SS_INDEX, bp);
+					cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_ESP, val);
 				}
+				REGPUSH0_16_32(CPU_BP);
+				CPU_ESP -= dimsize;
 			}
 		}
 	}
 }
 
 void
-LEAVE16(void)
+ENTER32_IwIb(void)
 {
-	WORD bp;
-	DWORD sp, size;
+	DWORD sp, bp;
+	DWORD size;
+	DWORD val;
+	WORD dimsize;
+	BYTE level;
 
-	CPU_WORKCLOCK(5);
+	GET_PCWORD(dimsize);
+	GET_PCBYTE(level);
+	level &= 0x1f;
 
+	/* check stack room size */
 	if (CPU_STAT_PM) {
-		bp = CPU_BP;
-		if (!CPU_STAT_SS32) {
-			sp = CPU_SP;
-			size = 2;
-		} else {
+		size = dimsize + (level + 1) * 4;
+		if (CPU_STAT_SS32) {
 			sp = CPU_ESP;
-			size = 4;
+		} else {
+			sp = CPU_SP;
 		}
-		if (bp < sp) {
-			ia32_panic("LEAVE16: bp < sp");
-		}
-		CHECK_STACK_PUSH(&CPU_STAT_SREG(CPU_SS_INDEX), sp, (bp - sp) + size);
+		CHECK_STACK_PUSH(&CPU_STAT_SREG(CPU_SS_INDEX), sp, size);
 	}
 
-	CPU_SP = CPU_BP;
-	REGPOP0(CPU_BP);
+	PUSH0_32(CPU_EBP);
+	if (level == 0) {			/* enter level=0 */
+		CPU_WORKCLOCK(11);
+		CPU_EBP = CPU_ESP;
+		if (!CPU_STAT_SS32) {
+			CPU_SP -= dimsize;
+		} else {
+			CPU_ESP -= dimsize;
+		}
+	} else {
+		--level;
+		if (level == 0) {		/* enter level=1 */
+			CPU_WORKCLOCK(15);
+			sp = CPU_ESP;
+			PUSH0_32(sp);
+			CPU_EBP = sp;
+			if (CPU_STAT_SS32) {
+				CPU_ESP -= dimsize;
+			} else {
+				CPU_SP -= dimsize;
+			}
+		} else {			/* enter level=2-31 */
+			CPU_WORKCLOCK(12 + level * 4);
+			if (CPU_STAT_SS32) {
+				bp = CPU_EBP;
+				CPU_EBP = CPU_ESP;
+				while (level--) {
+					bp -= 4;
+					CPU_ESP -= 4;
+					val = cpu_vmemoryread_d(CPU_SS_INDEX, bp);
+					cpu_vmemorywrite(CPU_SS_INDEX, CPU_ESP, val);
+				}
+				REGPUSH0_32(CPU_EBP);
+				CPU_ESP -= dimsize;
+			} else {
+				bp = CPU_BP;
+				CPU_EBP = CPU_ESP;
+				while (level--) {
+					bp -= 4;
+					CPU_SP -= 4;
+					val = cpu_vmemoryread_d(CPU_SS_INDEX, bp);
+					cpu_vmemorywrite_d(CPU_SS_INDEX, CPU_SP, val);
+				}
+				REGPUSH0_32_16(CPU_EBP);
+				CPU_SP -= dimsize;
+			}
+		}
+	}
 }
 
 void
-LEAVE32(void)
+LEAVE(void)
 {
-	DWORD bp, sp, size;
+	DWORD sp, bp;
 
 	CPU_WORKCLOCK(5);
 
 	if (CPU_STAT_PM) {
-		bp = CPU_EBP;
-		if (CPU_STAT_SS32) {
-			sp = CPU_ESP;
-			size = 4;
-		} else {
+		if (!CPU_STAT_SS32) {
 			sp = CPU_SP;
-			size = 2;
+			bp = CPU_BP;
+		} else {
+			sp = CPU_ESP;
+			bp = CPU_EBP;
 		}
-		if (bp < sp) {
-			ia32_panic("LEAVE32: bp < sp");
-		}
-		CHECK_STACK_PUSH(&CPU_STAT_SREG(CPU_SS_INDEX), sp, (bp - sp) + size);
+		CHECK_STACK_POP(&CPU_STAT_SREG(CPU_SS_INDEX), sp, (bp-sp) + 2);
 	}
 
-	if (CPU_STAT_SS32) {
-		CPU_ESP = CPU_EBP;
-		REGPOP0_32(CPU_EBP);
-	} else {
+	if (!CPU_STAT_SS32) {
 		CPU_SP = CPU_BP;
-		REGPOP0_32_16(CPU_EBP);
+	} else {
+		CPU_ESP = CPU_EBP;
+	}
+	if (!CPU_INST_OP32) {
+		REGPOP0(CPU_BP);
+	} else {
+		POP0_32(CPU_EBP);
 	}
 }

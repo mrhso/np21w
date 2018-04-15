@@ -33,11 +33,12 @@ enum {
 };
 
 typedef struct {
-	BYTE	tracks;
-	BYTE	sectors;
-	BYTE	n;
-	BYTE	meida;
-	BYTE	rpm;
+	UINT32	headersize;
+	UINT8	tracks;
+	UINT8	sectors;
+	UINT8	n;
+	UINT8	disktype;
+	UINT8	rpm;
 } _XDFINFO, *XDFINFO;
 
 typedef struct {
@@ -72,12 +73,12 @@ void fddfile_init(void);
 
 void fddfile_reset2dmode(void);
 
-const char *fdd_diskname(BYTE drv);
-BOOL fdd_diskready(BYTE drv);
-BOOL fdd_diskprotect(BYTE drv);
+const char *fdd_diskname(REG8 drv);
+BOOL fdd_diskready(REG8 drv);
+BOOL fdd_diskprotect(REG8 drv);
 
-BOOL fdd_set(BYTE drv, const char *fname, UINT ftype, int ro);
-BOOL fdd_eject(BYTE drv);
+BOOL fdd_set(REG8 drv, const char *fname, UINT ftype, int ro);
+BOOL fdd_eject(REG8 drv);
 
 BOOL fdd_diskaccess(void);
 BOOL fdd_seek(void);

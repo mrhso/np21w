@@ -3,6 +3,7 @@
 #include	"iocore.h"
 #include	"sound.h"
 #include	"cs4231.h"
+#include	"sasiio.h"
 
 
 void DMACCALL dma_dummyout(REG8 data) {
@@ -23,9 +24,13 @@ REG8 DMACCALL dma_dummyproc(REG8 func) {
 
 static const DMAPROC dmaproc[] = {
 		{dma_dummyout,		dma_dummyin,		dma_dummyproc},		// NONE
-		{fdc_DataRegWrite,	fdc_DataRegRead,	fdc_dmafunc},		// 2HD
-		{fdc_DataRegWrite,	fdc_DataRegRead,	fdc_dmafunc},		// 2DD
+		{fdc_datawrite,		fdc_dataread,		fdc_dmafunc},		// 2HD
+		{fdc_datawrite,		fdc_dataread,		fdc_dmafunc},		// 2DD
+#if defined(SUPPORT_SASI)
+		{sasi_datawrite,	sasi_dataread,		sasi_dmafunc},		// SASI
+#else
 		{dma_dummyout,		dma_dummyin,		dma_dummyproc},		// SASI
+#endif
 		{dma_dummyout,		dma_dummyin,		dma_dummyproc},		// SCSI
 		{dma_dummyout,		dma_dummyin,		cs4231dmafunc},		// CS4231
 };
@@ -235,6 +240,7 @@ static void dmacset(REG8 channel) {
 	if (dmadev >= sizeof(dmaproc) / sizeof(DMAPROC)) {
 		dmadev = 0;
 	}
+	TRACEOUT(("dmac set %d - %d", channel, dmadev));
 	dmac.dmach[channel].proc = dmaproc[dmadev];
 }
 

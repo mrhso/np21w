@@ -117,16 +117,21 @@ static pascal Boolean NavLaunchServicesFilterProc( AEDesc* theItem, void* info, 
                 ret = file_getftype(name);
                 switch (*(int*)ioUserData) {
                     case OPEN_FDD:
-                        if (ret == FTYPE_D88 || ret == FTYPE_BETA) {
+                        if (ret == FTYPE_D88 || ret == FTYPE_BETA || ret == FTYPE_FDI) {
                             showItem = true;
                         }
                         break;
-                    case OPEN_HDD:
-                        if (ret == FTYPE_THD || ret == FTYPE_HDI) {
+                    case OPEN_SASI:
+                        if (ret == FTYPE_THD || ret == FTYPE_HDI || ret == FTYPE_NHD) {
                             showItem = true;
                         }
                         break;
-                    case OPEN_FONT:
+                     case OPEN_SCSI:
+                        if (ret == FTYPE_HDD) {
+                            showItem = true;
+                        }
+                        break;
+                   case OPEN_FONT:
                         if (ret == FTYPE_BMP || ret == FTYPE_SMIL) {
                             showItem = true;
                         }
@@ -270,7 +275,7 @@ void dialog_changefdd(BYTE drv) {
 
 	if (drv < 4) {
 		if (dialog_fileselect(fname, sizeof(fname), hWndMain, OPEN_FDD)) {
-            if (file_getftype(fname)==FTYPE_D88 || file_getftype(fname)==FTYPE_BETA) {
+            if (file_getftype(fname)==FTYPE_D88 || file_getftype(fname)==FTYPE_BETA || file_getftype(fname)==FTYPE_FDI) {
                 diskdrv_setfdd(drv, fname, 0);
                 toolwin_setfdd(drv, fname);
             }
@@ -282,11 +287,24 @@ void dialog_changehdd(BYTE drv) {
 
 	char	fname[MAX_PATH];
 
-	if (drv < 2) {
-		if (dialog_fileselect(fname, sizeof(fname), hWndMain, OPEN_HDD)) {
-            if (file_getftype(fname)==FTYPE_HDI || file_getftype(fname)==FTYPE_THD) {
-                diskdrv_sethdd(drv, fname);
-            }
+	if (!(drv & 0x20)) {		// SASI/IDE
+		if (drv < 2) {
+			if (dialog_fileselect(fname, sizeof(fname), hWndMain, OPEN_SASI)) {
+				if (file_getftype(fname)==FTYPE_HDI || file_getftype(fname)==FTYPE_THD || file_getftype(fname)==FTYPE_NHD) {
+					sysmng_update(SYS_UPDATEOSCFG);
+					diskdrv_sethdd(drv, fname);
+				}
+			}
+		}
+	}
+	else {						// SCSI
+		if ((drv & 0x0f) < 4) {
+			if (dialog_fileselect(fname, sizeof(fname), hWndMain, OPEN_SCSI)) {
+				if (file_getftype(fname)==FTYPE_HDD) {
+					sysmng_update(SYS_UPDATEOSCFG);
+					diskdrv_sethdd(drv, fname);
+				}
+			}
 		}
 	}
 }

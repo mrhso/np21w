@@ -107,6 +107,11 @@ const INITBL	*p;
 				case INITYPE_HEX32:
 					*((UINT32 *)p->value) = (UINT32)milstr_solveHEX(data);
 					break;
+
+				case INITYPE_USERKEY:
+					((NKEYM)p->value)->keys = (UINT8)profile_setkeys(data,
+												((NKEYM)p->value)->key, 15);
+					break;
 			}
 		}
 		p++;
@@ -265,6 +270,11 @@ const INITBL	*pterm;
 				SPRINTF(work, str_x, *((UINT32 *)p->value));
 				break;
 
+			case INITYPE_USERKEY:
+				profile_getkeys(work, sizeof(work),
+							((NKEYM)p->value)->key, ((NKEYM)p->value)->keys);
+				break;
+
 			default:
 				set = FAILURE;
 				break;
@@ -283,9 +293,6 @@ const INITBL	*pterm;
 
 // ----
 
-extern	int		winx;
-extern	int		winy;
-
 static const char ini_title[] = "NekoProjectII";
 static const char inifile[] = "np2.cfg";
 
@@ -303,8 +310,14 @@ static const INITBL iniitem[] = {
 	{"ExMemory", INITYPE_UINT8,		&np2cfg.EXTMEM,			0},
 	{"ITF_WORK", INITYPE_BOOL,		&np2cfg.ITF_WORK,		0},
 
-	{"HDD1FILE", INITYPE_STR,		np2cfg.hddfile[0],		MAX_PATH},
-	{"HDD2FILE", INITYPE_STR,		np2cfg.hddfile[1],		MAX_PATH},
+	{"HDD1FILE", INITYPE_STR,		np2cfg.sasihdd[0],		MAX_PATH},
+	{"HDD2FILE", INITYPE_STR,		np2cfg.sasihdd[1],		MAX_PATH},
+#if defined(SUPPORT_SCSI)
+	{"SCSIHDD0", INITYPE_STR,		np2cfg.scsihdd[0],		MAX_PATH},
+	{"SCSIHDD1", INITYPE_STR,		np2cfg.scsihdd[1],		MAX_PATH},
+	{"SCSIHDD2", INITYPE_STR,		np2cfg.scsihdd[2],		MAX_PATH},
+	{"SCSIHDD3", INITYPE_STR,		np2cfg.scsihdd[3],		MAX_PATH},
+#endif
 	{"fontfile", INITYPE_STR,		np2cfg.fontfile,		MAX_PATH},
 	{"biospath", INITYPE_STR,		np2cfg.biospath,		MAX_PATH},
 	{"hdrvroot", INITYPE_STR,		np2cfg.hdrvroot,		MAX_PATH},
@@ -362,6 +375,8 @@ static const INITBL iniitem[] = {
 	{"pc9861_j", INITYPE_BYTEARG,	np2cfg.pc9861jmp,		6},
 	{"calendar", INITYPE_BOOL,		&np2cfg.calendar,		0},
 	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0},
+	{"userkey1", INITYPE_USERKEY,	np2cfg.userkey+0,		0},
+	{"userkey2", INITYPE_USERKEY,	np2cfg.userkey+1,		0},
 	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},
 	{"jast_snd", INITYPE_BOOL,		&np2oscfg.jastsnd,		0},		// ver0.73
 	{"I286SAVE", INITYPE_BOOL,		&np2oscfg.I286SAVE,		0}};

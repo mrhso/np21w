@@ -1,26 +1,9 @@
 
-enum {												// ver0.28
-	FTYPE_NONE = 0,		// 自動判別 or PC
-	FTYPE_SMIL,			// システム予約
-	FTYPE_TEXT,			// テキストファイル
-	FTYPE_BMP,			// Bitmap
-	FTYPE_PICT,			// Picture (予約)
-	FTYPE_PNG,			// Png (予約)
-	FTYPE_WAV,			// Wave
-	FTYPE_D88,			// D88
-	FTYPE_BETA,			// ベタイメージ
-	FTYPE_THD,			// .thd ハードディスクイメージ
-	FTYPE_HDI,			// .hdi ハードディスクイメージ
-	FTYPE_HDD,			// .hdd ハードディスクイメージ (予約)
-	FTYPE_S98,			// .s98 ハードディスクイメージ
-	FTYPE_MIMPI			// mimpi defaultファイル
-};
-
 #define		FILEH				HANDLE
-#define		FILEH_INVALID		((FILEH)-1)
+#define		FILEH_INVALID		(INVALID_HANDLE_VALUE)
 
-#define		FILEFINDH			HANDLE
-#define		FILEFINDH_INVALID	((FILEFINDH)-1)
+#define		FLISTH				HANDLE
+#define		FLISTH_INVALID		(INVALID_HANDLE_VALUE)
 
 enum {
 	FSEEK_SET	= 0,
@@ -28,23 +11,42 @@ enum {
 	FSEEK_END	= 2
 };
 
+enum {
+	FILEATTR_READONLY	= 0x01,
+	FILEATTR_HIDDEN		= 0x02,
+	FILEATTR_SYSTEM		= 0x04,
+	FILEATTR_VOLUME		= 0x08,
+	FILEATTR_DIRECTORY	= 0x10,
+	FILEATTR_ARCHIVE	= 0x20
+};
+
+enum {
+	FLICAPS_SIZE		= 0x0001,
+	FLICAPS_ATTR		= 0x0002,
+	FLICAPS_DATE		= 0x0004,
+	FLICAPS_TIME		= 0x0008
+};
+
 typedef struct {
 	UINT16	year;		// cx
-	BYTE	month;		// dh
-	BYTE	day;		// dl
+	UINT8	month;		// dh
+	UINT8	day;		// dl
 } DOSDATE;
 
 typedef struct {
-	BYTE	hour;		// ch
-	BYTE	minute;		// cl
-	BYTE	second;		// dh
+	UINT8	hour;		// ch
+	UINT8	minute;		// cl
+	UINT8	second;		// dh
 } DOSTIME;
 
 typedef struct {
-	char	path[MAX_PATH];
+	UINT	caps;
 	UINT32	size;
 	UINT32	attr;
-} FILEFINDT;
+	DOSDATE	date;
+	DOSTIME	time;
+	char	path[MAX_PATH];
+} FLINFO;
 
 
 #ifdef __cplusplus
@@ -70,16 +72,16 @@ short file_dircreate(const char *path);
 
 											// カレントファイル操作
 void file_setcd(const char *exepath);
-TCHAR *file_getcd(const char *path);
+char *file_getcd(const char *path);
 FILEH file_open_c(const char *path);
 FILEH file_open_rb_c(const char *path);
 FILEH file_create_c(const char *path);
 short file_delete_c(const char *path);
 short file_attr_c(const char *path);
 
-FILEFINDH file_find1st(const char *path, FILEFINDT *fft);
-BOOL file_findnext(FILEFINDH hdl, FILEFINDT *fft);
-void file_findclose(FILEFINDH hdl);
+FLISTH file_list1st(const char *dir, FLINFO *fli);
+BOOL file_listnext(FLISTH hdl, FLINFO *fli);
+void file_listclose(FLISTH hdl);
 
 #define	file_cpyname(a, b, c)	milsjis_ncpy(a, b, c)
 #define	file_catname(a, b, c)	milsjis_ncat(a, b, c)

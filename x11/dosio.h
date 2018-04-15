@@ -1,28 +1,10 @@
 #ifndef	NP2_X11_DOSIO_H__
 #define	NP2_X11_DOSIO_H__
 
-enum {
-	FTYPE_NONE = 0,		// 自動判別 or PC
-	FTYPE_SMIL,		// システム予約
-	FTYPE_TEXT,		// テキストファイル
-	FTYPE_BMP,		// Bitmap
-	FTYPE_PICT,		// Picture (予約)
-	FTYPE_PNG,		// Png (予約)
-	FTYPE_WAV,		// Wave
-	FTYPE_D88,		// D88
-	FTYPE_BETA,		// ベタイメージ
-	FTYPE_THD,		// .thd ハードディスクイメージ
-	FTYPE_HDI,		// .hdi ハードディスクイメージ
-	FTYPE_HDD,		// .hdd ハードディスクイメージ (予約)
-	FTYPE_S98,		// .s98 ハードディスクイメージ
-	FTYPE_MIMPI		// mimpi defaultファイル
-};
+#include <dirent.h>
 
 typedef FILE *			FILEH;
 #define	FILEH_INVALID		NULL
-
-typedef	void *			FLISTH;
-#define	FLISTH_INVALID		NULL
 
 #define	FSEEK_SET		SEEK_SET
 #define	FSEEK_CUR		SEEK_CUR
@@ -55,6 +37,12 @@ typedef struct {
 	BYTE	minute;		/* cl */
 	BYTE	second;		/* dh */
 } DOSTIME;
+
+typedef struct {
+	char	path[MAX_PATH];
+	DIR	*hdl;
+} _FLISTH, *FLISTH;
+#define	FLISTH_INVALID		NULL
 
 typedef struct {
 	UINT	caps;

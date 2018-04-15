@@ -2,13 +2,13 @@ AS		= masm
 AOPT	= /ML /DNP2
 OBJ		= ..\obj\romrel
 
-all: $(OBJ) ..\bios\startup.res ..\bios\biosboot.res ..\bios\sxsibios.res ..\fdd\hddboot.res
+all: $(OBJ) ..\bios\startup.res ..\bios\biosboot.res ..\cbus\sasibios.res ..\cbus\scsibios.res ..\fdd\hddboot.res
 
 $(OBJ):
 	if not exist $(OBJ) mkdir $(OBJ)
 
 
-..\bios\startup.res: $(OBJ) $(OBJ)\startup.bin
+..\bios\startup.res: $(OBJ)\startup.bin
 	bin2txt $(OBJ)\startup.bin nosyscode > ..\bios\startup.res
 
 $(OBJ)\startup.bin: $(OBJ)\startup.exe
@@ -22,7 +22,7 @@ $(OBJ)\startup.obj: startup.asm
 
 
 
-..\bios\biosboot.res: $(OBJ) $(OBJ)\biosboot.bin
+..\bios\biosboot.res: $(OBJ)\biosboot.bin
 	bin2txt $(OBJ)\biosboot.bin biosboot > ..\bios\biosboot.res
 
 $(OBJ)\biosboot.bin: $(OBJ)\biosboot.exe
@@ -36,21 +36,35 @@ $(OBJ)\biosboot.obj: biosboot.asm
 
 
 
-..\bios\sxsibios.res: $(OBJ) $(OBJ)\sxsibios.bin
-	bin2txt $(OBJ)\sxsibios.bin sxsibios > ..\bios\sxsibios.res
+..\cbus\sasibios.res: $(OBJ)\sasibios.bin
+	bin2txt $(OBJ)\sasibios.bin sasibios > ..\cbus\sasibios.res
 
-$(OBJ)\sxsibios.bin: $(OBJ)\sxsibios.exe
-	exe2bin $(OBJ)\sxsibios $(OBJ)\sxsibios.bin
+$(OBJ)\sasibios.bin: $(OBJ)\sasibios.exe
+	exe2bin $(OBJ)\sasibios $(OBJ)\sasibios.bin
 
-$(OBJ)\sxsibios.exe: $(OBJ)\sxsibios.obj
-	link $(OBJ)\sxsibios,$(OBJ)\sxsibios;
+$(OBJ)\sasibios.exe: $(OBJ)\sasibios.obj
+	link $(OBJ)\sasibios,$(OBJ)\sasibios;
 
-$(OBJ)\sxsibios.obj: sxsibios.asm
+$(OBJ)\sasibios.obj: sasibios.asm
 	$(AS) $(AOPT) $(*B),$*,$*;
 
 
 
-..\fdd\hddboot.res: $(OBJ) $(OBJ)\hddboot.bin
+..\cbus\scsibios.res: $(OBJ)\scsibios.bin
+	bin2txt $(OBJ)\scsibios.bin scsibios > ..\cbus\scsibios.res
+
+$(OBJ)\scsibios.bin: $(OBJ)\scsibios.exe
+	exe2bin $(OBJ)\scsibios $(OBJ)\scsibios.bin
+
+$(OBJ)\scsibios.exe: $(OBJ)\scsibios.obj
+	link $(OBJ)\scsibios,$(OBJ)\scsibios;
+
+$(OBJ)\scsibios.obj: scsibios.asm
+	$(AS) $(AOPT) $(*B),$*,$*;
+
+
+
+..\fdd\hddboot.res: $(OBJ)\hddboot.bin
 	bin2txt $(OBJ)\hddboot.bin hdddiskboot > ..\fdd\hddboot.res
 
 $(OBJ)\hddboot.bin: $(OBJ)\hddboot.exe

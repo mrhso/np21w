@@ -26,7 +26,6 @@
 #include	"s98.h"
 #include	"diskdrv.h"
 #include	"fddfile.h"
-#include	"statsave.h"
 #include	"mousemng.h"
 #include	"configure.h"
 #include	"screenopt.h"
@@ -136,6 +135,10 @@ static void MenuBarInit(void) {
 	}
 	InsertMenu(GetMenu(IDM_SASI1), -1);
 	InsertMenu(GetMenu(IDM_SASI2), -1);
+	InsertMenu(GetMenu(IDM_SCSI0), -1);
+	InsertMenu(GetMenu(IDM_SCSI1), -1);
+	InsertMenu(GetMenu(IDM_SCSI2), -1);
+	InsertMenu(GetMenu(IDM_SCSI3), -1);
 	InsertMenu(GetMenu(IDM_KEYBOARD), -1);
 	InsertMenu(GetMenu(IDM_SOUND), -1);
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
@@ -248,6 +251,38 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_SASI2REMOVE:
 			diskdrv_sethdd(1, NULL);
+			break;
+
+		case IDM_SCSI0OPEN:
+			dialog_changehdd(0x20);
+			break;
+
+		case IDM_SCSI0REMOVE:
+			diskdrv_sethdd(0x20, NULL);
+			break;
+
+		case IDM_SCSI1OPEN:
+			dialog_changehdd(0x21);
+			break;
+
+		case IDM_SCSI1REMOVE:
+			diskdrv_sethdd(0x21, NULL);
+			break;
+
+		case IDM_SCSI2OPEN:
+			dialog_changehdd(0x22);
+			break;
+
+		case IDM_SCSI2REMOVE:
+			diskdrv_sethdd(0x22, NULL);
+			break;
+
+		case IDM_SCSI3OPEN:
+			dialog_changehdd(0x23);
+			break;
+
+		case IDM_SCSI3REMOVE:
+			diskdrv_sethdd(0x23, NULL);
 			break;
 
 		case IDM_FULLSCREEN:
@@ -401,6 +436,12 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATEOSCFG;
 			break;
 
+		case IDM_F11USER:
+			menu_setf11key(4);
+			mackbd_resetf11();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
 		case IDM_F12MOUSE:
 			menu_setf12key(0);
 			mackbd_resetf12();
@@ -421,6 +462,12 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_F12XFER:
 			menu_setf12key(3);
+			mackbd_resetf12();
+			update |= SYS_UPDATEOSCFG;
+			break;
+
+		case IDM_F12USER:
+			menu_setf12key(4);
 			mackbd_resetf12();
 			update |= SYS_UPDATEOSCFG;
 			break;
@@ -743,10 +790,12 @@ int main(int argc, char *argv[]) {
 	S98_init();
 
     hid_init();
+#ifndef SUPPORT_WAVEMIX
 	if (soundmng_initialize() == SUCCESS) {
 		soundmng_pcmvolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
 		soundmng_pcmvolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
 	}
+#endif
 
 #if defined(NP2GCC)
 	mousemng_initialize();
@@ -865,8 +914,9 @@ int main(int argc, char *argv[]) {
 #if defined(NP2GCC)
 	mousemng_disable(MOUSEPROC_SYSTEM);
 #endif
-
+#ifndef SUPPORT_WAVEMIX
 	soundmng_deinitialize();
+#endif
 	scrnmng_destroy();
 
 	if (sys_updates & (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
@@ -939,6 +989,7 @@ static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef
             switch (whatHappened)
             {
                 case kEventMouseMoved:
+                case kEventMouseDragged:
                     GetEventParameter (event, kEventParamMouseDelta, typeHIPoint, NULL, sizeof(HIPoint), NULL, &delta);
                     mousemng_callback(delta);
                     result = noErr;
@@ -1084,6 +1135,7 @@ static const EventTypeSpec appEventList[] = {
 				{kEventClassMouse,		kEventMouseDown},
 #if defined(NP2GCC)
 				{kEventClassMouse,		kEventMouseMoved},
+				{kEventClassMouse,		kEventMouseDragged},
 				{kEventClassMouse,		kEventMouseUp},
 #endif
 				{kEventClassKeyboard,	kEventRawKeyModifiersChanged},
@@ -1164,7 +1216,7 @@ static void toggleFullscreen(void) {
     static bool toolwin = false;
     MenuRef	menu = GetMenuRef(IDM_SCREEN);
     Rect	bounds;
-    short	w = 640, h = 480;
+    short	w, h;
 
     soundmng_stop();
     if (!(scrnmode & SCRNMODE_FULLSCREEN)) {
@@ -1172,6 +1224,8 @@ static void toggleFullscreen(void) {
         GetWindowBounds(hWndMain, kWindowContentRgn, &bounds);
         backupwidth = bounds.right - bounds.left;
         backupheight = bounds.bottom - bounds.top;
+		w = backupwidth;
+		h = backupheight;
         toolwin = np2oscfg.toolwin;
         toolwin_close();
         np2oscfg.winx = bounds.left;

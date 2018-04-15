@@ -18,18 +18,24 @@ typedef struct {
 	_GDCDATA	s;
 	UINT8		mode1;
 	UINT8		mode2;
+	UINT8		clock;
+	UINT8		crt15khz;
+	UINT8		m_drawing;
+	UINT8		s_drawing;
 	UINT8		vsync;
 	UINT8		vsyncint;
+	UINT8		display;
+	UINT8		bitac;
+	UINT8		reserved[2];
 	int			analog;
 	int			palnum;
 	UINT8		degpal[4];
 	RGB32		anapal[16];
-	UINT8		clock;
-	UINT8		display;
-	UINT8		bitac;
-	UINT8		m_drawing;
-	UINT8		s_drawing;
-	UINT8		reserved[3];
+
+	UINT32		dispclock;
+	UINT32		vsyncclock;
+	UINT32		rasterclock;
+	UINT32		hsyncclock;
 } _GDC, *GDC;
 
 typedef struct {
@@ -49,7 +55,6 @@ enum {
 
 	GDCSCRN_ENABLE		= 0x80,
 	GDCSCRN_EXT			= 0x40,
-	GDCSCRN_ATR			= 0x10,
 	GDCSCRN_ALLDRAW		= 0x04,
 	GDCSCRN_REDRAW		= 0x01,
 	GDCSCRN_ALLDRAW2	= 0x0c,
@@ -76,6 +81,7 @@ void gdc_setdegitalpal(int color, REG8 value);
 void gdc_setanalogpal(int color, int rgb, REG8 value);
 void gdc_setdegpalpack(int color, REG8 value);
 
+void gdc_updateclock(void);
 void gdc_restorekacmode(void);
 
 #ifdef __cplusplus

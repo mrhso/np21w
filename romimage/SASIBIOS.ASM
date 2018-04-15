@@ -1,4 +1,3 @@
-.186
 
 CODE	SEGMENT
 		ASSUME CS:CODE,DS:nothing,ES:nothing,SS:nothing
@@ -16,17 +15,16 @@ START:			retf						; 00
 				nop
 				nop
 				db	055h, 0aah, 002h		; 09
-				jmp		short sxsi_init		; 0c
+				jmp		short sasi_init1	; 0c
 				nop
-				retf						; 0f
-				nop
+				jmp		short sasi_init2	; 0f
 				nop
 				retf						; 12
 				nop
 				nop
-				jmp		short sxsi_boot		; 15
+				jmp		short sasi_boot		; 15
 				nop
-				jmp		short sxsi_bios		; 18
+				jmp		short sasi_bios		; 18
 				nop
 				retf						; 1b
 				nop
@@ -50,37 +48,32 @@ START:			retf						; 00
 				nop
 				nop
 
-sxsi_init:		push	ds
-				push	bx
-				xor		bx, bx
-				mov		ds, bx
-				mov		bx, cs
-				mov		ds:[04b0h], bh
-				mov		ds:[04b2h], bh
-				mov		ds:[04b8h], bh
-				mov		ds:[04bah], bh
-				mov		bl, bh
-				mov		bh, 0
-				and		bl, 0fh
-				mov		byte ptr ds:[bx+04d0h],45h
-				pop		bx
-				push	ax
-				mov		ax, 0300h
-				int		1bh
-				mov		ax, 0320h
-				int		1bh
-				pop		ax
-				pop		ds
+sasi_init1:		mov		byte ptr [bx], 0d9h
 				retf
 
-sxsi_bios:		cld
+sasi_init2:		mov		ax, cs
+				mov		word ptr ds:[0044h], offset sasiint
+				mov		ds:[0046h], ax
+				mov		ds:[04b0h], ah
+				mov		ds:[04b8h], ah
+				mov		ax, 0300h
+				int		1bh
+				retf
+
+sasi_bios:		cld
 				mov		dx, cs
 				mov		ds, dx
 				mov		cx, 8
-				mov		si, offset sxsibiosstr
+				mov		si, offset sasibiosstr
 				mov		dx, 07efh
 				cli
-				rep outsb
+	if 1
+@@:				lodsb
+				out		dx, al
+				loop	short @b
+	else
+				rep		outsb
+	endif
 				sti
 				pop		ax
 				pop		bx
@@ -93,50 +86,64 @@ sxsi_bios:		cld
 				pop		ds
 				iret
 
-sxsi_boot:		cmp		al, 0ah
-				je		short sasi_boot
+sasi_boot:		cmp		al, 0ah
+				je		short sasi_boot2
 				cmp		al, 0bh
-				je		short sasi_boot
-				cmp		al, 0ch
-				je		short scsi_boot
+				je		short sasi_boot2
 				retf
 
-sasi_boot:		push	ds
-				pusha
-				xor		bx, bx
-				mov		ds, bx
-				sub		al, 9
+sasi_boot2:		sub		al, 9
 				mov		dl, 0ffh
 				test	ds:[055dh], al			; sasi
 				je		short boot_exit
 				dec		al
 				mov		ah, 06h
-				jmp		short boot_main
-
-scsi_boot:		push	ds
-				pusha
-				xor		bx, bx
-				mov		ds, bx
-				mov		ax, 4620h
-
-boot_main:		mov		cx, 1fc0h
+				mov		cx, 1fc0h
 				mov		es, cx
 				mov		bp, bx
 				mov		cx, bx
 				mov		dx, bx
 				mov		bh, 4
 				int		1bh
-				jc		boot_exit
+				jc		short boot_exit
 				or		al, 80h
 				mov		byte ptr ds:[0584h], al
 				db		9ah					; call far
 				dw		0
 				dw		1fc0h
-boot_exit:		popa
-				pop		ds
-				retf
+boot_exit:		retf
 
-sxsibiosstr		db		"sxsibios", 0
+
+; MS-DOSÇ™Ç±ÇÃäÑÇËçûÇ›ÇégópÇ∑ÇÈ...
+
+sasiint:		push	ax
+				in		al, 82h
+				and		al, 0fdh
+				cmp		al, 0adh
+				je		short sasireadstat
+				and		al, 0f9h
+				cmp		al, 0a1h
+				jne		short sasiinteoi
+sasireadstat:	push	ds
+				xor		ax, ax
+				mov		ds, ax
+				or		byte ptr ds:[055fh], 1
+				mov		al, 0c0h
+				out		82h, al
+				pop		ds
+sasiinteoi:		mov		al, 20h
+				out		08h, al
+				mov		al, 0bh
+				out		08h, al
+				in		al, 08h
+				test	al, al
+				jne		short sasiintexit
+				mov		al, 20h
+				out		00h, al
+sasiintexit:	pop		ax
+				iret
+
+sasibiosstr		db		"sasibios"
 
 CODE	ENDS
 	END START

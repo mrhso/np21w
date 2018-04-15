@@ -10,21 +10,21 @@
 #define		NC		0xff
 
 typedef struct {
-	BYTE	f11[4];
-	BYTE	f12[4];
+	UINT8	f11[5];
+	UINT8	f12[5];
 } BINDTBL;
 
 static const BINDTBL bindtbl = {
-						//   カナ  Stop  [＝]  NFER
-							{0x72, 0x60, 0x4d, 0x51},
+						//   カナ  Stop  [＝]  NFER  USER
+							{0x72, 0x60, 0x4d, 0x51, 0x76},
 						//         Copy  [，]  XFER
-							{NC,   0x61, 0x4f, 0x35}};
+							{NC,   0x61, 0x4f, 0x35, 0x77}};
 
 void mackbd_resetf11(void) {
 
 	UINT	i;
 
-	for (i=1; i<(sizeof(bindtbl.f11)/sizeof(BYTE)); i++) {
+	for (i=1; i<(sizeof(bindtbl.f11)/sizeof(UINT8)); i++) {
 		keystat_forcerelease(bindtbl.f11[i]);
 	}
 }
@@ -33,7 +33,7 @@ void mackbd_resetf12(void) {
 
 	UINT	i;
 
-	for (i=1; i<(sizeof(bindtbl.f12)/sizeof(BYTE)); i++) {
+	for (i=1; i<(sizeof(bindtbl.f12)/sizeof(UINT8)); i++) {
 		keystat_forcerelease(bindtbl.f12[i]);
 	}
 }
@@ -69,10 +69,10 @@ static const BYTE keymac[128] = {
 				0x0f,0x34,  NC,0x0e,  NC,0x00,  NC,  NC,
 			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
 				0x70,0x79,0x73,0x74,  NC,  NC,  NC,  NC,
-			//	    , [.],    , [*],    ,    , [+],    		; 0x40
-				  NC,0x50,  NC,0x45,  NC,  NC,0x49,  NC,
-			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
-				  NC,  NC,  NC,  NC,0x1c,  NC,0x40,0x3e,
+			//	    , [.],    , [*],    , [+],    ,    		; 0x40
+				  NC,0x50,  NC,0x45,  NC,0x49,  NC,  NC,
+			//	    ,    ,    , [/], ret,    , [-], clr		; 0x48
+				  NC,  NC,  NC,0x41,0x1c,  NC,0x40,0x3e,
 			//	    , [=], [0], [1], [2], [3], [4], [5]		; 0x50
 				  NC,0x4d,0x4e,0x4a,0x4b,0x4c,0x46,0x47,
 			//	 [6], [7],    , [8], [9],  ￥,  ＿, [,]		; 0x58
@@ -167,12 +167,12 @@ BOOL mackbd_keydown(int keycode, BOOL cmd) {
 
 	data = NC;
 	if (keycode == 0x67) {
-		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(UINT8))) {
 			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
 	}
 	else if (keycode == 0x6f) {
-		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(UINT8))) {
 			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}
@@ -190,12 +190,12 @@ BOOL mackbd_keyup(int keycode) {
 
 	data = NC;
 	if (keycode == 0x67) {
-		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(UINT8))) {
 			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
 	}
 	else if (keycode == 0x6f) {
-		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(UINT8))) {
 			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}
@@ -258,10 +258,10 @@ static const BYTE keymac[128] = {
 				0x0f,0x34,  NC,0x0e,  NC,0x00,  NC,  NC,
 			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , [.],    , [*],    ,    , [+],    		; 0x40
-				  NC,0x50,  NC,0x45,  NC,  NC,0x49,  NC,
-			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
-				  NC,  NC,  NC,  NC,0x1c,  NC,0x40,0x3e,
+			//	    , [.],    , [*],    , [+],    ,    		; 0x40
+				  NC,0x50,  NC,0x45,  NC,0x49,  NC,  NC,
+			//	    ,    ,    , [/], ret,    , [-], clr		; 0x48
+				  NC,  NC,  NC,0x41,0x1c,  NC,0x40,0x3e,
 			//	    , [=], [0], [1], [2], [3], [4], [5]		; 0x50
 				  NC,0x4d,0x4e,0x4a,0x4b,0x4c,0x46,0x47,
 			//	 [6], [7],    , [8], [9],  ￥,  ＿, [,]		; 0x58
@@ -293,7 +293,7 @@ static const BYTE keymac2[128] = {
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	    , [.],    , [*],    ,    , [+],    		; 0x40
+			//	    , [.],    , [*],    , [+],    ,    		; 0x40
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -362,12 +362,12 @@ BOOL mackbd_keydown(int keycode, BOOL cmd) {
 
 	data = NC;
 	if (keycode == 0x67) {
-		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(UINT8))) {
 			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
 	}
 	else if (keycode == 0x6f) {
-		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(UINT8))) {
 			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}
@@ -396,12 +396,12 @@ BOOL mackbd_keyup(int keycode) {
 	data = NC;
 	ret = FALSE;
 	if (keycode == 0x67) {
-		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(BYTE))) {
+		if (np2oscfg.F11KEY < (sizeof(bindtbl.f11)/sizeof(UINT8))) {
 			data = bindtbl.f11[np2oscfg.F11KEY];
 		}
 	}
 	else if (keycode == 0x6f) {
-		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(BYTE))) {
+		if (np2oscfg.F12KEY < (sizeof(bindtbl.f12)/sizeof(UINT8))) {
 			data = bindtbl.f12[np2oscfg.F12KEY];
 		}
 	}

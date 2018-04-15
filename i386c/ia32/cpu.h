@@ -1,4 +1,4 @@
-/*	$Id: cpu.h,v 1.8 2004/01/15 15:50:33 monaka Exp $	*/
+/*	$Id: cpu.h,v 1.16 2004/02/13 14:52:35 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -75,13 +75,7 @@ typedef union {
 }
 #endif
 
-#include "cpu_io.h"
-#include "cpu_mem.h"
-#include "exception.h"
-#include "paging.h"
-#include "resolve.h"
 #include "segments.h"
-#include "task.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,14 +104,30 @@ enum {
 	CPU_SEGREG_NUM
 };
 
+enum {
+	CPU_TEST_REG_NUM = 8
+};
+
+enum {
+	CPU_DEBUG_REG_NUM = 8
+};
+
+enum {
+	MAX_PREFIX = 8
+};
+
 typedef struct {
 	REG32		reg[CPU_REG_NUM];
 	WORD		sreg[CPU_SEGREG_NUM];
 
 	REG32		eflags;
-
 	REG32		eip;
+
 	REG32		prev_eip;
+	REG32		prev_esp;
+
+	DWORD		tr[CPU_TEST_REG_NUM];
+	DWORD		dr[CPU_DEBUG_REG_NUM];
 } CPU_REGS;
 
 typedef struct {
@@ -128,8 +138,6 @@ typedef struct {
 
 	WORD		ldtr;
 	WORD		tr;
-	descriptor_t	ldtr_desc;
-	descriptor_t	tr_desc;
 
 	DWORD		cr0;
 	DWORD		cr1;
@@ -141,6 +149,8 @@ typedef struct {
 
 typedef struct {
 	descriptor_t	sreg[CPU_SEGREG_NUM];
+	descriptor_t	ldtr;
+	descriptor_t	tr;
 
 	UINT32		adrsmask;
 	DWORD		ovflag;
@@ -148,12 +158,18 @@ typedef struct {
 	BYTE		ss_32;
 	BYTE		resetreq;
 	BYTE		trap;
-	BYTE		_dummy;
 
-	BYTE		cpl;
+	BYTE		page_wp;
+
 	BYTE		protected_mode;
 	BYTE		paging;
 	BYTE		vm86;
+	BYTE		user_mode;
+
+	BYTE		hlt;
+	BYTE		pad[3];
+
+	DWORD		pde_base;
 
 	DWORD		ioaddr;		/* I/O bitmap linear address */
 	WORD		iolimit;	/* I/O bitmap count */
@@ -217,8 +233,7 @@ extern I386CORE		i386core;
 #define	CPU_EXTMEMSIZE	i386core.e.extsize
 #define	CPU_INPADRS	i386core.e.inport
 
-extern BYTE 		iflags[];
-extern jmp_buf		exec_1step_jmpbuf;
+extern sigjmp_buf	exec_1step_jmpbuf;
 
 
 /*
@@ -230,8 +245,12 @@ extern jmp_buf		exec_1step_jmpbuf;
 #define	CPU_VENDOR_3	0x6c65746e	/* "ntel" */
 
 /* version */
-#define	CPU_FAMILY	6
-#define	CPU_MODEL	1
+#define	CPU_FAMILY	4
+#if defined(USE_FPU)
+#define	CPU_MODEL	1	/* 486DX */
+#else
+#define	CPU_MODEL	2	/* 486SX */
+#endif
 #define	CPU_STEPPING	3
 
 /* feature */
@@ -328,6 +347,7 @@ do { \
 #define	CPU_EDI		CPU_REGS_DWORD(CPU_EDI_INDEX)
 #define CPU_EIP		CPU_STATSAVE.cpu_regs.eip.d
 #define CPU_PREV_EIP	CPU_STATSAVE.cpu_regs.prev_eip.d
+#define CPU_PREV_ESP	CPU_STATSAVE.cpu_regs.prev_esp.d
 
 #define	CPU_ES		CPU_REGS_SREG(CPU_ES_INDEX)
 #define	CPU_CS		CPU_REGS_SREG(CPU_CS_INDEX)
@@ -348,7 +368,9 @@ do { \
 #define CPU_FLAGL	CPU_STATSAVE.cpu_regs.eflags.b.l
 #define CPU_FLAGH	CPU_STATSAVE.cpu_regs.eflags.b.h
 #define CPU_TRAP	CPU_STATSAVE.cpu_stat.trap
-// #define CPU_INPORT	CPU_STATSAVE.cpu_stat.inport
+#if 0
+#define CPU_INPORT	CPU_STATSAVE.cpu_stat.inport
+#endif
 #define CPU_OV		CPU_STATSAVE.cpu_stat.ovflag
 
 #define C_FLAG		(1 << 0)
@@ -398,9 +420,14 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define	CPU_STAT_SS32		CPU_STATSAVE.cpu_stat.ss_32
 #define	CPU_STAT_RESETREQ	CPU_STATSAVE.cpu_stat.resetreq
 #define	CPU_STAT_PM		CPU_STATSAVE.cpu_stat.protected_mode
-#define	CPU_STAT_VM86		CPU_STATSAVE.cpu_stat.vm86
 #define	CPU_STAT_PAGING		CPU_STATSAVE.cpu_stat.paging
-#define	CPU_STAT_CPL		CPU_STATSAVE.cpu_stat.cpl
+#define	CPU_STAT_VM86		CPU_STATSAVE.cpu_stat.vm86
+#define	CPU_STAT_WP		CPU_STATSAVE.cpu_stat.page_wp
+#define	CPU_STAT_CPL		CPU_STAT_SREG(CPU_CS_INDEX).rpl
+#define	CPU_STAT_USER_MODE	CPU_STATSAVE.cpu_stat.user_mode
+#define	CPU_STAT_PDE_BASE	CPU_STATSAVE.cpu_stat.pde_base
+
+#define	CPU_STAT_HLT		CPU_STATSAVE.cpu_stat.hlt
 
 #define	CPU_STAT_IOPL		((CPU_EFLAG & IOPL_FLAG) >> 12)
 #define	CPU_IOPL0		0
@@ -411,8 +438,19 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define	CPU_STAT_IOADDR		CPU_STATSAVE.cpu_stat.ioaddr
 #define	CPU_STAT_IOLIMIT	CPU_STATSAVE.cpu_stat.iolimit
 
-#define	CPU_STAT_NERROR		CPU_STATSAVE.cpu_stat.nerror
-#define	CPU_STAT_PREV_EXCEPTION	CPU_STATSAVE.cpu_stat.prev_exception
+#define	CPU_STAT_PREV_EXCEPTION		CPU_STATSAVE.cpu_stat.prev_exception
+#define	CPU_STAT_EXCEPTION_COUNTER		CPU_STATSAVE.cpu_stat.nerror
+#define	CPU_STAT_EXCEPTION_COUNTER_INC()	CPU_STATSAVE.cpu_stat.nerror++
+#define	CPU_STAT_EXCEPTION_COUNTER_CLEAR()	CPU_STATSAVE.cpu_stat.nerror = 0
+
+#define	CPU_MODE_SUPERVISER	0
+#define	CPU_MODE_USER		1
+#define	CPU_SET_CPL(cpl) \
+do { \
+	BYTE __t = (cpl) & 3; \
+	CPU_STAT_CPL = __t; \
+	CPU_STAT_USER_MODE = (__t == 3) ? CPU_MODE_USER : CPU_MODE_SUPERVISER; \
+} while (/*CONSTCOND*/ 0)
 
 #define CPU_CLI		do { CPU_FLAG &= ~I_FLAG;	\
 					CPU_TRAP = 0; } while (/*CONSTCOND*/ 0)
@@ -424,15 +462,15 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define CPU_IDTR_LIMIT	CPU_STATSAVE.cpu_sysregs.idtr_limit
 #define CPU_IDTR_BASE	CPU_STATSAVE.cpu_sysregs.idtr_base
 #define CPU_LDTR	CPU_STATSAVE.cpu_sysregs.ldtr
-#define CPU_LDTR_DESC	CPU_STATSAVE.cpu_sysregs.ldtr_desc
-#define CPU_LDTR_BASE	CPU_STATSAVE.cpu_sysregs.ldtr_desc.u.seg.segbase
-#define CPU_LDTR_END	CPU_STATSAVE.cpu_sysregs.ldtr_desc.u.seg.segend
-#define CPU_LDTR_LIMIT	CPU_STATSAVE.cpu_sysregs.ldtr_desc.u.seg.limit
+#define CPU_LDTR_DESC	CPU_STATSAVE.cpu_stat.ldtr
+#define CPU_LDTR_BASE	CPU_STATSAVE.cpu_stat.ldtr.u.seg.segbase
+#define CPU_LDTR_END	CPU_STATSAVE.cpu_stat.ldtr.u.seg.segend
+#define CPU_LDTR_LIMIT	CPU_STATSAVE.cpu_stat.ldtr.u.seg.limit
 #define CPU_TR		CPU_STATSAVE.cpu_sysregs.tr
-#define CPU_TR_DESC	CPU_STATSAVE.cpu_sysregs.tr_desc
-#define CPU_TR_BASE	CPU_STATSAVE.cpu_sysregs.tr_desc.u.seg.segbase
-#define CPU_TR_END	CPU_STATSAVE.cpu_sysregs.tr_desc.u.seg.segend
-#define CPU_TR_LIMIT	CPU_STATSAVE.cpu_sysregs.tr_desc.u.seg.limit
+#define CPU_TR_DESC	CPU_STATSAVE.cpu_stat.tr
+#define CPU_TR_BASE	CPU_STATSAVE.cpu_stat.tr.u.seg.segbase
+#define CPU_TR_END	CPU_STATSAVE.cpu_stat.tr.u.seg.segend
+#define CPU_TR_LIMIT	CPU_STATSAVE.cpu_stat.tr.u.seg.limit
 
 /*
  * control register
@@ -461,6 +499,7 @@ void set_eflags(DWORD new_flags, DWORD mask);
 #define	CPU_CR3_PD_MASK		0xfffff000
 #define	CPU_CR3_PWT		(1 << 3)
 #define	CPU_CR3_PCD		(1 << 4)
+#define	CPU_CR3_MASK		(CPU_CR3_PD_MASK|CPU_CR3_PWT|CPU_CR3_PCD)
 
 #define	CPU_CR4_VME		(1 << 0)
 #define	CPU_CR4_PVI		(1 << 1)
@@ -476,6 +515,8 @@ void set_eflags(DWORD new_flags, DWORD mask);
 
 
 void ia32_init(void);
+void ia32_initreg(void);
+void ia32_setextsize(UINT32 size);
 
 void ia32reset(void);
 void ia32shut(void);
@@ -492,7 +533,7 @@ void exec_1step(void);
 #define	INST_STRING	(1 << 1)
 #define	REP_CHECKZF	(1 << 7)
 
-void disasm(WORD cs, DWORD maddr);
+int disasm(DWORD *eip, char *buf, size_t size);
 
 void ia32_printf(const char *buf, ...);
 void ia32_warning(const char *buf, ...);
@@ -502,8 +543,10 @@ void ia32_bioscall(void);
 
 void FASTCALL change_pm(BOOL onoff);
 void FASTCALL change_vm(BOOL onoff);
+void FASTCALL change_pg(BOOL onoff);
 
-extern BYTE szpcflag[0x200];
+extern const UINT8 iflags[];
+#define	szpcflag	iflags
 extern BYTE szpflag_w[0x10000];
 
 extern BYTE  *reg8_b20[0x100];
@@ -513,37 +556,34 @@ extern WORD  *reg16_b53[0x100];
 extern DWORD *reg32_b20[0x100];
 extern DWORD *reg32_b53[0x100];
 
-/*
- * Profile
- */
-#if defined(IA32_PROFILE_INSTRUCTION)
-extern UINT32	inst_1byte_count[2][256];
-extern UINT32	inst_2byte_count[2][256];
-extern UINT32	ea16_count[24];
-extern UINT32	ea32_count[24];
-extern UINT32	sib0_count[256];
-extern UINT32	sib1_count[256];
-extern UINT32	sib2_count[256];
+extern const char *reg8_str[8];
+extern const char *reg16_str[8];
+extern const char *reg32_str[8];
 
-#define	PROFILE_INC_INST_1BYTE(op)	inst_1byte_count[CPU_INST_OP32][op]++
-#define	PROFILE_INC_INST_2BYTE(op)	inst_2byte_count[CPU_INST_OP32][op]++
-#define	PROFILE_INC_EA16(idx)		ea16_count[idx]++
-#define	PROFILE_INC_EA32(idx)		ea32_count[idx]++
-#define	PROFILE_INC_SIB0(op)		sib0_count[op]++
-#define	PROFILE_INC_SIB1(op)		sib1_count[op]++
-#define	PROFILE_INC_SIB2(op)		sib2_count[op]++
-#else
-#define	PROFILE_INC_INST_1BYTE(op)
-#define	PROFILE_INC_INST_2BYTE(op)
-#define	PROFILE_INC_EA16(idx)
-#define	PROFILE_INC_EA32(idx)
-#define	PROFILE_INC_SIB0(op)
-#define	PROFILE_INC_SIB1(op)
-#define	PROFILE_INC_SIB2(op)
+char *cpu_reg2str(void);
+#if defined(USE_FPU)
+char *fpu_reg2str(void);
 #endif
+void dbg_printf(const char *str, ...);
+
+
+/*
+ * Misc.
+ */
+void gdtr_dump(DWORD base, DWORD limit);
+void idtr_dump(DWORD base, DWORD limit);
+void ldtr_dump(DWORD base, DWORD limit);
+void tr_dump(WORD selector, DWORD base, DWORD limit);
 
 #ifdef __cplusplus
 }
 #endif
+
+#include "cpu_io.h"
+#include "cpu_mem.h"
+#include "exception.h"
+#include "paging.h"
+#include "resolve.h"
+#include "task.h"
 
 #endif	/* !IA32_CPU_CPU_H__ */

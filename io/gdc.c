@@ -6,14 +6,34 @@
 #include	"vram.h"
 #include	"palettes.h"
 #include	"gdc_cmd.tbl"
+#include	"timing.h"
 
 
-#define	SEARHC_SYNC
+#define	SEARCH_SYNC
 #define	TURE_SYNC
+
+typedef struct {
+	UINT32	clock;
+	UINT	minx;
+	UINT	maxx;
+	UINT	miny;
+	UINT	maxy;
+} GDCCLK;
+
+static const GDCCLK gdcclk[] = {
+			{14318180 / 8, 112 - 8, 112 + 8, 200, 300},
+			{21052600 / 8, 106 - 6, 106 + 6, 400, 575},
+			{25056815 / 8, 106 - 6, 106 + 6, 400, 575},
+			{25175000 / 8, 100 - 4, 100 + 4, 400, 575}};
 
 
 static const UINT8 defdegpal[4] = {0x04,0x15,0x26,0x37};
-static const UINT8 defsync[8] = {0x10,0x4e,0x07,0x25,0x07,0x07,0x90,0x65};
+
+static const UINT8 defsyncm15[8] = {0x10,0x4e,0x07,0x25,0x0d,0x0f,0xc8,0x94};
+static const UINT8 defsyncs15[8] = {0x06,0x26,0x03,0x11,0x86,0x0f,0xc8,0x94};
+
+static const UINT8 defsyncm24[8] = {0x10,0x4e,0x07,0x25,0x07,0x07,0x90,0x65};
+static const UINT8 defsyncs24[8] = {0x06,0x26,0x03,0x11,0x83,0x07,0x90,0x65};
 
 
 void gdc_setdegitalpal(int color, REG8 value) {
@@ -95,36 +115,54 @@ void gdc_paletteinit(void) {
 
 static void vectdraw(void) {
 
-	UINT32	csrw;
-	UINT16	textw;
+	UINT32		csrw;
+const GDCVECT	*vect;
+	REG16		textw;
+	REG8		ope;
 
 	csrw = LOADINTELDWORD(gdc.s.para + GDC_CSRW);
+	vect = (GDCVECT *)(gdc.s.para + GDC_VECTW);
 	textw = LOADINTELWORD(gdc.s.para + GDC_TEXTW);
+	ope = gdc.s.para[GDC_WRITE];
 
-	if (gdc.s.para[GDC_VECTW] & 0x8) {
-		gdcsub_line(csrw, (GDCVECT *)(gdc.s.para + GDC_VECTW),
-											textw, gdc.s.para[GDC_WRITE]);
+	if (vect->ope & 0x08) {
+		gdcsub_vectl(csrw, vect, textw, ope);
 	}
-	if (gdc.s.para[GDC_VECTW] & 0x20) {
-		gdcsub_circle(csrw, (GDCVECT *)(gdc.s.para + GDC_VECTW),
-											textw, gdc.s.para[GDC_WRITE]);
+	if (vect->ope & 0x10) {		// undocumented
+		gdcsub_vectt(csrw, vect, textw, ope);
 	}
-	if (gdc.s.para[GDC_VECTW] & 0x40) {
-		gdcsub_box(csrw, (GDCVECT *)(gdc.s.para + GDC_VECTW),
-											textw, gdc.s.para[GDC_WRITE]);
+	if (vect->ope & 0x20) {
+		gdcsub_vectc(csrw, vect, textw, ope);
+	}
+	if (vect->ope & 0x40) {
+		gdcsub_vectr(csrw, vect, textw, ope);
 	}
 }
 
-static void textdraw(void) {									// ver0.30
+static void textdraw(void) {
 
-	UINT32	csrw;
-	UINT16	textw;
+	UINT32		csrw;
+const GDCVECT	*vect;
+	REG16		textw;
+	REG8		ope;
 
-	if (gdc.s.para[GDC_VECTW] & 0x10) {
-		csrw = LOADINTELDWORD(gdc.s.para + GDC_CSRW);
-		textw = LOADINTELWORD(gdc.s.para + GDC_TEXTW);
-		gdcsub_text(csrw, (GDCVECT *)(gdc.s.para + GDC_VECTW),
-											textw, gdc.s.para[GDC_WRITE]);
+	csrw = LOADINTELDWORD(gdc.s.para + GDC_CSRW);
+	vect = (GDCVECT *)(gdc.s.para + GDC_VECTW);
+	textw = gdc.s.para[GDC_TEXTW + 7];
+	textw = (textw << 8) + textw;
+	ope = gdc.s.para[GDC_WRITE];
+
+	if (vect->ope & 0x08) {		// undocumented
+		gdcsub_vectl(csrw, vect, textw, ope);
+	}
+	if (vect->ope & 0x10) {
+		gdcsub_text(csrw, vect, gdc.s.para + GDC_TEXTW, ope);
+	}
+	if (vect->ope & 0x20) {		// undocumented
+		gdcsub_vectc(csrw, vect, textw, ope);
+	}
+	if (vect->ope & 0x40) {		// undocumented
+		gdcsub_vectr(csrw, vect, textw, ope);
 	}
 }
 
@@ -135,8 +173,8 @@ void gdc_work(int id) {
 	UINT		i;
 	BYTE		data;
 
-	item = (id==GDCWORK_MASTER)?&gdc.m:&gdc.s;
-	dispflag = (id==GDCWORK_MASTER)?&gdcs.textdisp:&gdcs.grphdisp;
+	item = (id == GDCWORK_MASTER)?&gdc.m:&gdc.s;
+	dispflag = (id == GDCWORK_MASTER)?&gdcs.textdisp:&gdcs.grphdisp;
 
 	for (i=0; i<item->cnt; i++) {
 		data = (BYTE)item->fifo[i];
@@ -173,6 +211,7 @@ void gdc_work(int id) {
 					screenupdate |= 2;								// ver0.28
 					break;
 
+				case CMD_STOP_:
 				case CMD_STOP:
 				case CMD_SYNC_OFF:
 					(*dispflag) &= (~GDCSCRN_ENABLE);
@@ -191,7 +230,6 @@ void gdc_work(int id) {
 						textdraw();
 					}
 					break;
-				
 			}
 			item->ptr = gdc_cmd[data].pos;
 			item->rcv = gdc_cmd[data].outdatas;
@@ -230,6 +268,72 @@ void gdc_forceready(GDCDATA item) {
 
 	item->rcv = 0;
 	item->snd = 0;
+}
+
+
+void gdc_updateclock(void) {
+
+	UINT		tmp;
+	UINT		cr;
+	UINT		hfbs;
+	UINT		vfbs;
+	UINT		lf;
+	UINT		x;
+	UINT		y;
+	UINT		cnt;
+const GDCCLK	*clk;
+	UINT32		hclock;
+
+	cr = gdc.m.para[GDC_SYNC + 1] + 2;
+	tmp = LOADINTELWORD(gdc.m.para + GDC_SYNC + 2);
+	hfbs = tmp & 0x1f;									// HS
+	hfbs += tmp >> 10;									// HFP
+	vfbs = (tmp >> 5) & 0x1f;							// VS
+	hfbs += gdc.m.para[GDC_SYNC + 4] & 0x3f;			// HFP
+	vfbs += gdc.m.para[GDC_SYNC + 5] & 0x3f;			// VFP
+	tmp = LOADINTELWORD(gdc.m.para + GDC_SYNC + 6);
+	lf = ((tmp - 1) & 0x3ff) + 1;
+	vfbs += tmp >> 10;									// VBP
+
+	hfbs += 3;
+	x = cr + hfbs;
+	if (!vfbs) {
+		vfbs = 1;
+	}
+	y = lf + vfbs;
+//	TRACEOUT(("h %d:%d / v %d:%d", cr, x, lf, y));
+
+	if (!(gdc.crt15khz & 2)) {							// 24.83Å}300Hz
+		clk = gdcclk + 1;
+	}
+	else {												// 15.98Å}300Hz
+		clk = gdcclk;
+	}
+
+	if (x < clk->minx) {
+		cr = (clk->minx * cr) / x;
+		x = clk->minx;
+	}
+	else if (x > clk->maxx) {
+		cr = (clk->maxx * cr) / x;
+		x = clk->maxx;
+	}
+	if (y < clk->miny) {
+		lf = (clk->miny * lf) / y;
+		y = clk->miny;
+	}
+	else if (y > clk->maxy) {
+		lf = (clk->maxy * lf) / y;
+		y = clk->maxy;
+	}
+	hclock = clk->clock / x;
+	cnt = (pccore.baseclock * y) / hclock;
+	cnt *= pccore.multiple;
+	gdc.rasterclock = cnt / y;
+	gdc.hsyncclock = (gdc.rasterclock * cr) / x;
+	gdc.dispclock = gdc.rasterclock * lf;
+	gdc.vsyncclock = cnt - gdc.dispclock;
+	timing_setrate(y, hclock);
 }
 
 void gdc_restorekacmode(void) {
@@ -288,6 +392,9 @@ static void IOOUTCALL gdc_o68(UINT port, REG8 dat) {
 		else if (bit == 0x02) {								// ver0.28
 			gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
 			gdcs.palchange = GDCSCRN_REDRAW;
+		}
+		else if (bit == 0x08) {
+			gdcs.textdisp |= GDCSCRN_ALLDRAW2;
 		}
 		else if (bit == 0x20) {
 			gdc_restorekacmode();
@@ -370,6 +477,22 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 	(void)port;
 }
 
+static void IOOUTCALL gdc_o6e(UINT port, REG8 dat) {
+
+	switch(dat) {
+		case 0:
+			gdc.crt15khz &= ~1;
+			gdcs.textdisp |= GDCSCRN_ALLDRAW2;
+			break;
+
+		case 1:
+			gdc.crt15khz |= 1;
+			gdcs.textdisp |= GDCSCRN_ALLDRAW2;
+			break;
+	}
+	(void)port;
+}
+
 static REG8 IOINPCALL gdc_i60(UINT port) {
 
 	REG8	ret;
@@ -378,7 +501,7 @@ static REG8 IOINPCALL gdc_i60(UINT port) {
 	ret = 0x80 | gdc.vsync;		// | m_drawing;
 	remain = nevent_getremain(NEVENT_FLAMES);
 	if (remain >= 0) {
-		if ((remain % pccore.raster) < pccore.hsync) {
+		if ((remain % gdc.rasterclock) < gdc.hsyncclock) {
 			ret |= 0x40;
 		}
 	}
@@ -394,7 +517,7 @@ static REG8 IOINPCALL gdc_i60(UINT port) {
 	else {
 		gdc_work(GDCWORK_MASTER);
 	}
-#ifdef SEARHC_SYNC
+#ifdef SEARCH_SYNC
 	if ((CPU_INPADRS) && (CPU_REMCLOCK >= 5)) {
 		UINT16 jadr = 0xfa74;
 		UINT16 memv;
@@ -545,7 +668,7 @@ static REG8 IOINPCALL gdc_ia0(UINT port) {
 	ret = 0x80 | gdc.vsync | gdc.s_drawing;
 	remain = nevent_getremain(NEVENT_FLAMES);
 	if (remain >= 0) {
-		if ((remain % pccore.raster) < (pccore.hsync)) {
+		if ((remain % gdc.rasterclock) < (gdc.hsyncclock)) {
 			ret |= 0x40;
 		}
 	}
@@ -560,8 +683,9 @@ static REG8 IOINPCALL gdc_ia0(UINT port) {
 	}
 	else {
 		gdc_work(GDCWORK_SLAVE);
+		TRACEOUT(("gdc.s.cnt=%d", gdc.s.cnt));
 	}
-#ifdef SEARHC_SYNC
+#ifdef SEARCH_SYNC
 	if ((CPU_INPADRS) && (CPU_REMCLOCK >= 5)) {
 		UINT16 jadr = 0xfa74;
 		UINT16 memv;
@@ -622,7 +746,7 @@ static REG8 IOINPCALL gdc_ia6(UINT port) {
 
 static const IOOUT gdco60[8] = {
 					gdc_o60,	gdc_o62,	gdc_o64,	NULL,
-					gdc_o68,	gdc_o6a,	NULL,		NULL};
+					gdc_o68,	gdc_o6a,	NULL,		gdc_o6e};
 
 static const IOOUT gdcoa0[8] = {
 					gdc_oa0,	gdc_oa2,	gdc_oa4,	gdc_oa6,
@@ -641,29 +765,50 @@ void gdc_reset(void) {
 	ZeroMemory(&gdc, sizeof(gdc));
 	ZeroMemory(&gdcs, sizeof(gdcs));
 
-	gdc.mode1 = 0x98;
+	if (!(np2cfg.dipsw[0] & 0x01)) {
+		gdc.mode1 = 0x98;
+		gdc.m.para[GDC_CSRFORM + 0] = 0x0f;
+		gdc.m.para[GDC_CSRFORM + 1] = 0xc0;
+		gdc.m.para[GDC_CSRFORM + 2] = 0x7b;
+		CopyMemory(gdc.m.para + GDC_SYNC, defsyncm24, 8);
+		gdc.s.para[GDC_CSRFORM + 0] = 1;
+		CopyMemory(gdc.s.para + GDC_SYNC, defsyncs24, 8);
+	}
+	else {
+		gdc.crt15khz = 3;
+		gdc.mode1 = 0x80;
+		gdc.m.para[GDC_CSRFORM + 0] = 0x07;
+		gdc.m.para[GDC_CSRFORM + 1] = 0xc0;
+		gdc.m.para[GDC_CSRFORM + 2] = 0x3b;
+		CopyMemory(gdc.m.para + GDC_SYNC, defsyncm15, 8);
+		CopyMemory(gdc.s.para + GDC_SYNC, defsyncs15, 8);
+	}
 
-	gdc.m.para[GDC_CSRFORM + 0] = 0x0f;
-	gdc.m.para[GDC_CSRFORM + 1] = 0xc0;
-	gdc.m.para[GDC_CSRFORM + 2] = 0x7b;
-	CopyMemory(gdc.m.para + GDC_SYNC, defsync, 8);
-	CopyMemory(gdc.s.para + GDC_SYNC, defsync, 8);
-
-	gdc.s.para[GDC_CSRFORM] = 1;
 	gdc.clock = 0;
-	gdc.m.para[GDC_PITCH] = 80;					// ver0.26
+	gdc.m.para[GDC_PITCH] = 80;
 	gdc.s.para[GDC_PITCH] = 40;
 
 	gdc_paletteinit();
 
 	gdcs.textdisp = GDCSCRN_ENABLE | GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
 	gdcs.grphdisp = GDCSCRN_ALLDRAW2 | GDCSCRN_EXT;
-	gdc.display = (np2cfg.color16 & 1) << 1;
+	if (np2cfg.color16 & 1) {
+		gdc.s.para[GDC_SYNC] = 0x16;
+		gdc.display = 2;
+	}
 	gdc.bitac = 0xff;
+
+#if 0	// bind Ç≈åvéZÇ≥ÇÍÇÈî§
+	gdc.rasterclock = pccore.realclock / 24816;
+	gdc.hsyncclock = (gdc.rasterclock * 4) / 5;
+	gdc.dispclock = pccore.realclock * 50 / 3102;
+	gdc.vsyncclock = pccore.realclock * 5 / 3102;
+#endif
 }
 
 void gdc_bind(void) {
 
+	gdc_updateclock();
 	iocore_attachsysoutex(0x0060, 0x0cf1, gdco60, 8);
 	iocore_attachsysinpex(0x0060, 0x0cf1, gdci60, 8);
 	iocore_attachsysoutex(0x00a0, 0x0cf1, gdcoa0, 8);

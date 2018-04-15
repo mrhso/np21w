@@ -1,4 +1,4 @@
-/*	$Id: task.h,v 1.2 2004/01/13 16:37:42 monaka Exp $	*/
+/*	$Id: task.h,v 1.4 2004/02/09 16:13:13 monaka Exp $	*/
 
 /*
  * Copyright (c) 2003 NONAKA Kimihiro
@@ -34,52 +34,20 @@
 extern "C" {
 #endif
 
-typedef union {
-	struct {
-		WORD	backlink;	/* 元のタスクセレクタ値 */
-		struct {
-			WORD	sp;	/* スタックポインタ */
-			WORD	ss;	/* スタックセグメント */
-		} stack[3];			/* 特権レベル 0-2 */
-		WORD	ip;		/* IP */
-		WORD	flags;		/* FLAGS */
-		WORD	regs[8];	/* レジスタ */
-		WORD	sreg[4];	/* セグメントレジスタ */
-		WORD	ldt;		/* タスク毎の LDT セレクタ値 */
-	} tss16;
-
-	struct {
-		REG32	backlink;	/* REG16: 元のタスクセレクタ値 */
-		struct {
-			REG32	sp;	/* REG32: スタックポインタ */
-			REG32	ss;	/* REG16: スタックセグメント */
-		} stack[3];			/* 特権レベル 0-2 */
-		REG32	cr3;		/* REG32: タスク毎の CR3 */
-		REG32	ip;		/* REG32: EIP */
-		REG32	flags;		/* REG32: EFLAGS */
-		REG32	regs[8];	/* REG32: レジスタ */
-		REG32	sreg[6];	/* REG16: セグメントレジスタ */
-		REG32	ldt;		/* REG16: タスク毎の LDT セレクタ値 */
-		WORD	t;		/* 最下位ビットが1のとき、タスク切替時
-					   に割り込み番号1のフォールトを発生 */
-		WORD	iobase;		/* TSS 先頭から I/O 許可テーブルマップ
-					   までのバイト数 */
-	} tss32;
-} TASK_STATE_T;
-
 void load_tr(WORD selector);
-void get_stack_from_tss(DWORD pl, WORD* new_ss, DWORD* new_esp);
-WORD get_link_selector_from_tss();
+void get_stack_pointer_from_tss(DWORD pl, WORD* new_ss, DWORD* new_esp);
+WORD get_backlink_selector_from_tss(void);
 
-void task_switch(selector_t* selector, int type);
-
-/* type */
-enum {
+/* task_switch type */
+enum task_switch_type {
 	TASK_SWITCH_JMP,
 	TASK_SWITCH_CALL,
 	TASK_SWITCH_IRET,
 	TASK_SWITCH_INTR,
 };
+typedef enum task_switch_type task_switch_type_t;
+
+void task_switch(selector_t *selector, task_switch_type_t type);
 
 #ifdef __cplusplus
 }

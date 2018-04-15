@@ -1,4 +1,4 @@
-/*	$Id: resolve.c,v 1.3 2004/01/07 14:49:42 monaka Exp $	*/
+/*	$Id: resolve.c,v 1.5 2004/01/27 15:53:56 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -32,10 +32,10 @@
 #include "ia32.mcr"
 
 
-static DWORD (*calc_ea_dst_tbl[0x100])(void);
-static DWORD (*calc_ea32_dst_tbl[0x100])(void);
+DWORD (*calc_ea_dst_tbl[0x100])(void);
+DWORD (*calc_ea32_dst_tbl[0x100])(void);
 
-
+#if defined(DEBUG) || !defined(IA32_INLINE_CALC_EA)
 DWORD
 calc_ea_dst(DWORD op)
 {
@@ -46,6 +46,7 @@ calc_ea_dst(DWORD op)
 		return ((*calc_ea_dst_tbl[op])() & 0xffff);
 	return (*calc_ea32_dst_tbl[op])();
 }
+#endif	/* IA32_INLINE_CALC_EA */
 
 
 /*
@@ -71,8 +72,6 @@ static DWORD
 ea_bx_si(void)
 {
 
-	PROFILE_INC_EA16(0);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (CPU_BX + CPU_SI);
 }
@@ -81,8 +80,6 @@ static DWORD
 ea_bx_si_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(1);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -94,8 +91,6 @@ ea_bx_si_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(2);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (adrs + CPU_BX + CPU_SI);
@@ -105,8 +100,6 @@ static DWORD
 ea_bx_di(void)
 {
 
-	PROFILE_INC_EA16(3);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (CPU_BX + CPU_DI);
 }
@@ -115,8 +108,6 @@ static DWORD
 ea_bx_di_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(4);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -128,8 +119,6 @@ ea_bx_di_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(5);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (adrs + CPU_BX + CPU_DI);
@@ -139,8 +128,6 @@ static DWORD
 ea_bp_si(void)
 {
 
-	PROFILE_INC_EA16(6);
-
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (CPU_BP + CPU_SI);
 }
@@ -149,8 +136,6 @@ static DWORD
 ea_bp_si_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(7);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
@@ -162,8 +147,6 @@ ea_bp_si_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(8);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (adrs + CPU_BP + CPU_SI);
@@ -173,8 +156,6 @@ static DWORD
 ea_bp_di(void)
 {
 
-	PROFILE_INC_EA16(9);
-
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (CPU_BP + CPU_DI);
 }
@@ -183,8 +164,6 @@ static DWORD
 ea_bp_di_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(10);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
@@ -196,8 +175,6 @@ ea_bp_di_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(11);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (adrs + CPU_BP + CPU_DI);
@@ -207,8 +184,6 @@ static DWORD
 ea_si(void)
 {
 
-	PROFILE_INC_EA16(12);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_SI;
 }
@@ -217,8 +192,6 @@ static DWORD
 ea_si_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(13);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -230,8 +203,6 @@ ea_si_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(14);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (adrs + CPU_SI);
@@ -241,8 +212,6 @@ static DWORD
 ea_di(void)
 {
 
-	PROFILE_INC_EA16(15);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_DI;
 }
@@ -251,8 +220,6 @@ static DWORD
 ea_di_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA16(16);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -264,8 +231,6 @@ ea_di_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(17);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (adrs + CPU_DI);
@@ -275,8 +240,6 @@ static DWORD
 ea_disp16(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA16(18);
 
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -288,8 +251,6 @@ ea_bp_disp8(void)
 {
 	SDWORD adrs;
 
-	PROFILE_INC_EA16(19);
-
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (adrs + CPU_BP);
@@ -300,8 +261,6 @@ ea_bp_disp16(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA16(20);
-
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
 	return (adrs + CPU_BP);
@@ -310,8 +269,6 @@ ea_bp_disp16(void)
 static DWORD
 ea_bx(void)
 {
-
-	PROFILE_INC_EA16(21);
 
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_BX;
@@ -322,8 +279,6 @@ ea_bx_disp8(void)
 {
 	SDWORD adrs;
 
-	PROFILE_INC_EA16(22);
-
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return (adrs + CPU_BX);
@@ -333,8 +288,6 @@ static DWORD
 ea_bx_disp16(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA16(23);
 
 	GET_PCWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -367,8 +320,6 @@ static DWORD
 ea32_eax(void)
 {
 
-	PROFILE_INC_EA32(0);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_EAX;
 }
@@ -376,8 +327,6 @@ ea32_eax(void)
 static DWORD
 ea32_ecx(void)
 {
-
-	PROFILE_INC_EA32(1);
 
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_ECX;
@@ -387,8 +336,6 @@ static DWORD
 ea32_edx(void)
 {
 
-	PROFILE_INC_EA32(2);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_EDX;
 }
@@ -396,8 +343,6 @@ ea32_edx(void)
 static DWORD
 ea32_ebx(void)
 {
-
-	PROFILE_INC_EA32(3);
 
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_EBX;
@@ -409,13 +354,11 @@ ea32_sib(void)
 	DWORD op, dst;
 	DWORD base, idx, scale;
 
-	PROFILE_INC_EA32(4);
-
 	GET_PCBYTE(op);
-
 	base = op & 7;
 	idx = (op >> 3) & 7;
 	scale = (op >> 6) & 3;
+
 	switch (base) {
 	case 0: case 1: case 2: case 3: case 6: case 7:
 		CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -439,7 +382,6 @@ ea32_sib(void)
 	}
 	if (idx != 4)
 		dst += CPU_REGS_DWORD(idx) << scale;
-	PROFILE_INC_SIB0(op);
 	return dst;
 }
 
@@ -447,8 +389,6 @@ static DWORD
 ea32_disp32(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA32(5);
 
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -459,8 +399,6 @@ static DWORD
 ea32_esi(void)
 {
 
-	PROFILE_INC_EA32(6);
-
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_ESI;
 }
@@ -468,8 +406,6 @@ ea32_esi(void)
 static DWORD
 ea32_edi(void)
 {
-
-	PROFILE_INC_EA32(7);
 
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return CPU_EDI;
@@ -479,8 +415,6 @@ static DWORD
 ea32_eax_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA32(8);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -492,8 +426,6 @@ ea32_ecx_disp8(void)
 {
 	SDWORD adrs;
 
-	PROFILE_INC_EA32(9);
-
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_ECX;
@@ -504,8 +436,6 @@ ea32_edx_disp8(void)
 {
 	SDWORD adrs;
 
-	PROFILE_INC_EA32(10);
-
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_EDX;
@@ -515,8 +445,6 @@ static DWORD
 ea32_ebx_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA32(11);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -530,14 +458,13 @@ ea32_sib_disp8(void)
 	DWORD op;
 	DWORD base, idx, scale;
 
-	PROFILE_INC_EA32(12);
-
 	GET_PCBYTE(op);
-	GET_PCBYTESD(adrs);
-
 	base = op & 7;
 	idx = (op >> 3) & 7;
 	scale = (op >> 6) & 3;
+
+	GET_PCBYTESD(adrs);
+
 	switch (base) {
 	case 0: case 1: case 2: case 3: case 6: case 7:
 		CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -549,7 +476,6 @@ ea32_sib_disp8(void)
 	}
 	if (idx != 4)
 		adrs += CPU_REGS_DWORD(idx) << scale;
-	PROFILE_INC_SIB1(op);
 	return CPU_REGS_DWORD(base) + adrs;
 }
 
@@ -557,8 +483,6 @@ static DWORD
 ea32_ebp_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA32(13);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
@@ -570,8 +494,6 @@ ea32_esi_disp8(void)
 {
 	SDWORD adrs;
 
-	PROFILE_INC_EA32(14);
-
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_ESI;
@@ -581,8 +503,6 @@ static DWORD
 ea32_edi_disp8(void)
 {
 	SDWORD adrs;
-
-	PROFILE_INC_EA32(15);
 
 	GET_PCBYTESD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -594,8 +514,6 @@ ea32_eax_disp32(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA32(16);
-
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_EAX;
@@ -605,8 +523,6 @@ static DWORD
 ea32_ecx_disp32(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA32(17);
 
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -618,8 +534,6 @@ ea32_edx_disp32(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA32(18);
-
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_EDX;
@@ -629,8 +543,6 @@ static DWORD
 ea32_ebx_disp32(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA32(19);
 
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -644,14 +556,13 @@ ea32_sib_disp32(void)
 	DWORD op;
 	DWORD base, idx, scale;
 
-	PROFILE_INC_EA32(20);
-
 	GET_PCBYTE(op);
-	GET_PCDWORD(adrs);
-
 	base = op & 7;
 	idx = (op >> 3) & 7;
 	scale = (op >> 6) & 3;
+
+	GET_PCDWORD(adrs);
+
 	switch (base) {
 	case 0: case 1: case 2: case 3: case 6: case 7:
 		CPU_INST_SEGREG_INDEX = DS_FIX;
@@ -663,7 +574,6 @@ ea32_sib_disp32(void)
 	}
 	if (idx != 4)
 		adrs += CPU_REGS_DWORD(idx) << scale;
-	PROFILE_INC_SIB2(op);
 	return CPU_REGS_DWORD(base) + adrs;
 }
 
@@ -671,8 +581,6 @@ static DWORD
 ea32_ebp_disp32(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA32(21);
 
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = SS_FIX;
@@ -684,8 +592,6 @@ ea32_esi_disp32(void)
 {
 	DWORD adrs;
 
-	PROFILE_INC_EA32(22);
-
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;
 	return adrs + CPU_ESI;
@@ -695,8 +601,6 @@ static DWORD
 ea32_edi_disp32(void)
 {
 	DWORD adrs;
-
-	PROFILE_INC_EA32(23);
 
 	GET_PCDWORD(adrs);
 	CPU_INST_SEGREG_INDEX = DS_FIX;

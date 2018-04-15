@@ -1,4 +1,4 @@
-/*	$Id: misc_inst.c,v 1.2 2003/12/22 18:00:31 monaka Exp $	*/
+/*	$Id: misc_inst.c,v 1.5 2004/02/12 15:37:57 monaka Exp $	*/
 
 /*
  * Copyright (c) 2002-2003 NONAKA Kimihiro
@@ -45,7 +45,7 @@ LEA_GwM(void)
 	if (op < 0xc0) {
 		CPU_WORKCLOCK(3);
 		out = reg16_b53[op];
-		dst = calc_lea(op);
+		dst = calc_ea_dst(op);
 		*out = dst;
 		return;
 	}
@@ -62,7 +62,7 @@ LEA_GdM(void)
 	if (op < 0xc0) {
 		CPU_WORKCLOCK(3);
 		out = reg32_b53[op];
-		dst = calc_lea(op);
+		dst = calc_ea_dst(op);
 		*out = dst;
 		return;
 	}
@@ -130,7 +130,7 @@ SALC(void)
 {
 
 	CPU_WORKCLOCK(2);
-	CPU_AL = (CPU_FLAGL & C_FLAG) - 1;
+	CPU_AL = (CPU_FLAGL & C_FLAG) ? 0xff : 0;
 }
 
 /* undoc 286 */
@@ -169,7 +169,6 @@ _2byte_ESC16(void)
 	DWORD op;
 
 	GET_PCBYTE(op);
-	PROFILE_INC_INST_2BYTE(op);
 	(*insttable_2byte[0][op])();
 }
 
@@ -179,7 +178,6 @@ _2byte_ESC32(void)
 	DWORD op;
 
 	GET_PCBYTE(op);
-	PROFILE_INC_INST_2BYTE(op);
 	(*insttable_2byte[1][op])();
 }
 

@@ -9,12 +9,10 @@ section .bss
 	global	_mem
 	extern	_i286core
 	extern	_grcg
-	extern	_extmem
 	extern	_gdcs
 	extern	_tramupdate
 	extern	_vramupdate
 	extern	_cgwindow
-;	extern	___font
 	extern	_vramop
 
 _mem	resb	0x200000
@@ -84,10 +82,10 @@ section .text
 
 
 %if USE_EGCASM
-	extern	_egca_read
-	extern	_egca_read_w
-	extern	_egca_write
-	extern	_egca_write_w
+	extern	egc_read
+	extern	egc_read_w
+	extern	egc_write
+	extern	egc_write_w
 %else
 	extern	@egc_read@4
 	extern	@egc_read_w@4
@@ -122,6 +120,8 @@ wtram_a:			cmp		ecx, 000a3fe0h
 					jc		short wtram_m
 					cmp		ecx, 000a4000h
 					jnc		wcgwindow_s
+					test	ecx, 2
+					je		short wtram_m
 					cmp		byte [_gdcs + gdcs_t.msw_accessable], 0
 					je		short wtram_e
 wtram_m:			shr		ebx, 1
@@ -264,7 +264,7 @@ grcgtdw_end:		pop		ecx
 @egc_wt:			VRAMTRACE
 					pop		ebx
 %if USE_EGCASM
-					jmp		_egca_write
+					jmp		egc_write
 %else
 					pushad
 					call	@egc_write@8
@@ -279,7 +279,7 @@ grcgtdw_end:		pop		ecx
 					and		ecx, 3fffh
 					shr		ebx, 12
 					and		ebx, byte (3*4)
-					add		ecx, [_extmem + extmem_t.pageptr + ebx]
+					add		ecx, [_i286core + i286core_t.ems + ebx]
 					mov		[EXTMEMORY + ecx], dl
 					pop		ecx
 					pop		ebx
@@ -385,7 +385,7 @@ grcgtcr_end:		not		al
 					align	16
 @egc_rd:			pop		ebx
 %if USE_EGCASM
-					jmp		_egca_read
+					jmp		egc_read
 %else
 					pushad
 					call	@egc_read@4
@@ -402,7 +402,7 @@ grcgtcr_end:		not		al
 					and		ecx, 3fffh
 					shr		ebx, 12
 					and		ebx, byte (3*4)
-					add		ecx, [_extmem + extmem_t.pageptr + ebx]
+					add		ecx, [_i286core + i286core_t.ems + ebx]
 					mov		al, [EXTMEMORY + ecx]
 					pop		ecx
 					pop		ebx
@@ -454,6 +454,8 @@ wtramw_a:			je		short wword_a1fffh
 					jc		short wtramw_m
 					cmp		ecx, 000a3fffh
 					jnc		wcgwindoww_s
+					test	ecx, 2
+					je		short wtramw_m
 					cmp		byte [_gdcs + gdcs_t.msw_accessable], 0
 					je		short wtramw_e
 wtramw_m:			and		ebx, 1fffh
@@ -617,7 +619,7 @@ grcgwtdw_end:		pop		ecx
 @egcw_wt:			VRAMTRACE_W
 					pop		ebx
 %if USE_EGCASM
-					jmp		_egca_write_w
+					jmp		egc_write_w
 %else
 					test	ecx, 1
 					jne		short egcw_wtodd
@@ -646,7 +648,7 @@ egcw_wtodd:
 					and		ecx, 3fffh
 					shr		ebx, 12
 					and		ebx, byte (3*4)
-					add		ecx, [_extmem + extmem_t.pageptr + ebx]
+					add		ecx, [_i286core + i286core_t.ems + ebx]
 					mov		[EXTMEMORY + ecx], dx
 					pop		ecx
 					pop		ebx
@@ -779,7 +781,7 @@ grcgwtcr_end:		not		ax
 					test	ecx, 1
 					jne		short egcw_rdodd
 %if USE_EGCASM
-					jmp		_egca_read_w
+					jmp		egc_read_w
 %else
 					pushad
 					call	@egc_read_w@4
@@ -791,10 +793,10 @@ grcgwtcr_end:		not		ax
 egcw_rdodd:
 %if USE_EGCASM
 					inc		ecx
-					call	_egca_read
+					call	egc_read
 					mov		ah, al
 					dec		ecx
-					jmp		_egca_read
+					jmp		egc_read
 %else
 					pushad
 					push	ecx
@@ -815,7 +817,7 @@ egcw_rdodd:
 					and		ecx, 3fffh
 					shr		ebx, 12
 					and		ebx, byte (3*4)
-					add		ecx, [_extmem + extmem_t.pageptr + ebx]
+					add		ecx, [_i286core + i286core_t.ems + ebx]
 					mov		ax, [EXTMEMORY + ecx]
 					pop		ecx
 					pop		ebx
@@ -986,7 +988,7 @@ section .text
 					align	16
 writeextmem_w:
 %if USE_HIMEM
-					cmp		ecx, 10ffefh				; HIMEM
+					cmp		ecx, (USE_HIMEM - 1)
 					jae		near writehimem_w
 %endif
 					push	ebx
@@ -1024,7 +1026,7 @@ writemain_b:		mov		[MAINMEMORY + ecx], dl
 					align	16
 writeextmem_b:
 %if USE_HIMEM
-					cmp		ecx, 10fff0h				; HIMEM
+					cmp		ecx, USE_HIMEM
 					jae		near writehimem
 %endif
 					push	ebx
@@ -1041,7 +1043,7 @@ writeextmem_b:
 					align	16
 readmemory_w:
 %if USE_HIMEM
-					cmp		ecx, 10ffefh				; HIMEM
+					cmp		ecx, (USE_HIMEM - 1)
 					jae		near readhimem_w
 %endif
 					push	ebx
@@ -1076,7 +1078,7 @@ readmain_b:			mov		al, [MAINMEMORY + ecx]
 					align	16
 readmemory_b:
 %if USE_HIMEM
-					cmp		ecx, 10fff0h				; HIMEM
+					cmp		ecx, USE_HIMEM
 					jae		near readhimem
 %endif
 					push	ebx

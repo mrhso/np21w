@@ -1,12 +1,12 @@
 #include	"compiler.h"
-// #include	"cpucore.h"
+#include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"sound.h"
 #include	"fmboard.h"
 
 
-static const BYTE irqtable[4] = {0x03, 0x0d, 0x0a, 0x0c};
+static const UINT8 irqtable[4] = {0x03, 0x0d, 0x0a, 0x0c};
 
 
 void fmport_a(NEVENTITEM item) {
@@ -92,16 +92,10 @@ static void set_fmtimerbevent(BOOL absolute) {
 void fmtimer_reset(UINT irq) {
 
 	ZeroMemory(&fmtimer, sizeof(fmtimer));
-
-#if 0													// move
-	fmtimer.reg = 0x3f;
-	set_fmtimeraevent(NEVENT_ABSOLUTE);
-	set_fmtimerbevent(NEVENT_ABSOLUTE);
-#endif
 	fmtimer.intr = irq & 0xc0;
 	fmtimer.intdisabel = irq & 0x10;
 	fmtimer.irq = irqtable[irq >> 6];
-	pic_registext(fmtimer.irq);
+//	pic_registext(fmtimer.irq);
 }
 
 void fmtimer_setreg(REG8 reg, REG8 value) {
@@ -122,7 +116,6 @@ void fmtimer_setreg(REG8 reg, REG8 value) {
 			break;
 
 		case 0x27:
-#if 1
 			fmtimer.reg = value;
 			fmtimer.status &= ~((value & 0x30) >> 4);
 			if (value & 0x01) {
@@ -144,16 +137,6 @@ void fmtimer_setreg(REG8 reg, REG8 value) {
 			if (!(value & 0x03)) {
 				pic_resetirq(fmtimer.irq);
 			}
-#else
-			fmtimer.reg = value;
-			fmtimer.status &= ~((value & 0x30) >> 4);
-			if ((value & 0x10) && (!nevent_iswork(NEVENT_FMTIMERA))) {
-				set_fmtimeraevent(NEVENT_ABSOLUTE);
-			}
-			if ((value & 0x20) && (!nevent_iswork(NEVENT_FMTIMERB))) {
-				set_fmtimerbevent(NEVENT_ABSOLUTE);
-			}
-#endif
 			break;
 	}
 }

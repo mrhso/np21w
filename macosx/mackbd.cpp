@@ -31,10 +31,10 @@ static const BYTE keymac[128] = {
 				0x0f,0x34,  NC,0x0e,  NC,0x00,  NC,  NC,
 			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
 				0x70,0x79,0x73,0x74,  NC,  NC,  NC,  NC,		// for CW
-			//	    , [.],    , [*],    ,    , [+],    		; 0x40
-				  NC,0x50,  NC,0x45,  NC,  NC,0x49,  NC,
-			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
-				  NC,  NC,  NC,  NC,0x1c,  NC,0x40,0x3e,
+			//	    , [.],    , [*],    , [+],    ,    		; 0x40
+				  NC,0x50,  NC,0x45,  NC,0x49,  NC,  NC,
+			//	    ,    ,    , [/], ret,    , [-], clr		; 0x48
+				  NC,  NC,  NC,0x41,0x1c,  NC,0x40,0x3e,
 			//	    , [=], [0], [1], [2], [3], [4], [5]		; 0x50
 				  NC,0x4d,0x4e,0x4a,0x4b,0x4c,0x46,0x47,
 			//	 [6], [7],    , [8], [9],  ￥,  ＿, [,]		; 0x58
@@ -85,15 +85,15 @@ static const BYTE keymac2[128] = {
 
 
 typedef struct {
-	BYTE	f11[4];
-	BYTE	f12[4];
+	BYTE	f11[5];
+	BYTE	f12[5];
 } BINDTBL;
 
 static const BINDTBL bindtbl = {
-						//   カナ  Stop  [＝]  NFER
-							{0x72, 0x60, 0x4d, 0x51},
+						//   カナ  Stop  [＝]  NFER  USER
+							{0x72, 0x60, 0x4d, 0x51, 0x76},
 						//         Copy  [，]  XFER
-							{NC,   0x61, 0x4f, 0x35}};
+							{NC,   0x61, 0x4f, 0x35, 0x77}};
 
 void mackbd_initialize(void) { };
 

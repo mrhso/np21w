@@ -14,8 +14,13 @@ const char str_sav[] = "sav";
 const char str_bmp[] = "bmp";
 const char str_d88[] = "d88";
 const char str_d98[] = "d98";
+const char str_88d[] = "88d";
+const char str_98d[] = "98d";
 const char str_thd[] = "thd";
 const char str_hdi[] = "hdi";
+const char str_fdi[] = "fdi";
+const char str_hdd[] = "hdd";
+const char str_nhd[] = "nhd";
 
 const char str_d[] = "%d";
 const char str_u[] = "%u";

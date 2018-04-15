@@ -108,7 +108,7 @@ void SOUNDCALL adpcm_datawrite(ADPCM ad, REG8 data) {
 		}
 		pos++;
 	}
-	if (pos != ad->stop) {
+	if (pos == ad->stop) {
 		pos &= 0x1fffff;
 		ad->status |= 4;
 	}
@@ -129,10 +129,10 @@ static void SOUNDCALL getadpcmdata(ADPCM ad) {
 	pos = ad->pos;
 	if (!(ad->reg.ctrl2 & 2)) {
 		data = ad->buf[(pos >> 3) & 0x3ffff];
-		pos += ADPCM_NBR + 4;
 		if (!(pos & ADPCM_NBR)) {
 			data >>= 4;
 		}
+		pos += ADPCM_NBR + 4;
 	}
 	else {
 		const BYTE *ptr;
@@ -160,10 +160,9 @@ static void SOUNDCALL getadpcmdata(ADPCM ad) {
 	dir = data & 8;
 	data &= 7;
 	dlt = adpcmdeltatable[data] * ad->delta;
-	dlt -= 12;
 	dlt >>= 8;
-	if (dlt < 126) {
-		dlt = 126;
+	if (dlt < 127) {
+		dlt = 127;
 	}
 	else if (dlt > 24000) {
 		dlt = 24000;
@@ -191,7 +190,7 @@ static void SOUNDCALL getadpcmdata(ADPCM ad) {
 			if (ad->reg.ctrl1 & 0x10) {
 				pos = ad->start;
 				ad->samp = 0;
-				ad->delta = 128;
+				ad->delta = 127;
 			}
 			else {
 				pos &= 0x1fffff;

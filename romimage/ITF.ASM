@@ -1,4 +1,3 @@
-.186
 
 CODE	SEGMENT
 			ASSUME CS:CODE
@@ -68,11 +67,9 @@ key1cklp:		call	boot_keycheck
 
 ;				jmp		ssp_start
 
-				cmp		byte ptr ds:[MACTYPE], 0
-				jne		short key2ck
 				call	BEEP_TEST
 
-key2ck:			mov		ah, 32
+				mov		ah, 32
 key2cklp:		call	boot_keycheck
 				cmp		al, BOOT_MENU
 				je		short boot_menujmp
@@ -128,8 +125,21 @@ necmemchk:		add		bx, bx
 retbioswait:	mov		ah, 90
 				call	WAITVSYNC
 
-				clc
-				jmp		exitprocess
+exitprocess:	cli
+				pushf
+ifdef DEBUG_TERM
+				DEBUG_TERM
+endif
+				KEYINT_TERM
+				call	SCREEN_CLEAR
+				mov		di, int09off + 8000h
+				mov		cx, (DATASEGEND - int09off) / 2
+				xor		ax, ax
+				rep stosw
+				popf
+				ITF_EXIT
+
+
 
 include resource.x86
 include itfsub.x86
@@ -166,7 +176,8 @@ setdips:		push	bx
 				mov		di, dx
 				mov		ch, [di+DIPSW_1]
 				mov		di, 160*20+20
-				shl		dx, 4
+				mov		cl, 4
+				shl		dx, cl
 				add		di, dx
 				shl		dx, 1
 				add		di, dx
@@ -320,21 +331,15 @@ curitemputs:	or		dl, 80h
 
 ; ---------------------------------------------------------------------------
 
-REBOOT_PROCESS:	stc
-
-exitprocess:	cli
-				pushf
-ifdef DEBUG_TERM
-				DEBUG_TERM
+REBOOT_PROCESS:
+ifdef NP2
+				cli
+				mov		si, offset np2str_hwreset
+				call	sendnp2port
+hltlp:			hlt
+				jmp		short hltlp
 endif
-				KEYINT_TERM
-				call	SCREEN_CLEAR
-				mov		di, int09off + 8000h
-				mov		cx, (DATASEGEND - int09off) / 2
-				xor		ax, ax
-				rep stosw
-				popf
-				ITF_EXIT
+				jmp		exitprocess
 
 CODE	ENDS
 	END START

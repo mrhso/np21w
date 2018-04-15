@@ -229,6 +229,10 @@ SOURCE=..\BIOS\BIOS1B.C
 
 SOURCE=..\BIOS\BIOS1C.C
 # End Source File
+# Begin Source File
+
+SOURCE=..\BIOS\SXSIBIOS.C
+# End Source File
 # End Group
 # Begin Group "sound"
 
@@ -619,11 +623,11 @@ SOURCE=..\IO\EGC.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\EPSONIO.C
+SOURCE=..\IO\EMSIO.C
 # End Source File
 # Begin Source File
 
-SOURCE=..\IO\EXTMEM.C
+SOURCE=..\IO\EPSONIO.C
 # End Source File
 # Begin Source File
 
@@ -796,6 +800,14 @@ SOURCE=..\GENERIC\CMVER.C
 # Begin Source File
 
 SOURCE=..\GENERIC\DIPSWBMP.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\GENERIC\HOSTDRV.C
+# End Source File
+# Begin Source File
+
+SOURCE=..\GENERIC\HOSTDRVS.C
 # End Source File
 # End Group
 # Begin Source File

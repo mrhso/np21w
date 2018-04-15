@@ -2,15 +2,35 @@
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"cbuscore.h"
+#include	"sasiio.h"
+#include	"scsiio.h"
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
 
 
 static const IOCBFN resetfn[] = {
-			pc9861k_reset,		mpu98ii_reset};
+#if defined(SUPPORT_SASI)
+			sasiio_reset,
+#endif
+#if defined(SUPPORT_SCSI)
+			scsiio_reset,
+#endif
+#if defined(SUPPORT_PC9861K)
+			pc9861k_reset,
+#endif
+			mpu98ii_reset};
 
 static const IOCBFN bindfn[] = {
-			pc9861k_bind,		mpu98ii_bind};
+#if defined(SUPPORT_SASI)
+			sasiio_bind,
+#endif
+#if defined(SUPPORT_SCSI)
+			scsiio_bind,
+#endif
+#if defined(SUPPORT_PC9861K)
+			pc9861k_bind,
+#endif
+			mpu98ii_bind};
 
 
 void cbuscore_reset(void) {

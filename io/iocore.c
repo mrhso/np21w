@@ -16,12 +16,12 @@
 	_DMAC		dmac;
 	_EGC		egc;
 	_EPSONIO	epsonio;
-	_EXTMEM		extmem;
+	_EMSIO		emsio;
 	_FDC		fdc;
 	_GDC		gdc;
 	_GDCS		gdcs;
 	_GRCG		grcg;
-	_KEYB		keyb;
+	_KEYBRD		keybrd;
 	_MOUSEIF	mouseif;
 	_NMIIO		nmiio;
 	_NP2SYSP	np2sysp;
@@ -49,6 +49,7 @@ typedef struct {
 
 typedef struct {
 	IOFUNC		base[256];
+	UINT		busclock;
 	LISTARRAY	iotbl;
 } _IOCORE, *IOCORE;
 
@@ -68,6 +69,7 @@ static void IOOUTCALL defout8(UINT port, REG8 dat) {
 		dipsw_w8(port, dat);
 		return;
 	}
+//	TRACEOUT(("defout8 - %x %x %.4x %.4x", port, dat, CPU_CS, CPU_IP));
 }
 
 static REG8 IOINPCALL definp8(UINT port) {
@@ -78,6 +80,7 @@ static REG8 IOINPCALL definp8(UINT port) {
 	if ((port & 0xf0ff) == 0x801e) {
 		return(dipsw_r8(port));
 	}
+//	TRACEOUT(("definp8 - %x %.4x %.4x", port, CPU_CS, CPU_IP));
 	return(0xff);
 }
 
@@ -425,8 +428,12 @@ static const IOCBFN resetfn[] = {
 			itimer_reset,		mouseif_reset,
 
 			// extend
-			artic_reset,		egc_reset,			extmem_reset,
-			np2sysp_reset,		necio_reset,		epsonio_reset};
+			artic_reset,		egc_reset,			np2sysp_reset,
+			necio_reset,		epsonio_reset,
+#if !defined(CPUCORE_IA32)
+			emsio_reset,
+#endif
+		};
 
 static const IOCBFN bindfn[] = {
 			// PC-9801 System...
@@ -440,8 +447,12 @@ static const IOCBFN bindfn[] = {
 			itimer_bind,		mouseif_bind,
 
 			// extend
-			artic_bind,			egc_bind,			extmem_bind,
-			np2sysp_bind,		necio_bind,			epsonio_bind};
+			artic_bind,			egc_bind,			np2sysp_bind,
+			necio_bind,			epsonio_bind,
+#if !defined(CPUCORE_IA32)
+			emsio_bind,
+#endif
+		};
 
 
 void iocore_cb(const IOCBFN *cbfn, UINT count) {
@@ -459,15 +470,15 @@ void iocore_reset(void) {
 
 void iocore_bind(void) {
 
+	iocore.busclock = pccore.multiple;
 	iocore_cb(bindfn, sizeof(bindfn)/sizeof(IOCBFN));
 }
 
-#if !defined(TRACE)
-
 void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
 
 	IOFUNC	iof;
 
+	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
 	iof->ioout[port & 0xff](port, dat);
 }
@@ -476,43 +487,16 @@ REG8 IOINPCALL iocore_inp8(UINT port) {
 
 	IOFUNC	iof;
 
+	CPU_REMCLOCK -= iocore.busclock;
 	iof = iocore.base[(port >> 8) & 0xff];
 	return(iof->ioinp[port & 0xff](port));
 }
-
-#else
-
-void IOOUTCALL iocore_out8(UINT port, REG8 dat) {
-
-	IOFUNC	iof;
-
-	if (dat & (~0xff)) {
-		TRACEOUT(("iocore_out8 - %x %x", port, dat));
-	}
-	iof = iocore.base[(port >> 8) & 0xff];
-	iof->ioout[port & 0xff](port, dat);
-}
-
-REG8 IOINPCALL iocore_inp8(UINT port) {
-
-	IOFUNC	iof;
-	REG8	ret;
-
-	iof = iocore.base[(port >> 8) & 0xff];
-	ret = iof->ioinp[port & 0xff](port);
-
-	if (ret & (~0xff)) {
-		TRACEOUT(("iocore_inp8 - %x %x", port, ret));
-	}
-	return(ret);
-}
-
-#endif
 
 void IOOUTCALL iocore_out16(UINT port, REG16 dat) {
 
 	IOFUNC	iof;
 
+	CPU_REMCLOCK -= iocore.busclock;
 	if ((port & 0xfff1) == 0x04a0) {
 		egc_w16(port, dat);
 		return;
@@ -543,6 +527,7 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 	IOFUNC	iof;
 	REG8	ret;
 
+	CPU_REMCLOCK -= iocore.busclock;
 	if ((port & 0xfffc) == 0x005c) {
 		return(artic_r16(port));
 	}

@@ -20,7 +20,10 @@
 #include	"keydisp.h"
 
 
-	int			usesound = 0;
+	UINT32		usesound;
+	OPN_T		opn;
+	AMD98		amd98;
+	MUSICGEN	musicgen;
 
 	_TMS3631	tms3631;
 	_FMTIMER	fmtimer;
@@ -35,21 +38,16 @@
 	_CS4231		cs4231;
 
 
-	OPN_T		opn;
-	AMD98		amd98;
-	MUSICGEN	musicgen;
-
-
 static void	(*extfn)(REG8 enable);
 
 
 // ----
 
-static	BYTE	rapids = 0;
+static	REG8	rapids = 0;
 
-BYTE fmboard_getjoy(PSGGEN psg) {
+REG8 fmboard_getjoy(PSGGEN psg) {
 
-	BYTE	ret;
+	REG8	ret;
 
 	rapids ^= 0xf0;											// ver0.28
 	ret = 0xff;
@@ -102,23 +100,34 @@ void fmboard_extenable(REG8 enable) {
 
 // ----
 
-void fmboard_reset(BYTE num) {
+static void setfmregs(BYTE *reg) {
+
+	FillMemory(reg + 0x30, 0x60, 0xff);
+	FillMemory(reg + 0x90, 0x20, 0x00);
+	FillMemory(reg + 0xb0, 0x04, 0x00);
+	FillMemory(reg + 0xb4, 0x04, 0xc0);
+}
+
+void fmboard_reset(UINT32 type) {
 
 	BYTE	cross;
 
 	soundrom_reset();
 	beep_reset();												// ver0.27a
 	cross = np2cfg.snd_x;										// ver0.30
-	usesound = num;
 
 	extfn = NULL;
 	ZeroMemory(&opn, sizeof(opn));
+	setfmregs(opn.reg + 0x000);
+	setfmregs(opn.reg + 0x100);
+	setfmregs(opn.reg + 0x200);
+	setfmregs(opn.reg + 0x300);
+	opn.reg[0xff] = 0x01;
+	opn.channels = 3;
+	opn.adpcmmask = (UINT8)~(0x1c);
+
 	ZeroMemory(&musicgen, sizeof(musicgen));
 	ZeroMemory(&amd98, sizeof(amd98));
-
-	opn.channels = 3;
-	opn.adpcmmask = (BYTE)~(0x1c);
-	opn.reg[0xff] = 0x01;
 
 	tms3631_reset(&tms3631);
 	opngen_reset();
@@ -130,7 +139,7 @@ void fmboard_reset(BYTE num) {
 	pcm86_reset();
 	cs4231_reset();
 
-	switch(num) {
+	switch(type) {
 		case 0x01:
 			board14_reset();
 			break;
@@ -170,11 +179,12 @@ void fmboard_reset(BYTE num) {
 			break;
 
 		default:
-			usesound = 0;
+			type = 0;
 			break;
 	}
+	usesound = type;
 	soundmng_setreverse(cross);
-	keydisp_setfmboard(num);
+	keydisp_setfmboard(type);
 	opngen_setVR(np2cfg.spb_vrc, np2cfg.spb_vrl);
 }
 
@@ -218,5 +228,39 @@ void fmboard_bind(void) {
 			break;
 	}
 	sound_streamregist(&beep, (SOUNDCB)beep_getpcm);
+}
+
+
+// ----
+
+void fmboard_fmrestore(REG8 chbase, UINT bank) {
+
+	REG8	i;
+const BYTE	*reg;
+
+	reg = opn.reg + (bank * 0x100);
+	for (i=0x30; i<0xa0; i++) {
+		opngen_setreg(chbase, i, reg[i]);
+	}
+	for (i=0xb7; i>=0xa0; i--) {
+		opngen_setreg(chbase, i, reg[i]);
+	}
+	for (i=0; i<3; i++) {
+		opngen_keyon(chbase + i, opngen.keyreg[chbase + i]);
+	}
+}
+
+void fmboard_rhyrestore(RHYTHM rhy, UINT bank) {
+
+const BYTE	*reg;
+
+	reg = opn.reg + (bank * 0x100);
+	rhythm_setreg(rhy, 0x11, reg[0x11]);
+	rhythm_setreg(rhy, 0x18, reg[0x18]);
+	rhythm_setreg(rhy, 0x19, reg[0x19]);
+	rhythm_setreg(rhy, 0x1a, reg[0x1a]);
+	rhythm_setreg(rhy, 0x1b, reg[0x1b]);
+	rhythm_setreg(rhy, 0x1c, reg[0x1c]);
+	rhythm_setreg(rhy, 0x1d, reg[0x1d]);
 }
 

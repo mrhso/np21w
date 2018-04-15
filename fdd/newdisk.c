@@ -2,38 +2,13 @@
 #include	"dosio.h"
 #include	"newdisk.h"
 #include	"fddfile.h"
+#include	"sxsi.h"
 #include	"hddboot.res"
 
 
-void newdisk_hdd(const char *fname, UINT hddsize) {
+// ---- fdd
 
-	FILEH	fh;
-	BYTE	work[256];
-	UINT	size;
-	UINT	wsize;
-
-	if ((fname == NULL) || (hddsize < 5) || (hddsize > 256)) {
-		return;
-	}
-	fh = file_create(fname);
-	if (fh != FILEH_INVALID) {
-		ZeroMemory(work, 256);
-		size = hddsize * 15;
-		STOREINTELWORD(work, size);
-		file_write(fh, work, 256);
-		file_write(fh, hdddiskboot, sizeof(hdddiskboot));
-		ZeroMemory(work, sizeof(work));
-		size = 0x400 - sizeof(hdddiskboot);
-		while(size) {
-			wsize = min(size, sizeof(work));
-			size -= wsize;
-			file_write(fh, work, wsize);
-		}
-		file_close(fh);
-	}
-}
-
-void newdisk_fdd(const char *fname, BYTE type, const char *label) {
+void newdisk_fdd(const char *fname, REG8 type, const char *label) {
 
 	_D88HEAD	d88head;
 	FILEH		fh;
@@ -47,5 +22,187 @@ void newdisk_fdd(const char *fname, BYTE type, const char *label) {
 		file_write(fh, &d88head, sizeof(d88head));
 		file_close(fh);
 	}
+}
+
+
+// ---- hdd
+
+static BOOL writezero(FILEH fh, UINT size) {
+
+	BYTE	work[256];
+	UINT	wsize;
+
+	ZeroMemory(work, sizeof(work));
+	while(size) {
+		wsize = min(size, sizeof(work));
+		if (file_write(fh, work, wsize) != wsize) {
+			return(FAILURE);
+		}
+		size -= wsize;
+	}
+	return(SUCCESS);
+}
+
+static BOOL writehddipl(FILEH fh, UINT ssize, UINT32 tsize) {
+
+	BYTE	work[1024];
+	UINT	size;
+
+	ZeroMemory(work, sizeof(work));
+	CopyMemory(work, hdddiskboot, sizeof(hdddiskboot));
+	if (ssize < 1024) {
+		work[ssize - 2] = 0x55;
+		work[ssize - 1] = 0xaa;
+	}
+	if (file_write(fh, work, sizeof(work)) != sizeof(work)) {
+		return(FAILURE);
+	}
+	if (tsize > sizeof(work)) {
+		tsize -= sizeof(work);
+		ZeroMemory(work, sizeof(work));
+		while(tsize) {
+			size = min(tsize, sizeof(work));
+			tsize -= size;
+			if (file_write(fh, work, size) != size) {
+				return(FAILURE);
+			}
+		}
+	}
+	return(SUCCESS);
+}
+
+void newdisk_thd(const char *fname, UINT hddsize) {
+
+	FILEH	fh;
+	BYTE	work[256];
+	UINT	size;
+	BOOL	r;
+
+	if ((fname == NULL) || (hddsize < 5) || (hddsize > 256)) {
+		goto ndthd_err;
+	}
+	fh = file_create(fname);
+	if (fh == FILEH_INVALID) {
+		goto ndthd_err;
+	}
+	ZeroMemory(work, 256);
+	size = hddsize * 15;
+	STOREINTELWORD(work, size);
+	r = (file_write(fh, work, 256) != 256);
+	r |= writehddipl(fh, 256, 0);
+	file_close(fh);
+	if (r) {
+		file_delete(fname);
+	}
+
+ndthd_err:
+	return;
+}
+
+void newdisk_nhd(const char *fname, UINT hddsize) {
+
+	FILEH	fh;
+	NHDHDR	nhd;
+	UINT	size;
+	BOOL	r;
+
+	if ((fname == NULL) || (hddsize < 5) || (hddsize > 512)) {
+		goto ndnhd_err;
+	}
+	fh = file_create(fname);
+	if (fh == FILEH_INVALID) {
+		goto ndnhd_err;
+	}
+	ZeroMemory(&nhd, sizeof(nhd));
+	CopyMemory(&nhd.sig, sig_nhd, 15);
+	STOREINTELDWORD(nhd.headersize, sizeof(nhd));
+	size = hddsize * 16;
+	STOREINTELDWORD(nhd.cylinders, size);
+	STOREINTELWORD(nhd.surfaces, 8);
+	STOREINTELWORD(nhd.sectors, 32);
+	STOREINTELWORD(nhd.sectorsize, 256);
+	r = (file_write(fh, &nhd, sizeof(nhd)) != sizeof(nhd));
+	r |= writehddipl(fh, 256, size * 8 * 32 * 256);
+	file_close(fh);
+	if (r) {
+		file_delete(fname);
+	}
+
+ndnhd_err:
+	return;
+}
+
+// hddtype = 0:5MB / 1:10MB / 2:15MB / 3:20MB / 5:30MB / 6:40MB
+void newdisk_hdi(const char *fname, UINT hddtype) {
+
+const SASIHDD	*sasi;
+	FILEH		fh;
+	HDIHDR		hdi;
+	UINT32		size;
+	BOOL		r;
+
+	hddtype &= 7;
+	if ((fname == NULL) || (hddtype == 7)) {
+		goto ndhdi_err;
+	}
+	sasi = sasihdd + hddtype;
+	fh = file_create(fname);
+	if (fh == FILEH_INVALID) {
+		goto ndhdi_err;
+	}
+	ZeroMemory(&hdi, sizeof(hdi));
+	size = 256 * sasi->sectors * sasi->surfaces * sasi->cylinders;
+//	STOREINTELDWORD(hdi.hddtype, 0);
+	STOREINTELDWORD(hdi.headersize, 4096);
+	STOREINTELDWORD(hdi.hddsize, size);
+	STOREINTELDWORD(hdi.sectorsize, 256);
+	STOREINTELDWORD(hdi.sectors, sasi->sectors);
+	STOREINTELDWORD(hdi.surfaces, sasi->surfaces);
+	STOREINTELDWORD(hdi.cylinders, sasi->cylinders);
+	r = (file_write(fh, &hdi, sizeof(hdi)) != sizeof(hdi));
+	r |= writezero(fh, 4096 - sizeof(hdi));
+	r |= writehddipl(fh, 256, size);
+	file_close(fh);
+	if (r) {
+		file_delete(fname);
+	}
+
+ndhdi_err:
+	return;
+}
+
+void newdisk_vhd(const char *fname, UINT hddsize) {
+
+	FILEH	fh;
+	VHDHDR	vhd;
+	UINT	tmp;
+	BOOL	r;
+
+	if ((fname == NULL) || (hddsize < 2) || (hddsize > 512)) {
+		goto ndvhd_err;
+	}
+	fh = file_create(fname);
+	if (fh == FILEH_INVALID) {
+		goto ndvhd_err;
+	}
+	ZeroMemory(&vhd, sizeof(vhd));
+	CopyMemory(&vhd.sig, sig_vhd, 7);
+	STOREINTELWORD(vhd.mbsize, (UINT16)hddsize);
+	STOREINTELWORD(vhd.sectorsize, 256);
+	vhd.sectors = 32;
+	vhd.surfaces = 8;
+	tmp = hddsize *	16;		// = * 1024 * 1024 / (8 * 32 * 256);
+	STOREINTELWORD(vhd.cylinders, (UINT16)tmp);
+	tmp *= 8 * 32;
+	STOREINTELDWORD(vhd.totals, tmp);
+	r = (file_write(fh, &vhd, sizeof(vhd)) != sizeof(vhd));
+	r |= writehddipl(fh, 256, 0);
+	file_close(fh);
+	if (r) {
+		file_delete(fname);
+	}
+
+ndvhd_err:
+	return;
 }
 

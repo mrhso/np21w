@@ -60,7 +60,6 @@ static void IOOUTCALL ymf_o18e(UINT port, REG8 dat) {
 	S98_put(EXTEND2608, opn.extreg, dat);
 	opn.reg[opn.extreg + 0x100] = dat;
 	if (opn.extreg >= 0x30) {
-		sound_sync();
 		opngen_setreg(3, opn.extreg, dat);
 	}
 	else {
@@ -157,6 +156,10 @@ void board118_reset(void) {
 
 void board118_bind(void) {
 
+	fmboard_fmrestore(0, 0);
+	fmboard_fmrestore(3, 1);
+	psggen_restore(&psg1);
+	fmboard_rhyrestore(&rhythm, 0);
 	sound_streamregist(&opngen, (SOUNDCB)opngen_getpcm);
 	sound_streamregist(&psg1, (SOUNDCB)psggen_getpcm);
 	sound_streamregist(&rhythm, (SOUNDCB)rhythm_getpcm);
