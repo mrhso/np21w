@@ -51,6 +51,9 @@
 #if defined(SUPPORT_WAB)
 #include	"wab/wab.h"
 #endif
+#if defined(SUPPORT_CL_GD5430)
+#include	"wab/cirrus_vga_extern.h"
+#endif
 #if defined(SUPPORT_IDEIO)
 #include	"ideio.h"
 #endif
@@ -129,8 +132,8 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 	//UINT32 hrtimerclockcounter = 0;
 	UINT32 hrtimerdiv = 32; 
 	UINT32 hrtimerint = 0;
-	//UINT32 hrtimerupd = 0;
-	//UINT32 hrtimertime_hl = 0;
+	UINT32 hrtimerupd = 0;
+	UINT32 hrtimertime_hl = 0;
 	//UINT8  hrtimertime_h = 0;
 	//UINT16 hrtimertime_l = 0;
 
@@ -139,8 +142,8 @@ static int pccore_hrtimerThreadExit = 0;
 
 static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 	LARGE_INTEGER hrtmp = {0}; 
-	//SYSTEMTIME hrtimertime;
-	//UINT32 hrtimertimeuint;
+	SYSTEMTIME hrtimertime;
+	UINT32 hrtimertimeuint;
 	while (!pccore_hrtimerThreadExit) {
 		SINT64 times;
 		QueryPerformanceFrequency(&hrtimerfreq);
@@ -154,12 +157,12 @@ static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
 				times -= hrtimerfreq.QuadPart;
 			} while(times >= hrtimerfreq.QuadPart);
 		}
-		//GetLocalTime(&hrtimertime);
-		//hrtimertimeuint = ((((UINT32)hrtimertime.wHour*60 + (UINT32)hrtimertime.wMinute)*60 + (UINT32)hrtimertime.wSecond)*32) + ((UINT32)hrtimertime.wMilliseconds*32)/1000;
-		//if(hrtimertimeuint != hrtimertime_hl){
-		//	hrtimertime_hl = hrtimertimeuint;
-		//	hrtimerupd = 1;
-		//}
+		GetLocalTime(&hrtimertime);
+		hrtimertimeuint = (((UINT32)hrtimertime.wHour*60 + (UINT32)hrtimertime.wMinute)*60 + (UINT32)hrtimertime.wSecond)*32 + ((UINT32)hrtimertime.wMilliseconds*32)/1000;
+		if(hrtimertimeuint != hrtimertime_hl){
+			hrtimertime_hl = hrtimertimeuint;
+			hrtimerupd = 1;
+		}
 		Sleep(8);
 	}
 	return 0;
@@ -764,6 +767,9 @@ void pccore_exec(BOOL draw) {
 			np2wab.relaystateint = np2wab.relaystateext = 0;
 			np2wab_setRelayState(0); // XXX:
 #endif
+#if defined(SUPPORT_CL_GD5430)
+			np2clvga.gd54xxtype = np2clvga2.defgd54xxtype; // Auto Select用
+#endif
 #if defined(SUPPORT_IDEIO)
 			ideio_reset(&np2cfg); // XXX: ソフトウェアリセットでIDEデバイスが認識しないのをごまかす。高速再起動には効かないのでもっといい場所へ移住すべき
 #endif
@@ -788,12 +794,10 @@ void pccore_exec(BOOL draw) {
 			pic_setirq(15);
 			hrtimerint = 0;
 		}
-		//if(hrtimerupd){ // XXX: 位置てきとー
-		//	//*(mem+0x04F1) = hrtimertime_h;
-		//	//STOREINTELWORD(mem+0x04F2, hrtimertime_l);
-		//	STOREINTELDWORD(mem+0x04F0, hrtimertime_hl);
-		//	hrtimerupd = 0;
-		//}
+		if(hrtimerupd){ // XXX: 位置てきとー
+			STOREINTELDWORD(mem+0x04F1, hrtimertime_hl); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
+			hrtimerupd = 0;
+		}
 #endif
 		nevent_progress();
 	}

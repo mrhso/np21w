@@ -90,13 +90,13 @@ static void IOOUTCALL upd4990_o20(UINT port, REG8 dat) {
 	(void)port;
 }
 
+
+#ifdef SUPPORT_HRTIMER
 int io22value = 0;
 static void IOOUTCALL upd4990_o22(UINT port, REG8 dat) {
 	io22value = dat;
 	(void)port;
 }
-
-#ifdef SUPPORT_HRTIMER
 static REG8 IOOUTCALL upd4990_i22(UINT port) {
 	return io22value;
 }

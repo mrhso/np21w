@@ -217,6 +217,7 @@ static void bios_reinitbyswitch(void) {
 //		file_read(fh, mem + 0x0D8000+READSIZE, 0x2000-READSIZE);
 //		file_close(fh);
 //	}
+	mem[0x45B] |= 0x80; // XXX: TEST
 #endif
 	mem[0xF8E80+0x0011] = mem[0xF8E80+0x0011] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
 	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number

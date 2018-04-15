@@ -43,6 +43,7 @@
 #define CIRRUS_98ID_WGN		0x101
 #define CIRRUS_98ID_WSN		0x102
 #define CIRRUS_98ID_GA98NB	0x200
+#define CIRRUS_98ID_AUTO	0xFFFF
 
 #define VRAMWINDOW_SIZE	0x200000UL  // VRAM マッピングサイズ
 #define EXT_WINDOW_SIZE	0x200000UL  // 謎
@@ -151,6 +152,7 @@ typedef struct {
 } NP2CLVGA;
 typedef struct {
 	UINT32	VRAMWindowAddr3;
+	UINT32	defgd54xxtype;
 } NP2CLVGA2;
 
 
