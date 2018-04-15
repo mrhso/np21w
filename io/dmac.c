@@ -199,6 +199,8 @@ static void IOOUTCALL dmac_o21(UINT port, REG8 dat) {
 	// IA16‚Å‚Í ver0.75‚Å–³ŒøAver0.76‚ÅC³
 	dmach->adrs.b[DMA32_HIGH + DMA16_LOW] = dat & 0x0f;
 #endif
+	/* 170101 ST modified to work on Windows 9x/2000 */
+	dmach->adrs.b[DMA32_HIGH + DMA16_HIGH] = 0;
 }
 
 static void IOOUTCALL dmac_o29(UINT port, REG8 dat) {
@@ -209,6 +211,16 @@ static void IOOUTCALL dmac_o29(UINT port, REG8 dat) {
 	dmach->bound = dat;
 	(void)port;
 }
+
+/* 170101 ST modified to work on Windows 9x/2000 form ... */
+static void IOOUTCALL dmac_oE01(UINT port, REG8 dat) {
+
+	DMACH	dmach;
+
+	dmach = dmac.dmach + ((port >> 1) & 0x07) - 2;
+	dmach->adrs.b[DMA32_HIGH + DMA16_HIGH] = dat;
+}
+/* 170101 ST modified to work on Windows 9x/2000 ... to */
 
 static REG8 IOINPCALL dmac_i01(UINT port) {
 
@@ -273,6 +285,13 @@ void dmac_bind(void) {
 	iocore_attachsysoutex(0x0001, 0x0ce1, dmaco00, 16);
 	iocore_attachsysinpex(0x0001, 0x0ce1, dmaci00, 16);
 	iocore_attachsysoutex(0x0021, 0x0cf1, dmaco21, 8);
+
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	iocore_attachout(0x0e05, dmac_oE01);
+	iocore_attachout(0x0e07, dmac_oE01);
+	iocore_attachout(0x0e09, dmac_oE01);
+	iocore_attachout(0x0e0b, dmac_oE01);
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 }
 
 

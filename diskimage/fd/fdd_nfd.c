@@ -47,10 +47,12 @@ BRESULT fdd_set_nfd(FDDFILE fdd, FDDFUNC fdd_fn, const OEMCHAR *fname, int ro) {
 			fdd->protect = TRUE;
 		}
 
+		/* 170101 ST modified to work on Windows 9x/2000 from ... */
 		//	最大値入れて平気？
-		fdd->inf.xdf.tracks		= NFD_TRKMAX;
-		fdd->inf.xdf.sectors	= NFD_SECMAX;
-
+		// fdd->inf.xdf.tracks		= NFD_TRKMAX;
+		// fdd->inf.xdf.sectors	= NFD_SECMAX;
+		/* 170101 ST modified to work on Windows 9x/2000 ... to */
+			
 		//	期待した値が入ってないことが…orz
 		ptr = LOADINTELDWORD(&fdd->inf.nfd.head.r0.dwHeadSize);
 //		ptr = NFD_HEADERSIZE;
@@ -76,6 +78,10 @@ BRESULT fdd_set_nfd(FDDFILE fdd, FDDFUNC fdd_fn, const OEMCHAR *fname, int ro) {
 				return(FAILURE);
 				break;
 		}
+		/* 170101 ST modified to work on Windows 9x/2000 from ... */
+		fdd->inf.xdf.tracks		= 0;
+		fdd->inf.xdf.sectors	= 0;
+		/* 170101 ST modified to work on Windows 9x/2000 ... to */
 		//	ディスクアクセス時用に各セクタのオフセットを算出し格納
 		for (i = 0; i < NFD_TRKMAX; i++) {
 			for (j = 0; j < NFD_SECMAX; j++) {
@@ -85,10 +91,20 @@ TRACEOUT(("NFD(r0) C[%02x]:H[%02x]:R[%02x]:N[%02x]",
 TRACEOUT(("\tSetOffset Trk[%03d]Sec[%02x] = Offset[%08x]", i, j, ptr));
 					fdd->inf.nfd.ptr[i][j] = ptr;
 					ptr += 128 << sec_nfd->N;
+					/* 170101 ST modified to work on Windows 9x/2000 from ... */
+					fdd->inf.xdf.tracks = i;
+					if (fdd->inf.xdf.sectors < j) {
+						fdd->inf.xdf.sectors = j;
+					}
+					/* 170101 ST modified to work on Windows 9x/2000 ... to */
 				}
 				sec_nfd++;
 			}
 		}
+		/* 170101 ST modified to work on Windows 9x/2000 from ... */
+		fdd->inf.xdf.tracks++;
+		fdd->inf.xdf.sectors++;
+		/* 170101 ST modified to work on Windows 9x/2000 ... to */
 
 		//	処理関数群を登録
 		fdd_fn->eject		= fdd_eject_xxx;
@@ -125,9 +141,13 @@ TRACEOUT(("This is NFD(r1) IMAGE!"));
 			fdd->protect = TRUE;
 		}
 
+		/* 170101 ST modified to work on Windows 9x/2000 from ... */
 		//	最大値入れて平気？
-		fdd->inf.xdf.tracks		= NFD_TRKMAX;
-		fdd->inf.xdf.sectors	= NFD_SECMAX;
+		//fdd->inf.xdf.tracks		= NFD_TRKMAX;
+		//fdd->inf.xdf.sectors	= NFD_SECMAX;
+		fdd->inf.xdf.tracks		= 0;
+		fdd->inf.xdf.sectors	= 0;
+		/* 170101 ST modified to work on Windows 9x/2000 ... to */
 
 		ptr = LOADINTELDWORD(&fdd->inf.nfd.head.r1.dwHeadSize);
 		for (i = 0; i < NFD_TRKMAX1; i++) {
@@ -175,6 +195,12 @@ TRACEOUT(("NFD(r1) TopSec PDA[%02x]", sec_id.byPDA));
 							break;
 					}
 				}
+				/* 170101 ST modified to work on Windows 9x/2000 from ... */
+				fdd->inf.xdf.tracks = i + 1;
+				if (fdd->inf.xdf.sectors < sec_id.R) {
+					fdd->inf.xdf.sectors = sec_id.R;
+				}
+				/* 170101 ST modified to work on Windows 9x/2000 ... to */
 			}
 			fdd->inf.nfd.trksize[i] = trksize;
 			//	特殊読み込み情報ヘッダ読込
@@ -277,6 +303,19 @@ BRESULT fdd_read_nfd(FDDFILE fdd) {
 	}
 	trk = (fdc.treg[fdc.us] << 1) + fdc.hd;
 	sec = fdc.R - 1;
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	secR = 0xff;
+	for (i = 0; i < NFD_SECMAX; i++) {
+		if (fdd->inf.nfd.head.r0.si[trk][i].R == fdc.eot) {
+			secR = i;
+			break;
+		}
+	}
+	if (secR == 0xff) {
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	secR = 0xff;
 	for (i = 0; i < NFD_SECMAX; i++) {
 #if 0
@@ -365,6 +404,19 @@ BRESULT fdd_write_nfd(FDDFILE fdd) {
 	}
 	trk = (fdc.treg[fdc.us] << 1) + fdc.hd;
 	sec = fdc.R - 1;
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	secR = 0xff;
+	for (i = 0; i < NFD_SECMAX; i++) {
+		if (fdd->inf.nfd.head.r0.si[trk][i].R == fdc.eot) {
+			secR = i;
+			break;
+		}
+	}
+	if (secR == 0xff) {
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	secR = 0xff;
 	for (i = 0; i < NFD_SECMAX; i++) {
 		if (fdd->inf.nfd.head.r0.si[trk][i].R == fdc.R) {
@@ -410,6 +462,20 @@ BRESULT fdd_readid_nfd(FDDFILE fdd) {
 	UINT	sec;
 	UINT	i;
 
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if (fdc.crcn >= fdd->inf.xdf.sectors) {
+		fdc.crcn = 0;
+		if(fdc.mt) {
+			fdc.hd ^= 1;
+			if (fdc.hd == 0) {
+				fdc.treg[fdc.us]++;
+			}
+		}
+		else {
+			fdc.treg[fdc.us]++;
+		}
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	fddlasterror = 0x00;
 	if ((!fdc.mf) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||

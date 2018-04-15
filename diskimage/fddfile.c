@@ -316,6 +316,20 @@ TRACEOUT(("fdd_seek_common FAILURE fdc.mf[%02x]", fdc.mf));
 BRESULT fdd_readid_common(FDDFILE fdd) {
 
 	fddlasterror = 0x00;
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if (fdc.crcn >= fdd->inf.xdf.sectors) {
+		fdc.crcn = 0;
+		if(fdc.mt) {
+			fdc.hd ^= 1;
+			if (fdc.hd == 0) {
+				fdc.treg[fdc.us]++;
+			}
+		}
+		else {
+			fdc.treg[fdc.us]++;
+		}
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	if ((!fdc.mf) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
 		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20

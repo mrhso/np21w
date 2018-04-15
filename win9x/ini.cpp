@@ -452,6 +452,7 @@ static const PFTBL s_IniItems[] =
 
 	PFSTR("FDfolder", PFTYPE_STR,		fddfolder),
 	PFSTR("HDfolder", PFTYPE_STR,		hddfolder),
+	PFSTR("CDfolder", PFTYPE_STR,		cdfolder),
 	PFSTR("bmap_Dir", PFTYPE_STR,		bmpfilefolder),
 	PFSTR("npcfgDir", PFTYPE_STR,		npcfgfilefolder),
 	PFSTR("fontfile", PFTYPE_STR,		np2cfg.fontfile),

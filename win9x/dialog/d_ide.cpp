@@ -25,7 +25,7 @@ extern "C"
 
 
 /**
- * @brief MPU-PC98 設定ダイアログ
+ * @brief IDE 設定ダイアログ
  * @param[in] hwndParent 親ウィンドウ
  */
 class CIdeDlg : public CDlgProc

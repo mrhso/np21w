@@ -138,6 +138,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 
 		OEMCHAR		fddfolder[MAX_PATH];
 		OEMCHAR		hddfolder[MAX_PATH];
+		OEMCHAR		cdfolder[MAX_PATH];
 		OEMCHAR		bmpfilefolder[MAX_PATH];
 		OEMCHAR		npcfgfilefolder[MAX_PATH];
 		OEMCHAR		modulefile[MAX_PATH];

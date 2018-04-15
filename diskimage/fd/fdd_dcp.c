@@ -131,6 +131,12 @@ BRESULT fdd_read_dcp(FDDFILE fdd) {
 		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if (fdc.eot > fdd->inf.xdf.sectors) {
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 
 	track = (fdc.treg[fdc.us] << 1) + fdc.hd;
 	secsize = 128 << fdd->inf.xdf.n;
@@ -322,6 +328,12 @@ BRESULT fdd_write_dcp(FDDFILE fdd) {
 		fddlasterror = 0xc0;
 		return(FAILURE);
 	}
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if (fdc.eot > fdd->inf.xdf.sectors) {
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 
 	track = (fdc.treg[fdc.us] << 1) + fdc.hd;
 

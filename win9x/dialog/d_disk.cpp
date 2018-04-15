@@ -122,7 +122,14 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 	LPCTSTR lpPath = diskdrv_getsxsi(drv);
 	if ((lpPath == NULL) || (lpPath[0] == '\0'))
 	{
-		lpPath = hddfolder;
+		if(sxsi_getdevtype(drv)!=SXSIDEV_CDROM)
+		{
+			lpPath = hddfolder;
+		}
+		else
+		{
+			lpPath = cdfolder;
+		}
 	}
 
 	std::tstring rExt(LoadTString(nExt));
@@ -135,7 +142,14 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 	if (dlg.DoModal())
 	{
 		LPCTSTR lpImage = dlg.GetPathName();
-		file_cpyname(hddfolder, lpImage, _countof(hddfolder));
+		if(sxsi_getdevtype(drv)!=SXSIDEV_CDROM)
+		{
+			file_cpyname(hddfolder, lpImage, _countof(hddfolder));
+		}
+		else
+		{
+			file_cpyname(cdfolder, lpImage, _countof(cdfolder));
+		}
 		sysmng_update(SYS_UPDATEOSCFG);
 		diskdrv_setsxsi(drv, lpImage);
 	}

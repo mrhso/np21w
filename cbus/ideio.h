@@ -81,7 +81,6 @@ typedef struct {
 	_IDEDEV	dev[2];
 } IDEIO;
 
-
 enum {
 	IDE_IRQ				= 0x09,
 
@@ -111,6 +110,7 @@ enum {
 enum {
 	IDEERR_BBK			= 0x80,
 	IDEERR_UNC			= 0x40,
+	IDEERR_MCNG			= 0x20,
 	IDEERR_IDNF			= 0x10,
 	IDEERR_ABRT			= 0x04,
 	IDEERR_TR0			= 0x02,
@@ -189,6 +189,7 @@ void ideio_reset(const NP2CFG *pConfig);
 void ideio_bind(void);
 void ideio_notify(REG8 sxsidrv, UINT action);
 void ideioint(NEVENTITEM item);
+void ideio_mediachange(REG8 sxsidrv);
 
 #ifdef __cplusplus
 }

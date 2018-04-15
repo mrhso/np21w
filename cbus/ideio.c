@@ -22,7 +22,9 @@
 
 
 	IDEIO	ideio;
-
+	//
+	//UINT8   ideio_mediastatusnotification[4] = {0};
+	//UINT8   ideio_mediachangeflag[4] = {0};
 
 static IDEDEV getidedev(void) {
 
@@ -752,7 +754,44 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xef:		// set features
 			TRACEOUT(("ideio: set features reg = %.2x", drv->wp));
-			cmdabort(drv);
+			//if(drv->device == IDETYPE_CDROM){
+			//	switch(drv->wp) {
+			//	case 0x95: // Enable Media Status Notification
+			//		ideio_mediastatusnotification[drv->sxsidrv] = 1;
+			//		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+			//		drv->error = 0;
+			//		break;
+			//	case 0x31: // Disable Media Status Notification
+			//		ideio_mediastatusnotification[drv->sxsidrv] = 0;
+			//		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+			//		drv->error = 0;
+			//		break;
+			//	default:
+			//		cmdabort(drv);
+			//	}
+			//}else{
+				cmdabort(drv);
+			//}
+			break;
+			
+		case 0xda:		// GET MEDIA STATUS
+			TRACEOUT(("ideio: GET MEDIA STATUS dev=%d", drv->device));
+			//if (ideio_mediastatusnotification[drv->sxsidrv]) {
+			//	SXSIDEV sxsi;
+			//	drv->status = IDESTAT_DRDY | IDESTAT_ERR;
+			//	drv->error = 0;
+			//	sxsi = sxsi_getptr(drv->sxsidrv);
+			//	if ((sxsi == NULL) || !(sxsi->flag & SXSIFLAG_READY)) {
+			//		drv->error |= 0x02; // No media
+			//	}else if(ideio_mediachangeflag[drv->sxsidrv]){
+			//		drv->error |= IDEERR_MCNG;
+			//		ideio_mediachangeflag[drv->sxsidrv] = 0;
+			//	}
+			//	setintr(drv);
+			//}
+			//else {
+				cmdabort(drv);
+			//}
 			break;
 
 		case 0xde:		// media lock
@@ -859,7 +898,6 @@ static REG8 IOINPCALL ideio_i644(UINT port) {
 	drv = getidedrv();
 	if (drv) {
 		TRACEOUT(("ideio get SC %.2x [%.4x:%.8x]", drv->sc, CPU_CS, CPU_EIP));
-		//drv->status = drv->status | IDESTAT_DSC; // test
 		return(drv->sc);
 	}
 	else {
@@ -1254,6 +1292,8 @@ static void devinit(IDEDRV drv, REG8 sxsidrv) {
 		drv->error = IDEERR_TR0;
 		drv->device = IDETYPE_NONE;
 	}
+	//memset(ideio_mediastatusnotification, 0, sizeof(ideio_mediastatusnotification));
+	//memset(ideio_mediachangeflag, 0, sizeof(ideio_mediachangeflag));
 }
 
 void ideio_reset(const NP2CFG *pConfig) {
@@ -1395,6 +1435,12 @@ do_notify:
 			drv->media &= ~(IDEIO_MEDIA_LOADED|IDEIO_MEDIA_COMBINE);
 			break;
 	}
+}
+
+// Win2kセットアップでメディア交換を通知するのに必要？
+void ideio_mediachange(REG8 sxsidrv) {
+
+	//ideio_mediachangeflag[sxsidrv] = 1;
 }
 
 #endif	/* SUPPORT_IDEIO */

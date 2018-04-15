@@ -235,6 +235,9 @@ OEMCHAR cdchange_fname[MAX_PATH];
 void cdchange_timeoutproc(NEVENTITEM item) {
 	cdchange_flag = 0;
 	sxsi_devopen(cdchange_drv, cdchange_fname);
+#if defined(SUPPORT_IDEIO)
+	ideio_mediachange(cdchange_drv);
+#endif
 }
 static void cdchange_timeoutset(void) {
 
@@ -300,6 +303,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 					file_cpyname(np2cfg.idecd[num], _T("\0\0\0\0"), 1);
 					sysmng_updatecaption(1);
 				}
+				ideio_mediachange(cdchange_drv);
 			}
 #endif
 			break;

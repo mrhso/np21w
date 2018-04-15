@@ -362,7 +362,6 @@ BRESULT fdd_diskaccess_d88(FDDFILE fdd) {
 BRESULT fdd_seek_d88(FDDFILE fdd) {
 
 //	FDDFILE	fdd = fddfile + fdc.us;
-
 TRACEOUT(("D88 seek trkseek[%03d]", (fdc.treg[fdc.us] << 1) + fdc.hd));
 	return(trkseek(fdd, (fdc.ncn << 1) + fdc.hd));
 }
@@ -487,14 +486,28 @@ BRESULT fdd_readid_d88(FDDFILE fdd) {
 		}
 		sectors = LOADINTELWORD(((D88SEC)p)->sectors);
 		if ((sec == fdc.crcn) && (!rpmcheck((D88SEC)p))) {			// ver0.31
-			fdc.C = ((D88SEC)p)->c;
-			fdc.H = ((D88SEC)p)->h;
+			/* 170101 ST modified to work on Windows 9x/2000 form ... */
+			if (++fdc.crcn >= sectors) {
+				fdc.crcn = 0;
+				if(fdc.mt) {
+					fdc.hd ^= 1;
+					if (fdc.hd == 0) {
+						fdc.treg[fdc.us]++;
+					}
+				}
+				else {
+					fdc.treg[fdc.us]++;
+				}
+			}
+			fdc.C = fdc.treg[fdc.us];
+			fdc.H = fdc.hd;
 			fdc.R = ((D88SEC)p)->r;
 			fdc.N = ((D88SEC)p)->n;
-			fdc.crcn++;
-			if (fdc.crcn >= sectors) {
-				fdc.crcn = 0;
-			}
+			//fdc.crcn++;
+			//if (fdc.crcn >= sectors) {
+			//	fdc.crcn = 0;
+			//}
+			/* 170101 ST modified to work on Windows 9x/2000 ... to */
 			if ((fdc.mf == 0xff) ||
 					((fdc.mf ^ (((D88SEC)p)->mfm_flg)) & 0x40)) {
 				fddlasterror = 0x00;

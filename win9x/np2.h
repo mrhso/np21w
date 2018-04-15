@@ -137,6 +137,7 @@ extern	int			mmxflag;
 extern	OEMCHAR		modulefile[MAX_PATH];
 extern	OEMCHAR		fddfolder[MAX_PATH];
 extern	OEMCHAR		hddfolder[MAX_PATH];
+extern	OEMCHAR		cdfolder[MAX_PATH];
 extern	OEMCHAR		bmpfilefolder[MAX_PATH];
 extern	OEMCHAR		npcfgfilefolder[MAX_PATH];
 

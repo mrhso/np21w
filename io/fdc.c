@@ -315,6 +315,7 @@ static void FDC_WriteData(void) {						// cmd: 05
 			get_chrn();
 			get_eotgsldtl();
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
+			fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
 			if (FDC_DriveCheck(TRUE)) {
 				fdc.event = FDCEVENT_BUFRECV;
 				fdc.bufcnt = 128 << fdc.N;
@@ -336,16 +337,33 @@ static void FDC_WriteData(void) {						// cmd: 05
 			if (writesector()) {
 				return;
 			}
-			if (fdc.tc) {
-				fdcsend_success7();
-				return;
-			}
-			if (fdc.R++ == fdc.eot) {
-				fdc.stat[fdc.us] = fdc.us | (fdc.hd << 2) |
-													FDCRLT_IC0 | FDCRLT_EN;
-				fdcsend_error7();
+			/* 170101 ST modified to work on Windows 9x/2000 form ... */
+			//if (fdc.tc) {
+			//	fdcsend_success7();
+			//	return;
+			//}
+			if ((fdc.tc) || (fdc.R++ == fdc.eot)) {
+				fdc.R = 1;
+				if (fdc.mt) {
+					fdc.hd ^= 1;
+					fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
+					fdc.H ^= 1;
+					if (fdc.tc || !fdc.H) {
+						fdc.C++;
+						fdcsend_success7();
+						break;
+					}
+				}
+				else {
+					fdc.C++;
+					fdcsend_success7();
+				}
+				//fdc.stat[fdc.us] = fdc.us | (fdc.hd << 2) |
+				//									FDCRLT_IC0 | FDCRLT_EN;
+				//fdcsend_error7();
 				break;
 			}
+			/* 170101 ST modified to work on Windows 9x/2000 ... to */
 			break;
 
 		default:
@@ -388,16 +406,30 @@ static void FDC_ReadData(void) {						// cmd: 06
 			get_hdus();
 			get_chrn();
 			get_eotgsldtl();
+			fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
 			readsector();
 			break;
 
 		case FDCEVENT_NEXTDATA:
 			fdc.bufcnt = 0;
 			if (fdc.R++ == fdc.eot) {
-				fdc.stat[fdc.us] = fdc.us | (fdc.hd << 2) |
-													FDCRLT_IC0 | FDCRLT_EN;
-				fdcsend_error7();
+				/* 170101 ST modified to work on Windows 9x/2000 form ... */
+				fdc.R = 1;
+				if (fdc.mt) {
+					fdc.hd ^= 1;
+					fdc.H ^= 1;
+					if (fdc.H) {
+						readsector();
+						break;
+					}
+				}
+				fdc.C++;
+				fdcsend_success7();
+				//fdc.stat[fdc.us] = fdc.us | (fdc.hd << 2) |
+				//									FDCRLT_IC0 | FDCRLT_EN;
+				//fdcsend_error7();
 				break;
+				/* 170101 ST modified to work on Windows 9x/2000 ... to */
 			}
 			readsector();
 			break;
@@ -425,7 +457,8 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 			if (!(fdc.equip & (1 << fdc.us))) {
 				fdc.stat[fdc.us] |= FDCRLT_NR | FDCRLT_IC0;
 			}
-			else if (!fddfile[fdc.us].fname[0]) {
+			/* 170101 ST modified to work on Windows 9x/2000 */
+			else if ((!fddfile[fdc.us].fname[0]) && (!(fdc.ctrlreg & 0x40))) {
 				fdc.stat[fdc.us] |= FDCRLT_NR;
 			}
 			else {
@@ -484,6 +517,11 @@ static void FDC_SenceintStatus(void) {					// cmd: 08
 		fdc.buf[0] = FDCRLT_IC1;
 		fdc.bufcnt = 1;
 	}
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	else if ((fdc.ctrlreg & 0x08) == 0) {
+		fdc.buf[0] |= 0x08;
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 }
 
 static void FDC_ReadID(void) {							// cmd: 0a
@@ -573,7 +611,10 @@ static void FDC_Seek(void) {							// cmd: 0f
 		case FDCEVENT_CMDRECV:
 			get_hdus();
 			fdc.ncn = fdc.cmds[1];
-			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
+			fdc.treg[fdc.us] = fdc.ncn;
+			fdc.R = 1;
+			/* 170101 ST modified to work on Windows 9x/2000 */
+			fdc.stat[fdc.us] = /*(fdc.hd << 2) |*/ fdc.us;	
 			fdc.stat[fdc.us] |= FDCRLT_SE;
 			if ((!(fdc.equip & (1 << fdc.us))) ||
 				(!fddfile[fdc.us].fname[0])) {
@@ -729,6 +770,8 @@ REG8 DMACCALL fdc_dataread(void) {
 							fdc.R = 1;
 						}
 					}
+					/* 170101 ST modified to work on Windows 9x/2000 */
+					fdc.R = 1;
 					fdcsend_success7();
 				}
 				if (!fdc.bufcnt) {
@@ -752,12 +795,20 @@ static void IOOUTCALL fdc_o92(UINT port, REG8 dat) {
 	if (((port >> 4) ^ fdc.chgreg) & 1) {
 		return;
 	}
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if (fdc.status & FDCSTAT_DIO) {
+		fdc.status &= ~FDCSTAT_DIO;
+		fdc.status |= FDCSTAT_RQM;
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	if ((fdc.status & (FDCSTAT_RQM | FDCSTAT_DIO)) == FDCSTAT_RQM) {
 		fdc_datawrite(dat);
 	}
 }
 
 static void IOOUTCALL fdc_o94(UINT port, REG8 dat) {
+
+	UINT8	i;
 
 	TRACEOUT(("fdc out %.2x %.2x [%.4x:%.4x]", port, dat, CPU_CS, CPU_IP));
 
@@ -769,6 +820,22 @@ static void IOOUTCALL fdc_o94(UINT port, REG8 dat) {
 		fdc_dmaready(0);
 		dmac_check();
 	}
+	/* 170101 ST modified to work on Windows 9x/2000 form ... */
+	if(dat & 0x80) {
+		fdcstatusreset();
+	} else if ((fdc.ctrlreg ^ dat) & 0x88) {
+		if (dat & 0x08) {
+			for (i=0; i<4; i++) {
+				if (fdd_diskready(i)) {
+					fdc.stat[i] = FDCRLT_AI | i;
+					fdc.status = FDCSTAT_RQM;
+					fdc_interrupt();
+					break;
+				}
+			}
+		}
+	}
+	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	fdc.ctrlreg = dat;
 }
 
