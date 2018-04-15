@@ -19,6 +19,7 @@ public:
 	static HINSTANCE GetInstanceHandle();
 	static void SetResourceHandle(HINSTANCE hInstance);
 	static HINSTANCE GetResourceHandle();
+	static HINSTANCE FindResourceHandle(LPCTSTR lpszName, LPCTSTR lpszType);
 
 	CWndProc();
 	virtual ~CWndProc();
@@ -40,6 +41,7 @@ public:
 
 protected:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 	virtual void OnNcDestroy(WPARAM wParam, LPARAM lParam);
 	virtual LRESULT WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam);
 	LRESULT DefWindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam);
@@ -49,6 +51,9 @@ protected:
 	static HINSTANCE sm_hInstance;		//!< インスタンス ハンドル
 	static HINSTANCE sm_hResource;		//!< リソース ハンドル
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+	static void HookWindowCreate(CWndProc* pWnd);
+	static bool UnhookWindowCreate();
 
 private:
 	static DWORD sm_dwThreadId;						//!< 自分のスレッド ID
