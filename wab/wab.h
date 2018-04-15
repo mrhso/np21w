@@ -28,7 +28,7 @@ typedef struct {
 	int realHeight; // 画面解像度(高さ)
 	int wndWidth; // 描画領域サイズ(幅)
 	int wndHeight; // 描画領域サイズ(高さ)
-	int fps; // リフレッシュレート（大体合わせてくれるかもしれない）
+	int fps; // リフレッシュレート（大体合わせてくれるかもしれない･･･けど現時点で何もしていない）
 	int lastWidth; // 前回のウィンドウアクセラレータの横解像度（デバイス再作成判定用）
 	int lastHeight; // 前回のウィンドウアクセラレータの横解像度（デバイス再作成判定用）
 	
@@ -47,7 +47,6 @@ typedef struct {
 	HBITMAP hBmpBuf; // バッファビットマップ（常に等倍）
 	HDC     hDCBuf; // バッファのHDC
 	NP2WAB_DrawFrame *drawframe; // 画面描画関数。hDCBufにアクセラレータ画面データを転送する。
-
 } NP2WABWND;
 
 void np2wab_init(HINSTANCE hInstance, HWND g_hWndMain);

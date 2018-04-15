@@ -49,3 +49,6 @@ void winlocex_moving(WINLOCEX wle, RECT *rect);
 void winlocex_move(WINLOCEX wle);
 void winlocex_close(WINLOCEX wle);
 
+BOOL winloc_InitDwmFunc();
+void winloc_DisposeDwmFunc();
+

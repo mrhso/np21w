@@ -1292,12 +1292,12 @@ void ideio_reset(const NP2CFG *pConfig) {
 			TRACEOUT(("load ide.rom"));
 			_tcscpy(ideio.biosname, tmpbiosname);
 		}else{
-			CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
+			CopyMemory(mem + 0xd8000, idebios, sizeof(idebios));
 			TRACEOUT(("use simulate ide.rom"));
 		}
 		file_close(fh);
 	}else{
-		CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
+		CopyMemory(mem + 0xd8000, idebios, sizeof(idebios));
 		TRACEOUT(("use simulate ide.rom"));
 	}
 
@@ -1305,9 +1305,6 @@ void ideio_reset(const NP2CFG *pConfig) {
 }
 
 void ideio_bind(void) {
-
-	REG8	i;
-	IDEDRV	drv;
 
 	if (pccore.hddif & PCHDD_IDE) {
 #if 1

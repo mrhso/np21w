@@ -20,6 +20,7 @@
 #include "pccore.h"
 #include "iocore.h"
 #include "wab/wab.h"
+#include "wab/cirrus_vga_extern.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -182,11 +183,13 @@ protected:
 private:
 	UINT8 m_enabled;			//!< 有効フラグ
 	UINT16 m_type;				//!< 機種設定
+	UINT16 m_fakecur;			//!< 仮ハードウェアカーソル
 	CWndProc m_chkenabled;		//!< ENABLED
 	CComboData m_cmbtype;		//!< 機種
+	CWndProc m_chkfakecur;		//!< FAKE HARDWARE CURSOR
 	CWndProc m_btnreset;		//!< RESET
-	void SetWABType(UINT8 cValue);
-	UINT8 GetWABType() const;
+	void SetWABType(UINT16 cValue);
+	UINT16 GetWABType() const;
 };
 
 /**
@@ -208,12 +211,13 @@ CGD5430Page::~CGD5430Page()
  */
 static const CComboData::Entry s_type[] =
 {
-	{MAKEINTRESOURCE(IDS_GD5430_XE),		0x58},
-	{MAKEINTRESOURCE(IDS_GD5430_CB),		0x59},
-	{MAKEINTRESOURCE(IDS_GD5430_CF),		0x5A},
-	{MAKEINTRESOURCE(IDS_GD5430_XE10),		0x5B},
-	{MAKEINTRESOURCE(IDS_GD5430_CB2),		0x5C},
-	{MAKEINTRESOURCE(IDS_GD5430_CX2),		0x5D},
+	{MAKEINTRESOURCE(IDS_GD5430_XE),		CIRRUS_98ID_Xe},
+	{MAKEINTRESOURCE(IDS_GD5430_CB),		CIRRUS_98ID_Cb},
+	{MAKEINTRESOURCE(IDS_GD5430_CF),		CIRRUS_98ID_Cf},
+	{MAKEINTRESOURCE(IDS_GD5430_XE10),		CIRRUS_98ID_Xe10},
+	{MAKEINTRESOURCE(IDS_GD5430_CB2),		CIRRUS_98ID_Cb2},
+	{MAKEINTRESOURCE(IDS_GD5430_CX2),		CIRRUS_98ID_Cx2},
+	{MAKEINTRESOURCE(IDS_GD5430_WAB),		CIRRUS_98ID_WAB},
 };
 
 /**
@@ -225,6 +229,7 @@ BOOL CGD5430Page::OnInitDialog()
 {
 	m_enabled = np2cfg.usegd5430;
 	m_type = np2cfg.gd5430type;
+	m_fakecur = np2cfg.gd5430fakecur;
 
 	m_chkenabled.SubclassDlgItem(IDC_GD5430ENABLED, this);
 	if(m_enabled)
@@ -235,6 +240,12 @@ BOOL CGD5430Page::OnInitDialog()
 	m_cmbtype.SubclassDlgItem(IDC_GD5430TYPE, this);
 	m_cmbtype.Add(s_type, _countof(s_type));
 	SetWABType(m_type);
+	
+	m_chkfakecur.SubclassDlgItem(IDC_GD5430FAKECURSOR, this);
+	if(m_fakecur)
+		m_chkfakecur.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+	else
+		m_chkfakecur.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 	
 	m_cmbtype.SetFocus();
 
@@ -249,10 +260,12 @@ void CGD5430Page::OnOK()
 	UINT update = 0;
 
 	if (np2cfg.usegd5430 != m_enabled
-		|| np2cfg.gd5430type != m_type)
+		|| np2cfg.gd5430type != m_type
+		|| np2cfg.gd5430fakecur != m_fakecur)
 	{
 		np2cfg.usegd5430 = m_enabled;
 		np2cfg.gd5430type = m_type;
+		np2cfg.gd5430fakecur = m_fakecur;
 		update |= SYS_UPDATECFG;
 	}
 	::sysmng_update(update);
@@ -275,9 +288,13 @@ BOOL CGD5430Page::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_GD5430TYPE:
 			m_type = GetWABType();
 			return TRUE;
+			
+		case IDC_GD5430FAKECURSOR:
+			m_fakecur = (m_chkfakecur.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
+			return TRUE;
 
 		case IDC_GD5430DEF:
-			m_type = 0x5B;
+			m_type = CIRRUS_98ID_Xe10;
 			SetWABType(m_type);
 			return TRUE;
 	}
@@ -303,7 +320,7 @@ LRESULT CGD5430Page::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
  * I/O を設定
  * @param[in] cValue 設定
  */
-void CGD5430Page::SetWABType(UINT8 cValue)
+void CGD5430Page::SetWABType(UINT16 cValue)
 {
 	m_cmbtype.SetCurItemData(cValue);
 }
@@ -312,9 +329,9 @@ void CGD5430Page::SetWABType(UINT8 cValue)
  * I/O を取得
  * @return I/O
  */
-UINT8 CGD5430Page::GetWABType() const
+UINT16 CGD5430Page::GetWABType() const
 {
-	return m_cmbtype.GetCurItemData(0x5B);
+	return m_cmbtype.GetCurItemData(CIRRUS_98ID_Xe10);
 }
 
 #endif

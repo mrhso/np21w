@@ -132,7 +132,9 @@ LRESULT CSubWndBase::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_MOVING:
-			winlocex_moving(m_wlex, reinterpret_cast<RECT*>(lParam));
+			if (np2oscfg.WINSNAP) { // スナップ設定を共通に np21w ver0.86 rev22
+				winlocex_moving(m_wlex, reinterpret_cast<RECT*>(lParam));
+			}
 			break;
 
 		case WM_EXITSIZEMOVE:

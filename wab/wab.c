@@ -26,6 +26,12 @@
 #include "ini.h"
 #include "dispsync.h"
 #include "wab.h"
+#include "bmpdata.h"
+#include "wabbmpsave.h"
+
+// XXX: 1280x1024以上にならないので差し当たってはこれで十分
+#define WAB_MAX_WIDTH	1280
+#define WAB_MAX_HEIGHT	1024
 
 #if !defined(_countof)
 #define _countof(a)	(sizeof(a)/sizeof(a[0]))
@@ -73,7 +79,7 @@ void wabwin_readini()
 	np2wabcfg.posx = CW_USEDEFAULT;
 	np2wabcfg.posy = CW_USEDEFAULT;
 	np2wabcfg.multiwindow = 0;
-	np2wabcfg.multithread = 0;
+	np2wabcfg.multithread = 1;
 	np2wabcfg.halftone = 0;
 
 	initgetfile(szPath, _countof(szPath));
@@ -152,14 +158,56 @@ void np2wab_resetscreensize()
  */
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 	RECT		rc;
+	HMENU		hSysMenu;
+	HMENU		hWabMenu;
+	MENUITEMINFO mii = {0};
+	TCHAR szString[128];
+	int scalemode;
 
 	switch (msg) {
 		case WM_CREATE:
+			hSysMenu = GetSystemMenu(hWnd, FALSE);
+			hWabMenu = LoadMenu(ga_hInstance, MAKEINTRESOURCE(IDR_WABSYSMENU));
+			mii.cbSize = sizeof(mii);
+			mii.fMask = MIIM_TYPE | MIIM_STATE | MIIM_ID | MIIM_SUBMENU | MIIM_DATA;
+			mii.dwTypeData = szString;
+			mii.cch = _countof(szString);
+			GetMenuItemInfo(hWabMenu, 0, TRUE, &mii);
+			InsertMenuItem(hSysMenu, 0, TRUE, &mii);
+			mii.dwTypeData = szString;
+			mii.cch = _countof(szString);
+			GetMenuItemInfo(hWabMenu, 1, TRUE, &mii);
+			InsertMenuItem(hSysMenu, 0, TRUE, &mii);
+			CheckMenuItem(hSysMenu, IDM_WABSYSMENU_HALFTONE, MF_BYCOMMAND | (np2wabcfg.halftone ? MF_CHECKED : MF_UNCHECKED));
+			DestroyMenu(hWabMenu);
+
+			break;
+			
+		case WM_SYSCOMMAND:
+			switch(wParam) {
+				case IDM_WABSYSMENU_RESETSIZE:
+					np2wab_resetscreensize();
+					break;
+
+				case IDM_WABSYSMENU_HALFTONE:
+					np2wabcfg.halftone = !np2wabcfg.halftone;
+					hSysMenu = GetSystemMenu(hWnd, FALSE);
+					CheckMenuItem(hSysMenu, IDM_WABSYSMENU_HALFTONE, MF_BYCOMMAND | (np2wabcfg.halftone ? MF_CHECKED : MF_UNCHECKED));
+					scalemode = np2wab.wndWidth!=np2wab.realWidth || np2wab.wndHeight!=np2wab.realHeight;
+					if(scalemode){
+						SetStretchBltMode(np2wabwnd.hDCWAB, np2wabcfg.halftone ? HALFTONE : COLORONCOLOR);
+						SetBrushOrgEx(np2wabwnd.hDCWAB , 0 , 0 , NULL);
+					}
+					break;
+
+				default:
+					return(DefWindowProc(hWnd, msg, wParam, lParam));
+			}
 			break;
 
 		case WM_MOVE:
 			GetWindowRect(hWnd, &rc);
-			if(np2wabwnd.multiwindow){
+			if(np2wabwnd.multiwindow && !IsZoomed(hWnd) && !IsIconic(hWnd) && IsWindowVisible(hWnd)){
 				np2wabcfg.posx = rc.left;
 				np2wabcfg.posy = rc.top;
 			}
@@ -229,9 +277,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 			SetForegroundWindow(np2wabwnd.hWndMain);
 			SendMessage(np2wabwnd.hWndMain, msg, wParam, lParam); // とりあえず丸投げ
 			break;
-		case WM_LBUTTONDBLCLK:
-			np2wab_resetscreensize();
-			break;
 
 		case WM_CLOSE:
 			return 0;
@@ -251,6 +296,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 static int ga_lastscalemode = 0;
 static int ga_lastrealwidth = 0;
 static int ga_lastrealheight = 0;
+static int ga_screenupdated = 0;
 void np2wab_drawWABWindow(HDC hdc)
 {
 	int scalemode = 0;
@@ -310,6 +356,8 @@ void np2wab_drawWABWindow(HDC hdc)
 		}
 	}else{
 		// DirectDrawに描かせる
+		//scrnmng_blthdc(np2wabwnd.hDCBuf);
+		// DirectDraw Surfaceに転送
 		scrnmng_blthdc(np2wabwnd.hDCBuf);
 	}
 }
@@ -324,6 +372,8 @@ void np2wab_drawframe()
 			// マルチスレッドじゃない場合はここで描画処理
 			np2wabwnd.drawframe();
 			np2wab_drawWABWindow(np2wabwnd.hDCBuf);
+			if(!np2wabwnd.multiwindow)
+				scrnmng_bltwab();
 		}
 	}else{
 		if(np2wabwnd.hWndWAB!=NULL){
@@ -334,9 +384,11 @@ void np2wab_drawframe()
 				np2wabwnd.ready = 1;
 			}
 			if(np2wabwnd.ready && (np2wab.relay&0x3)!=0){
-				if(!np2wabwnd.multiwindow){
+				if(!np2wabwnd.multiwindow && ga_screenupdated){
 					// 画面転送だけメインスレッドで
-					np2wab_drawWABWindow(np2wabwnd.hDCBuf);
+					//np2wab_drawWABWindow(np2wabwnd.hDCBuf);
+					scrnmng_bltwab();
+					ga_screenupdated = 0;
 				}
 				ResumeThread(ga_hThread);
 			}
@@ -352,11 +404,10 @@ DWORD WINAPI ga_ThreadFunc(LPVOID vdParam) {
 	while (!ga_exitThread && ga_threadmode) {
 		if(np2wabwnd.ready && np2wabwnd.hWndWAB!=NULL && np2wabwnd.drawframe!=NULL && (np2wab.relay&0x3)!=0){
 			np2wabwnd.drawframe();
-			if(np2wabwnd.multiwindow){
-				// 別窓モードは画面転送も別スレッドで
-				np2wab_drawWABWindow(np2wabwnd.hDCBuf); 
-			}
+			// 画面転送も別スレッドで
+			np2wab_drawWABWindow(np2wabwnd.hDCBuf); 
 			// 画面転送待ち
+			ga_screenupdated = 1;
 			if(!ga_exitThread) SuspendThread(ga_hThread);
 		}else{
 			// 描画しないのに高速でぐるぐる回しても仕方ないのでスリープ
@@ -412,7 +463,7 @@ void np2wab_init(HINSTANCE hInstance, HWND hWndMain)
 			0, 
 			g_Name, g_Name, 
 			WS_OVERLAPPEDWINDOW,
-			0, 0, 
+			np2wabcfg.posx, np2wabcfg.posy, 
 			640, 480, 
 			np2wabwnd.multiwindow ? NULL : np2wabwnd.hWndMain, 
 			NULL, ga_hInstance, NULL
@@ -422,7 +473,7 @@ void np2wab_init(HINSTANCE hInstance, HWND hWndMain)
 	// HWNDとかHDCとかバッファ用ビットマップとかを先に作っておく
 	np2wabwnd.hDCWAB = GetDC(np2wabwnd.hWndWAB);
 	hdc = np2wabwnd.multiwindow ? GetDC(NULL) : np2wabwnd.hDCWAB;
-	np2wabwnd.hBmpBuf = CreateCompatibleBitmap(hdc, 1280, 1024); // XXX: 1280x1024以上にならないのでこれで十分
+	np2wabwnd.hBmpBuf = CreateCompatibleBitmap(hdc, WAB_MAX_WIDTH, WAB_MAX_HEIGHT);
 	np2wabwnd.hDCBuf = CreateCompatibleDC(hdc);
 	SelectObject(np2wabwnd.hDCBuf, np2wabwnd.hBmpBuf);
 
@@ -446,6 +497,7 @@ void np2wab_reset(const NP2CFG *pConfig)
 	ga_lastscalemode = 0;
 	ga_lastrealwidth = 0;
 	ga_lastrealheight = 0;
+	ga_screenupdated = 0;
 	np2wab.lastWidth = 0;
 	np2wab.lastHeight = 0;
 	np2wab.relaystateint = 0;
@@ -533,7 +585,7 @@ void np2wab_setRelayState(REG8 state)
 			if(np2wabwnd.multiwindow){
 				// 別窓モードなら別窓を出す
 				ShowWindow(np2wabwnd.hWndWAB, SW_SHOWNOACTIVATE);
-				SetWindowPos(np2wabwnd.hWndWAB, HWND_TOP, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
+				SetWindowPos(np2wabwnd.hWndWAB, HWND_TOP, np2wabcfg.posx, np2wabcfg.posy, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 			}else{
 				// 統合モードなら画面を乗っ取る
 				np2wab_setScreenSize(ga_lastwabwidth, ga_lastwabheight);
@@ -559,5 +611,116 @@ void np2wab_setRelayState(REG8 state)
 	}
 }
 
+/**
+ * ウィンドウアクセラレータ画面をBMPで取得
+ */
+BRESULT np2wab_getbmp(BMPFILE *lpbf, BMPINFO *lpbi, UINT8 **lplppal, UINT8 **lplppixels) {
+
+	BMPDATA		bd;
+	BMPFILE		bf;
+	UINT		pos;
+	BMPINFO		bi;
+	BMPINFO		bitmp;
+	UINT		align;
+	int			r;
+	int			x;
+	UINT8		*dstpix;
+	LPVOID      lpbits;
+	UINT8       *buf;
+	HBITMAP     hBmpTmp;
+
+	// 24bit固定
+	bd.width = np2wab.wndWidth;
+	bd.height = np2wab.wndHeight;
+	bd.bpp = 24;
+
+	// Bitmap File
+	ZeroMemory(&bf, sizeof(bf));
+	bf.bfType[0] = 'B';
+	bf.bfType[1] = 'M';
+	pos = sizeof(BMPFILE) + sizeof(BMPINFO);
+	STOREINTELDWORD(bf.bfOffBits, pos);
+	CopyMemory(lpbf, &bf, sizeof(bf));
+
+	// Bitmap Info
+	bmpdata_setinfo(&bi, &bd);
+	STOREINTELDWORD(bi.biClrImportant, 0);
+	align = bmpdata_getalign(&bi);
+	CopyMemory(lpbi, &bi, sizeof(bi));
+	*lplppal = (UINT8*)_MALLOC(0); // freeで解放されても大丈夫なように（大抵NULLが入る）
+
+	*lplppixels = (UINT8*)_MALLOC(bmpdata_getalign(&bi) * bd.height);
+	dstpix = *lplppixels;
+
+	// Copy Pixels
+	bitmp = bi;
+	STOREINTELDWORD(bitmp.biWidth, WAB_MAX_WIDTH);
+	STOREINTELDWORD(bitmp.biHeight, WAB_MAX_HEIGHT);
+	hBmpTmp = CreateDIBSection(NULL, (LPBITMAPINFO)&bitmp, DIB_RGB_COLORS, &lpbits, NULL, 0);
+	GetDIBits(np2wabwnd.hDCBuf, np2wabwnd.hBmpBuf, 0, WAB_MAX_HEIGHT, lpbits, (LPBITMAPINFO)&bitmp, DIB_RGB_COLORS);
+	buf = (UINT8*)(lpbits) + (WAB_MAX_HEIGHT - bd.height) * WAB_MAX_WIDTH*bd.bpp/8;
+	do {
+		CopyMemory(dstpix, buf, np2wab.wndWidth*bd.bpp/8);
+		dstpix += align;
+		buf += WAB_MAX_WIDTH*bd.bpp/8;
+	} while(--bd.height);
+	DeleteObject(hBmpTmp);
+
+	return(SUCCESS);
+}
+
+/**
+ * ウィンドウアクセラレータ画面をBMPで保存
+ */
+BRESULT np2wab_writebmp(const OEMCHAR *filename) {
+	
+	FILEH		fh;
+	BMPFILE     bf;
+	BMPINFO     bi;
+	UINT8       *lppal;
+	UINT8       *lppixels;
+	int	        pixelssize;
+	
+	fh = file_create(filename);
+	if (fh == FILEH_INVALID) {
+		goto sswb_err1;
+	}
+	
+	np2wab_getbmp(&bf, &bi, &lppal, &lppixels);
+	
+	// Bitmap File
+	if (file_write(fh, &bf, sizeof(bf)) != sizeof(bf)) {
+		goto sswb_err3;
+	}
+
+	// Bitmap Info (パレット不要)
+	if (file_write(fh, &bi, sizeof(bi)) != sizeof(bi)) {
+		goto sswb_err3;
+	}
+	
+	// Pixels
+	pixelssize = bmpdata_getalign(&bi) * LOADINTELDWORD(bi.biHeight);
+	if (file_write(fh, lppixels, pixelssize) != pixelssize) {
+		goto sswb_err3;
+	}
+
+	_MFREE(lppal);
+	_MFREE(lppixels);
+
+	file_close(fh);
+
+	return(SUCCESS);
+	
+sswb_err3:
+	_MFREE(lppal);
+	_MFREE(lppixels);
+
+sswb_err2:
+	file_close(fh);
+	file_delete(filename);
+
+sswb_err1:
+	return(FAILURE);
+}
 
 #endif	/* SUPPORT_WAB */

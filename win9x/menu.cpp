@@ -381,14 +381,15 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_MEM326, MF_BYCOMMAND | MFCHECK(EXTMEM == 32));
 	CheckMenuItem(hMenu, IDM_MEM646, MF_BYCOMMAND | MFCHECK(EXTMEM == 64));
 	CheckMenuItem(hMenu, IDM_MEM1206,MF_BYCOMMAND | MFCHECK(EXTMEM == 120));
+	CheckMenuItem(hMenu, IDM_MEM2306,MF_BYCOMMAND | MFCHECK(EXTMEM == 230));
 
 	// Device
 	CheckMenuItem(hMenu, IDM_MOUSE, MF_BYCOMMAND | MFCHECK(np2oscfg.MOUSE_SW));
 	
 	// Mouse
 	CheckMenuItem(hMenu, IDM_MOUSERAW, MF_BYCOMMAND | MFCHECK(np2oscfg.rawmouse));
-	const UINT8 MMUL = np2oscfg.mousemul;
-	const UINT8 MDIV = np2oscfg.mousediv;
+	const UINT8 MMUL = (UINT8)np2oscfg.mousemul;
+	const UINT8 MDIV = (UINT8)np2oscfg.mousediv;
 	CheckMenuItem(hMenu, IDM_MOUSE30X, MF_BYCOMMAND | MFCHECK(MMUL == 3 && MDIV == 1));
 	CheckMenuItem(hMenu, IDM_MOUSE20X, MF_BYCOMMAND | MFCHECK(MMUL == 2 && MDIV == 1));
 	CheckMenuItem(hMenu, IDM_MOUSE15X, MF_BYCOMMAND | MFCHECK(MMUL == 3 && MDIV == 2));

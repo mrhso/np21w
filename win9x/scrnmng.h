@@ -94,6 +94,7 @@ void scrnmng_exitsizing(void);
 
 void scrnmng_updatefsres(void);
 void scrnmng_blthdc(HDC hdc);
+void scrnmng_bltwab(void);
 
 #if defined(SUPPORT_DCLOCK)
 BOOL scrnmng_isdispclockclick(const POINT *pt);

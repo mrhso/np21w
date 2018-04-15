@@ -13,6 +13,7 @@ void dialog_writebmp(HWND hWnd);
 
 // d_txt.cpp
 void dialog_writetxt(HWND hWnd);
+void dialog_getTVRAM(OEMCHAR *buffer);
 
 // d_cfgload.cpp
 int  dialog_readnpcfg(HWND hWnd);

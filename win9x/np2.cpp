@@ -68,6 +68,8 @@
 #include "subwnd/skbdwnd.h"
 #include "subwnd/subwnd.h"
 #include "subwnd/toolwnd.h"
+#include "bmpdata.h"
+#include "vram/scrnsave.h"
 #if !defined(_WIN64)
 #include "cputype.h"
 #endif
@@ -83,6 +85,7 @@
 #endif
 #if defined(SUPPORT_WAB)
 #include "wab/wab.h"
+#include "wab/wabbmpsave.h"
 #endif
 #if defined(SUPPORT_CL_GD5430)
 #include "wab/cirrus_vga_extern.h"
@@ -156,6 +159,14 @@ static const OEMCHAR szNp2ResDll[] = OEMTEXT("np2x64_%u.dll");
 static const OEMCHAR szNp2ResDll[] = OEMTEXT("np2_%u.dll");
 #endif	// defined(_WIN64)
 
+// ASCII -> 98キーコード表(np21w ver0.86 rev22)
+char vkeylist[256] = {0};
+char shift_on[256] = {0};
+
+// コピペ用(np21w ver0.86 rev22)
+char *autokey_sendbuffer = NULL;
+int autokey_sendbufferlen = 0;
+int autokey_sendbufferpos = 0;
 
 // ----
 
@@ -455,14 +466,20 @@ static void np2popup(HWND hWnd, LPARAM lp) {
 
 	HMENU	mainmenu;
 	HMENU	hMenu;
+	HMENU	hMenuEdit;
 	POINT	pt;
 
 	mainmenu = (HMENU)GetWindowLongPtr(hWnd, NP2GWLP_HMENU);
-	if (mainmenu == NULL) {
-		return;
-	}
 	hMenu = CreatePopupMenu();
-	menu_addmenubar(hMenu, mainmenu);
+    hMenuEdit = LoadMenu(g_hInstance, MAKEINTRESOURCE(IDR_COPYPASTEPOPUP));
+#if defined(SUPPORT_WAB)
+		EnableMenuItem(hMenuEdit, IDM_COPYPASTE_COPYWABMEM, 0);
+#endif
+	menu_addmenubar(hMenu, hMenuEdit);
+	if (mainmenu) {
+		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+		menu_addmenubar(hMenu, mainmenu);
+	}
 	xmenu_update(hMenu);
 	pt.x = LOWORD(lp);
 	pt.y = HIWORD(lp);
@@ -1003,6 +1020,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.EXTMEM = 120;
 			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
 			break;
+			
+		case IDM_MEM2306:
+			np2cfg.EXTMEM = 230;
+			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
+			break;
 
 		case IDM_MOUSE:
 			mousemng_toggle(MOUSEPROC_SYSTEM);
@@ -1173,6 +1195,102 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 		case IDM_ITFWORK:
 			np2cfg.ITF_WORK = !np2cfg.ITF_WORK;
 			update |= SYS_UPDATECFG;
+			break;
+			
+		case IDM_COPYPASTE_COPYTVRAM:
+			{
+				HGLOBAL hMem;
+				OEMCHAR *lpMem;
+				hMem = GlobalAlloc(GHND,0x4000); // アトリビュート分小さくなるので0x4000で十分
+				lpMem = (OEMCHAR*)GlobalLock(hMem);
+				dialog_getTVRAM(lpMem);
+				GlobalUnlock(hMem);
+				if(OpenClipboard(hWnd)){
+					// クリップボード奪取成功
+					EmptyClipboard();
+					SetClipboardData(CF_TEXT, hMem);
+					CloseClipboard();
+				}else{
+					// クリップボード奪取失敗･･･
+					GlobalFree(hMem);
+				}
+			}
+			break;
+			
+		case IDM_COPYPASTE_COPYGVRAM:
+		case IDM_COPYPASTE_COPYWABMEM:
+#ifdef SUPPORT_WAB
+			{
+				BMPFILE bf;
+				BMPINFO bi;
+				UINT8 *lppal;
+				UINT8 *lppixels;
+				HDC hDC;
+				DWORD dwHeaderSize;
+				BITMAPINFO *lpbinfo;
+				HBITMAP hBmp;
+				SCRNSAVE ss = scrnsave_create();
+				if(uID == IDM_COPYPASTE_COPYWABMEM){
+					np2wab_getbmp(&bf, &bi, &lppal, &lppixels);
+				}else{
+					scrnsave_getbmp(ss, &bf, &bi, &lppal, &lppixels, SCRNSAVE_AUTO);
+				}
+				hDC = GetDC(NULL);
+				dwHeaderSize = LOADINTELDWORD(bf.bfOffBits) - sizeof(BMPFILE);
+				lpbinfo = (BITMAPINFO*)_MALLOC(dwHeaderSize);
+				CopyMemory(lpbinfo, &bi, sizeof(BMPINFO));
+				if(LOADINTELWORD(bi.biBitCount) <= 8){
+					CopyMemory(lpbinfo->bmiColors, lppal, 4 << LOADINTELWORD(bi.biBitCount));
+					hBmp = CreateDIBitmap(hDC, &(lpbinfo->bmiHeader), CBM_INIT, lppixels, lpbinfo, DIB_RGB_COLORS);
+				}else{
+					hBmp = CreateDIBitmap(hDC, &(lpbinfo->bmiHeader), CBM_INIT, lppixels, lpbinfo, DIB_RGB_COLORS);
+				}
+				ReleaseDC(NULL, hDC);
+				_MFREE(lppal);
+				_MFREE(lppixels);
+				_MFREE(lpbinfo);
+				if(OpenClipboard(hWnd)){
+					// クリップボード奪取成功
+					EmptyClipboard();
+					SetClipboardData(CF_BITMAP,hBmp);
+					CloseClipboard();
+				}else{
+					// クリップボード奪取失敗･･･
+					DeleteObject(hBmp);
+				}
+				scrnsave_destroy(ss);
+			}
+#endif
+			break;
+			
+		case IDM_COPYPASTE_PASTE:
+			{
+				int txtlen;
+				HGLOBAL hg;
+				char *strClip;
+				//char *strText;
+				if(autokey_sendbuffer==NULL){
+					if (OpenClipboard(hWnd)){
+						if(hg = GetClipboardData(CF_TEXT)) {
+							txtlen = GlobalSize(hg);
+							autokey_sendbufferlen = 0;
+							autokey_sendbuffer = (char*)_MALLOC(txtlen);
+							strClip = (char*)GlobalLock(hg);
+							strcpy(autokey_sendbuffer , strClip);
+							GlobalUnlock(hg);
+							CloseClipboard();
+							autokey_sendbufferlen = strlen(autokey_sendbuffer);
+							autokey_sendbufferpos = 0;
+							keystat_senddata(0x80|0x70);
+						}else{
+							CloseClipboard();
+						}
+					}
+				}else{
+					// 強制終了
+					autokey_sendbufferpos = autokey_sendbufferlen;
+				}
+			}
 			break;
 
 		default:
@@ -1516,6 +1634,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_KEYDOWN:
+			autokey_sendbufferpos = autokey_sendbufferlen; // コピペ強制終了 np21w ver0.86 rev22
 			if (wParam == VK_F11) {
 				np2class_enablemenu(g_hWndMain, TRUE);
 				return(DefWindowProc(hWnd, WM_SYSKEYDOWN, VK_F10, lParam));
@@ -1540,8 +1659,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_SYSKEYDOWN:
+			autokey_sendbufferpos = autokey_sendbufferlen; // コピペ強制終了 np21w ver0.86 rev22
 #ifdef HOOK_SYSKEY
-			if (GetAsyncKeyState (VK_RMENU) >> ((sizeof(SHORT) * 8) - 1)) {								// ver0.86 rev6	
+			if (GetAsyncKeyState (VK_RMENU) >> ((sizeof(SHORT) * 8) - 1)) {	// np21w ver0.86 rev6	
 #else
 			if (lParam & 0x20000000) {								// ver0.30
 #endif
@@ -1571,6 +1691,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_LBUTTONDOWN:
+			autokey_sendbufferpos = autokey_sendbufferlen; // コピペ強制終了 np21w ver0.86 rev22
 			if (!mousemng_buttonevent(MOUSEMNG_LEFTDOWN)) {
 				if (!scrnmng_isfullscreen()) {
 					if (np2oscfg.wintype == 2) {
@@ -1600,12 +1721,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_MBUTTONDOWN:
+			autokey_sendbufferpos = autokey_sendbufferlen; // コピペ強制終了 np21w ver0.86 rev22
 			mousemng_toggle(MOUSEPROC_SYSTEM);
 			np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
 			sysmng_update(SYS_UPDATECFG);
 			break;
 
 		case WM_RBUTTONDOWN:
+			autokey_sendbufferpos = autokey_sendbufferlen; // コピペ強制終了 np21w ver0.86 rev22
 			if (!mousemng_buttonevent(MOUSEMNG_RIGHTDOWN)) {
 				if (!scrnmng_isfullscreen()) {
 					np2popup(hWnd, lParam);
@@ -1704,6 +1827,116 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return(DefWindowProc(hWnd, msg, wParam, lParam));
 	}
 	return(0L);
+}
+
+// --- auto sendkey
+
+void autoSendKey(){
+	static int shift = 0;
+	static DWORD lastsendtime = 0;
+	int capslock = 0;
+	int i;
+	DWORD curtime = 0;
+	
+	// 送るものなし
+	if(autokey_sendbufferlen==0) return;
+	
+	//// 送れるだけ送る(安全のためバッファの半分までとする)
+	//while(keybrd.buffers < KB_BUF/2 && autokey_sendbufferpos < autokey_sendbufferlen){
+	//	char sendchar = autokey_sendbuffer[autokey_sendbufferpos];
+	//	if(vkeylist[sendchar]){
+	//		if( shift_on[sendchar] && !(capslock^shift)){
+	//			keystat_senddata(0x00|0x70);
+	//			shift = 1;
+	//		}
+	//		if(!shift_on[sendchar] &&  (capslock^shift)){
+	//			keystat_senddata(0x80|0x70);
+	//			shift = 0;
+	//		}
+	//		keystat_senddata(0x00|vkeylist[sendchar]);
+	//		keystat_senddata(0x80|vkeylist[sendchar]);
+	//	}
+	//	autokey_sendbufferpos++;
+	//}
+
+	// 10文字だけ送る(入力速度制御付き)
+	curtime = GetTickCount();
+	if(curtime - lastsendtime > 256/pccore.multiple+8){
+		int i;
+		int maxkey = 1;//((int)pccore.multiple-20)/16;
+		if(maxkey <= 0) maxkey = 1;
+		for(i=0;i<maxkey;i++){
+			if(keybrd.buffers < KB_BUF/2 && autokey_sendbufferpos < autokey_sendbufferlen){
+				UINT8 sendchar = ((UINT8*)autokey_sendbuffer)[autokey_sendbufferpos];
+				if(sendchar){
+					if(sendchar <= 0x7f){
+						// ASCII
+						if(vkeylist[sendchar]){
+							if( shift_on[sendchar] && !(capslock^shift)){
+								keystat_senddata(0x00|0x70);
+								shift = 1;
+							}
+							if(!shift_on[sendchar] &&  (capslock^shift)){
+								keystat_senddata(0x80|0x70);
+								shift = 0;
+							}
+							keystat_senddata(0x00|vkeylist[sendchar]);
+							keystat_senddata(0x80|vkeylist[sendchar]);
+						}
+					}else if(0xA1 <= sendchar && sendchar <= 0xDF){
+						// 半角ｶﾅだけどまだ未実装
+						i--;
+					}else if(0x80 <= sendchar){
+						// 多分2byte文字
+						autokey_sendbufferpos++;
+						i--;
+					}
+				}
+				autokey_sendbufferpos++;
+			}
+		}
+		lastsendtime = curtime;
+	}
+
+	// 送信完了したら
+	if(autokey_sendbufferpos >= autokey_sendbufferlen){
+		keystat_senddata(0x80|0x70);
+		autokey_sendbufferlen = 0;
+		autokey_sendbufferpos = 0;
+		_MFREE(autokey_sendbuffer);
+		autokey_sendbuffer = NULL;
+		shift = 0;
+	}
+}
+
+// キーコード表作成
+void createAsciiTo98KeyCodeList(){
+	int i;
+	// キーコード表作成（暫定）
+	char numkeys[] = {0,'!', '"','#','$','%','&','\'','(',')'};
+	for(i='0';i<='9';i++){
+		vkeylist[i] = i-'0';
+		if(i=='0') vkeylist[i] = 0x0a;
+		vkeylist[numkeys[i-'0']] = vkeylist[i];
+		shift_on[numkeys[i-'0']] = 1;
+	}
+	char asckeycode[] = {0x1d,0x2d,0x2b,0x1f,0x12,0x20,0x21,0x22,0x17,0x23,0x24,0x25,0x2f,0x2e,0x18,0x19,0x10,0x13,0x1e,0x14,0x16,0x2c,0x11,0x2a,0x15,0x29};
+	for(i='A';i<='Z';i++){
+		vkeylist[i] = asckeycode[i-'A'];
+		shift_on[i] = 1;
+		vkeylist[i+0x20] = vkeylist[i];
+	}
+	char spkeyascii[] = { '-', '^','\\', '@', '[', ';', ':', ']', ',', '.', '/', '_'};
+	char spshascii[]  = { '=', '`', '|', '~', '{', '+', '*', '}', '<', '>', '?', '_'};
+	char spkeycode[]  = {0x0B,0x0C,0x0D,0x1A,0x1B,0x26,0x27,0x28,0x30,0x31,0x32,0x33};
+	vkeylist[' '] = 0x34;
+	vkeylist['\t'] = 0x0f;
+	vkeylist['\n'] = 0x1c;
+	for(i=0;i<=sizeof(spkeyascii)/sizeof(spkeyascii[0]);i++){
+		vkeylist[spkeyascii[i]] = spkeycode[i];
+		vkeylist[ spshascii[i]] = spkeycode[i];
+		shift_on[ spshascii[i]] = 1;
+	}
 }
 
 #ifdef HOOK_SYSKEY
@@ -1841,6 +2074,9 @@ void loadNewINI(const OEMCHAR *fname){
 	_tcscpy(lpFilenameBuf, fname);
 
 	np2opening = 1;
+	hInstance = g_hInstance;
+
+	winloc_InitDwmFunc();
 
 	// 旧INI片付け
 #ifdef HOOK_SYSKEY
@@ -1940,41 +2176,18 @@ void loadNewINI(const OEMCHAR *fname){
 	keystat_initialize();
 
 	np2class_initialize(hInstance);
-	//if (!hPrevInst) {
-		//wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-		//wc.lpfnWndProc = WndProc;
-		//wc.cbClsExtra = 0;
-		//wc.cbWndExtra = NP2GWLP_SIZE;
-		//wc.hInstance = hInstance;
-		//wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		//wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		//wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-		//wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAIN);
-		//wc.lpszClassName = szClassName;
-		//if (!RegisterClass(&wc)) {
-		//	UnloadExternalResource();
-		//	TRACETERM();
-		//	dosio_term();
-		//	SendMessage(hWnd, WM_CLOSE, 0, 0L);
-		//	return;
-		//}
-
-		kdispwin_initialize();
-		skbdwin_initialize();
-		mdbgwin_initialize();
-		CDebugUtyView::Initialize(hInstance);
-	//}
+	kdispwin_initialize();
+	skbdwin_initialize();
+	mdbgwin_initialize();
+	CDebugUtyView::Initialize(hInstance);
 
 	style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX;
 	if (np2oscfg.thickframe) {
 		style |= WS_THICKFRAME;
 	}
-	//hWnd = CreateWindowEx(0, szClassName, np2oscfg.titles, style,
-	//					np2oscfg.winx, np2oscfg.winy, 640, 400,
-	//					NULL, NULL, hInstance, NULL);
 	hWnd = g_hWndMain;
 
-	mousemng_initialize(); // 場所移動 np21w ver0.96 rev13
+	mousemng_initialize();
 
 	scrnmng_initialize();
 
@@ -2149,6 +2362,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #if defined(SUPPORT_WIN2000HOST)
 	initialize_findacx();
 #endif
+
+	createAsciiTo98KeyCodeList();
 
 	_MEM_INIT();
 	CWndProc::Initialize(hInstance);
@@ -2477,6 +2692,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 						waitcnt = framecnt;
 					}
 				}
+				autoSendKey(); // 自動キー送信
 			}
 		}
 		else if ((np2stopemulate == 1) ||				// background sleep
@@ -2541,6 +2757,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	wabwin_writeini();
 #endif	// defined(SUPPORT_WAB)
 	skbdwin_deinitialize();
+	
+	winloc_DisposeDwmFunc();
 
 	UnloadExternalResource();
 

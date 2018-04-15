@@ -43,9 +43,9 @@ static void GetDefaultFilename(LPCTSTR lpExt, LPTSTR lpFilename, UINT cchFilenam
 		TCHAR szFilename[MAX_PATH];
 		TCHAR *fname, *extpos;
 		if(np2cfg.fddfile[0][0]){
-			fname = _tcsrchr(np2cfg.fddfile[0], '\\');
+			fname = _tcsrchr(np2cfg.fddfile[0], '\\')+1;
 		}else if(np2cfg.sasihdd[0][0]){
-			fname = _tcsrchr(np2cfg.sasihdd[0], '\\');
+			fname = _tcsrchr(np2cfg.sasihdd[0], '\\')+1;
 		}
 		extpos = _tcsrchr(fname, '.');
 		if(extpos){

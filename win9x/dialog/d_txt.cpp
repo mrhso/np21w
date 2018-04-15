@@ -121,6 +121,62 @@ void writetxt(const OEMCHAR *filename) {
 		file_close(fh);
 	}
 }
+// XXX: もっと適切な場所に移すべき
+void dialog_getTVRAM(OEMCHAR *buffer) {
+	int i;
+	int lpos = 0;
+	int cpos = 0;
+	//int kanjiMode = 0; // JISのままで保存する場合用
+	UINT8 buf[5];
+	char *dstbuf = (char*)buffer;
+	for(i=0x0A0000;i<0x0A3FFF;i+=2){
+		if(mem[i+1]){
+			// 標準漢字
+			//if(!kanjiMode){
+			//	buf[0] = 0x1b;
+			//	buf[1] = 0x24;
+			//	buf[2] = 0x40;
+			//	file_write(fh, buf, 3);
+			//}
+			buf[0] = mem[i]+0x20;
+			buf[1] = mem[i+1];
+			convertJIStoSJIS(buf); // JIS -> Shift-JIS
+			memcpy(dstbuf, buf, 2);
+			i+=2;
+			lpos+=2;
+			dstbuf+=2;
+			//kanjiMode = 1;
+		}else{
+			// ASCII
+			//if(kanjiMode){
+			//	buf[0] = 0x1b;
+			//	buf[1] = 0x28;
+			//	buf[2] = 0x4a;
+			//	file_write(fh, buf, 3);
+			//}
+			if(mem[i]<0x20 || (0x7F<=mem[i] && mem[i]<0xA0) || (0xE0<=mem[i] && mem[i]<0xFF)){
+				// 空白に変換
+				buf[0] = ' ';
+			}else{
+				buf[0] = mem[i];
+			}
+			memcpy(dstbuf, buf, 1);
+			//kanjiMode = 0;
+			lpos++;
+			dstbuf++;
+		}
+		if(lpos >= 80){
+			cpos += lpos;
+			lpos -= 80;
+			if(cpos >= 80*25) break;
+			buf[0] = '\r';
+			buf[1] = '\n';
+			memcpy(dstbuf, buf, 2);
+			dstbuf+=2;
+		}
+	}
+	dstbuf[0] = '\0';
+}
 
 /**
  * TXT 出力

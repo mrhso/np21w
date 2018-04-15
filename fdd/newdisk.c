@@ -321,7 +321,7 @@ void newdisk_vpcvhd(const OEMCHAR *fname, UINT hddsize) {
    r = writehddipl(fh, 512, origsize);
 #endif
 
-   checksum = vpc_calc_checksum(&vpcvhd,footerlen);
+   checksum = vpc_calc_checksum((UINT8*)(&vpcvhd), footerlen);
    STOREMOTOROLADWORD(vpcvhd.CheckSum, checksum);
 
    r |= (file_write(fh, &vpcvhd, sizeof(vpcvhd)) == sizeof(vpcvhd)) ? SUCCESS : FAILURE;

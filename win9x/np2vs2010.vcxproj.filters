@@ -1988,6 +1988,9 @@
     <ClInclude Include="..\wab\vga_int.h">
       <Filter>ヘッダー ファイル\wab</Filter>
     </ClInclude>
+    <ClInclude Include="..\wab\wabbmpsave.h">
+      <Filter>ヘッダー ファイル\wab</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <NASM Include="..\i286x\cpumem.x86">

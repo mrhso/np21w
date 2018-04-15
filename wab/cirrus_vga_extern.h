@@ -31,16 +31,26 @@
 
 #define CIRRUS_VRAM_SIZE	(4096 * 1024)
 
-#define VRAMWINDOW_SIZE	0x200000  // VRAM マッピングサイズ
-#define EXT_WINDOW_SIZE	0x200000  // 謎
-#define EXT_WINDOW_SHFT	0x000000  // 謎
-#define BBLTWINDOW_ADSH	0x200000 // VRAM BITBLT
-#define BBLTWINDOW_SIZE	0x000000  // VRAM BITBLT マッピングサイズ
-#define MMIOWINDOW_ADDR	0xF80000  // MMIO マッピングアドレス（場所不明）
-#define MMIOWINDOW_SIZE	0x000000   // MMIO マッピングサイズ（サイズ不明）
-#define VRA2WINDOW_ADDR	0x0F2000  // VRAMウィンドウ マッピングアドレス（場所不明）
-#define VRA2WINDOW_SIZE	0x000000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
-#define VRA2WINDOW_SIZEX	0x8000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define CIRRUS_98ID_Xe		0x58
+#define CIRRUS_98ID_Cb		0x59
+#define CIRRUS_98ID_Cf		0x5A
+#define CIRRUS_98ID_Xe10	0x5B
+#define CIRRUS_98ID_Cb2		0x5C
+#define CIRRUS_98ID_Cx2		0x5D
+#define CIRRUS_98ID_WAB		0x100
+#define CIRRUS_98ID_WGN		0x101
+#define CIRRUS_98ID_GA98NB	0x200
+
+#define VRAMWINDOW_SIZE	0x200000UL  // VRAM マッピングサイズ
+#define EXT_WINDOW_SIZE	0x200000UL  // 謎
+#define EXT_WINDOW_SHFT	0x000000UL  // 謎
+#define BBLTWINDOW_ADSH	0x200000UL // VRAM BITBLT
+#define BBLTWINDOW_SIZE	0x000000UL  // VRAM BITBLT マッピングサイズ
+#define MMIOWINDOW_ADDR	0xF80000UL  // MMIO マッピングアドレス（場所不明）
+#define MMIOWINDOW_SIZE	0x000000UL   // MMIO マッピングサイズ（サイズ不明）
+#define VRA2WINDOW_ADDR	0x0F2000UL  // VRAMウィンドウ マッピングアドレス（場所不明）
+#define VRA2WINDOW_SIZE	0x000000UL   // VRAMウィンドウ マッピングサイズ（サイズ不明）
+#define VRA2WINDOW_SIZEX  0x8000UL   // VRAMウィンドウ マッピングサイズ（サイズ不明）
 #define CIRRUS_VRAMWND2_FUNC_rb(a,b)	cirrus_linear_memwnd_readb(a,b)
 #define CIRRUS_VRAMWND2_FUNC_rw(a,b)	cirrus_linear_memwnd_readw(a,b)
 #define CIRRUS_VRAMWND2_FUNC_rl(a,b)	cirrus_linear_memwnd_readl(a,b)
@@ -48,7 +58,7 @@
 #define CIRRUS_VRAMWND2_FUNC_ww(a,b,c)	cirrus_linear_memwnd_writew(a,b,c)
 #define CIRRUS_VRAMWND2_FUNC_wl(a,b,c)	cirrus_linear_memwnd_writel(a,b,c)
 
-#define TEST_ADDR		0xF00000
+#define TEST_ADDR		0xF0000000
 #define TEST_ADDR_SIZE	0//0x8000
 
 #define CIRRUS_MELCOWAB_OFS	0x0

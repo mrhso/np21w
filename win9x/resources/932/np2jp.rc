@@ -125,7 +125,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "画面出力"
 FONT 9, "ＭＳ Ｐゴシック"
 BEGIN
-    CONTROL         "LCDディスプレイ",IDC_LCD,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,8,156,10
+    CONTROL         "液晶ディスプレイ",IDC_LCD,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,8,156,10
     CONTROL         "色反転",IDC_LCDX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,24,144,10
     CONTROL         "スキップラインを中間色で埋める",IDC_SKIPLINE,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,40,156,10
     LTEXT           "明るさ",IDC_STATIC,20,55,22,8
@@ -417,22 +417,22 @@ BEGIN
     PUSHBUTTON      "キャンセル",IDCANCEL,112,26,44,14
 END
 
-IDD_ABOUT DIALOG 0, 0, 196, 108
+IDD_ABOUT DIALOG 0, 0, 216, 108
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "バージョン情報"
 CLASS "np2dialog"
 FONT 9, "ＭＳ Ｐゴシック"
 BEGIN
     ICON            IDI_ICON1,IDC_NP2ICON,8,8,20,20
-    LTEXT           "",IDC_NP2VER,36,16,132,8
-    DEFPUSHBUTTON   "&OK",IDOK,148,8,40,14,WS_GROUP
-    PUSHBUTTON      "詳細 >>",IDC_MORE,148,26,40,14
-    EDITTEXT        IDC_NP2INFO,8,52,180,48,ES_MULTILINE | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
+    LTEXT           "",IDC_NP2VER,36,16,152,8
+    DEFPUSHBUTTON   "&OK",IDOK,168,8,40,14,WS_GROUP
+    PUSHBUTTON      "詳細 >>",IDC_MORE,168,26,40,14
+    EDITTEXT        IDC_NP2INFO,8,52,200,48,ES_MULTILINE | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
 END
 
 IDD_NETWORK DIALOGEX 0, 0, 184, 124
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "一般"
+CAPTION "全般"
 FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
 BEGIN
     LTEXT           "TAPデバイス名",IDC_STATIC,8,8,76,8
@@ -454,7 +454,7 @@ END
 
 IDD_WAB DIALOGEX 0, 0, 184, 124
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "一般"
+CAPTION "全般"
 FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
 BEGIN
     CONTROL         "アナログスイッチICを使う",IDC_WABASWITCH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,200,10
@@ -468,8 +468,9 @@ CAPTION "CL-GD5430"
 FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
 BEGIN
     CONTROL         "有効",IDC_GD5430ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,40,10
-    LTEXT           "機種",IDC_STATIC,8,26,30,8
-    COMBOBOX        IDC_GD5430TYPE,40,24,136,52,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "タイプ",IDC_STATIC,8,26,30,8
+    COMBOBOX        IDC_GD5430TYPE,40,24,136,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "ハードウェアカーソル（仮）を表示",IDC_GD5430FAKECURSOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,44,130,10
     PUSHBUTTON      "既定値",IDC_GD5430DEF,136,102,40,14
 END
 
@@ -875,6 +876,7 @@ BEGIN
             MENUITEM "&32.6MB",                     IDM_MEM326
             MENUITEM "&64.6MB",                     IDM_MEM646
             MENUITEM "&120.6MB",                    IDM_MEM1206
+            MENUITEM "&230.6MB",                    IDM_MEM2306
         END
         POPUP "マウス(&M)"
         BEGIN
@@ -1162,6 +1164,21 @@ BEGIN
     MENUITEM SEPARATOR
 END
 
+IDR_COPYPASTEPOPUP MENU
+BEGIN
+    MENUITEM "テキストVRAMをコピー(&T)",            IDM_COPYPASTE_COPYTVRAM
+    MENUITEM "98グラフィック画面をコピー(&9)",       IDM_COPYPASTE_COPYGVRAM
+    MENUITEM "アクセラレータ画面をコピー(&W)",       IDM_COPYPASTE_COPYWABMEM
+    MENUITEM SEPARATOR
+    MENUITEM "テキストを貼り付け(&P)",				 IDM_COPYPASTE_PASTE
+END
+
+IDR_WABSYSMENU MENU
+BEGIN
+    MENUITEM "ウィンドウサイズ初期化(&R)",           IDM_WABSYSMENU_RESETSIZE
+    MENUITEM "ハーフトーン描画(&H)",                 IDM_WABSYSMENU_HALFTONE
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1198,8 +1215,8 @@ RELAY1WAV               EXTROM                  "..\\relay1.wav"
 
 STRINGTABLE
 BEGIN
-    IDS_APP_NAME2           "Neko Project II"
-    IDS_APP_NAME21          "Neko Project 21"
+    IDS_APP_NAME2           "Neko Project II/W"
+    IDS_APP_NAME21          "Neko Project 21/W"
     IDS_FILENAME_HELP       "np2.chm"
     IDS_FONTFACE            "ＭＳ ゴシック"
     IDS_PFONTFACE           "ＭＳ Ｐゴシック"
@@ -1362,6 +1379,7 @@ BEGIN
     IDS_GD5430_XE10         "PC-9821Xe10,Xa7e,Xb10内蔵"
     IDS_GD5430_CB2          "PC-9821Cb2内蔵"
     IDS_GD5430_CX2          "PC-9821Cx2内蔵"
+    IDS_GD5430_WAB          "MELCO WAB-S"
 END
 
 STRINGTABLE
@@ -1395,6 +1413,8 @@ BEGIN
     IDS_CFGTITLE            "VM設定ファイルを保存"
     IDS_CFGEXT              "npcfg"
     IDS_CFGFILTER           "Neko Project 仮想マシン設定ファイル (*.npcfg)|*.npcfg|Neko Project II 仮想マシン設定ファイル (*.np2cfg)|*.np2cfg|Neko Project 21 仮想マシン設定ファイル (*.np21cfg)|*.np21cfg|Neko Project 21/W 仮想マシン設定ファイル (*.np21wcfg)|*.np21wcfg|"
+    IDS_CFGTITLE_L          "VM設定ファイルを読込"
+    IDS_CFGFILTER_L         "Neko Project 仮想マシン設定ファイル (*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg)|*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg|Neko Project II INIファイル (*.ini)|*.ini|すべてのファイル(*.*)|*.*|"
 END
 
 STRINGTABLE

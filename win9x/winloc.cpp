@@ -7,6 +7,94 @@ enum {
 	SNAPDOTREL		= 16
 };
 
+typedef HRESULT (*F_DwmGetWindowAttribute)(
+	   HWND hwnd,
+	   DWORD dwAttribute,
+ __out PVOID pvAttribute, 
+	   DWORD cbAttribute
+);
+typedef HRESULT (*F_DwmSetWindowAttribute)(
+       HWND    hwnd,
+       DWORD   dwAttribute,
+  _In_ LPCVOID pvAttribute,
+       DWORD   cbAttribute
+);
+typedef enum _DWMWINDOWATTRIBUTE { 
+  DWMWA_NCRENDERING_ENABLED          = 1,
+  DWMWA_NCRENDERING_POLICY,
+  DWMWA_TRANSITIONS_FORCEDISABLED,
+  DWMWA_ALLOW_NCPAINT,
+  DWMWA_CAPTION_BUTTON_BOUNDS,
+  DWMWA_NONCLIENT_RTL_LAYOUT,
+  DWMWA_FORCE_ICONIC_REPRESENTATION,
+  DWMWA_FLIP3D_POLICY,
+  DWMWA_EXTENDED_FRAME_BOUNDS,
+  DWMWA_HAS_ICONIC_BITMAP,
+  DWMWA_DISALLOW_PEEK,
+  DWMWA_EXCLUDED_FROM_PEEK,
+  DWMWA_CLOAK,
+  DWMWA_CLOAKED,
+  DWMWA_FREEZE_REPRESENTATION,
+  DWMWA_LAST
+} DWMWINDOWATTRIBUTE;
+
+F_DwmGetWindowAttribute DwmGetWindowAttribute = NULL;
+F_DwmSetWindowAttribute DwmSetWindowAttribute = NULL;
+HMODULE hDwmModule = NULL;
+int noDWM = 0;
+
+BOOL winloc_InitDwmFunc() {
+	if(noDWM){
+		// DWMŠÂ‹«‚Å‚È‚¢
+		return FALSE;
+	}else{
+		if(!hDwmModule){
+			hDwmModule = LoadLibrary(_T("dwmapi.dll"));
+			if(!hDwmModule){
+				// DWMŠÂ‹«‚Å‚È‚¢
+				noDWM = 1;
+				return FALSE;
+			}
+			DwmGetWindowAttribute = (F_DwmGetWindowAttribute)GetProcAddress(hDwmModule, "DwmGetWindowAttribute");
+			DwmSetWindowAttribute = (F_DwmSetWindowAttribute)GetProcAddress(hDwmModule, "DwmSetWindowAttribute");
+			if(!DwmGetWindowAttribute || !DwmSetWindowAttribute){
+				// ‰½ŒÌ‚©DwmGetWindowAttribute‚âDwmSetWindowAttribute‚ª–³‚¢H
+				FreeLibrary(hDwmModule);
+				hDwmModule = NULL;
+				DwmGetWindowAttribute = NULL;
+				DwmSetWindowAttribute = NULL;
+				noDWM = 1;
+				return FALSE;
+			}
+		}
+		// DWMŠÂ‹«
+		return TRUE;
+	}
+}
+void winloc_DisposeDwmFunc() {
+	if(hDwmModule){
+		DwmGetWindowAttribute = NULL;
+		DwmSetWindowAttribute = NULL;
+		FreeLibrary(hDwmModule);
+		hDwmModule = NULL;
+	}
+}
+
+BOOL winloc_GetWindowRect(HWND hwnd, LPRECT lpRect) {
+	if(DwmGetWindowAttribute){
+		// DWMŠÂ‹«
+		HRESULT hr;
+		hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, lpRect, sizeof(RECT));
+		if(SUCCEEDED(hr)){
+			return 1;
+		}else{
+			return GetWindowRect(hwnd, lpRect);
+		}
+	}else{
+		// DWMŠÂ‹«‚Å‚È‚¢
+		return GetWindowRect(hwnd, lpRect);
+	}
+}
 
 void winloc_setclientsize(HWND hwnd, int width, int height) {
 
@@ -24,7 +112,7 @@ void winloc_setclientsize(HWND hwnd, int width, int height) {
 
 	cnt = 2;
 	do {
-		GetWindowRect(hwnd, &rectWindow);
+		winloc_GetWindowRect(hwnd, &rectWindow);
 		GetClientRect(hwnd, &rectClient);
 		w = width + (rectWindow.right - rectWindow.left)
 					- (rectClient.right - rectClient.left);
@@ -55,6 +143,17 @@ void winloc_setclientsize(HWND hwnd, int width, int height) {
 				y = rectDisktop.top;
 			}
 		}
+		if(!noDWM){
+			// DWM•â³
+			RECT	rectmp1;
+			RECT	rectmp2;
+			GetWindowRect(hwnd, &rectmp1);
+			winloc_GetWindowRect(hwnd, &rectmp2);
+			x -= rectmp2.left   - rectmp1.left;
+			y -= rectmp2.top    - rectmp1.top;
+			w -= 2*abs(rectmp2.left - rectmp1.left);
+			h -= 2*abs(rectmp2.left - rectmp1.left);
+		}
 		MoveWindow(hwnd, x, y, w, h, TRUE);
 	} while(--cnt);
 }
@@ -73,6 +172,17 @@ void winloc_movingproc(WINLOC *wl, RECT *rect) {
 	int		winlx;
 	int		winly;
 	int		d;
+	RECT	rectmp1;
+	RECT	rectmp2;
+	if(!noDWM){
+		// DWM•â³
+		GetWindowRect(GetActiveWindow(), &rectmp1);
+		winloc_GetWindowRect(GetActiveWindow(), &rectmp2);
+		rect->left   += rectmp2.left   - rectmp1.left;
+		rect->top    += rectmp2.top    - rectmp1.top;
+		rect->right  += rectmp2.right  - rectmp1.right;
+		rect->bottom += rectmp2.bottom - rectmp1.bottom;
+	}
 
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
 	winlx = rect->right - rect->left;
@@ -80,6 +190,13 @@ void winloc_movingproc(WINLOC *wl, RECT *rect) {
 
 	if ((winlx > (workrc.right - workrc.left)) ||
 		(winly > (workrc.bottom - workrc.top))) {
+		if(!noDWM){
+			// DWM•â³
+			rect->left   -= rectmp2.left   - rectmp1.left;
+			rect->top    -= rectmp2.top    - rectmp1.top;
+			rect->right  -= rectmp2.right  - rectmp1.right;
+			rect->bottom -= rectmp2.bottom - rectmp1.bottom;
+		}
 		return;
 	}
 
@@ -142,6 +259,13 @@ void winloc_movingproc(WINLOC *wl, RECT *rect) {
 			wl->ty = rect->top;
 		}
 	}
+	if(!noDWM){
+		// DWM•â³
+		rect->left   -= rectmp2.left   - rectmp1.left;
+		rect->top    -= rectmp2.top    - rectmp1.top;
+		rect->right  -= rectmp2.right  - rectmp1.right;
+		rect->bottom -= rectmp2.bottom - rectmp1.bottom;
+	}
 }
 
 
@@ -150,7 +274,7 @@ void winloc_movingproc(WINLOC *wl, RECT *rect) {
 static UINT8 isconnect(const RECT *parent, const RECT *self) {
 
 	UINT8	connect;
-
+	
 	connect = 0;
 	if ((self->bottom >= parent->top) && (self->top <= parent->bottom)) {
 		if (self->right == parent->left) {
@@ -242,11 +366,11 @@ WINLOCEX winlocex_create(HWND base, const HWND *child, UINT count) {
 	if (base) {
 		// e‚ÆÚ‘±‚³‚ê‚Ä‚éH
 		ret->base = base;
-		GetWindowRect(base, &ret->rect);
+		winloc_GetWindowRect(base, &ret->rect);
 		for (i=0; i<inlist; i++) {
 			hwnd = list[i];
 			if (hwnd) {
-				GetWindowRect(hwnd, &rect);
+				winloc_GetWindowRect(hwnd, &rect);
 				connect = isconnect(&ret->rect, &rect);
 				if (connect) {
 					list[i] = NULL;
@@ -265,7 +389,7 @@ WINLOCEX winlocex_create(HWND base, const HWND *child, UINT count) {
 			for (j=0; j<inlist; j++) {
 				hwnd = list[j];
 				if (hwnd) {
-					GetWindowRect(hwnd, &rect);
+					winloc_GetWindowRect(hwnd, &rect);
 					connect = isconnect(&p->rect, &rect);
 					if (connect) {
 						list[j] = NULL;
@@ -285,7 +409,7 @@ WINLOCEX winlocex_create(HWND base, const HWND *child, UINT count) {
 		hwnd = list[i];
 		if (hwnd) {
 			wnd->hwnd = hwnd;
-			GetWindowRect(hwnd, &wnd->rect);
+			winloc_GetWindowRect(hwnd, &wnd->rect);
 			wnd++;
 			ret->count++;
 		}
@@ -317,7 +441,7 @@ void winlocex_setholdwnd(WINLOCEX wle, HWND hold) {
 		return;
 	}
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
-	GetWindowRect(hold, &rect);
+	winloc_GetWindowRect(hold, &rect);
 	flag = 0;
 	if (workrc.left == rect.left) {
 		flag = 1;
@@ -509,9 +633,21 @@ void winlocex_moving(WINLOCEX wle, RECT *rect) {
 	UINT	num;
 	RECT	*rc;
 	BOOL	changes;
-
+	
 	if (wle == NULL) {
 		return;
+	}
+	
+	RECT	rectmp1;
+	RECT	rectmp2;
+	if(!noDWM){
+		// DWM•â³
+		GetWindowRect(GetActiveWindow(), &rectmp1);
+		winloc_GetWindowRect(GetActiveWindow(), &rectmp2);
+		rect->left   += rectmp2.left   - rectmp1.left;
+		rect->top    += rectmp2.top    - rectmp1.top;
+		rect->right  += rectmp2.right  - rectmp1.right;
+		rect->bottom += rectmp2.bottom - rectmp1.bottom;
 	}
 
 	// ‚Ð‚Á‚Â‚¢‚Ä‚½Žž
@@ -574,6 +710,14 @@ void winlocex_moving(WINLOCEX wle, RECT *rect) {
 			changes = gravityy(wle, rect);
 		}
 	} while(changes);
+	
+	if(!noDWM){
+		// DWM•â³
+		rect->left   -= rectmp2.left   - rectmp1.left;
+		rect->top    -= rectmp2.top    - rectmp1.top;
+		rect->right  -= rectmp2.right  - rectmp1.right;
+		rect->bottom -= rectmp2.bottom - rectmp1.bottom;
+	}
 }
 
 void winlocex_move(WINLOCEX wle) {
@@ -602,7 +746,7 @@ void winlocex_move(WINLOCEX wle) {
 	}
 	if ((i >= wle->count) && (wle->holdflag)) {
 		SystemParametersInfo(SPI_GETWORKAREA, 0, &workrc, 0);
-		GetWindowRect(wle->hold, &rect);
+		winloc_GetWindowRect(wle->hold, &rect);
 		cx = rect.right - rect.left;
 		cy = rect.bottom - rect.top;
 		switch(wle->holdflag & 0x0f) {
@@ -623,16 +767,29 @@ void winlocex_move(WINLOCEX wle) {
 				rect.top = workrc.bottom - cy;
 				break;
 		}
+		if(!noDWM){
+			// DWM•â³
+			RECT	rectmp1;
+			RECT	rectmp2;
+			GetWindowRect(wle->hold, &rectmp1);
+			winloc_GetWindowRect(wle->hold, &rectmp2);
+			rect.left   -= rectmp2.left   - rectmp1.left;
+			rect.top    -= rectmp2.top    - rectmp1.top;
+			rect.right  -= rectmp2.right  - rectmp1.right;
+			rect.bottom -= rectmp2.bottom - rectmp1.bottom;
+			cx -= 2*abs(rectmp2.left - rectmp1.left);
+			cy -= 2*abs(rectmp2.left - rectmp1.left);
+		}
 		MoveWindow(wle->hold, rect.left, rect.top, cx, cy, TRUE);
 	}
 
-	GetWindowRect(wle->base, &baserect);
+	winloc_GetWindowRect(wle->base, &baserect);
 	dx = baserect.left - wle->rect.left;
 	dy = baserect.top - wle->rect.top;
 	wnd = (WLEXWND *)(wle + 1);
 	for (i=0; i<wle->count; i++, wnd++) {
 		if (wnd->connect) {
-			GetWindowRect(wnd->hwnd, &rect);
+			winloc_GetWindowRect(wnd->hwnd, &rect);
 			cx = rect.right - rect.left;
 			cy = rect.bottom - rect.top;
 			rect.left += dx;
@@ -677,6 +834,19 @@ void winlocex_move(WINLOCEX wle) {
 				case 4:
 					rect.top = rc->bottom - cy;
 					break;
+			}
+			if(!noDWM){
+				// DWM•â³
+				RECT	rectmp1;
+				RECT	rectmp2;
+				GetWindowRect(wnd->hwnd, &rectmp1);
+				winloc_GetWindowRect(wnd->hwnd, &rectmp2);
+				rect.left   -= rectmp2.left   - rectmp1.left;
+				rect.top    -= rectmp2.top    - rectmp1.top;
+				rect.right  -= rectmp2.right  - rectmp1.right;
+				rect.bottom -= rectmp2.bottom - rectmp1.bottom;
+				cx -= 2*abs(rectmp2.left - rectmp1.left);
+				cy -= 2*abs(rectmp2.left - rectmp1.left);
 			}
 			MoveWindow(wnd->hwnd, rect.left, rect.top, cx, cy, TRUE);
 			wnd->rect.left = rect.left;

@@ -105,7 +105,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0,
 #endif
 #if defined(SUPPORT_CL_GD5430)
-				0, 0x5B,
+				0, 0x5B, 0,
 #endif
 				0,
 	};
@@ -264,7 +264,7 @@ static void pccore_set(const NP2CFG *pConfig)
 	{
 		extsize = np2cfg.EXTMEM;
 #if defined(CPUCORE_IA32)
-		extsize = min(extsize, 244);
+		extsize = min(extsize, 230);
 #else
 		extsize = min(extsize, 13);
 #endif

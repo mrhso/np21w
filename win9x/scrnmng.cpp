@@ -50,6 +50,9 @@ typedef struct {
 #if defined(SUPPORT_DCLOCK)
 	LPDIRECTDRAWSURFACE	clocksurf;
 #endif
+#if defined(SUPPORT_WAB)
+	LPDIRECTDRAWSURFACE	wabsurf;
+#endif
 	LPDIRECTDRAWCLIPPER	clipper;
 	LPDIRECTDRAWPALETTE	palette;
 	UINT				scrnmode;
@@ -501,7 +504,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		DispClock::GetInstance()->Initialize();
 #endif
 		ddraw2->SetCooperativeLevel(g_hWndMain,
-										DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
+										DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_MULTITHREADED);
 		width = np2oscfg.fscrn_cx;
 		height = np2oscfg.fscrn_cy;
 #ifdef SUPPORT_WAB
@@ -595,6 +598,11 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		if (ddraw2->CreateSurface(&ddsd, &ddraw.backsurf, NULL) != DD_OK) {
 			goto scre_err;
 		}
+#ifdef SUPPORT_WAB
+		if (ddraw2->CreateSurface(&ddsd, &ddraw.wabsurf, NULL) != DD_OK) {
+			goto scre_err;
+		}
+#endif
 		if (bitcolor == 8) {
 			paletteinit();
 		}
@@ -621,7 +629,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 #endif
 	}
 	else {
-		ddraw2->SetCooperativeLevel(g_hWndMain, DDSCL_NORMAL);
+		ddraw2->SetCooperativeLevel(g_hWndMain, DDSCL_NORMAL | DDSCL_MULTITHREADED);
 
 		ZeroMemory(&ddsd, sizeof(ddsd));
 		ddsd.dwSize = sizeof(ddsd);
@@ -679,6 +687,11 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 		if (ddraw2->CreateSurface(&ddsd, &ddraw.backsurf, NULL) != DD_OK) {
 			goto scre_err;
 		}
+#ifdef SUPPORT_WAB
+		if (ddraw2->CreateSurface(&ddsd, &ddraw.wabsurf, NULL) != DD_OK) {
+			goto scre_err;
+		}
+#endif
 		bitcolor = ddpf.dwRGBBitCount;
 		if (bitcolor == 8) {
 			paletteinit();
@@ -701,7 +714,7 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	ddraw.width = width;
 	ddraw.height = height;
 	ddraw.cliping = 0;
-	renewalclientsize(FALSE);
+	renewalclientsize(TRUE); // XXX: スナップ解除等が起こるので暫定TRUE
 	lastscrnmode = scrnmode;
 //	screenupdate = 3;					// update!
 	return(SUCCESS);
@@ -1155,8 +1168,8 @@ void scrnmng_updatefsres(void) {
 	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		DDBLTFX ddbltfx = {0};
 		ddbltfx.dwSize = sizeof(DDBLTFX);
-		ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&ddbltfx);
-		ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&ddbltfx);
+		ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
+		ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
 		np2wab.lastWidth = 0;
 		np2wab.lastHeight = 0;
 		return;
@@ -1189,15 +1202,36 @@ void scrnmng_updatefsres(void) {
 				g_scrnmode = g_scrnmode | SCRNMODE_FULLSCREEN;
 			}
 		}
+		DDBLTFX ddbltfx = {0};
+		ddbltfx.dwSize = sizeof(DDBLTFX);
+		ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
+		ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
 	}
 #endif
 }
 
 // ウィンドウアクセラレータ画面転送
 void scrnmng_blthdc(HDC hdc) {
-	RECT	*dst;
 	HRESULT	r;
 	HDC hDCDD;
+#if defined(SUPPORT_WAB)
+	if (np2wabwnd.multiwindow) return;
+	if (ddraw.wabsurf != NULL) {
+		r = ddraw.wabsurf->GetDC(&hDCDD);
+		if (r == DD_OK){
+			r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
+			ddraw.wabsurf->ReleaseDC(hDCDD);
+		}
+	}
+#endif
+}
+void scrnmng_bltwab() {
+	RECT	*dst;
+	RECT	src;
+	RECT	dstmp;
+	DDBLTFX ddfx;
+	HRESULT	r;
+	int exmgn = 0;
 #if defined(SUPPORT_WAB)
 	if (np2wabwnd.multiwindow) return;
 	if (ddraw.backsurf != NULL) {
@@ -1210,13 +1244,19 @@ void scrnmng_blthdc(HDC hdc) {
 			}
 		}else{
 			dst = &ddraw.rect;
+			exmgn = scrnstat.extend;
 		}
-
-		r = ddraw.backsurf->GetDC(&hDCDD);
-		if (r == DD_OK){
-			r = BitBlt(hDCDD, dst->left, dst->top, scrnstat.width, scrnstat.height,
-				   hdc, 0, 0, SRCCOPY);
-			ddraw.backsurf->ReleaseDC(hDCDD);
+		src.left = src.top = 0;
+		src.right = scrnstat.width;
+		src.bottom = scrnstat.height;
+		dstmp = *dst;
+		dstmp.left += exmgn;
+		dstmp.right = dstmp.left + scrnstat.width;
+		r = ddraw.backsurf->Blt(&dstmp, ddraw.wabsurf, &src, DDBLT_WAIT, NULL);
+		if (r == DDERR_SURFACELOST) {
+			ddraw.backsurf->Restore();
+			ddraw.primsurf->Restore();
+			ddraw.wabsurf->Restore();
 		}
 	}
 #endif

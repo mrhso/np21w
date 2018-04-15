@@ -747,6 +747,7 @@
     <ClInclude Include="..\wab\cirrus_vga_rop2.h" />
     <ClInclude Include="..\wab\vga_int.h" />
     <ClInclude Include="..\wab\wab.h" />
+    <ClInclude Include="..\wab\wabbmpsave.h" />
     <ClInclude Include="..\zlib\crc32.h" />
     <ClInclude Include="..\zlib\inffast.h" />
     <ClInclude Include="..\zlib\inffixed.h" />

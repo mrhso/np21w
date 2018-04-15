@@ -55,6 +55,8 @@
 #define IDR_KEYDISP                     321
 #define IDR_VIEW                        331
 #define IDR_TRACE                       341
+#define IDR_COPYPASTEPOPUP              351
+#define IDR_WABSYSMENU                  361
 #define IDR_IDE                         400
 #define RESOURCE_VERSION                830
 #define IDC_BASECLOCK                   11101
@@ -242,6 +244,7 @@
 #define IDC_WABASWITCH                  19014
 #define IDC_WABMULTIWIN                 19015
 #define IDC_WABMULTHREAD                19016
+#define IDC_GD5430FAKECURSOR            19017
 #define IDC_IDE1TYPE                    19100
 #define IDC_IDE2TYPE                    19101
 #define IDC_IDE3TYPE                    19102
@@ -346,6 +349,7 @@
 #define IDS_GD5430_XE10                 30604
 #define IDS_GD5430_CB2                  30605
 #define IDS_GD5430_CX2                  30606
+#define IDS_GD5430_WAB                  30610
 #define IDS_IDETYPE_NONE                30700
 #define IDS_IDETYPE_HDD                 30701
 #define IDS_IDETYPE_CDROM               30702
@@ -535,6 +539,7 @@
 #define IDM_MEM326                      40668
 #define IDM_MEM646                      40669
 #define IDM_MEM1206                     40670
+#define IDM_MEM2306                     49671
 #define IDM_MOUSE                       40671
 #define IDM_SERIAL1                     40672
 #define IDM_MPUPC98                     40673
@@ -604,6 +609,12 @@
 #define IDM_TRACE_ENABLE                43103
 #define IDM_TRACE_FILEOUT               43104
 #define IDM_TRACE_CLEAR                 43105
+#define IDM_COPYPASTE_COPYTVRAM         43201
+#define IDM_COPYPASTE_COPYGVRAM         43202
+#define IDM_COPYPASTE_COPYWABMEM        43203
+#define IDM_COPYPASTE_PASTE             43210
+#define IDM_WABSYSMENU_RESETSIZE        43301
+#define IDM_WABSYSMENU_HALFTONE         43302
 
 // Next default values for new objects
 // 

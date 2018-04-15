@@ -431,10 +431,10 @@ CLASS "np2dialog"
 FONT 9, "MS Sans Serif"
 BEGIN
     ICON            IDI_ICON1,IDC_NP2ICON,8,8,20,20
-    LTEXT           "",IDC_NP2VER,36,16,132,8
-    DEFPUSHBUTTON   "&OK",IDOK,148,8,40,14,WS_GROUP
-    PUSHBUTTON      "More >>",IDC_MORE,148,26,40,14
-    EDITTEXT        IDC_NP2INFO,8,52,180,48,ES_MULTILINE | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
+    LTEXT           "",IDC_NP2VER,36,16,152,8
+    DEFPUSHBUTTON   "&OK",IDOK,168,8,40,14,WS_GROUP
+    PUSHBUTTON      "More >>",IDC_MORE,168,26,40,14
+    EDITTEXT        IDC_NP2INFO,8,52,200,48,ES_MULTILINE | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
 END
 
 IDD_NETWORK DIALOGEX 0, 0, 184, 124
@@ -477,7 +477,8 @@ FONT 9, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         "Enabled",IDC_GD5430ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,40,10
     LTEXT           "Type",IDC_STATIC,8,26,30,8
-    COMBOBOX        IDC_GD5430TYPE,40,24,136,52,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GD5430TYPE,40,24,136,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Use Fake Hardware Cursor",IDC_GD5430FAKECURSOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,44,100,10
     PUSHBUTTON      "Defaults",IDC_GD5430DEF,136,102,40,14
 END
 
@@ -883,6 +884,7 @@ BEGIN
             MENUITEM "&32.6MB",                     IDM_MEM326
             MENUITEM "&64.6MB",                     IDM_MEM646
             MENUITEM "&120.6MB",                    IDM_MEM1206
+            MENUITEM "&230.6MB",                    IDM_MEM2306
         END
         POPUP "&Mouse"
         BEGIN
@@ -1168,6 +1170,21 @@ BEGIN
     MENUITEM SEPARATOR
 END
 
+IDR_COPYPASTEPOPUP MENU
+BEGIN
+    MENUITEM "Copy &Text V-RAM",            IDM_COPYPASTE_COPYTVRAM
+    MENUITEM "Copy &98 Screen",             IDM_COPYPASTE_COPYGVRAM
+    MENUITEM "Copy &WAB Screen",            IDM_COPYPASTE_COPYWABMEM
+    MENUITEM SEPARATOR
+    MENUITEM "&Paste Text",					IDM_COPYPASTE_PASTE
+END
+
+IDR_WABSYSMENU MENU
+BEGIN
+    MENUITEM "&Reset Window Size",          IDM_WABSYSMENU_RESETSIZE
+    MENUITEM "&Halftone Rendering",         IDM_WABSYSMENU_HALFTONE
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1204,8 +1221,8 @@ RELAY1WAV               EXTROM                  "..\\relay1.wav"
 
 STRINGTABLE
 BEGIN
-    IDS_APP_NAME2           "Neko Project II"
-    IDS_APP_NAME21          "Neko Project 21"
+    IDS_APP_NAME2           "Neko Project II/W"
+    IDS_APP_NAME21          "Neko Project 21/W"
     IDS_FILENAME_HELP       "np2.chm"
     IDS_FONTFACE            "ÇlÇr ÉSÉVÉbÉN"
     IDS_PFONTFACE           "MS Sans Serif"
@@ -1368,6 +1385,7 @@ BEGIN
     IDS_GD5430_XE10         "PC-9821Xe10,Xa7e,Xb10 built-in"
     IDS_GD5430_CB2          "PC-9821Cb2 built-in"
     IDS_GD5430_CX2          "PC-9821Cx2 built-in"
+    IDS_GD5430_WAB          "MELCO WAB-S"
 END
 
 STRINGTABLE
@@ -1401,6 +1419,8 @@ BEGIN
     IDS_CFGTITLE            "Save VM configuration file"
     IDS_CFGEXT              "npcfg"
     IDS_CFGFILTER           "Neko Project VM configuration file (*.npcfg)|*.npcfg|Neko Project II VM configuration file (*.np2cfg)|*.np2cfg|Neko Project 21 VM configuration file (*.np21cfg)|*.np21cfg|Neko Project 21/W VM configuration file (*.np21wcfg)|*.np21wcfg|"
+    IDS_CFGTITLE_L          "Load VM configuration file"
+    IDS_CFGFILTER_L         "Neko Project VM configuration file (*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg)|*.npcfg;*.np2cfg;*.np21cfg;*.np21wcfg|Neko Project II INI file (*.ini)|*.ini|All files (*.*)|*.*|"
 END
 
 STRINGTABLE
