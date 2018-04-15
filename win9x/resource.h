@@ -232,6 +232,7 @@
 #define IDC_LGY98INT                    19003
 #define IDC_NETTAP                      19004
 #define IDC_LGY98DEF                    19005
+#define IDC_NETPMM                      19006
 #define IDC_GD5430ENABLED               19011
 #define IDC_GD5430TYPE                  19012
 #define IDC_GD5430DEF                   19013

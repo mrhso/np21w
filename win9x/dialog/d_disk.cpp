@@ -85,7 +85,7 @@ void dialog_changehdd(HWND hWnd, REG8 drv)
 				nTitle = IDS_ISOTITLE;
 				nExt = IDS_ISOEXT;
 				nFilter = IDS_ISOFILTER;
-				nIndex = 6; // 3
+				nIndex = 7; // 3
 			}
 		}
 #else

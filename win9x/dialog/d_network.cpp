@@ -40,7 +40,9 @@ protected:
 
 private:
 	TCHAR m_tap[300];			//!< TAP–¼
+	UINT8 m_pmmenabled;			//!< •‰‰×’áŒ¸—LŒøƒtƒ‰ƒO
 	CComboData m_cmbtap;		//!< TAP NAME
+	CWndProc m_chkpmmenabled;	//!< POWER MANAGEMENT ENABLED
 	void SetNetWorkDeviceNames();
 };
 
@@ -69,6 +71,13 @@ BOOL CNetworkPage::OnInitDialog()
 
 	m_cmbtap.SubclassDlgItem(IDC_NETTAP, this);
 	SetNetWorkDeviceNames();
+	
+	m_pmmenabled = np2cfg.np2netpmm;
+	m_chkpmmenabled.SubclassDlgItem(IDC_NETPMM, this);
+	if(m_pmmenabled)
+		m_chkpmmenabled.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+	else
+		m_chkpmmenabled.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 
 	m_cmbtap.SetFocus();
 
@@ -82,9 +91,10 @@ void CNetworkPage::OnOK()
 {
 	UINT update = 0;
 
-	if (_tcscmp(np2cfg.np2nettap, m_tap)!=0)
+	if (_tcscmp(np2cfg.np2nettap, m_tap)!=0 || m_pmmenabled!=np2cfg.np2netpmm)
 	{
 		_tcscpy(np2cfg.np2nettap, m_tap);
+		np2cfg.np2netpmm = m_pmmenabled;
 		update |= SYS_UPDATECFG;
 	}
 	::sysmng_update(update);
@@ -102,6 +112,10 @@ BOOL CNetworkPage::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDC_NETTAP:
 			m_cmbtap.GetWindowText(m_tap, NELEMENTS(m_tap));
+			return TRUE;
+
+		case IDC_NETPMM:
+			m_pmmenabled = (m_chkpmmenabled.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
 			return TRUE;
 	}
 	return FALSE;

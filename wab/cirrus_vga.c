@@ -991,6 +991,7 @@ static void cirrus_do_copy(CirrusVGAState *s, int dst, int src, int w, int h)
     int notify = 0;
 
     depth = s->get_bpp((VGAState *)s) / 8;
+	if(depth==0) return;
     s->get_resolution((VGAState *)s, &width, &height);
 
     /* extra x, y */

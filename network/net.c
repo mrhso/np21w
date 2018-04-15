@@ -44,6 +44,10 @@ static int		np2net_membuflen[NET_ARYLEN]; // 送信用バッファにあるデータの長さ
 static int		np2net_membuf_readpos = 0; // バッファ読み取り位置
 static int		np2net_membuf_writepos = 0; // バッファ書き込み位置
 
+static int		np2net_pmm = 0; // CPU負荷低減モード（通信は若干遅くなると思われる）
+static int		np2net_highspeedmode = 0; // 高速送受信モード
+static DWORD	np2net_highspeeddatacount = 0; // 送受信データ数カウンタ
+
 static HANDLE		np2net_write_hEvent;
 static OVERLAPPED	np2net_write_ovl;
 
@@ -83,6 +87,7 @@ static int sendDataToBuffer(UCHAR *pSendBuf, DWORD len){
 	memcpy(np2net_membuf[np2net_membuf_writepos], pSendBuf, len);
 	np2net_membuflen[np2net_membuf_writepos] = len;
 	np2net_membuf_writepos = (np2net_membuf_writepos+1)%NET_ARYLEN;
+	np2net_highspeeddatacount += len*50;
 	return 0;
 }
 
@@ -95,6 +100,36 @@ static void np2net_default_send_packet(const UINT8 *buf, int size)
 static void np2net_default_recieve_packet(const UINT8 *buf, int size)
 {
 	// 何もしない
+}
+
+static void np2net_updateHighSpeedMode(){
+	static DWORD	np2net_highspeedtimer = 0; // 送受信データカウント基準時刻
+	static DWORD	np2net_highspeeddataspeed = 0; // 1秒当たりの送受信データ数
+	//HDC hdc;
+	//RECT r = {0, 0, 100, 100};
+	int timediff;
+
+	if(np2net_pmm){
+		timediff = GetTickCount() - np2net_highspeedtimer;
+		if(timediff<0) timediff = INT_MAX;
+		if((!np2net_highspeedmode && timediff>1000)
+			|| (np2net_highspeedmode && timediff>8000)){
+			np2net_highspeedtimer = GetTickCount();
+			np2net_highspeeddataspeed = np2net_highspeeddatacount*1000 / timediff;
+			np2net_highspeeddatacount = 0;
+			//hdc = GetDC(NULL);
+			if(np2net_highspeeddataspeed < 3000){
+				np2net_highspeedmode = 0;
+				//DrawText(hdc, OEMTEXT("0"), -1, &r, DT_LEFT);
+			}else{
+				np2net_highspeedmode = 1;
+				//DrawText(hdc, OEMTEXT("1"), -1, &r, DT_LEFT);
+			}
+			//ReleaseDC(NULL, hdc);
+		}
+	}else{
+		np2net_highspeedmode = 1;
+	}
 }
 
 //  非同期で通信してみる（Write）
@@ -110,6 +145,9 @@ static DWORD WINAPI np2net_ThreadFuncW(LPVOID vdParam) {
 		}else{
 			Sleep(1000);
 		}
+		np2net_updateHighSpeedMode();
+		if(!np2net_highspeedmode) 
+			Sleep(50);
 	}
 	return 0;
 }
@@ -120,6 +158,7 @@ static DWORD WINAPI np2net_ThreadFuncR(LPVOID vdParam) {
 	OVERLAPPED ovl;
 	int nodatacount = 0;
 	int sleepcount = 0;
+	int timediff = 0;
 	CHAR np2net_Buf[NET_BUFLEN];
 
 	// OVERLAPPED非同期読み取り準備
@@ -138,6 +177,7 @@ static DWORD WINAPI np2net_ThreadFuncR(LPVOID vdParam) {
 				if(dwLen>0){
 					//TRACEOUT(("LGY-98: recieve %u bytes\n", dwLen));
 					np2net.recieve_packet((UINT8*)np2net_Buf, dwLen); // 受信できたので通知する
+					np2net_highspeeddatacount += dwLen;
 				}
 			} else {
 				// 読み取りエラー
@@ -151,10 +191,14 @@ static DWORD WINAPI np2net_ThreadFuncR(LPVOID vdParam) {
 			if(dwLen>0){
 				//TRACEOUT(("LGY-98: recieve %u bytes\n", dwLen));
 				np2net.recieve_packet((UINT8*)np2net_Buf, dwLen); // 受信できたので通知する
+				np2net_highspeeddatacount += dwLen;
 			}else{
 				Sleep(0);
 			}
 		}
+		np2net_updateHighSpeedMode();
+		if(!np2net_highspeedmode) 
+			Sleep(50);
 	}
 	CloseHandle(hEvent);
 	hEvent = NULL;
@@ -243,6 +287,7 @@ void np2net_init(void)
 // リセット時に呼ばれる？
 void np2net_reset(const NP2CFG *pConfig){
 	_tcscpy(np2net_tapName, pConfig->np2nettap);
+	np2net_pmm = pConfig->np2netpmm;
 	if(pConfig->uselgy98){ // XXX: 使われていないならTAPデバイスはオープンしない
 		np2net_openTAP(np2net_tapName);
 	}

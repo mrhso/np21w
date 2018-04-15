@@ -151,6 +151,7 @@ struct tagNP2Config
 	
 #ifdef SUPPORT_NET
 	OEMCHAR	np2nettap[MAX_PATH];
+	UINT8	np2netpmm;
 #endif
 #ifdef SUPPORT_LGY98
 	UINT8	uselgy98;

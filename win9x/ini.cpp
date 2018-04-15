@@ -547,6 +547,7 @@ static const PFTBL s_IniItems[] =
 	
 #if defined(SUPPORT_NET)
 	PFSTR("NP2NETTAP", PFTYPE_STR,		np2cfg.np2nettap),
+	PFVAL("NP2NETPMM", PFTYPE_BOOL,		&np2cfg.np2netpmm),
 #endif
 #if defined(SUPPORT_LGY98)
 	PFVAL("USELGY98", PFTYPE_BOOL,		&np2cfg.uselgy98),

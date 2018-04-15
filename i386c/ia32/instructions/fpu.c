@@ -34,9 +34,11 @@ void
 FWAIT(void)
 {
 #if defined(USE_FPU)
+#if 0
 	if (CPU_CR0 & (CPU_CR0_MP|CPU_CR0_TS)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
+#endif
 
 	fpu_fwait();
 #endif

@@ -213,6 +213,8 @@ typedef struct {
 	FPU_PTR		data; // ラストデータポインタレジスター
 } FPU_REGS;
 
+#if 0
+
 typedef struct {
 	UINT8		valid;
 	UINT8		sign;
@@ -232,6 +234,44 @@ typedef struct {
 
 	FP_REG		reg[FPU_REG_NUM]; // R0 to R7
 } FPU_STAT;
+
+#else
+
+typedef enum {
+	TAG_Valid = 0,
+	TAG_Zero  = 1,
+	TAG_Weird = 2,
+	TAG_Empty = 3
+} FP_TAG;
+
+typedef enum {
+	ROUND_Nearest = 0,		
+	ROUND_Down    = 1,
+	ROUND_Up      = 2,	
+	ROUND_Chop    = 3
+} FP_RND;
+
+typedef union {
+    double d;
+    struct {
+        UINT32 lower;
+        SINT32 upper;
+    } l;
+    SINT64 ll;
+} FP_REG;
+
+typedef struct {
+	UINT8		top;
+	UINT8		pc;
+	UINT8		rc;
+	UINT8		dmy[1];
+
+	FP_REG		reg[FPU_REG_NUM+1]; // R0 to R7	
+	FP_TAG		tag[FPU_REG_NUM+1]; // R0 to R7
+	FP_RND		round;
+} FPU_STAT;
+
+#endif
 
 typedef struct {
 	CPU_REGS	cpu_regs;
@@ -305,13 +345,15 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_VENDOR_3	0x6c65746e	/* "ntel" */
 
 /* version */
-#define	CPU_FAMILY	4
 #if defined(USE_FPU)
+#define	CPU_FAMILY	4
 #define	CPU_MODEL	1	/* 486DX */
-#else
-#define	CPU_MODEL	2	/* 486SX */
-#endif
 #define	CPU_STEPPING	3
+#else
+#define	CPU_FAMILY	4
+#define	CPU_MODEL	2	/* 486SX */
+#define	CPU_STEPPING	3
+#endif
 
 /* feature */
 #define	CPU_FEATURE_FPU		(1 << 0)
@@ -682,7 +724,11 @@ void dbg_printf(const char *str, ...);
 #define	FPU_STAT_PC		FPU_STAT.pc
 #define	FPU_STAT_RC		FPU_STAT.rc
 
+#if 0
 #define	FPU_ST(i)		FPU_STAT.reg[((i) + FPU_STAT_TOP) & 7]
+#else
+#define	FPU_ST(i)		((FPU_STAT_TOP+ (i) ) & 7)
+#endif
 #define	FPU_REG(i)		FPU_STAT.reg[i]
 
 /* FPU status register */

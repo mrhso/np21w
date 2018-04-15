@@ -516,7 +516,8 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				cmdabort(drv);
 			}
 			break;
-		case 0x40:		// read verify
+		case 0x40:		// read verify(w)
+		case 0x41:		// read verify(w/o)
 			drv->status = drv->status & ~IDESTAT_BSY;
 			setintr(drv);
 			break;
@@ -563,6 +564,9 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				cmdabort(drv);
 			}
 			break;
+			
+		case 0xb0:		// SMART
+			cmdabort(drv);
 			break;
 
 		case 0xc4:		// read multiple
@@ -624,6 +628,12 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 			//drv->status = drv->status & ~0x20;
 			//drv->error = 0;
 			//cmdabort(drv);
+			break;
+			
+		case 0xe5:		// Check power mode
+			drv->sc = 0xff;
+			drv->status = drv->status & ~IDESTAT_BSY;
+			setintr(drv);
 			break;
 
 		case 0xe7:		// flush cache
@@ -1118,6 +1128,7 @@ void ideio_reset(const NP2CFG *pConfig) {
 		if (file_read(fh, mem + 0x0d8000, 0x2000) == 0x2000) {
 			//STOREINTELWORD(mem + 0x0d8009, 0);
 			TRACEOUT(("load ide.rom"));
+			//memset(mem + 0x0da000, 0x00, 0x2000);
 		}else{
 			CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
 			TRACEOUT(("use simulate ide.rom"));

@@ -1146,9 +1146,6 @@
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul.c">
       <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
     </ClCompile>
-    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_ia32.c">
-      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
-    </ClCompile>
     <ClCompile Include="..\diskimage\cddfile.c">
       <Filter>ソース ファイル\diskimage</Filter>
     </ClCompile>
@@ -1190,6 +1187,9 @@
     </ClCompile>
     <ClCompile Include="..\diskimage\fd\fdd_xdf.c">
       <Filter>ソース ファイル\diskimage\fd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

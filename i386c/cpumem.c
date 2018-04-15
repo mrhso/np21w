@@ -328,9 +328,9 @@ static const MEMFNF memfnf = {
 #define EXT_WINDOW_SHFT	0x000000  // 謎
 #define BBLTWINDOW_ADSH	0x200000 // VRAM BITBLT
 #define BBLTWINDOW_SIZE	0x000000  // VRAM BITBLT マッピングサイズ
-#define MMIOWINDOW_ADDR	0x0F200000  // MMIO マッピングアドレス（場所不明）
+#define MMIOWINDOW_ADDR	0x0F2000  // MMIO マッピングアドレス（場所不明）
 #define MMIOWINDOW_SIZE	0x000000   // MMIO マッピングサイズ（サイズ不明）
-#define VRA2WINDOW_ADDR	0x0F200000  // VRAMウィンドウ マッピングアドレス（場所不明）
+#define VRA2WINDOW_ADDR	0x0F2000  // VRAMウィンドウ マッピングアドレス（場所不明）
 #define VRA2WINDOW_SIZE	0x000000   // VRAMウィンドウ マッピングサイズ（サイズ不明）
 #endif
 
@@ -378,8 +378,8 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 			//return 0x0F;
 		if (address == 0xF8E80+0x0011) 
 			return mem[address] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
-		if (address == 0xF8E80+0x003F) 
-			return 0x21; // PC-9821 Xa7,9,10,12/C 
+		//if (address == 0xF8E80+0x003F) 
+		//	return 0x21; // PC-9821 Xa7,9,10,12/C 
 	}
 	//if (address == 0x96000+0x0000) 
 	//	return 0xC3;

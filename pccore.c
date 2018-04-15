@@ -51,6 +51,9 @@
 #if defined(SUPPORT_WAB)
 #include	"wab/wab.h"
 #endif
+#if defined(SUPPORT_IDEIO)
+#include	"ideio.h"
+#endif
 
 
 const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
@@ -89,7 +92,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				OEMTEXT(""), OEMTEXT(""), OEMTEXT(""),
 #if defined(SUPPORT_NET)
-				OEMTEXT(""),
+				OEMTEXT(""), 0,
 #endif
 #if defined(SUPPORT_LGY98)
 				0, 0x10D0, 5,
@@ -698,6 +701,9 @@ void pccore_exec(BOOL draw) {
 			CPU_RESETREQ = 0;
 #if defined(SUPPORT_WAB)
 			np2wab_setRelayState(0); // XXX:
+#endif
+#if defined(SUPPORT_IDEIO)
+			ideio_reset(&np2cfg); // XXX: ソフトウェアリセットでIDEデバイスが認識しないのをごまかす。高速再起動には効かないのでもっといい場所へ移住すべき
 #endif
 			CPU_SHUT();
 		}
