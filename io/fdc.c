@@ -771,7 +771,12 @@ static REG8 IOINPCALL fdc_i94(UINT port) {
 	if (((port >> 4) ^ fdc.chgreg) & 1) {
 		return(0xff);
 	}
-	return(0x40);
+	if (port & 0x10) {		// 94
+		return(0x40);
+	}
+	else {					// CC
+		return(0x70);		// ready‚ð—§‚Ä‚é‚é‚é
+	}
 }
 
 

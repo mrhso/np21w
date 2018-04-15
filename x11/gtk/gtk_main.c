@@ -206,6 +206,9 @@ set_icon_bitmap(GtkWidget *w)
  */
 static int install_count = 0;
 static int idle_id;
+#if defined(SUPPORT_JOYSTICK)
+static int joymng_task_id;
+#endif
 
 void
 install_idle_process(void)
@@ -261,15 +264,18 @@ gui_gtk_widget_create(void)
 {
 	GtkWidget *main_vbox;
 	GtkWidget *menubar;
+#if (GTK_MAJOR_VERSION == 2)
+	gchar *accel = NULL;
+#endif
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, TRUE);
-	gtk_window_set_title(GTK_WINDOW(window), np2oscfg.titles);
-	gtk_widget_add_events(window, EVENT_MASK);
+	main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_policy(GTK_WINDOW(main_window), FALSE, FALSE, TRUE);
+	gtk_window_set_title(GTK_WINDOW(main_window), np2oscfg.titles);
+	gtk_widget_add_events(main_window, EVENT_MASK);
 
 	main_vbox = gtk_vbox_new(FALSE, 2);
 	gtk_container_border_width(GTK_CONTAINER(main_vbox), 1);
-	gtk_container_add(GTK_CONTAINER(window), main_vbox);
+	gtk_container_add(GTK_CONTAINER(main_window), main_vbox);
 	gtk_widget_show(main_vbox);
 
 	menubar = create_menu();
@@ -281,18 +287,28 @@ gui_gtk_widget_create(void)
 	gtk_box_pack_start(GTK_BOX(main_vbox), drawarea, FALSE, TRUE, 0);
 	gtk_widget_show(drawarea);
 
-	gtk_widget_realize(window);
-	set_icon_bitmap(window);
+#if (GTK_MAJOR_VERSION == 2)
+	g_object_get(gtk_widget_get_settings(main_window),
+	    "gtk-menu-bar-accel", &accel, NULL);
+	if (accel) {
+		g_object_set(gtk_widget_get_settings(main_window),
+		    "gtk-menu-bar-accel", "Menu", NULL);
+		g_free(accel);
+	}
+#endif
 
-	gtk_signal_connect(GTK_OBJECT(window), "destroy", 
+	gtk_widget_realize(main_window);
+	set_icon_bitmap(main_window);
+
+	gtk_signal_connect(GTK_OBJECT(main_window), "destroy", 
 	    GTK_SIGNAL_FUNC(gtk_main_quit), "WM destroy");
-	gtk_signal_connect(GTK_OBJECT(window), "key_press_event",
+	gtk_signal_connect(GTK_OBJECT(main_window), "key_press_event",
 	    GTK_SIGNAL_FUNC(key_press), NULL);
-	gtk_signal_connect(GTK_OBJECT(window), "key_release_event",
+	gtk_signal_connect(GTK_OBJECT(main_window), "key_release_event",
 	    GTK_SIGNAL_FUNC(key_release), NULL);
-	gtk_signal_connect(GTK_OBJECT(window), "button_press_event",
+	gtk_signal_connect(GTK_OBJECT(main_window), "button_press_event",
 	    GTK_SIGNAL_FUNC(button_press), NULL);
-	gtk_signal_connect(GTK_OBJECT(window), "button_release_event",
+	gtk_signal_connect(GTK_OBJECT(main_window), "button_release_event",
 	    GTK_SIGNAL_FUNC(button_release), NULL);
 
 	gtk_signal_connect(GTK_OBJECT(drawarea), "configure_event",
@@ -312,13 +328,16 @@ void
 gui_gtk_widget_show(void)
 {
 
-	gtk_widget_show(window);
+	gtk_widget_show(main_window);
 }
 
 void
 gui_gtk_widget_mainloop(void)
 {
 
+#if defined(SUPPORT_JOYSTICK)
+	joymng_task_id = gtk_idle_add((GtkFunction)joymng_update_task, NULL);
+#endif
 	install_idle_process();
 	gtk_main();
 	uninstall_idle_process();
@@ -328,6 +347,9 @@ void
 gui_gtk_widget_quit(void)
 {
 
+#if defined(SUPPORT_JOYSTICK)
+	gtk_idle_remove(joymng_task_id);
+#endif
 	taskmng_exit();
 	gtk_main_quit();
 }
@@ -345,7 +367,7 @@ void
 gui_gtk_set_window_title(const char* str)
 {
 
-	gtk_window_set_title(GTK_WINDOW(window), str);
+	gtk_window_set_title(GTK_WINDOW(main_window), str);
 }
 
 void

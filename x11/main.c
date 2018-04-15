@@ -295,6 +295,7 @@ main(int argc, char *argv[])
 		}
 	}
 
+	joymng_initialize();
 	mousemng_initialize();
 	if (np2oscfg.MOUSE_SW) {
 		mouse_running(MOUSE_ON);
@@ -304,7 +305,6 @@ main(int argc, char *argv[])
 	sysmng_initialize();
 	taskmng_initialize();
 
-	joy_init();
 	pccore_init();
 	S98_init();
 
@@ -325,9 +325,11 @@ main(int argc, char *argv[])
 		}
 	}
 
+#if !defined(CPUCORE_IA32)
 	if (np2oscfg.resume) {
 		flagload(np2resumeext, "Resume", FALSE);
 	}
+#endif
 	sysmng_workclockreset();
 
 	drvmax = (argc < 4) ? argc : 4;
@@ -349,13 +351,16 @@ main(int argc, char *argv[])
 	pccore_cfgupdate();
 
 	mouse_running(MOUSE_OFF);
+	joymng_deinitialize();
 	S98_trash();
 
+#if !defined(CPUCORE_IA32)
 	if (np2oscfg.resume) {
 		flagsave(np2resumeext);
 	} else {
 		flagdelete(np2resumeext);
 	}
+#endif
 
 	pccore_term();
 	debugwin_destroy();

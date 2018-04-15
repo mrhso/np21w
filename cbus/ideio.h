@@ -1,4 +1,6 @@
 
+#define	IDEIO_MULTIPLE_MAX	0
+
 typedef struct {
 	UINT8	sxsidrv;
 	UINT8	wp;
@@ -17,6 +19,11 @@ typedef struct {
 	UINT8	surfaces;
 	UINT8	sectors;
 	UINT8	bufdir;
+
+	UINT8	mulcnt;
+	UINT8	multhr;
+	UINT8	mulmode;
+	UINT8	dmy;
 
 	UINT	bufpos;
 	UINT	bufsize;
@@ -113,7 +120,7 @@ extern "C" {
 extern	IDEIO	ideio;
 
 void IOOUTCALL ideio_w16(UINT port, REG16 value);
-REG16 IOOUTCALL ideio_r16(UINT port);
+REG16 IOINPCALL ideio_r16(UINT port);
 
 void ideio_reset(void);
 void ideio_bind(void);

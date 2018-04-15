@@ -43,13 +43,20 @@
 
 const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 
+#if defined(_WIN32_WCE)
+#define	PCBASEMULTIPLE	2
+#else
+#define	PCBASEMULTIPLE	4
+#endif
+
+
 	NP2CFG	np2cfg = {
 				0, 1, 0, 32, 0, 0, 0x40,
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
 
-				OEMTEXT("VX"), PCBASECLOCK25, 4,
+				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
 				1, 1, 2, 1, 0x000000, 0xffffff,
 				22050, 500, 4, 0,
@@ -64,10 +71,10 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				OEMTEXT(""), OEMTEXT(""), OEMTEXT("")};
 
-	PCCORE	pccore = {	PCBASECLOCK25, 4,
+	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
 						0, PCMODEL_VX, 0, 0, {0x3e, 0x73, 0x7b}, 0,
 						0, 0,
-						4 * PCBASECLOCK25};
+						PCBASECLOCK25 * PCBASEMULTIPLE};
 
 	UINT8	screenupdate = 3;
 	int		screendispflag = 1;
@@ -606,7 +613,7 @@ void pccore_exec(BOOL draw) {
 
 	while(screendispflag) {
 #if defined(TRACE)
-	resetcnt++;
+		resetcnt++;
 #endif
 		pic_irq();
 		if (CPU_RESETREQ) {
@@ -629,6 +636,7 @@ void pccore_exec(BOOL draw) {
 			treip[trpos & (IPTRACE - 1)] = (CPU_CS << 16) + CPU_IP;
 			trpos++;
 #endif
+//			TRACEOUT(("%.4x:%.4x", CPU_CS, CPU_IP));
 			i286x_step();
 //			i286c_step();
 		}
