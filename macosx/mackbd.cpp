@@ -29,8 +29,8 @@ static const BYTE keymac[128] = {
 				0x24,0x26,0x28,0x30,0x32,0x2e,0x2f,0x31,
 			//	 TAB, SPC,    ,  BS,    , ESC,    , apl		; 0x30
 				0x0f,0x34,  NC,0x0e,  NC,0x00,  NC,  NC,
-			//	 sft, ctl, alt, cps,    ,    ,    ,    		; 0x38
-				0x70,0x74,0x73,0x71,  NC,  NC,  NC,  NC,
+			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
+				0x70,0x79,0x73,0x74,  NC,  NC,  NC,  NC,		// for CW
 			//	    , [.],    , [*],    ,    , [+],    		; 0x40
 				  NC,0x50,  NC,0x45,  NC,  NC,0x49,  NC,
 			//	    ,    ,    ,    , ret,    , [-], clr		; 0x48
@@ -64,7 +64,7 @@ static const BYTE keymac2[128] = {
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	 TAB, SPC,    ,  BS,    , ESC,    , apl		; 0x30
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-			//	 sft, ctl, alt, cps,    ,    ,    ,    		; 0x38
+			//	 sft, cps, alt, ctl,    ,    ,    ,    		; 0x38
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 			//	    , [.],    , [*],    ,    , [+],    		; 0x40
 				  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -93,6 +93,7 @@ void mackbd_initialize(void) {
 	ZeroMemory(&keymap, sizeof(keymap));
 }
 
+#if 0
 void mackbd_callback(void) {
 
 	UINT32	tick;
@@ -132,19 +133,34 @@ void mackbd_callback(void) {
 		}
 	}
 }
+#endif
 
-void mackbd_f12down(int keycode) {
+static const BYTE f12keys[] = {
+			0x61, 0x60, 0x4d, 0x4f};
+
+
+static BYTE getf12key(void) {
+
+	UINT	key;
+
+	key = np2oscfg.F12COPY - 1;
+	if (key < (sizeof(f12keys)/sizeof(BYTE))) {
+		return(f12keys[key]);
+	}
+	else {
+		return(NC);
+	}
+}
+
+void mackbd_keydown(int keycode) {
 
 	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			keystat_senddata(0x61);
-		}
-		else if (np2oscfg.F12COPY == 2) {
-			keystat_senddata(0x60);
+		if (np2oscfg.F12COPY) {
+			keystat_senddata(getf12key());
         }
 #if defined(NP2GCC)
-        else if(!np2oscfg.F12COPY) {
-            mouse_running(MOUSE_XOR);
+        else {
+            mousemng_toggle(MOUSEPROC_SYSTEM);
             menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
             sysmng_update(SYS_UPDATECFG);
 		}
@@ -159,14 +175,11 @@ void mackbd_f12down(int keycode) {
 	}
 }
 
-void mackbd_f12up(int keycode) {
+void mackbd_keyup(int keycode) {
 
 	if (keycode == 0x6f) {
-		if (np2oscfg.F12COPY == 1) {
-			keystat_senddata(0x61 | 0x80);
-		}
-		else if (np2oscfg.F12COPY == 2) {
-			keystat_senddata(0x60 | 0x80);
+		if (np2oscfg.F12COPY) {
+			keystat_senddata(getf12key() | 0x80);
 		}
     }
     else {
@@ -178,3 +191,11 @@ void mackbd_f12up(int keycode) {
 	}
 }
 
+void mackbd_resetf12(void) {
+
+	UINT	i;
+
+	for (i=0; i<(sizeof(f12keys)/sizeof(BYTE)); i++) {
+		keystat_forcerelease(f12keys[i]);
+	}
+}

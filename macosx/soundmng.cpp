@@ -10,6 +10,7 @@
 #endif
 
 #include	"soundrecording.h"
+#include	"np2opening.h"
 
 #define	SOUNDBUFFERS	2
 
@@ -19,7 +20,7 @@ typedef struct {
 	UINT			rate;
 	UINT			samples;
 	UINT			buffersize;
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 	SINT16			*indata;
 	SINT16			*extendbuffer;
 #endif
@@ -45,7 +46,7 @@ static pascal void QSoundCallback(SndChannelPtr /*inChannel*/,
 	QSOUND		qs;
 	int			nextbuf;
 	void		*dst;
-#if !defined(SOUNDMNG_USEBUFFERING)
+#if defined(SOUND_CRITICAL)
 const SINT32	*src;
 #endif
 
@@ -53,7 +54,7 @@ const SINT32	*src;
 		qs = &QSound;
 		nextbuf = inCommand->param1;
 		dst = qs->buf[nextbuf]->sampleArea;
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 		if (qs->indata) {
 			CopyMemory((SINT16 *)dst, qs->indata, qs->buffersize);
 			qs->indata = NULL;
@@ -137,7 +138,7 @@ static BOOL SoundBuffer_Init(UINT rate, UINT samples) {
 	drate = rate;
 	dtox80(&drate, &extFreq);
 
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 	qs->extendbuffer = (SINT16 *)_MALLOC(buffersize, "Extend buffer");
 	if (qs->extendbuffer == NULL) {
 		goto sbinit_err;
@@ -188,7 +189,7 @@ static void SoundBuffer_Term(void) {
 			buf[i] = NULL;
 		}
 	}
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 	qs->indata = NULL;
 	if (qs->extendbuffer) {
 		_MFREE(qs->extendbuffer);
@@ -216,7 +217,7 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	if (SoundChannel_Init()) {
 		goto qsinit_err;
 	}
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 	samples = rate * ms / (SOUNDBUFFERS * 1000);
 	samples = (samples + 3) & (~3);
 #else
@@ -273,7 +274,7 @@ void soundmng_setreverse(BOOL reverse) {
 	}
 }
 
-#if defined(SOUNDMNG_USEBUFFERING)
+#if !defined(SOUND_CRITICAL)
 void soundmng_sync(void) {
 
 	QSOUND		qs;
@@ -306,12 +307,15 @@ static	Movie	setupWAV(const char* name) {
     short	resID = 0;
     Movie	wav = NULL;    
 
-	char	path[MAX_PATH];
-	Str255	fname;
+    if (!getResourceFile(name, &fs)) {
+        char	path[MAX_PATH];
+        Str255	fname;
 
-	file_cpyname(path, file_getcd(name), MAX_PATH);
-	mkstr255(fname, path);
-	FSMakeFSSpec(0, 0, fname, &fs);
+        file_cpyname(path, file_getcd(name), MAX_PATH);
+        mkstr255(fname, path);
+        FSMakeFSSpec(0, 0, fname, &fs);
+    }
+
     if (OpenMovieFile( &fs, &movieRefNum, fsRdPerm ) == noErr) {
         if (NewMovieFromFile(&wav,movieRefNum, &resID, NULL, newMovieActive, NULL) != noErr) {
             return NULL;
@@ -330,8 +334,8 @@ void soundmng_deinitialize(void) {
 
 BOOL soundmng_initialize(void) {
     EnterMovies();
-    seekWAV[0] = setupWAV("Fddseek.wav");
-    seekWAV[1] = setupWAV("Fddseek1.wav");
+    seekWAV[0] = setupWAV("fddseek.wav");
+    seekWAV[1] = setupWAV("fddseek1.wav");
     if (seekWAV[0] == NULL || seekWAV[1] == NULL) {
         return  false;
     }

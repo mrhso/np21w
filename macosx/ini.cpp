@@ -106,7 +106,7 @@ const INITBL	*p;
 					break;
 
                 case INITYPE_ARGS16:
-                    milstr_ncpy(work, data, 512);
+                    milstr_ncpy(work, data, sizeof(work));
                     inirdargs16(work, p);
                     break;
 
@@ -332,8 +332,11 @@ static const char ini_title[] = "NekoProjectII";
 static const char inifile[] = "np2.cfg";
 
 static const INITBL iniitem[] = {
+	{"np2title", INITYPE_STR,			np2oscfg.titles,
+													sizeof(np2oscfg.titles)},
 	{"clk_base", INITYPE_SINT32,	&np2cfg.baseclock,		0},
 	{"clk_mult", INITYPE_SINT32,	&np2cfg.multiple,		0},
+	{"pc_model", INITYPE_UINT8,		&np2cfg.model,			0},
 
 	{"DIPswtch", INITYPE_BYTEARG,	np2cfg.dipsw,			3},
 	{"MEMswtch", INITYPE_BYTEARG,	np2cfg.memsw,			8},
@@ -397,6 +400,7 @@ static const INITBL iniitem[] = {
 	{"Mouse_sw", INITYPE_BOOL,		&np2oscfg.MOUSE_SW,		0},
 	{"comfirm_", INITYPE_BOOL,		&np2oscfg.comfirm,		0},
 	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},		// ver0.30
+	{"toolwind", INITYPE_BOOL,		&np2oscfg.toolwin,		0},		// ver0.38
 	{"I286SAVE", INITYPE_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 #define	INIITEMS	(sizeof(iniitem) / sizeof(INITBL))

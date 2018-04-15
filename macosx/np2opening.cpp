@@ -38,19 +38,30 @@ PicHandle getBMPfromPath(char* path, Rect* srt) {
     return(getbmp(fsc, srt));
 }
 
-PicHandle getBMPfromResource(const char* name, Rect* srt) {
+bool getResourceFile(const char* name, FSSpec* fsc) {
     CFURLRef	url = NULL;
     FSRef		fsr;
+    bool		ret = false;
+    
+    url=CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTRj(name), NULL, NULL);
+    if (url) {
+        if (CFURLGetFSRef(url, &fsr)) {
+            if (FSGetCatalogInfo(&fsr, kFSCatInfoNone, NULL, NULL, fsc, NULL) == noErr) {
+                ret = true;
+            }
+        }
+        CFRelease(url);
+    }
+    return(ret);
+}
+
+
+PicHandle getBMPfromResource(const char* name, Rect* srt) {
     FSSpec		fsc;
     PicHandle	pict = NULL;
     
-    url=CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTRj(name), CFSTR("bmp"), NULL);
-    if (url) {
-        if (CFURLGetFSRef(url, &fsr)) {
-            FSGetCatalogInfo(&fsr, kFSCatInfoNone, NULL, NULL, &fsc, NULL);
-            pict = getbmp(fsc, srt);
-        }
-        CFRelease(url);
+    if (getResourceFile(name, &fsc)) {
+        pict = getbmp(fsc, srt);
     }
     return(pict);
 }
@@ -60,7 +71,7 @@ void openingNP2(void) {
     GrafPtr		port;
     PicHandle	pict = NULL;
 
-    pict = getBMPfromResource("nekop2", &srt);
+    pict = getBMPfromResource("nekop2.bmp", &srt);
     if (pict) {
         GetPort(&port);
         SetPortWindowPort(hWndMain);

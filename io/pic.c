@@ -243,8 +243,8 @@ void pic_setirq(BYTE irq) {
 			if (bit & PIC_SYSTEMTIMER) {
 				if ((pit.mode[0] & 0x0c) == 0x04) {
 					SINT32 cnt;										// ver0.29
-					if (pit.value[0].w > 8) {
-						cnt = pc.multiple * pit.value[0].w;
+					if (pit.value[0] > 8) {
+						cnt = pc.multiple * pit.value[0];
 						cnt >>= 2;
 					}
 					else {
@@ -291,6 +291,7 @@ static void IOOUTCALL pic_o00(UINT port, BYTE dat) {
 	PICITEM		picp;
 	BYTE		level;
 
+//	TRACEOUT(("pic %x %x", port, dat));
 	picp = &pic.pi[(port >> 3) & 1];
 	picp->writeicw = 0;
 	switch(dat & 0x18) {
@@ -340,6 +341,7 @@ static void IOOUTCALL pic_o02(UINT port, BYTE dat) {
 
 	PICITEM		picp;
 
+//	TRACEOUT(("pic %x %x", port, dat));
 	picp = &pic.pi[(port >> 3) & 1];
 	if (!picp->writeicw) {
 		picp->imr = dat;

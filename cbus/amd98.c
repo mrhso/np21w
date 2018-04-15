@@ -11,11 +11,14 @@ static void setamd98event(BOOL absolute) {
 
 	SINT32	cnt;
 
-	if (pit.value[3].w > 8) {					// ª‹’‚È‚µ
-		cnt = pc.multiple * pit.value[3].w;
+	if (pit.value[3] > 8) {						// ª‹’‚È‚µ
+		cnt = pc.multiple * pit.value[3];
 	}
 	else {
 		cnt = pc.multiple << 16;
+	}
+	if (pc.baseclock == PCBASECLOCK25) {
+		cnt = cnt * 16 / 13;					// cnt * 2457600 / 1996800
 	}
 	nevent_set(NEVENT_MUSICGEN, cnt, amd98int, absolute);
 }
@@ -111,8 +114,18 @@ static void IOOUTCALL amd_ode(UINT port, BYTE dat) {
 
 // ----
 
+static void psgpanset(PSGGEN psg) {
+
+	psggen_setpan(psg, 0, 1);
+	psggen_setpan(psg, 1, 0);
+	psggen_setpan(psg, 2, 2);
+}
+
 void amd98_bind(void) {
 
+	psgpanset(&psg1);
+	psgpanset(&psg2);
+	psgpanset(&psg3);
 	sound_streamregist(&psg1, (SOUNDCB)psggen_getpcm);
 	sound_streamregist(&psg2, (SOUNDCB)psggen_getpcm);
 	sound_streamregist(&psg3, (SOUNDCB)psggen_getpcm);

@@ -4,12 +4,14 @@
 #include	"timemng.h"
 #include	"i286.h"
 #include	"memory.h"
+#include	"np2ver.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"cbuscore.h"
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
 #include	"bios.h"
+#include	"biosmem.h"
 #include	"vram.h"
 #include	"scrndraw.h"
 #include	"dispsync.h"
@@ -28,17 +30,18 @@
 #include	"calendar.h"
 #include	"timing.h"
 //#include	"hostdrv.h"
+#include	"debugsub.h"
 
 
-	const char	np2version[] = "ver.0.70";
+	const char	np2version[] = NP2VER_CORE;
 
 	NP2CFG		np2cfg = {
-				PCBASECLOCK25, 4, 0,
+				PCBASECLOCK25, 4, PCMODEL_VX,
 				{0x3e, 0x63, 0x7a},
-				{0x48, 0x05, 0x0c, 0x00, 0x01, 0x00, 0x00, 0x6E},
+				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6E},
 				{0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c},
 				{1, 1, 6, 1, 8, 1},
-				0, 4, 32, 22050, 800, 0, 1, 1, 0,
+				0, 0, 4, 32, 22050, 800, 0, 1, 1, 0,
 				0, 0,
 				0, {0, 0, 0}, 0xd1, 0x7f, 0xd1, 0, 0, 1, 0x82,		// ver0.30
 				1, 80, 3, 1, 1, 0, 0x000000, 0xffffff,
@@ -60,9 +63,10 @@
 							100, 20,
 							0};
 
-									// on=0, off=1
-	BYTE	dip_default[3] = {0x3e, 0x63, 0x7a};
-	BYTE	msw_default[8] = {0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6E};
+//									// on=0, off=1
+//	BYTE	dip_default[3] = {0x3e, 0x63, 0x7a};
+static const BYTE msw_default[8] =
+							{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6E};
 
 	BYTE	screenupdate = 3;
 	int		screendispflag = 1;
@@ -70,12 +74,12 @@
 	BOOL	drawframe;
 	UINT	drawcount = 0;
 
-	BYTE	mem[0x200000];								// ver0.28
+	BYTE	mem[0x200000];
 
 
 // ---------------------------------------------------------------------------
 
-static void setvsyncclock(void) {								// ver0.28
+static void setvsyncclock(void) {
 
 	UINT	vfp;
 	UINT	vbp;
@@ -208,7 +212,7 @@ void pccore_term(void) {
 	fdd_eject(2);
 	fdd_eject(3);
 
-	extmemmng_clear();												// ver0.28
+	extmemmng_clear();
 
 	iocore_destroy();
 
@@ -227,8 +231,8 @@ void pccore_cfgupdate(void) {
 
 	renewal = FALSE;
 	for (i=0; i<8; i++) {
-		if (np2cfg.memsw[i] != mem[0xa3fe2 + i*4]) {
-			np2cfg.memsw[i] = mem[0xa3fe2 + i*4];
+		if (np2cfg.memsw[i] != mem[MEMB_MSW + i*4]) {
+			np2cfg.memsw[i] = mem[MEMB_MSW + i*4];
 			renewal = TRUE;
 		}
 	}
@@ -513,7 +517,7 @@ void pccore_exec(BOOL draw) {
 			i286_resetprefetch();
 		}
 
-#if 1 // ndef TRACE
+#ifndef TRACE
 		if (I286_REMCLOCK > 0) {
 			if (!(CPUTYPE & CPUTYPE_V30)) {
 				i286();
@@ -523,20 +527,7 @@ void pccore_exec(BOOL draw) {
 			}
 		}
 #else
-		while(nevent.remainclock > 0) {
-{
-static FILEH fh = FILEH_INVALID;
-if (I286_CS == 0x0e14) {
-	if (fh == FILEH_INVALID) {
-		fh = file_create("log.txt");
-	}
-}
-if (fh != FILEH_INVALID) {
-char buf[32];
-wsprintf(buf, "%.4x:%.4x\r\n", I286_CS, I286_IP);
-file_write(fh, buf, strlen(buf));
-}
-}
+		while(I286_REMCLOCK > 0) {
 			i286_step();
 		}
 #endif

@@ -38,6 +38,7 @@
 #include	"macalert.h"
 #include	"np2opening.h"
 #include	"toolwin.h"
+#include	"aboutdlg.h"
 
 #include	<QuickTime/QuickTime.h>
 #define	USE_RESUME
@@ -45,14 +46,14 @@
 // #define	OPENING_WAIT	1500
 
 
-		NP2OSCFG	np2oscfg = {0, 2, 0, 0, 0, 0, 1, 0};
+		NP2OSCFG	np2oscfg = {"Neko Project IIx", 0, 2, 0, 0, 0, 0, 1, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
 static	UINT		framecnt = 0;
 static	UINT		waitcnt = 0;
 static	UINT		framemax = 1;
-        BYTE		scrnmode;
+        BYTE		scrnmode = 0;
 
 
 #define DRAG_THRESHOLD		5
@@ -137,6 +138,8 @@ static void MenuBarInit(void) {
 	InsertMenu(GetMenu(IDM_KEYBOARD), -1);
 	InsertMenu(GetMenu(IDM_SOUND), -1);
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
+    ChangeMenuAttributes(GetMenuRef(IDM_EDIT), kMenuAttrAutoDisable, 0);
+    DisableAllMenuItems(GetMenuHandle(IDM_EDIT));
     SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2OPEN, kMenuOptionModifier);
     SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2EJECT, kMenuOptionModifier);
     SetMenuItemModifiers(GetMenuRef(IDM_SASI2), IDM_SASI2OPEN, kMenuOptionModifier);
@@ -166,13 +169,11 @@ static void changescreen(BYTE mode) {
 	}
 	if (renewal) {
 		soundmng_stop();
-		mouse_running(MOUSE_STOP);
 		scrnmng_destroy();
 		if (scrnmng_create(mode) == SUCCESS) {
 			scrnmode = mode;
 		}
 		scrndraw_redraw();
-		mouse_running(MOUSE_CONT);
 		soundmng_play();
 	}
 	else {
@@ -205,17 +206,13 @@ static void HandleMenuChoice(long wParam) {
 		case IDM_NEWDISK:
             newdisk();
 			break;
-#if 0
-		case IDM_NEWHDD:
-			newhdddisk();
-			break;
-#endif
+
         case IDM_FONT:
             dialog_font();
             break;
             
 		case IDM_EXIT:
-			np2running = FALSE;
+			taskmng_exit();
 			break;
 
 		case IDM_FDD1OPEN:
@@ -318,7 +315,7 @@ static void HandleMenuChoice(long wParam) {
 			break;
 
         case IDM_MOUSE:
-            mouse_running(MOUSE_XOR);
+			mousemng_toggle(MOUSEPROC_SYSTEM);
             menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
             sysmng_update(SYS_UPDATECFG);
 			break;
@@ -374,19 +371,31 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_F12MOUSE:
 			menu_setf12copy(0);
-			keystat_resetcopyhelp();
+			mackbd_resetf12();
 			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_F12COPY:
 			menu_setf12copy(1);
-			keystat_resetcopyhelp();
+			mackbd_resetf12();
 			update |= SYS_UPDATECFG;
 			break;
 
 		case IDM_F12STOP:
 			menu_setf12copy(2);
-			keystat_resetcopyhelp();
+			mackbd_resetf12();
+			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_F12EQU:
+			menu_setf12copy(3);
+			mackbd_resetf12();
+			update |= SYS_UPDATECFG;
+			break;
+
+		case IDM_F12COMMA:
+			menu_setf12copy(4);
+			mackbd_resetf12();
 			update |= SYS_UPDATECFG;
 			break;
 
@@ -459,6 +468,11 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case IDM_AMD98:
+			menu_setsound(0x80);
+			update |= SYS_UPDATECFG;
+			break;
+
 		case IDM_SEEKSND:
 			menu_setmotorflg(np2cfg.MOTOR ^ 1);
 			update |= SYS_UPDATECFG;
@@ -516,13 +530,27 @@ static void HandleMenuChoice(long wParam) {
             menu_setmsrapid(np2cfg.MOUSERAPID ^ 1);
             update |= SYS_UPDATECFG;
             break;
+        case IDM_RECORDING:
+            menu_setrecording(false);
+            break;
+
 
 		case IDM_I286SAVE:
 			debugsub_status();
 			break;
+            
+        case IDM_NP2HELP:
+            {
+                ICInstance inst;
+                long start, fin;
+                const char	urlStr[] = "http://retropc.net/tk800/np2x/help/help.html";
 
-        case IDM_RECORDING:
-            menu_setrecording(false);
+                ICStart(&inst, 'SMil');
+                start = 0;
+                fin = strlen(urlStr);
+                ICLaunchURL(inst, "\p", urlStr, strlen(urlStr), &start, &fin);
+                ICStop(inst);
+            }
             break;
 
 		default:
@@ -536,12 +564,15 @@ static void HandleMouseDown(EventRecord *pevent) {
 
 	WindowPtr	hWnd;
 
-    soundmng_stop();
-	switch(FindWindow(pevent->where, &hWnd)) {
-		case inMenuBar:
-			HandleMenuChoice(MenuSelect(pevent->where));
-			break;
-	}
+	if (FindWindow(pevent->where, &hWnd) == inMenuBar) {
+        soundmng_stop();
+        mousemng_disable(MOUSEPROC_MACUI);
+        HandleMenuChoice(MenuSelect(pevent->where));
+        mousemng_enable(MOUSEPROC_MACUI);
+    }
+    else {
+        mousemng_buttonevent(MOUSEMNG_LEFTDOWN);
+    }
 }
 
 
@@ -658,8 +689,11 @@ int main(int argc, char *argv[]) {
 	menu_setdispclk(np2oscfg.DISPCLK);
 	menu_setbtnrapid(np2cfg.BTN_RAPID);
 	menu_setbtnmode(np2cfg.BTN_MODE);
+    if (np2oscfg.I286SAVE) {
+        AppendMenuItemTextWithCFString(GetMenuRef(IDM_OTHER), CFCopyLocalizedString(CFSTR("i286 save"),"i286"), kMenuItemAttrIconDisabled, NULL,NULL);
+    }
 
-	scrnmode = 0;
+	scrnmng_initialize();
 	if (scrnmng_create(scrnmode) != SUCCESS) {
 		TRACETERM();
 		macossub_term();
@@ -681,8 +715,9 @@ int main(int argc, char *argv[]) {
 	}
 
 #if defined(NP2GCC)
+	mousemng_initialize();
 	if (np2oscfg.MOUSE_SW) {										// ver0.30
-		mouse_running(MOUSE_ON);
+		mousemng_enable(MOUSEPROC_SYSTEM);
 	}
 #endif
 #ifdef OPENING_WAIT
@@ -786,7 +821,7 @@ int main(int argc, char *argv[]) {
 
     hid_clear();
 #if defined(NP2GCC)
-	mouse_running(MOUSE_OFF);
+	mousemng_disable(MOUSEPROC_SYSTEM);
 #endif
 
 	soundmng_deinitialize();
@@ -811,80 +846,94 @@ int main(int argc, char *argv[]) {
 //以下、ごっそりIIxからマージ
 static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef event, void* userData)
 {
-    UInt32          whatHappened;
-    OSStatus        result = eventNotHandledErr;
+    OSStatus	result = eventNotHandledErr;
     
     long		eventClass;
-    
+    UInt32		whatHappened;
     eventClass = GetEventClass(event);
     whatHappened = GetEventKind(event);
 
-    EventRecord         eve;
+    EventRecord	eve;
     ConvertEventRefToEventRecord( event,&eve );
-
     if (IsDialogEvent(&eve)) return result;
 
-    UInt32 modif;
+    UInt32		modif;
     GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
 
 #if defined(NP2GCC)
-    HIPoint delta;
+    HIPoint		delta;
     EventMouseButton buttonKind;
     GetEventParameter (event, kEventParamMouseButton, typeMouseButton, NULL, sizeof(EventMouseButton), NULL, &buttonKind);
-
-	BYTE ret;
 #endif
         
     switch (eventClass)
-        {
-                case kEventClassAppleEvent:  
-                    if (whatHappened == kEventAppleEvent) {
-                        AEProcessAppleEvent(&eve);
-                    }
-                    break;
+    {
+        case kEventClassCommand:
+            if (GetEventKind(event)==kEventCommandProcess) {
+                HICommand	cmd;
+                GetEventParameter(event, kEventParamDirectObject, typeHICommand, NULL, sizeof(HICommand), NULL, &cmd);
+                if (cmd.commandID == kHICommandAppHelp) {
+                    ICInstance inst;
+                    long start, fin;
+                    const char	urlStr[] = "http://retropc.net/tk800/np2x/help/help.html";
 
-                case kEventClassMouse: 
+                    ICStart(&inst, 'SMil');
+                    start = 0;
+                    fin = strlen(urlStr);
+                    ICLaunchURL(inst, "\p", urlStr, strlen(urlStr), &start, &fin);
+                    ICStop(inst);
+                }
+            }
+            break;
+
+        case kEventClassAppleEvent:  
+            if (whatHappened == kEventAppleEvent) {
+                AEProcessAppleEvent(&eve);
+            }
+            break;
+
+        case kEventClassMouse: 
 #if defined(NP2GCC)
-                    switch (whatHappened)
-                        {
-                        case kEventMouseMoved:
-                            GetEventParameter (event, kEventParamMouseDelta, typeHIPoint, NULL, sizeof(HIPoint), NULL, &delta);
-                            mouse_callback(delta);
-                            result = noErr;
-                            break;
-                       case kEventMouseDown:
-                            if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
-                                ret=mouse_btn(MOUSE_RIGHTDOWN);
-                            }
-                            else {
-                                HandleMouseDown(&eve);
-                            }
-                            result=noErr;
-                            break;
-                        case kEventMouseUp:
-                            if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
-                                ret=mouse_btn(MOUSE_RIGHTUP);
-                            }
-                            else if (buttonKind == kEventMouseButtonTertiary) {
-                                mouse_running(MOUSE_XOR);
-                                menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
-                                sysmng_update(SYS_UPDATECFG);
-                            }
-                            else {
-                                ret=mouse_btn(MOUSE_LEFTUP);
-                            }
-                            result=noErr;
-                            break;    
-                        }
+            switch (whatHappened)
+            {
+                case kEventMouseMoved:
+                    GetEventParameter (event, kEventParamMouseDelta, typeHIPoint, NULL, sizeof(HIPoint), NULL, &delta);
+                    mousemng_callback(delta);
+                    result = noErr;
+                    break;
+                case kEventMouseDown:
+                    if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                        mousemng_buttonevent(MOUSEMNG_RIGHTDOWN);
+                    }
+                    else {
+                        HandleMouseDown(&eve);
+                    }
+                    result=noErr;
+                    break;
+                case kEventMouseUp:
+                    if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                        mousemng_buttonevent(MOUSEMNG_RIGHTUP);
+                    }
+                    else if (buttonKind == kEventMouseButtonTertiary) {
+                        mousemng_toggle(MOUSEPROC_SYSTEM);
+                        menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
+                        sysmng_update(SYS_UPDATECFG);
+                    }
+                    else {
+                        mousemng_buttonevent(MOUSEMNG_LEFTUP);
+                    }
+                    result=noErr;
+                    break;    
+                }
 #else
-						if (whatHappened == kEventMouseDown) {
-							HandleMouseDown(&eve);
-						}
+                if (whatHappened == kEventMouseDown) {
+                    HandleMouseDown(&eve);
+                }
 #endif
-                        break;
-            default:
-                    break; 
-        }
+                break;
+        default:
+            break; 
+    }
 
 	(void)myHandlerChain;
 	(void)userData;
@@ -897,84 +946,88 @@ static pascal OSStatus np2windowevent(EventHandlerCallRef myHandler,  EventRef e
     UInt32		whatHappened;
     OSStatus	result = eventNotHandledErr;    
     long		eventClass;
-    static UInt32 backup = 0;
     
     GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL,
                          sizeof(window), NULL, &window);
     eventClass = GetEventClass(event);
     whatHappened = GetEventKind(event);
         
+    static UInt32 backup = 0;
     switch (eventClass)
-        {        
-            case kEventClassWindow:
-                switch (whatHappened)
-                {
-                    case kEventWindowClose:
-                        taskmng_exit();
-                        result = noErr;
-                        break;
-                    case kEventWindowActivated:
-                        DisableAllMenuItems(GetMenuHandle(IDM_EDIT));
-                        break;
-                    case kEventWindowToolbarSwitchMode:
-                        toolwin_open();
-                        break;
-                    case kEventWindowDragStarted:
-                        soundmng_stop();
-                        break;
-                    case kEventWindowDragCompleted:
-                        soundmng_play();
-                        break;
-                    case kEventWindowShown:
-                        scrndraw_redraw();
-                        break;
-                }
-                break;
-            case kEventClassKeyboard:
-                UInt32 key;
-                GetEventParameter (event, kEventParamKeyCode, typeUInt32, NULL, sizeof(UInt32), NULL, &key);
-                UInt32 modif;
-                GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
-                switch (whatHappened)
-                {
-                    case kEventRawKeyUp:
-                        mackbd_f12up(key);
-                        result = noErr;
-                        break;
-                    case kEventRawKeyRepeat:
-                        mackbd_f12down(key);
-                        result = noErr;
-                        break;
-                    case kEventRawKeyDown:
-                        if (modif & cmdKey) {
-                            EventRecord	eve;
-                            ConvertEventRefToEventRecord( event,&eve );
-                            HandleMenuChoice(MenuEvent(&eve));
-                        }
-                        else {
-                            mackbd_f12down(key);
-                        }
-                        result = noErr;
-                        break;
-                    case kEventRawKeyModifiersChanged:
-                        if (modif & shiftKey) keystat_senddata(0x70);
-                        else keystat_senddata(0x70 | 0x80);
-                        if (modif & optionKey) keystat_senddata(0x73);
-                        else keystat_senddata(0x73 | 0x80);
-                        if (modif & controlKey) keystat_senddata(0x74);
-                        else keystat_senddata(0x74 | 0x80);
-                        if ((modif & alphaLock) != (backup & alphaLock)) {
-                            keystat_senddata(0x71);
-                            backup = modif;
-                        }
-                        result = noErr;
-                        break;
-                    default: 
-                        break;             
-                }
-            default: 
-                break;                
-        }
+    {        
+        case kEventClassKeyboard:
+            UInt32 key;
+            GetEventParameter (event, kEventParamKeyCode, typeUInt32, NULL, sizeof(UInt32), NULL, &key);
+            UInt32 modif;
+            GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
+            switch (whatHappened)
+            {
+                case kEventRawKeyUp:
+                    mackbd_keyup(key);
+                    result = noErr;
+                    break;
+                case kEventRawKeyRepeat:
+                    mackbd_keydown(key);
+                    result = noErr;
+                    break;
+                case kEventRawKeyDown:
+                    if (modif & cmdKey) {
+                        EventRecord	eve;
+                        ConvertEventRefToEventRecord( event,&eve );
+                        mousemng_disable(MOUSEPROC_MACUI);
+                        HandleMenuChoice(MenuEvent(&eve));
+                        mousemng_enable(MOUSEPROC_MACUI);
+                    }
+                    else {
+                        mackbd_keydown(key);
+                    }
+                    result = noErr;
+                    break;
+                case kEventRawKeyModifiersChanged:
+                    if (modif & shiftKey) keystat_senddata(0x70);
+                    else keystat_senddata(0x70 | 0x80);
+                    if (modif & optionKey) keystat_senddata(0x73);
+                    else keystat_senddata(0x73 | 0x80);
+                    if (modif & controlKey) keystat_senddata(0x74);
+                    else keystat_senddata(0x74 | 0x80);
+                    if ((modif & alphaLock) != (backup & alphaLock)) {
+                        keystat_senddata(0x71);
+                        backup = modif;
+                    }
+                    result = noErr;
+                    break;
+                default: 
+                    break;             
+            }
+            break;
+            
+        case kEventClassWindow:
+            switch (whatHappened)
+            {
+                case kEventWindowClose:
+                    taskmng_exit();
+                    result = noErr;
+                    break;
+                case kEventWindowActivated:
+                    DisableAllMenuItems(GetMenuHandle(IDM_EDIT));
+                    break;
+                case kEventWindowToolbarSwitchMode:
+                    toolwin_open();
+                    break;
+                case kEventWindowDragStarted:
+                    soundmng_stop();
+                    break;
+                case kEventWindowDragCompleted:
+                    soundmng_play();
+                    break;
+                case kEventWindowShown:
+                    scrndraw_redraw();
+                    break;
+            }
+            break;
+        default: 
+            break;                
+    }
 
 	(void)myHandler;
 	(void)userData;
@@ -982,6 +1035,7 @@ static pascal OSStatus np2windowevent(EventHandlerCallRef myHandler,  EventRef e
 }
 
 static const EventTypeSpec appEventList[] = {
+                {kEventClassCommand, 	kEventCommandProcess },
 				{kEventClassAppleEvent,	kEventAppleEvent},
 				{kEventClassMouse,		kEventMouseDown},
 #if defined(NP2GCC)
@@ -1015,6 +1069,8 @@ static void setUpCarbonEvent(void) {
 								windEventList, 0, NULL);
 }
 
+static short	backupwidth=0, backupheight=0;
+
 static bool setupMainWindow(void) {
 #if defined(NP2GCC)
     OSStatus	err;
@@ -1043,8 +1099,11 @@ static bool setupMainWindow(void) {
 	}
 	SizeWindow(hWndMain, 640, 400, TRUE);
 #endif
-	scrnmng_initialize();
+
     setUpCarbonEvent();
+    if (backupwidth) scrnmng_setwidth(0, backupwidth);
+    if (backupheight) scrnmng_setheight(0, backupheight);
+    SetWindowTitleWithCFString(hWndMain, CFStringCreateWithCString(NULL, np2oscfg.titles, kCFStringEncodingUTF8));
 	ShowWindow(hWndMain);
     return(true);
 }
@@ -1052,18 +1111,29 @@ static bool setupMainWindow(void) {
 static void toggleFullscreen(void) {
     static Ptr 	bkfullscreen;
     static BYTE mouse = 0;
+    static bool toolwin = false;
+    MenuRef	menu = GetMenuRef(IDM_SCREEN);
+    Rect	bounds;
+    short	w = 640, h = 480;
 
     soundmng_stop();
-    if (!scrnmode & SCRNMODE_FULLSCREEN) {
-        RGBColor col = {0, 0, 0};
-        short	w=640, h=480;
+    if (!(scrnmode & SCRNMODE_FULLSCREEN)) {
+        HandleMenuChoice(IDM_ROLNORMAL);
+        GetWindowBounds(hWndMain, kWindowContentRgn, &bounds);
+        backupwidth = bounds.right - bounds.left;
+        backupheight = bounds.bottom - bounds.top;
+        toolwin = np2oscfg.toolwin;
+        toolwin_close();
         DisposeWindow(hWndMain);
-        BeginFullScreen(&bkfullscreen,0,&w,&h,&hWndMain,&col,(fullScreenAllowEvents | fullScreenDontChangeMenuBar));	
+        BeginFullScreen(&bkfullscreen, 0, &w, &h, &hWndMain, NULL, fullScreenAllowEvents);	
+        DisableMenuItem(menu, IDM_ROLNORMAL);
+        DisableMenuItem(menu, IDM_ROLLEFT);
+        DisableMenuItem(menu, IDM_ROLRIGHT);
         HideMenuBar();
         setUpCarbonEvent();
         if (!np2oscfg.MOUSE_SW) {
             mouse = np2oscfg.MOUSE_SW;
-            mouse_running(MOUSE_ON);
+            mousemng_enable(MOUSEPROC_SYSTEM);
             menu_setmouse(1);
         }
         changescreen(scrnmode | SCRNMODE_FULLSCREEN);
@@ -1074,10 +1144,16 @@ static void toggleFullscreen(void) {
         setupMainWindow();
         changescreen(scrnmode & (~SCRNMODE_FULLSCREEN));
         if (!mouse) {
-            mouse_running(MOUSE_OFF);
+            mousemng_disable(MOUSEPROC_SYSTEM);
             menu_setmouse(0);
         }
+        EnableMenuItem(menu, IDM_ROLNORMAL);
+        EnableMenuItem(menu, IDM_ROLLEFT);
+        EnableMenuItem(menu, IDM_ROLRIGHT);
         ShowMenuBar();
+        if (toolwin) {
+            toolwin_open();
+        }
     }
     CheckMenuItem(GetMenuHandle(IDM_SCREEN), LoWord(IDM_FULLSCREEN), scrnmode & SCRNMODE_FULLSCREEN);
     soundmng_play();

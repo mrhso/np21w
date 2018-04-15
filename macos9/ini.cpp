@@ -230,39 +230,39 @@ const INITBL	*pterm;
 				break;
 
 			case INITYPE_SINT8:
-				SPRINTF(work, "%d", *((char *)p->value));
+				SPRINTF(work, str_d, *((char *)p->value));
 				break;
 
 			case INITYPE_SINT16:
-				SPRINTF(work, "%d", *((SINT16 *)p->value));
+				SPRINTF(work, str_d, *((SINT16 *)p->value));
 				break;
 
 			case INITYPE_SINT32:
-				SPRINTF(work, "%d", *((SINT32 *)p->value));
+				SPRINTF(work, str_d, *((SINT32 *)p->value));
 				break;
 
 			case INITYPE_UINT8:
-				SPRINTF(work, "%u", *((BYTE *)p->value));
+				SPRINTF(work, str_u, *((BYTE *)p->value));
 				break;
 
 			case INITYPE_UINT16:
-				SPRINTF(work, "%u", *((UINT16 *)p->value));
+				SPRINTF(work, str_u, *((UINT16 *)p->value));
 				break;
 
 			case INITYPE_UINT32:
-				SPRINTF(work, "%u", *((UINT32 *)p->value));
+				SPRINTF(work, str_u, *((UINT32 *)p->value));
 				break;
 
 			case INITYPE_HEX8:
-				SPRINTF(work, "%x", *((BYTE *)p->value));
+				SPRINTF(work, str_x, *((BYTE *)p->value));
 				break;
 
 			case INITYPE_HEX16:
-				SPRINTF(work, "%x", *((UINT16 *)p->value));
+				SPRINTF(work, str_x, *((UINT16 *)p->value));
 				break;
 
 			case INITYPE_HEX32:
-				SPRINTF(work, "%x", *((UINT32 *)p->value));
+				SPRINTF(work, str_x, *((UINT32 *)p->value));
 				break;
 
 			default:
@@ -290,8 +290,12 @@ static const char ini_title[] = "NekoProjectII";
 static const char inifile[] = "np2.cfg";
 
 static const INITBL iniitem[] = {
+	{"windposx", INITYPE_SINT32,	&np2oscfg.posx,			0},
+	{"windposy", INITYPE_SINT32,	&np2oscfg.posy,			0},
+
 	{"clk_base", INITYPE_SINT32,	&np2cfg.baseclock,		0},
 	{"clk_mult", INITYPE_SINT32,	&np2cfg.multiple,		0},
+	{"pc_model", INITYPE_UINT8,		&np2cfg.model,			0},
 
 	{"DIPswtch", INITYPE_BYTEARG,	np2cfg.dipsw,			3},
 	{"MEMswtch", INITYPE_BYTEARG,	np2cfg.memsw,			8},
@@ -330,6 +334,7 @@ static const INITBL iniitem[] = {
 	{"F12_COPY", INITYPE_UINT8,		&np2oscfg.F12COPY,		0},
 	{"btnRAPID", INITYPE_BOOL,		&np2cfg.BTN_RAPID,		0},
 	{"btn_MODE", INITYPE_BOOL,		&np2cfg.BTN_MODE,		0},
+	{"Mouse_sw", INITYPE_BOOL,		&np2oscfg.MOUSE_SW,		0},
 	{"MS_RAPID", INITYPE_BOOL,		&np2cfg.MOUSERAPID,		0},
 
 	{"VRAMwait", INITYPE_BYTEARG,	np2cfg.wait,			6},

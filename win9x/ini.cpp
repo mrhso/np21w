@@ -345,6 +345,7 @@ static const INITBL iniitem[] = {
 
 	{"clk_base", INITYPE_UINT32,	&np2cfg.baseclock,		0},
 	{"clk_mult", INITYPE_UINT32,	&np2cfg.multiple,		0},
+	{"pc_model", INITYPE_UINT8,		&np2cfg.model,			0},
 
 	{"DIPswtch", INITYPE_ARGH8,		np2cfg.dipsw,			3},
 	{"MEMswtch", INITYPE_ARGH8,		np2cfg.memsw,			8},
@@ -397,7 +398,7 @@ static const INITBL iniitem[] = {
 	{"GRCG_EGC", INIAND_UINT8,		&np2cfg.grcg,			3},
 	{"color16b", INITYPE_BOOL,		&np2cfg.color16,		0},
 	{"skipline", INITYPE_BOOL,		&np2cfg.skipline,		0},
-	{"skplight", INITYPE_UINT16		&np2cfg.skiplight,		0},
+	{"skplight", INITYPE_UINT16,	&np2cfg.skiplight,		0},
 	{"LCD_MODE", INIAND_UINT8,		&np2cfg.LCD_MODE,		0x03},
 	{"BG_COLOR", INIROAND_HEX32,	&np2cfg.BG_COLOR,		0xffffff},
 	{"FG_COLOR", INIROAND_HEX32,	&np2cfg.FG_COLOR,		0xffffff},

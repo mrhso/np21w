@@ -1,5 +1,6 @@
 
 typedef struct {
+	char	titles[256];
 	BYTE	NOWAIT;
 	BYTE	DRAW_SKIP;
 	BYTE	DISPCLK;
@@ -11,6 +12,7 @@ typedef struct {
 	BYTE	comfirm;
 	BYTE	resume;
     
+	BYTE	toolwin;
 	BYTE	I286SAVE;
 } NP2OSCFG;
 

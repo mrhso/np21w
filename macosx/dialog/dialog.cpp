@@ -1,13 +1,9 @@
 #include	"compiler.h"
 #include	"resource.h"
 #include	"sysmng.h"
-#include	"dialog.h"
 #include	"pccore.h"
-#include	"fddfile.h"
+#include	"dialog.h"
 #include	"diskdrv.h"
-#if 0
-#include	"newdisk.h"
-#endif
 #include	"font.h"
 #include	"iocore.h"
 #include	"np2.h"
@@ -18,44 +14,6 @@
 #include	"s98.h"
 #include	"fdefine.h"
 #include	"toolwin.h"
-
-static Handle GetDlgItem(DialogPtr hWnd, short pos) {
-
-	Handle	ret;
-	Rect	rct;
-	short	s;
-
-	GetDialogItem(hWnd, pos, &s, &ret, &rct);
-	return(ret);
-}
-
-void AboutDialogProc(void) {
-
-	DialogPtr	hDlg;
-	Str255		verstr;
-	int			done;
-	short		item;
-
-	hDlg = GetNewDialog(IDD_ABOUT, NULL, (WindowPtr)-1);
-	if (!hDlg) {
-		return;
-	}
-	mkstr255(verstr, np2version);
-	SetDialogItemText(GetDlgItem(hDlg, IDD_VERSION), verstr);
-	SetDialogDefaultItem(hDlg, IDOK);
-
-	done = 0;
-	while(!done) {
-		ModalDialog(NULL, &item);
-		switch(item) {
-			case IDOK:
-				done = 1;
-				break;
-		}
-	}
-	DisposeDialog(hDlg);
-}
-
 
 // ----
 
@@ -111,8 +69,8 @@ void fsspec2path(FSSpec *fs, char *dst, int leng) {
 	} while(cipbr.dirInfo.ioDrDirID != fsRtDirID);
 }
 
-#if 1
 static NavDialogRef navWin;
+
 static pascal void dummyproc(NavEventCallbackMessage sel, NavCBRecPtr prm,
 													NavCallBackUserData ud) {
 	switch( sel )
@@ -175,23 +133,54 @@ BOOL dialog_fileselect(char *name, int size, WindowRef parent) {
 fsel_exit:
 	return(ret);
 }
-#else
-BOOL dialog_fileselect(char *name, int size, WindowRef parent) {
 
-	StandardFileReply	sfr;
+BOOL dialog_filewriteselect(OSType type, char *title, FSSpec *fsc, WindowRef parentWindow)
+{	
+	OSType				sign='SMil';
+	NavEventUPP			eventUPP;
+	NavReplyRecord		reply;
+	DescType			rtype;
+	OSErr				ret;
+	AEKeyword			key;
+	Size				len;
+    FSRef				parent;
+    UniCharCount		ulen;
+    UniChar*			buffer = NULL;
+    NavDialogCreationOptions	copt;
 
-	StandardGetFile(NULL, -1, NULL, &sfr);
-	if (sfr.sfGood) {
-		fsspec2path(&sfr.sfFile, name, size);
-		return(TRUE);
+	InitCursor();
+    NavGetDefaultDialogCreationOptions(&copt);
+    copt.parentWindow = parentWindow;
+    copt.saveFileName = CFStringCreateWithCString(NULL, title, CFStringGetSystemEncoding());
+    copt.optionFlags += kNavNoTypePopup;
+    copt.modality = kWindowModalityWindowModal;
+	eventUPP=NewNavEventUPP( dummyproc );
+    NavCreatePutFileDialog(&copt, type, sign, eventUPP, NULL, &navWin);
+    
+    NavDialogRun(navWin);
+    RunAppModalLoopForWindow(NavDialogGetWindow(navWin));
+    
+    NavDialogGetReply(navWin, &reply);
+    NavDialogDispose(navWin);
+	DisposeNavEventUPP(eventUPP);
+
+	if( reply.validRecord)
+	{
+		ret=AEGetNthPtr( &(reply.selection),1,typeFSRef,&key,&rtype,(Ptr)&parent,(long)sizeof(FSRef),&len );
+        ulen = (UniCharCount)CFStringGetLength(reply.saveFileName);
+        buffer = (UniChar*)NewPtr(ulen);
+        CFStringGetCharacters(reply.saveFileName, CFRangeMake(0, ulen), buffer);
+        ret = FSCreateFileUnicode(&parent, ulen, buffer, kFSCatInfoNone, NULL, NULL, fsc);
+        DisposePtr((Ptr)buffer);
+		NavDisposeReply( &reply );
+        if (ret == noErr) {
+            return true;
+        }
 	}
-	else {
-		return(FALSE);
-	}
-    (void)paret;
+	return( false );
 }
-#endif
 
+// ----
 
 void dialog_changefdd(BYTE drv) {
 
@@ -243,7 +232,7 @@ void dialog_writebmp(void) {
 
 	bmp = scrnbmp();
 	if (bmp) {
-		if (saveFile('BMP ', "np2.bmp", &fss)) {
+		if (dialog_filewriteselect('BMP ', "np2.bmp", &fss, hWndMain)) {
             fsspec2path(&fss, path, MAX_PATH);
 			fh = file_create(path);
 			if (fh != FILEH_INVALID) {
@@ -266,7 +255,7 @@ void dialog_s98(void) {
     if (check) {
         check = FALSE;
     }
-    else if (saveFile('.S98', "S98 log.s98", &fsc)) {
+    else if (dialog_filewriteselect('.S98', "S98 log.s98", &fsc, hWndMain)) {
         fsspec2path(&fsc, fname, MAX_PATH);
         if (S98_open(fname) == SUCCESS) {
             check = TRUE;
