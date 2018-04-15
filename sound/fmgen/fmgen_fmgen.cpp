@@ -270,6 +270,23 @@ void Chip::MakeTable()
 	}
 }
 
+void Chip::DataSave(struct ChipData* data)
+{
+	data->ratio_ = ratio_;
+	data->aml_ = aml_;
+	data->pml_ = pml_;
+	data->pmv_ = pmv_;
+	memcpy(data->multable_, multable_, sizeof(uint32) * 4 * 16);
+}
+
+void Chip::DataLoad(struct ChipData* data)
+{
+	ratio_ = data->ratio_;
+	aml_ = data->aml_;
+	pml_ = data->pml_;
+	pmv_ = data->pmv_;
+	memcpy(multable_, data->multable_, sizeof(uint32) * 4 * 16);
+}
 
 // ---------------------------------------------------------------------------
 //	Operator
@@ -423,6 +440,95 @@ void Operator::Prepare()
 		dbgopout_ = 0;
 	}
 }
+
+void Operator::DataSave(struct OperatorData* data)
+{
+	data->out_ = out_;
+	data->out2_ = out2_;
+	data->in2_ = in2_;
+	data->dp_ = dp_;
+	data->detune_ = detune_;
+	data->detune2_ = detune2_;
+	data->multiple_ = multiple_;
+	data->pg_count_ = pg_count_;
+	data->pg_diff_ = pg_diff_;
+	data->pg_diff_lfo_ = pg_diff_lfo_;
+	data->type_ = type_;
+	data->bn_ = bn_;
+	data->eg_level_ = eg_level_;
+	data->eg_level_on_next_phase_ = eg_level_on_next_phase_;
+	data->eg_count_ = eg_count_;
+	data->eg_count_diff_ = eg_count_diff_;
+	data->eg_out_ = eg_out_;
+	data->tl_out_ = tl_out_;
+	data->eg_rate_ = eg_rate_;
+	data->eg_curve_count_ = eg_curve_count_;
+	data->ssg_offset_ = ssg_offset_;
+	data->ssg_vector_ = ssg_vector_;
+	data->ssg_phase_ = ssg_phase_;
+	data->key_scale_rate_ = key_scale_rate_;
+	data->eg_phase_ = eg_phase_;
+	data->ms_ = ms_;
+	data->tl_ = tl_;
+	data->tl_latch_ = tl_latch_;
+	data->ar_ = ar_;
+	data->dr_ = dr_;
+	data->sr_ = sr_;
+	data->sl_ = sl_;
+	data->rr_ = rr_;
+	data->ks_ = ks_;
+	data->ssg_type_ = ssg_type_;
+	data->keyon_ = keyon_;
+	data->amon_ = amon_;
+	data->param_changed_ = param_changed_;
+	data->mute_ = mute_;
+}
+
+void Operator::DataLoad(struct OperatorData* data)
+{
+	out_ = data->out_;
+	out2_ = data->out2_;
+	in2_ = data->in2_;
+	dp_ = data->dp_;
+	detune_ = data->detune_;
+	detune2_ = data->detune2_;
+	multiple_ = data->multiple_;
+	pg_count_ = data->pg_count_;
+	pg_diff_ = data->pg_diff_;
+	pg_diff_lfo_ = data->pg_diff_lfo_;
+	type_ = data->type_;
+	bn_ = data->bn_;
+	eg_level_ = data->eg_level_;
+	eg_level_on_next_phase_ = data->eg_level_on_next_phase_;
+	eg_count_ = data->eg_count_;
+	eg_count_diff_ = data->eg_count_diff_;
+	eg_out_ = data->eg_out_;
+	tl_out_ = data->tl_out_;
+	eg_rate_ = data->eg_rate_;
+	eg_curve_count_ = data->eg_curve_count_;
+	ssg_offset_ = data->ssg_offset_;
+	ssg_vector_ = data->ssg_vector_;
+	ssg_phase_ = data->ssg_phase_;
+	key_scale_rate_ = data->key_scale_rate_;
+	eg_phase_ = data->eg_phase_;
+	ms_ = data->ms_;
+	tl_ = data->tl_;
+	tl_latch_ = data->tl_latch_;
+	ar_ = data->ar_;
+	dr_ = data->dr_;
+	sr_ = data->sr_;
+	sl_ = data->sl_;
+	rr_ = data->rr_;
+	ks_ = data->ks_;
+	ssg_type_ = data->ssg_type_;
+	keyon_ = data->keyon_;
+	amon_ = data->amon_;
+	param_changed_ = data->param_changed_;
+	mute_ = data->mute_;
+	ams_ = amtable[type_][amon_ ? (ms_ >> 4) & 3 : 0];
+}
+
+
 //	envelop ‚Ì eg_phase_ •ÏX
 void Operator::ShiftPhase(EGPhase nextphase)
 {
@@ -958,4 +1064,23 @@ ISample Channel4::CalcLN(uint noise)
 	return *out[2] + o;
 }
 
+void Channel4::DataSave(struct Channel4Data* data) {
+	data->fb = fb;
+	memcpy(data->buf, buf, sizeof(int) * 4);
+	data->algo_ = algo_;
+	for(int i = 0; i < 4; i++) {
+		op[i].DataSave(&data->op[i]);
+	}
+}
+
+void Channel4::DataLoad(struct Channel4Data* data) {
+	fb = data->fb;
+	memcpy(buf, data->buf, sizeof(int) * 4);
+	algo_ = data->algo_;
+	SetAlgorithm(algo_);
+	for(int i = 0; i < 4; i++) {
+		op[i].DataLoad(&data->op[i]);
+	}
+	pms = pmtable[op[0].type_][op[0].ms_ & 7];
+}
 }	// namespace FM
