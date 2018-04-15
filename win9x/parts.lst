@@ -1,0 +1,107 @@
+     1                                 %line 1+1 H:\projects\vcp\np21w-0.86\win9x\x64\parts.x64
+     2                                 
+     3                                 [section .text]
+     4                                 
+     5                                 [global rand_setseed]
+     6                                 [global rand_get]
+     7                                 [global AdjustAfterMultiply]
+     8                                 [global AdjustBeforeDivision]
+     9                                 [global sjis2jis]
+    10                                 [global jis2sjis]
+    11                                 [global satuation_s16]
+    12                                 [global satuation_s16x]
+    13                                 
+    14                                 [align 16]
+    15 00000000 8B0425[00000000]       rand_get: mov eax, dword [_randseed]
+    16 00000007 69C0FD430300            imul eax, 343fd
+    17 0000000D 05C39E2600              add eax, 269ec3
+    18 00000012 890425[00000000]        mov dword [_randseed], eax
+    19 00000019 C1F810                  sar eax, 16
+    20 0000001C C3                      ret
+    21                                 
+    22 0000001D 890C25[00000000]       rand_setseed: mov dword [_randseed], ecx
+    23 00000024 C3                      ret
+    24                                 
+    25                                 [align 16]
+    26                                 AdjustAfterMultiply:
+    27 00000030 440FB6C1                movzx r8d, cl
+    28 00000034 B867666666              mov eax, 66666667
+    29 00000039 41F7E8                  imul r8d
+    30 0000003C C1FA02                  sar edx, 2
+    31 0000003F 89D1                    mov ecx, edx
+    32 00000041 C1E91F                  shr ecx, 31
+    33 00000044 01CA                    add edx, ecx
+    34 00000046 8D0C92                  lea ecx, dword [rdx+rdx*4]
+    35 00000049 C1E204                  shl edx, 4
+    36 0000004C 01C9                    add ecx, ecx
+    37 0000004E 4129C8                  sub r8d, ecx
+    38 00000051 418D0410                lea eax, dword [r8+rdx]
+    39 00000055 C3                      ret
+    40                                 
+    41                                 [align 16]
+    42                                 AdjustBeforeDivision:
+    43 00000060 0FB6D1                  movzx edx, cl
+    44 00000063 89D0                    mov eax, edx
+    45 00000065 83E20F                  and edx, byte 15
+    46 00000068 C1E804                  shr eax, 4
+    47 0000006B 8D0C80                  lea ecx, dword [rax+rax*4]
+    48 0000006E 8D044A                  lea eax, dword [rdx+rcx*2]
+    49 00000071 C3                      ret
+    50                                 
+    51                                 [align 16]
+    52 00000080 89C8                   sjis2jis: mov eax, ecx
+    53 00000082 D0E4                    shl ah, 1
+    54 00000084 2C1F                    sub al, 1f
+    55 00000086 7802                    js short .1a
+    56 00000088 3C61                    cmp al, 61
+    57 0000008A 14DE                    adc al, 0de
+    58 0000008C 6605A11F               .1a: add ax, 1fa1
+    59 00000090 257F7F0000              and eax, 7f7f
+    60 00000095 C3                      ret
+    61                                 
+    62                                 [align 16]
+    63 000000A0 89C8                   jis2sjis: mov eax, ecx
+    64 000000A2 257F7F0000              and eax, 7f7f
+    65 000000A7 80C421                  add ah, 21
+    66 000000AA D0EC                    shr ah, 1
+    67 000000AC 7300                    jnc short .1a
+    68 000000AE 045E                    add al, 5e
+    69 000000B0 3C60                   .1a: cmp al, 60
+    70 000000B2 1CE0                    sbb al, 0e0
+    71 000000B4 80F4A0                  xor ah, 0a0
+    72 000000B7 C3                      ret
+    73                                 
+    74                                 [align 16]
+    75 000000C0 41C1E804               satuation_s16: shr r8d, 4
+    76 000000C4 741D                    je short .ed
+    77 000000C6 488D4910               .lp: lea rcx, [rcx+16]
+    78 000000CA 660F6F02                movdqa xmm0, [rdx]
+    79 000000CE 660F6F4A10              movdqa xmm1, [rdx+16]
+    80 000000D3 488D5220                lea rdx, [rdx+32]
+    81 000000D7 660F6BC1                packssdw xmm0, xmm1
+    82 000000DB 41FFC8                  dec r8d
+    83 000000DE F30F7F41F0              movdqu [rcx-16], xmm0
+    84 000000E3 75DF                    jne short .lp
+    85 000000E5 C3                     .ed: ret
+    86                                 
+    87                                 [align 16]
+    88 000000F0 41C1E804               satuation_s16x: shr r8d, 4
+    89 000000F4 7427                    je short .ed
+    90 000000F6 488D4910               .lp: lea rcx, [rcx+16]
+    91 000000FA 660F6F02                movdqa xmm0, [rdx]
+    92 000000FE 660F6F4A10              movdqa xmm1, [rdx+16]
+    93 00000103 660F70C0B1              pshufd xmm0, xmm0, 2*64+3*16+0*4+1*1
+    94 00000108 660F70C9B1              pshufd xmm1, xmm1, 2*64+3*16+0*4+1*1
+    95 0000010D 488D5220                lea rdx, [rdx+32]
+    96 00000111 660F6BC1                packssdw xmm0, xmm1
+    97 00000115 41FFC8                  dec r8d
+    98 00000118 F30F7F41F0              movdqu [rcx-16], xmm0
+    99 0000011D 75D5                    jne short .lp
+   100 0000011F C3                     .ed: ret
+   101                                 
+   102                                 [section .data]
+   103                                 
+   104 00000000 01000000               _randseed dd 1
+   105                                 
+   106                                  ends
+   107                                 

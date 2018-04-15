@@ -1,0 +1,556 @@
+     1                                 %line 1+1 H:\projects\vcp\np21w-0.86\win9x\x64\makegrph.x64
+     2                                 
+     3                                 %line 1+1 H:\projects\vcp\np21w-0.86\win9x\x64\pccore.inc
+     4                                 
+     5                                 [absolute 0]
+     6                                 %line 2+0 H:\projects\vcp\np21w-0.86\win9x\x64\pccore.inc
+     7                                 np2cfg_t:
+     8                                 %line 3+1 H:\projects\vcp\np21w-0.86\win9x\x64\pccore.inc
+     9                                 .uPD72020 resb 1
+    10                                 .DISPSYNC resb 1
+    11                                 .RASTER resb 1
+    12                                 .realpal resb 1
+    13                                 np2cfg_t_size EQU $ - np2cfg_t
+    14                                 %line 7+0 H:\projects\vcp\np21w-0.86\win9x\x64\pccore.inc
+    15                                 [section .text]
+    16                                 %line 8+1 H:\projects\vcp\np21w-0.86\win9x\x64\pccore.inc
+    17                                 
+    18                                 %line 1+1 H:\projects\vcp\np21w-0.86\i386c\x64\cpucore.inc
+    19                                 
+    20                                 USE_HIMEM equ 0x110000
+    21                                 
+    22                                 VRAM_STEP equ 0x100000
+    23                                 VRAM_B equ 0x0a8000
+    24                                 VRAM_R equ 0x0b0000
+    25                                 VRAM_G equ 0x0b8000
+    26                                 VRAM_E equ 0x0e0000
+    27                                 
+    28                                 VRAM0_B equ VRAM_B
+    29                                 VRAM0_R equ VRAM_R
+    30                                 VRAM0_G equ VRAM_G
+    31                                 VRAM0_E equ VRAM_E
+    32                                 VRAM1_B equ VRAM_B + VRAM_STEP
+    33                                 VRAM1_R equ VRAM_R + VRAM_STEP
+    34                                 VRAM1_G equ VRAM_G + VRAM_STEP
+    35                                 VRAM1_E equ VRAM_E + VRAM_STEP
+    36                                 
+    37                                 FONT_ADRS equ 0x110000
+    38                                 ITF_ADRS equ 0x1f8000
+    39                                 
+    40                                 %line 25+1 H:\projects\vcp\np21w-0.86\i386c\x64\cpucore.inc
+    41                                 
+    42                                 %line 1+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    43                                 
+    44                                 
+    45                                 
+    46                                 
+    47                                 [absolute 0]
+    48                                 %line 5+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    49                                 cgwin_t:
+    50                                 %line 6+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    51                                 .low resd 1
+    52                                 .high resd 1
+    53                                 .writable resb 1
+    54                                 cgwin_t_size EQU $ - cgwin_t
+    55                                 %line 9+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    56                                 [section .text]
+    57                                 %line 10+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    58                                 
+    59                                 [extern cgwindow]
+    60                                 
+    61                                 
+    62                                 
+    63                                 
+    64                                 [absolute 0]
+    65                                 %line 16+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    66                                 grcg_t:
+    67                                 %line 17+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    68                                 .counter resd 1
+    69                                 .mode resw 1
+    70                                 .modereg resb 2
+    71                                 .tile_b resw 1
+    72                                 .tile_r resw 1
+    73                                 .tile_g resw 1
+    74                                 .tile_e resw 1
+    75                                 grcg_t_size EQU $ - grcg_t
+    76                                 %line 24+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    77                                 [section .text]
+    78                                 %line 25+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    79                                 
+    80                                 [extern grcg]
+    81                                 
+    82                                 
+    83                                 
+    84                                 
+    85                                 [absolute 0]
+    86                                 %line 31+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    87                                 dmach_t:
+    88                                 %line 32+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+    89                                 .adrs resd 1
+    90                                 .leng resw 1
+    91                                 .adrsorg resw 1
+    92                                 .lengorg resw 1
+    93                                 .action resw 1
+    94                                  resd 1
+    95                                 .outproc resq 1
+    96                                 .inproc resq 1
+    97                                 .extproc resq 1
+    98                                 .mode resb 1
+    99                                 .sreq resb 1
+   100                                 .ready resb 1
+   101                                 .mask resb 1
+   102                                  resd 1
+   103                                 .size
+   104                                 dmach_t_size EQU $ - dmach_t
+   105                                 %line 47+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   106                                 [section .text]
+   107                                 %line 48+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   108                                 
+   109                                 [absolute 0]
+   110                                 %line 49+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   111                                 dmac_t:
+   112                                 %line 50+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   113                                 .dmach resb (dmach_t.size * 4)
+   114                                 .lh resd 1
+   115                                 .work resb 1
+   116                                 .working resb 1
+   117                                 .mask resb 1
+   118                                 .stat resb 1
+   119                                 dmac_t_size EQU $ - dmac_t
+   120                                 %line 56+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   121                                 [section .text]
+   122                                 %line 57+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   123                                 
+   124                                 DMAEXT_START equ 0
+   125                                 DMAEXT_END equ 1
+   126                                 DMAEXT_BREAK equ 2
+   127                                 DMA_INITSIGNALONLY equ 1
+   128                                 
+   129                                 [extern dmac]
+   130                                 
+   131                                 
+   132                                 
+   133                                 
+   134                                 [absolute 0]
+   135                                 %line 68+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   136                                 egc_t:
+   137                                 %line 69+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   138                                 .access resw 1
+   139                                 .fgbg resw 1
+   140                                 .ope resw 1
+   141                                 .fg resw 1
+   142                                 .mask resw 1
+   143                                 .bg resw 1
+   144                                 .sft resw 1
+   145                                 .leng resw 1
+   146                                 .lastvram resd 2
+   147                                 .patreg resd 2
+   148                                 .fgc resd 2
+   149                                 .bgc resd 2
+   150                                 
+   151                                 .func resd 1
+   152                                 .remain resd 1
+   153                                 .stack resd 1
+   154                                  resd 1
+   155                                 .inptr resq 1
+   156                                 .outptr resq 1
+   157                                 .mask2 resw 1
+   158                                 .srcmask resw 1
+   159                                 .srcbit resb 1
+   160                                 .dstbit resb 1
+   161                                 .sft8bitl resb 1
+   162                                 .sft8bitr resb 1
+   163                                 
+   164                                  resd 4
+   165                                 .buf resb (4096/8 + 4*4)
+   166                                  resd 4
+   167                                 egc_t_size EQU $ - egc_t
+   168                                 %line 98+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   169                                 [section .text]
+   170                                 %line 99+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   171                                 
+   172                                 [extern egc]
+   173                                 
+   174                                 
+   175                                 
+   176                                 
+   177                                 GDCCMD_MAX equ 32
+   178                                 
+   179                                 [absolute 0]
+   180                                 %line 107+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   181                                 gdcd_t:
+   182                                 %line 108+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   183                                 .para resb 256
+   184                                 .fifo resw GDCCMD_MAX
+   185                                 .cnt resw 1
+   186                                 .ptr resb 1
+   187                                 .rcv resb 1
+   188                                 .snd resb 1
+   189                                 .cmd resb 1
+   190                                 .paracb resb 1
+   191                                 .reserved resb 1
+   192                                 gdcd_t_size EQU $ - gdcd_t
+   193                                 %line 117+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   194                                 [section .text]
+   195                                 %line 118+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   196                                 
+   197                                 [absolute 0]
+   198                                 %line 119+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   199                                 gdc_t:
+   200                                 %line 120+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   201                                 .m resb gdcd_t_size
+   202                                 .s resb gdcd_t_size
+   203                                 .mode1 resb 1
+   204                                 .mode2 resb 1
+   205                                 .clock resb 1
+   206                                 .crt15khz resb 1
+   207                                 .m_drawing resb 1
+   208                                 .s_drawing resb 1
+   209                                 .vsync resb 1
+   210                                 .vsyncint resb 1
+   211                                 .display resb 1
+   212                                 .bitac resb 1
+   213                                 .reserved resb 2
+   214                                 .analog resd 1
+   215                                 .palnum resd 1
+   216                                 .degpal resb 4
+   217                                 .anapal resd 16
+   218                                 .dispclock resd 1
+   219                                 .vsyncclock resd 1
+   220                                 .rasterclock resd 1
+   221                                 .hsyncclock resd 1
+   222                                 gdc_t_size EQU $ - gdc_t
+   223                                 %line 141+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   224                                 [section .text]
+   225                                 %line 142+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   226                                 
+   227                                 [absolute 0]
+   228                                 %line 143+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   229                                 gdcs_t:
+   230                                 %line 144+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   231                                 .access resb 1
+   232                                 .disp resb 1
+   233                                 .textdisp resb 1
+   234                                 .msw_accessable resb 1
+   235                                 .grphdisp resb 1
+   236                                 .palchange resb 1
+   237                                 .mode2 resb 1
+   238                                 gdcs_t_size EQU $ - gdcs_t
+   239                                 %line 151+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   240                                 [section .text]
+   241                                 %line 152+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   242                                 
+   243                                 [extern gdc]
+   244                                 [extern gdcs]
+   245                                 
+   246                                 
+   247                                 
+   248                                 
+   249                                 [absolute 0]
+   250                                 %line 159+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   251                                 picitem_t:
+   252                                 %line 160+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   253                                 .icw resb 4
+   254                                 .imr resb 1
+   255                                 .isr resb 1
+   256                                 .irr resb 1
+   257                                 .ocw3 resb 1
+   258                                 .pry resb 1
+   259                                 .writeicw resb 1
+   260                                  resb 2
+   261                                 picitem_t_size EQU $ - picitem_t
+   262                                 %line 168+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   263                                 [section .text]
+   264                                 %line 169+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   265                                 
+   266                                 [absolute 0]
+   267                                 %line 170+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   268                                 pic_t:
+   269                                 %line 171+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   270                                 .master resb picitem_t_size
+   271                                 .slave resb picitem_t_size
+   272                                 pic_t_size EQU $ - pic_t
+   273                                 %line 173+0 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   274                                 [section .text]
+   275                                 %line 174+1 H:\projects\vcp\np21w-0.86\io\x64\iocore.inc
+   276                                 
+   277                                 [extern pic]
+   278                                 
+   279                                 %line 1+1 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   280                                 
+   281                                 SCRN_BUFSIZE equ 0x4b000
+   282                                 
+   283                                 
+   284                                 [absolute 0]
+   285                                 %line 5+0 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   286                                 vramop_t:
+   287                                 %line 6+1 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   288                                 .operate resd 1
+   289                                 .tramwait resd 1
+   290                                 .vramwait resd 1
+   291                                 .grcgwait resd 1
+   292                                 vramop_t_size EQU $ - vramop_t
+   293                                 %line 10+0 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   294                                 [section .text]
+   295                                 %line 11+1 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   296                                 
+   297                                 [absolute 0]
+   298                                 %line 12+0 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   299                                 dsync_t:
+   300                                 %line 13+1 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   301                                 .text_vbp resd 1
+   302                                 .textymax resd 1
+   303                                 .grph_vbp resd 1
+   304                                 .grphymax resd 1
+   305                                 
+   306                                 .scrnxpos resd 1
+   307                                 .scrnxmax resd 1
+   308                                 .scrnxextend resd 1
+   309                                 .scrnymax resd 1
+   310                                 .textvad resd 1
+   311                                 .grphvad resd 1
+   312                                 dsync_t_size EQU $ - dsync_t
+   313                                 %line 24+0 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   314                                 [section .text]
+   315                                 %line 25+1 H:\projects\vcp\np21w-0.86\win9x\x64\vram.inc
+   316                                 
+   317                                 %line 6+1 H:\projects\vcp\np21w-0.86\win9x\x64\makegrph.x64
+   318                                 
+   319                                 [section .bss]
+   320                                 
+   321                                 [extern np2cfg]
+   322                                 [extern mem]
+   323                                 [extern np2_vram]
+   324                                 [extern renewal_line]
+   325                                 [extern dsync]
+   326                                 [extern vramupdate]
+   327                                 [global grph_table]
+   328                                 
+   329 00000000 <gap>                  grph_table resd 4*256*2
+   330                                 
+   331                                 
+   332                                 GDC_S_SYNC equ gdc + gdc_t.s + gdcd_t.para
+   333                                 GDC_S_ZOOM equ (GDC_S_SYNC+8)
+   334                                 GDC_S_CSRFORM equ (GDC_S_ZOOM+1)
+   335                                 GDC_S_SCROLL equ (GDC_S_CSRFORM+3)
+   336                                 GDC_S_TEXTW equ (GDC_S_SCROLL+8)
+   337                                 GDC_S_PITCH equ (GDC_S_TEXTW+8)
+   338                                 GDC_S_LPEN equ (GDC_S_PITCH+1)
+   339                                 GDC_S_VECTW equ (GDC_S_LPEN+3)
+   340                                 GDC_S_CSRW equ (GDC_S_VECTW+11)
+   341                                 GDC_S_MASK equ (GDC_S_CSRW+3)
+   342                                 GDC_S_CSRR equ (GDC_S_MASK+2)
+   343                                 GDC_S_WRITE equ (GDC_S_CSRR+5)
+   344                                 
+   345                                 
+   346                                 
+   347                                 [section .text]
+   348                                 
+   349                                 [align 16]
+   350                                 [global makegrph_initialize]
+   351                                 
+   352                                 makegrph_initialize:
+   353 00000000 4D31C0                  xor r8, r8
+   354                                 
+   355 00000003 B904000000             .0: mov ecx, 4
+   356 00000008 BA01000000              mov edx, 1
+   357 0000000D C1E008                 .1: shl eax, 8
+   358 00000010 4185D0                  test r8d, edx
+   359 00000013 0F95D0                  setnz al
+   360 00000016 01D2                    add edx, edx
+   361 00000018 E2F1                    loop .1
+   362                                 
+   363 0000001A 83C104                  add ecx, byte 4
+   364 0000001D 4C8D0C25[04000000]      lea r9, [grph_table + 4]
+   365 00000025 438904C1               .2: mov [r9 + r8*8], eax
+   366 00000029 01C0                    add eax, eax
+   367 0000002B 4981C100080000          add r9, 512*4
+   368 00000032 E2EF                    loop .2
+   369                                 
+   370 00000034 83C104                  add ecx, byte 4
+   371 00000037 C1E008                 .3: shl eax, 8
+   372 0000003A 4185D0                  test r8d, edx
+   373 0000003D 0F95D0                  setnz al
+   374 00000040 01D2                    add edx, edx
+   375 00000042 E2F1                    loop .3
+   376                                 
+   377 00000044 83C104                  add ecx, byte 4
+   378 00000047 4981E904200000          sub r9, 512*4*4+4
+   379 0000004E 438904C1               .4: mov [r9 + r8*8], eax
+   380 00000052 01C0                    add eax, eax
+   381 00000054 4981C100080000          add r9, 512*4
+   382 0000005B E2EF                    loop .4
+   383                                 
+   384 0000005D 41FFC0                  inc r8d
+   385 00000060 4181F800010000          cmp r8d, 256
+   386 00000067 7298                    jb short .0
+   387                                 
+   388 00000069 C3                      ret
+   389                                 
+   390                                 
+   391                                 
+   392                                 [align 16]
+   393                                 [global makegrph]
+   394                                 
+   395                                  GRP_LR equ rsp + 0
+   396                                  LINE_WIDTH equ rsp + 4
+   397                                 
+   398 00000070 4883EC28               makegrph: sub rsp, byte 40
+   399 00000074 48895C2408              mov [rsp+8], rbx
+   400 00000079 4889742410              mov [rsp+16], rsi
+   401 0000007E 48897C2418              mov [rsp+24], rdi
+   402 00000083 48896C2420              mov [rsp+32], rbp
+   403                                 
+   404 00000088 4C8D0425[00000000]      lea r8, [mem]
+   405                                 
+   406 00000090 8B0425[24000000]        mov eax, [dsync + dsync_t.grphvad]
+   407 00000097 83E101                  and ecx, byte 1
+   408 0000009A 740A                    je short .adjustpage
+   409 0000009C 0500B00400              add eax, SCRN_BUFSIZE
+   410 000000A1 4981C000001000          add r8, VRAM_STEP
+   411 000000A8 488D3C25[00000000]     .adjustpage: lea rdi, [np2_vram]
+   412 000000B0 FFC1                    inc ecx
+   413 000000B2 4801C7                  add rdi, rax
+   414 000000B5 660FEFC0                pxor xmm0, xmm0
+   415 000000B9 660F6EC9                movd xmm1, ecx
+   416 000000BD 660F60C9                punpcklbw xmm1, xmm1
+   417 000000C1 F20F70C900              pshuflw xmm1, xmm1, 0
+   418 000000C6 660F6CC9                punpcklqdq xmm1, xmm1
+   419                                 
+   420 000000CA 88D6                    mov dh, dl
+   421 000000CC 88CA                    mov dl, cl
+   422 000000CE 80FE00                  cmp dh, 0
+   423 000000D1 742B                    je short .calcmaxline
+   424                                 
+   425 000000D3 488D1C25[00000000]      lea rbx, [vramupdate]
+   426 000000DB B900040000              mov ecx, 8000
+   427 000000E0 660F6F13               .dirtyfilllp: movdqa xmm2, [rbx]
+   428 000000E4 660F6F5B10              movdqa xmm3, [rbx+16]
+   429 000000E9 660FEBD1                por xmm2, xmm1
+   430 000000ED 660FEBD9                por xmm3, xmm1
+   431 000000F1 660F7F13                movdqa [rbx], xmm2
+   432 000000F5 660F7F5B10              movdqa [rbx+16], xmm3
+   433 000000FA 4883C320                add rbx, byte 32
+   434 000000FE E2DE                    loop .dirtyfilllp
+   435                                 
+   436 00000100 0FB60425[51010000]     .calcmaxline: movzx eax, byte [GDC_S_CSRFORM]
+   437 00000108 83E01F                  and eax, byte 01f
+   438 0000010B 890424                  mov [GRP_LR], eax
+   439                                 
+   440 0000010E 8B1C25[08000000]        mov ebx, [dsync + dsync_t.grph_vbp]
+   441 00000115 8B3425[54010000]       .drawlp: mov esi, [GDC_S_SCROLL+ 0]
+   442 0000011C E82B000000              call .grphputlines
+   443 00000121 8B3425[58010000]        mov esi, [GDC_S_SCROLL+ 4]
+   444 00000128 E81F000000              call .grphputlines
+   445 0000012D 803C25[00000000]00      cmp byte [np2cfg + np2cfg_t.uPD72020], 0
+   446 00000135 75DC                    jne short .drawlp
+   447 00000137 8B3425[5C010000]        mov esi, [GDC_S_SCROLL+ 8]
+   448 0000013E E809000000              call .grphputlines
+   449 00000143 8B3425[60010000]        mov esi, [GDC_S_SCROLL+12]
+   450 0000014A E8FDFFFFFF              call .grphputlines
+   451 0000014F EBC2                    jmp short .drawlp
+   452                                 
+   453 00000151 0FB60425[64010000]     .grphputlines: movzx eax, byte [GDC_S_PITCH]
+   454 00000159 F7C600000040            test esi, 40000000
+   455 0000015F 7500                    jne short .storewidth
+   456 00000161 01C0                    add eax, eax
+   457 00000163 89F1                   .storewidth: mov ecx, esi
+   458 00000165 25FE000000              and eax, 0000fe
+   459 0000016A C1E914                  shr ecx, 4+16
+   460 0000016D 81E6FF3F0000            and esi, 3fff
+   461 00000173 8944240C                mov [LINE_WIDTH+8], eax
+   462 00000177 81E1FF030000            and ecx, 03ff
+   463 0000017D 7503                    jne short .grphlineputst
+   464 0000017F B900040000              mov ecx, 0400
+   465 00000184 01F6                   .grphlineputst: add esi, esi
+   466 00000186 51                      push rcx
+   467                                 
+   468 00000187 8B4C2410               .grphlineput_lp: mov ecx, [GRP_LR+16]
+   469 0000018B BD9E000000             .grphline1_lp: mov ebp, 79*2
+   470 00000190 F6C301                  test bl, 1
+   471 00000193 7415                    je short .putline
+   472 00000195 F60425[90020000]10      test byte [gdc + gdc_t.mode1], 10
+   473 0000019D 740B                    je short .putline
+   474 0000019F 81C780020000            add edi, 640
+   475                                 
+   476 000001A5 80FE00                  cmp dh, 0
+   477 000001A8 7471                    je short .putlineskip
+   478 000001AA EB69                    jmp short .linedirtyon
+   479                                 
+   480 000001AC 56                     .putline: push rsi
+   481 000001AD 8496[00000000]         .linelp: test [vramupdate + rsi], dl
+   482 000001B3 7448                    je short .nodirty
+   483 000001B5 410FB6843000800A00      movzx eax, byte [r8 + rsi + VRAM0_B]
+   484 000001BE 450FB68C3000000B00      movzx r9d, byte [r8 + rsi + VRAM0_R]
+   485 000001C7 4C8B14C5[00000000]      mov r10, [grph_table + rax*8 + 0*0x800]
+   486 000001CF 410FB6843000800B00      movzx eax, byte [r8 + rsi + VRAM0_G]
+   487 000001D8 4E0B14CD[00080000]      or r10, [grph_table + r9*8 + 1*0x800]
+   488 000001E0 450FB68C3000000E00      movzx r9d, byte [r8 + rsi + VRAM0_E]
+   489 000001E9 4C0B14C5[00100000]      or r10, [grph_table + rax*8 + 2*0x800]
+   490 000001F1 4E0B14CD[00180000]      or r10, [grph_table + r9*8 + 3*0x800]
+   491 000001F9 83CD01                  or ebp, byte 1
+   492 000001FC 4C8917                  mov [rdi], r10
+   493 000001FF FFC6                   .nodirty: inc esi
+   494 00000201 81E6FF7F0000            and esi, 07fff
+   495 00000207 4883C708                add rdi, byte 8
+   496 0000020B 83ED02                  sub ebp, byte 2
+   497 0000020E 799B                    jns short .linelp
+   498 00000210 5E                      pop rsi
+   499                                 
+   500 00000211 40F6C501                test bpl, 1
+   501 00000215 7404                    je short .putlineskip
+   502 00000217 0893[00000000]         .linedirtyon: or [renewal_line + rbx], dl
+   503                                 
+   504 0000021D FFC3                   .putlineskip: inc ebx
+   505 0000021F 3B1C25[0C000000]        cmp ebx, [dsync + dsync_t.grphymax]
+   506 00000226 731F                    jnc short .grphbreak
+   507 00000228 FF0C24                  dec dword [rsp]
+   508 0000022B 7415                    je short .grphline1ed
+   509 0000022D FFC9                    dec ecx
+   510 0000022F 0F8950FFFFFF            jns near .grphline1_lp
+   511 00000235 03742414                add esi, [LINE_WIDTH+16]
+   512 00000239 81E6FF7F0000            and esi, 7fff
+   513 0000023F E93EFFFFFF              jmp near .grphlineput_lp
+   514                                 
+   515 00000244 4883C408               .grphline1ed: add rsp, byte 8
+   516 00000248 C3                      ret
+   517                                 
+   518 00000249 4883C410               .grphbreak: add rsp, byte 16
+   519                                 
+   520 0000024D 80FE00                  cmp dh, 0
+   521 00000250 742C                    je short .deldirty
+   522                                 
+   523 00000252 3B1C25[1C000000]        cmp ebx, [dsync + dsync_t.scrnymax]
+   524 00000259 7323                    jae short .deldirty
+   525 0000025B 0893[00000000]         .bottomfill0: or [renewal_line + rbx], dl
+   526 00000261 B914000000              mov ecx, 640/32
+   527 00000266 660F7F07               .bottomfill1: movdqa [rdi], xmm0
+   528 0000026A 660F7F4710              movdqa [rdi+16], xmm0
+   529 0000026F 4883C720                add rdi, byte 32
+   530 00000273 E2EF                    loop .bottomfill1
+   531 00000275 FFC3                    inc ebx
+   532 00000277 3B1C25[1C000000]        cmp ebx, [dsync + dsync_t.scrnymax]
+   533 0000027E 72D9                    jb short .bottomfill0
+   534                                 
+   535 00000280 660F76D2               .deldirty: pcmpeqd xmm2, xmm2
+   536 00000284 488D1C25[00000000]      lea rbx, [vramupdate]
+   537 0000028C 660FDFCA                pandn xmm1, xmm2
+   538 00000290 B900040000              mov ecx, 8000
+   539 00000295 660F6F13               .deldirtylp: movdqa xmm2, [rbx]
+   540 00000299 660F6F5B10              movdqa xmm3, [rbx+16]
+   541 0000029E 660FDBD1                pand xmm2, xmm1
+   542 000002A2 660FDBD9                pand xmm3, xmm1
+   543 000002A6 660F7F13                movdqa [rbx], xmm2
+   544 000002AA 660F7F5B10              movdqa [rbx+16], xmm3
+   545 000002AF 4883C320                add rbx, byte 32
+   546 000002B3 E2DE                    loop .deldirtylp
+   547                                 
+   548 000002B5 488B5C2408              mov rbx, [rsp+8]
+   549 000002BA 488B742410              mov rsi, [rsp+16]
+   550 000002BF 488B7C2418              mov rdi, [rsp+24]
+   551 000002C4 488B6C2420              mov rbp, [rsp+32]
+   552 000002C9 4883C428                add rsp, byte 40
+   553 000002CD C3                      ret
+   554                                 
+   555                                  ends
+   556                                 
