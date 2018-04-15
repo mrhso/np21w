@@ -6,12 +6,13 @@
 #include "compiler.h"
 #include "cs4231.h"
 #include "iocore.h"
+#include "sound/fmboard.h"
 #include <math.h>
 
 extern	CS4231CFG	cs4231cfg;
 
-static SINT32 cs4231_DACvolume_L = 0;
-static SINT32 cs4231_DACvolume_R = 0;
+static SINT32 cs4231_DACvolume_L = 1024;
+static SINT32 cs4231_DACvolume_R = 1024;
 static UINT16 cs4231_DACvolumereg_L = 0xff;
 static UINT16 cs4231_DACvolumereg_R = 0xff;
 
@@ -44,8 +45,8 @@ const UINT8	*ptr2;
 		samp1 = (ptr1[0] - 0x80) << 8;
 		samp2 = (ptr2[0] - 0x80) << 8;
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -85,11 +86,11 @@ const UINT8	*ptr2;
 		samp1 = (ptr1[0] - 0x80) << 8;
 		samp2 = (ptr2[0] - 0x80) << 8;
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
 		samp1 = (ptr1[1] - 0x80) << 8;
 		samp2 = (ptr2[1] - 0x80) << 8;
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -129,8 +130,8 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[0]) << 8) + ptr1[1];
 		samp2 = (((SINT8)ptr2[0]) << 8) + ptr2[1];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -170,11 +171,11 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[0]) << 8) + ptr1[1];
 		samp2 = (((SINT8)ptr2[0]) << 8) + ptr2[1];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
 		samp1 = (((SINT8)ptr1[2]) << 8) + ptr1[3];
 		samp2 = (((SINT8)ptr2[2]) << 8) + ptr2[3];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -214,8 +215,8 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -255,11 +256,11 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * cs4231_DACvolume_L) >> 12;
+		pcm[0] += (samp1 * cs4231_DACvolume_L * np2cfg.vol_pcm) >> 15;
 		samp1 = (((SINT8)ptr1[3]) << 8) + ptr1[2];
 		samp2 = (((SINT8)ptr2[3]) << 8) + ptr2[2];
 		samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[1] += (samp1 * cs4231_DACvolume_R) >> 12;
+		pcm[1] += (samp1 * cs4231_DACvolume_R * np2cfg.vol_pcm) >> 15;
 		pcm += 2;
 		pos12 += cs->step12;
 	} while(--count);
@@ -309,7 +310,7 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 			if(cs->reg.dac_l & 0x80){ // DAC L Mute
 				cs4231_DACvolume_L = 0;
 			}else{
-				cs4231_DACvolume_L = (int)(pow(10, -1.5 * ((cs4231_DACvolumereg_L) & 0x3f) / 20.0) * 4096); // DAC L Volume (1bit–ˆ‚É-1.5dB)
+				cs4231_DACvolume_L = (int)(pow(10, -1.5 * ((cs4231_DACvolumereg_L) & 0x3f) / 20.0) * 1024); // DAC L Volume (1bit–ˆ‚É-1.5dB)
 			}
 		}
 		if(cs4231_DACvolumereg_R != cs->reg.dac_r){
@@ -317,7 +318,7 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 			if(cs->reg.dac_r & 0x80){ // DAC R Mute
 				cs4231_DACvolume_R = 0;
 			}else{
-				cs4231_DACvolume_R = (int)(pow(10, -1.5 * ((cs4231_DACvolumereg_R) & 0x3f) / 20.0) * 4096); // DAC R Volume (1bit–ˆ‚É-1.5dB)
+				cs4231_DACvolume_R = (int)(pow(10, -1.5 * ((cs4231_DACvolumereg_R) & 0x3f) / 20.0) * 1024); // DAC R Volume (1bit–ˆ‚É-1.5dB)
 			}
 		}
 		(*cs4231fn[cs->reg.datafmt >> 4])(cs, pcm, count);

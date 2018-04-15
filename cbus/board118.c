@@ -483,12 +483,10 @@ void board118_bind(void)
 	}else{
 		opna_idx = 0;
 	}
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
-		iocore_attachout(0xb460, ymf_oa460);
-		iocore_attachinp(0xb460, ymf_ia460);
-	}else if(g_nSoundID==SOUNDID_MATE_X_PCM){
-		iocore_attachout(0xa460, ymf_oa460);
-		iocore_attachinp(0xa460, ymf_ia460);
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
+		iocore_attachout(cs4231.port[1], ymf_oa460);
+		iocore_attachinp(cs4231.port[1], ymf_ia460);
+		iocore_attachinp(0x881e, wss_i881e);
 	}else{
 		opna_bind(&g_opna[opna_idx]);
 		cbuscore_attachsndex(cs4231.port[4],ymf_o, ymf_i);

@@ -1233,29 +1233,29 @@ static SINT32	sampcount2_n = 0;
 	//	samplen_n /= 100;
 	//	samplen_d /= 100;
 	//}
-	if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_MATE_X_PCM || g_nSoundID == SOUNDID_PC_9801_86_WSS){
-		if(cdda_softvolumereg_L != cs4231.devvolume[0x32]){
-			cdda_softvolumereg_L = cs4231.devvolume[0x32];
-			if(cdda_softvolumereg_L & 0x80){ // FM L Mute
-				cdda_softvolume_L = 0;
-			}else{
-				cdda_softvolume_L = ((~cdda_softvolumereg_L) & 0x1f); // FM L Volume
-			}
-		}
-		if(cdda_softvolumereg_R != cs4231.devvolume[0x33]){
-			cdda_softvolumereg_R = cs4231.devvolume[0x33];
-			if(cdda_softvolumereg_R & 0x80){ // FM R Mute
-				cdda_softvolume_R = 0;
-			}else{
-				cdda_softvolume_R = ((~cdda_softvolumereg_R) & 0x1f); // FM R Volume
-			}
-		}
-	}else{
-		cdda_softvolume_L = 0xff;
-		cdda_softvolume_R = 0xff;
-		cdda_softvolumereg_L = 0xff;
-		cdda_softvolumereg_R = 0xff;
-	}
+	//if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_MATE_X_PCM || g_nSoundID == SOUNDID_PC_9801_86_WSS){
+	//	if(cdda_softvolumereg_L != cs4231.devvolume[0x32]){
+	//		cdda_softvolumereg_L = cs4231.devvolume[0x32];
+	//		if(cdda_softvolumereg_L & 0x80){ // FM L Mute
+	//			cdda_softvolume_L = 0;
+	//		}else{
+	//			cdda_softvolume_L = ((~cdda_softvolumereg_L) & 0x1f); // FM L Volume
+	//		}
+	//	}
+	//	if(cdda_softvolumereg_R != cs4231.devvolume[0x33]){
+	//		cdda_softvolumereg_R = cs4231.devvolume[0x33];
+	//		if(cdda_softvolumereg_R & 0x80){ // FM R Mute
+	//			cdda_softvolume_R = 0;
+	//		}else{
+	//			cdda_softvolume_R = ((~cdda_softvolumereg_R) & 0x1f); // FM R Volume
+	//		}
+	//	}
+	//}else{
+		cdda_softvolume_L = 0x1f;
+		cdda_softvolume_R = 0x1f;
+		cdda_softvolumereg_L = 0;
+		cdda_softvolumereg_R = 0;
+	//}
 
 	sxsi = sxsi_getptr(drv->sxsidrv);
 	if ((sxsi == NULL) || (sxsi->devtype != SXSIDEV_CDROM) ||

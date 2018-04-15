@@ -177,6 +177,7 @@ void cs4231_reset(void) {
 	cs4231.dmach = 0xff;
 	cs4231.dmairq = 0xff;
 	//cs4231.timer = 200; // XXX: ‰½‚à“ü‚ê‚Ä‚­‚ê‚È‚¢‚Ì‚Å‚»‚ê‚Á‚Û‚¢‚Ì‚ð“ü‚ê‚é¥¥¥(10usec’PˆÊ)
+	cs4231_totalsample = 0;
 	FillMemory(cs4231.port, sizeof(cs4231.port), 0xff);
 }
 

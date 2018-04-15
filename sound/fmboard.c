@@ -182,6 +182,7 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 
 		case SOUNDID_PC_9801_118:
+			g_nSoundID = nSoundID; // XXX: êÊÇ…ê›íË
 			board118_reset(pConfig);
 			break;
 			

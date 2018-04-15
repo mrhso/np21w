@@ -211,19 +211,15 @@ void cs4231io_reset(void) {
 		cs4231.port[1] = 0xa460; // Sound ID I/O port
 	}
 	cs4231.port[2] = 0x0f48; // WSS FIFO port
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
-		cs4231.port[4] = 0; // OPN port
-	}else{
-		cs4231.port[4] = 0x0188; // OPN port
-		cs4231.port[5] = 0x0f4a; // canbe mixer i/o port?
-		cs4231.port[6] = 0x548e; // YMF-701/715?
-		cs4231.port[8] = 0x1480; // Joystick
-		cs4231.port[9] = 0x1488; // OPL3
-		cs4231.port[10] = 0x148c; // MIDI
-		cs4231.port[11] = 0x0480; //9801-118 control?
-		cs4231.port[14] = 0x148e; //9801-118 config 
-		cs4231.port[15] = 0xa460; //‹ó‚¢‚Ä‚é‚Ì‚Å‚±‚Á‚¿‚ð—˜—p
-	}
+	cs4231.port[4] = 0x0188; // OPN port
+	cs4231.port[5] = 0x0f4a; // canbe mixer i/o port?
+	cs4231.port[6] = 0x548e; // YMF-701/715?
+	cs4231.port[8] = 0x1480; // Joystick
+	cs4231.port[9] = 0x1488; // OPL3
+	cs4231.port[10] = 0x148c; // MIDI
+	cs4231.port[11] = 0x0480; //9801-118 control?
+	cs4231.port[14] = 0x148e; //9801-118 config 
+	cs4231.port[15] = 0xa460; //‹ó‚¢‚Ä‚é‚Ì‚Å‚±‚Á‚¿‚ð—˜—p
 
 	TRACEOUT(("CS4231 - IRQ = %d", cs4231.dmairq));
 	TRACEOUT(("CS4231 - DMA channel = %d", cs4231.dmach));
@@ -377,15 +373,16 @@ void IOOUTCALL cs4231io5_w8(UINT port, REG8 value) {
 
 		case 0x01:
 			switch(cs4231.extindex){
-			case 0x02:
-			case 0x03:
-			case 0x30:
-			case 0x31:
-			case 0x32:
-			case 0x33:
-			case 0x34:
-			case 0x35:
-			case 0x36:
+			case 0x02: // MODEM L ?
+			case 0x03: // MODEM R ?
+			case 0x30: // FM‰¹Œ¹ L
+			case 0x31: // FM‰¹Œ¹ R
+			case 0x32: // CD-DA L
+			case 0x33: // CD-DA R
+			case 0x34: // TV L
+			case 0x35: // TV R
+			case 0x36: // MODEM mono ?
+				// bit7:mute, bit6,5:reserved, bit4-0:volume(00000(MAX) - 11111(MIN))
 				cs4231.devvolume[cs4231.extindex] = value;
 			}
 			break;
@@ -402,15 +399,16 @@ REG8 IOINPCALL cs4231io5_r8(UINT port) {
 			switch(cs4231.extindex){
 			case 1:
 				return(0);				// means opna int5 ???
-			case 0x02:
-			case 0x03:
-			case 0x30:
-			case 0x31:
-			case 0x32:
-			case 0x33:
-			case 0x34:
-			case 0x35:
-			case 0x36:
+			case 0x02: // MODEM L ?
+			case 0x03: // MODEM R ?
+			case 0x30: // FM‰¹Œ¹ L
+			case 0x31: // FM‰¹Œ¹ R
+			case 0x32: // CD-DA L
+			case 0x33: // CD-DA R
+			case 0x34: // TV L
+			case 0x35: // TV R
+			case 0x36: // MODEM mono ?
+				// bit7:mute, bit6,5:reserved, bit4-0:volume(00000(MAX) - 11111(MIN))
 				return cs4231.devvolume[cs4231.extindex];
 			}
 			break;
