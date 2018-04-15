@@ -292,6 +292,7 @@ MOV_CdRd(void)
 			src &= ~(CPU_CR0_MP | CPU_CR0_ET);
 #endif
 			CPU_CR0 = src;
+			//CPU_CR0 = src | (CPU_CR0 & CPU_CR0_TS); // XXX: FPUやMMXのレジスタ退避がおかしくなるのでCLTS以外でTSフラグは消せないようにする（根拠無し）
 			VERBOSE(("MOV_CdRd: %04x:%08x: cr0: 0x%08x <- 0x%08x(%s)", CPU_CS, CPU_PREV_EIP, reg, CPU_CR0, reg32_str[op & 7]));
 
 			if ((reg ^ CPU_CR0) & (CPU_CR0_PE|CPU_CR0_PG)) {
@@ -368,7 +369,7 @@ MOV_CdRd(void)
 			CPU_CR4 = src;
 			VERBOSE(("MOV_CdRd: %04x:%08x: cr4: 0x%08x <- 0x%08x(%s)", CPU_CS, CPU_PREV_EIP, reg, CPU_CR4, reg32_str[op & 7]));
 
-			if ((reg ^ CPU_CR4) & (CPU_CR4_PSE|CPU_CR4_PGE|CPU_CR4_PAE)) {
+			if ((reg ^ CPU_CR4) & (CPU_CR4_PSE|CPU_CR4_PGE|CPU_CR4_PAE|CPU_CR4_OSFXSR)) {
 				tlb_flush_all();
 			}
 			break;
