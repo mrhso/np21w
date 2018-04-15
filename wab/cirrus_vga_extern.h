@@ -29,9 +29,13 @@
 
 #pragma once
 
-#define CIRRUS_VRAM_SIZE		(4096 * 1024)
-#define CIRRUS_VRAM_SIZE_WAB	(1024 * 1024)
+#define CIRRUS_VRAM_SIZE_1MB	(1024 * 1024)
+#define CIRRUS_VRAM_SIZE_2MB	(2048 * 1024)
+#define CIRRUS_VRAM_SIZE_4MB	(4096 * 1024)
+#define CIRRUS_VRAM_SIZE		CIRRUS_VRAM_SIZE_4MB
+#define CIRRUS_VRAM_SIZE_WAB	CIRRUS_VRAM_SIZE_1MB
 
+#define CIRRUS_98ID_96		0x60
 #define CIRRUS_98ID_Be		0x50
 #define CIRRUS_98ID_Xe		0x58
 #define CIRRUS_98ID_Cb		0x59
@@ -68,6 +72,8 @@
 #define CIRRUS_VRAMWND3_FUNC_wb(a,b,c)	cirrus_linear_memwnd3_writeb(a,b,c)
 #define CIRRUS_VRAMWND3_FUNC_ww(a,b,c)	cirrus_linear_memwnd3_writew(a,b,c)
 #define CIRRUS_VRAMWND3_FUNC_wl(a,b,c)	cirrus_linear_memwnd3_writel(a,b,c)
+
+#define CIRRUS_VRAMWINDOW2MASK	(~((np2clvga.gd54xxtype==CIRRUS_98ID_96||np2clvga.gd54xxtype==CIRRUS_98ID_Be ? VRA2WINDOW_SIZEX*2 : VRA2WINDOW_SIZEX)-1))
 
 #define TEST_ADDR		0xF0000000
 #define TEST_ADDR_SIZE	0//0x8000

@@ -147,7 +147,8 @@ void gdc_paletteinit(void) {
 
 #if defined(SUPPORT_PC9821)
 void gdc_analogext(BOOL extend) {
-
+	
+#if defined(SUPPORT_CRT31KHZ)
 	if (extend) {
 		gdc.analog |= (1 << GDCANALOG_256);
 		vramop.operate |= (1 << VOPBIT_VGA);
@@ -159,6 +160,7 @@ void gdc_analogext(BOOL extend) {
 	gdcs.palchange = GDCSCRN_REDRAW;
 	gdcs.grphdisp |= GDCSCRN_EXT | GDCSCRN_ALLDRAW2;
 	MEMM_VRAM(vramop.operate);
+#endif
 }
 #endif
 
@@ -524,6 +526,7 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 	else {
 		switch(dat) {
 #if defined(SUPPORT_PC9821)
+#if defined(SUPPORT_CRT31KHZ)
 			case 0x20:
 				if (gdc.mode2 & 0x08) {
 					gdc_analogext(FALSE);
@@ -535,7 +538,6 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 					gdc_analogext(TRUE);
 				}
 				break;
-
 			case 0x68:
 				gdc.analog &= ~(1 << GDCANALOG_256E);
 				break;
@@ -543,6 +545,7 @@ static void IOOUTCALL gdc_o6a(UINT port, REG8 dat) {
 			case 0x69:
 				gdc.analog |= (1 << GDCANALOG_256E);
 				break;
+#endif
 #endif
 			case 0x40:
 			case 0x80:					// EPSON?
