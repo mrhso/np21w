@@ -1118,6 +1118,7 @@ static void devinit(IDEDRV drv, REG8 sxsidrv) {
 			drv->media |= (IDEIO_MEDIA_CHANGED|IDEIO_MEDIA_LOADED);
 		}
 		drv->daflag = 0x15;
+		drv->damsfbcd = 0;
 	}
 	else {
 		drv->status = IDESTAT_ERR;

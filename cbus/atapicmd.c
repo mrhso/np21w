@@ -21,6 +21,8 @@
 
 #define	SUPPORT_NECCDD
 
+#define HEX2BCD(hex)	( (((hex/10)%10)<<4)|((hex)%10) )
+#define BCD2HEX(bcd)	( (((bcd>>4)&0xf)*10)+((bcd)&0xf) )
 
 // INQUIRY
 static const UINT8 cdrom_inquiry[] = {
@@ -552,6 +554,7 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 		if (cnt > leng) {
 			goto length_exceeded;
 		}
+		drv->damsfbcd = 1; // XXX: NEC CD-ROMコマンドを飛ばしてきたらBCDモードにする･･･（暫定neccdd.sys判定）
 		break;
 #endif
 	case 0x3f:
@@ -656,7 +659,7 @@ length_exceeded:
 
 // ---- Audio
 
-static void storemsf(UINT8 *ptr, UINT32 pos) {
+static void storemsf(UINT8 *ptr, UINT32 pos, int isBCD) {
 
 	UINT	f;
 	UINT	m;
@@ -666,9 +669,15 @@ static void storemsf(UINT8 *ptr, UINT32 pos) {
 	m = pos % 60;
 	pos = pos / 60;
 	ptr[0] = 0;
-	ptr[1] = (UINT8)pos;
-	ptr[2] = (UINT8)m;
-	ptr[3] = (UINT8)f;
+	if(isBCD){
+		ptr[1] = (UINT8)HEX2BCD(pos);
+		ptr[2] = (UINT8)HEX2BCD(m);
+		ptr[3] = (UINT8)HEX2BCD(f);
+	}else{
+		ptr[1] = (UINT8)pos;
+		ptr[2] = (UINT8)m;
+		ptr[3] = (UINT8)f;
+	}
 }
 
 // 0x42: READ SUB CHANNEL
@@ -727,8 +736,9 @@ static void atapi_cmd_readsubch(IDEDRV drv) {
 				drv->buf[6] = trk[r].track;
 #endif
 				drv->buf[7] = 1;
-				storemsf(drv->buf + 8, pos + 150);
-				storemsf(drv->buf + 12, (UINT32)(pos - trk[r].pos));
+
+				storemsf(drv->buf + 8, pos + 150, drv->damsfbcd);
+				storemsf(drv->buf + 12, (UINT32)(pos - trk[r].pos), drv->damsfbcd);
 			}
 			senddata(drv, 16, leng);
 			break;
@@ -813,7 +823,7 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 			ptr[2] = trk[i].track;
 #endif
 			ptr[3] = 0;
-			storemsf(ptr + 4, (UINT32)(trk[i].pos + 150));
+			storemsf(ptr + 4, (UINT32)(trk[i].pos + 150), drv->damsfbcd);
 			ptr += 8;
 		}
 		senddata(drv, (tracks * 8) + 12, leng);
@@ -861,14 +871,26 @@ static void atapi_cmd_playaudiomsf(IDEDRV drv) {
 	UINT32	pos;
 	UINT32	leng;
 
-	int M = drv->buf[3];
-	int S = drv->buf[4];
-	int F = drv->buf[5];
-	pos = (((M * 60) + S) * 75) + F;
-	M = drv->buf[6];
-	S = drv->buf[7];
-	F = drv->buf[8];
-	leng = (((M * 60) + S) * 75) + F;
+	int M, S, F;
+	if(drv->damsfbcd){
+		M = BCD2HEX(drv->buf[3]);
+		S = BCD2HEX(drv->buf[4]);
+		F = BCD2HEX(drv->buf[5]);
+		pos = (((M * 60) + S) * 75) + F;
+		M = BCD2HEX(drv->buf[6]);
+		S = BCD2HEX(drv->buf[7]);
+		F = BCD2HEX(drv->buf[8]);
+		leng = (((M * 60) + S) * 75) + F;
+	}else{
+		M = drv->buf[3];
+		S = drv->buf[4];
+		F = drv->buf[5];
+		pos = (((M * 60) + S) * 75) + F;
+		M = drv->buf[6];
+		S = drv->buf[7];
+		F = drv->buf[8];
+		leng = (((M * 60) + S) * 75) + F;
+	}
 	if (leng > pos) {
 		leng -= pos;
 	}
