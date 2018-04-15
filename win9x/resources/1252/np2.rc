@@ -1053,24 +1053,28 @@ BEGIN
     POPUP "IDE #0"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE0OPEN
+        MENUITEM "&Physical Drive...",          IDM_IDE0PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE0EJECT
     END
     POPUP "IDE #1"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE1OPEN
+        MENUITEM "&Physical Drive...",          IDM_IDE1PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE1EJECT
     END
     POPUP "IDE #2"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE2OPEN
+        MENUITEM "&Physical Drive...",          IDM_IDE2PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE2EJECT
     END
     POPUP "IDE #3"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE3OPEN
+        MENUITEM "&Physical Drive...",          IDM_IDE3PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE3EJECT
     END

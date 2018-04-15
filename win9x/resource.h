@@ -513,6 +513,10 @@
 #define IDM_IDE1STATE                   40452
 #define IDM_IDE2STATE                   40453
 #define IDM_IDE3STATE                   40454
+#define IDM_IDE0PHYSICALDRV             40461
+#define IDM_IDE1PHYSICALDRV             40462
+#define IDM_IDE2PHYSICALDRV             40463
+#define IDM_IDE3PHYSICALDRV             40464
 #define IDM_WINDOW                      40501
 #define IDM_FULLSCREEN                  40502
 #define IDM_ROLNORMAL                   40503

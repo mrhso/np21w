@@ -64,7 +64,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(_WIN32_WCE)
 #define	PCBASEMULTIPLE	2
 #else
-#define	PCBASEMULTIPLE	4
+#define	PCBASEMULTIPLE	20
 #endif
 
 
@@ -785,6 +785,9 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_IDEIO)
 			ideio_reset(&np2cfg); // XXX: Win9xの再起動で必要
+#endif
+#if defined(SUPPORT_HOSTDRV)
+			hostdrv_reset(); // XXX: Win9xの再起動で必要
 #endif
 			CPU_SHUT();
 		}

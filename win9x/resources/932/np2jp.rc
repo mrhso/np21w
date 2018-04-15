@@ -1048,33 +1048,37 @@ IDR_IDEMENU MENU
 BEGIN
     POPUP "IDE #0"
     BEGIN
-        MENUITEM "開く(&O)...",                    IDM_IDE0OPEN
+        MENUITEM "開く(&O)...",                 IDM_IDE0OPEN
+        MENUITEM "物理ドライブ(&P)...",         IDM_IDE0PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "取り外し(&R)...",                     IDM_IDE0EJECT
+        MENUITEM "取り外し(&R)...",             IDM_IDE0EJECT
         MENUITEM SEPARATOR
         MENUITEM " ",							IDM_IDE0STATE
     END
     POPUP "IDE #1"
     BEGIN
-        MENUITEM "開く(&O)...",                    IDM_IDE1OPEN
+        MENUITEM "開く(&O)...",                 IDM_IDE1OPEN
+        MENUITEM "物理ドライブ(&P)...",         IDM_IDE1PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "取り外し(&R)...",                     IDM_IDE1EJECT
+        MENUITEM "取り外し(&R)...",             IDM_IDE1EJECT
         MENUITEM SEPARATOR
         MENUITEM " ",							IDM_IDE1STATE
     END
     POPUP "IDE #2"
     BEGIN
-        MENUITEM "開く(&O)...",                    IDM_IDE2OPEN
+        MENUITEM "開く(&O)...",                 IDM_IDE2OPEN
+        MENUITEM "物理ドライブ(&P)...",         IDM_IDE2PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "取り出し(&E)...",                      IDM_IDE2EJECT
+        MENUITEM "取り出し(&E)...",             IDM_IDE2EJECT
         MENUITEM SEPARATOR
         MENUITEM " ",							IDM_IDE2STATE
     END
     POPUP "IDE #3"
     BEGIN
-        MENUITEM "開く(&O)...",                    IDM_IDE3OPEN
+        MENUITEM "開く(&O)...",                 IDM_IDE3OPEN
+        MENUITEM "物理ドライブ(&P)...",         IDM_IDE3PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "取り出し(&E)...",                      IDM_IDE3EJECT
+        MENUITEM "取り出し(&E)...",             IDM_IDE3EJECT
         MENUITEM SEPARATOR
         MENUITEM " ",							IDM_IDE3STATE
     END

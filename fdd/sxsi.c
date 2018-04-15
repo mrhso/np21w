@@ -244,7 +244,7 @@ void cdchange_timeoutproc(NEVENTITEM item) {
 }
 static void cdchange_timeoutset(void) {
 
-	nevent_setbyms(NEVENT_CDWAIT, 5000, cdchange_timeoutproc, NEVENT_ABSOLUTE);
+	nevent_setbyms(NEVENT_CDWAIT, 6000, cdchange_timeoutproc, NEVENT_ABSOLUTE);
 }
 
 #ifdef SUPPORT_NVL_IMAGES
@@ -294,7 +294,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 				return(SUCCESS);
 			}
 			else {
-				if(sxsi->flag & SXSIFLAG_READY){
+				if((sxsi->flag & SXSIFLAG_READY) && (_tcsnicmp(sxsi->fname, OEMTEXT("\\\\.\\"), 4)!=0 || _tcsicmp(sxsi->fname, np2cfg.idecd[drv & 0x0f])==0) ){
 					// ‚¢‚Á‚½‚ñŽæ‚èo‚·
 					ideio_notify(sxsi->drv, 0);
 					sxsi->flag = 0;
@@ -308,9 +308,12 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 					return(FAILURE); // XXX: ‚±‚±‚ÅŽ¸”s•Ô‚µ‚Ä‚¦‚¦‚ÌH
 				}
 				r = sxsicd_open(sxsi, fname);
-				if (r == SUCCESS) {
+				if (r == SUCCESS || _tcsnicmp(fname, OEMTEXT("\\\\.\\"), 4)==0) {
 					int num = drv & 0x0f;
 					file_cpyname(np2cfg.idecd[num], fname, NELEMENTS(cdchange_fname));
+					if(r != SUCCESS && _tcsnicmp(fname, OEMTEXT("\\\\.\\"), 4)==0){
+						ideio_notify(sxsi->drv, 0);
+					}
 				}else{
 					int num = drv & 0x0f;
 					file_cpyname(np2cfg.idecd[num], _T("\0\0\0\0"), 1);

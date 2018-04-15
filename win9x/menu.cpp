@@ -285,6 +285,10 @@ void xmenu_initialize(HMENU hMenu)
 #ifndef SUPPORT_CL_GD5430
 	EnableMenuItem(hMenu, IDM_WABOPT, MF_BYCOMMAND|MFS_GRAYED);
 #endif
+	
+#ifndef SUPPORT_PHYSICAL_CDDRV
+	EnableMenuItem(hMenu, IDM_WABOPT, MF_BYCOMMAND|MFS_GRAYED);
+#endif
 
 	if (np2oscfg.I286SAVE)
 	{

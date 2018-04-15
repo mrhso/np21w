@@ -1059,13 +1059,13 @@ static int flagcheck_sxsi(STFLAGH sfh, const SFENTRY *tbl) {
 	sxsi_allflash();
 	ret = statflag_read(sfh, &sds, sizeof(sds));
 	for (i=0; i<NELEMENTS(sds.ide); i++) {
-		if (sds.ide[i] != SXSIDEV_NC) {
+		if (sds.ide[i] != SXSIDEV_NC && sds.ide[i] != SXSIDEV_CDROM) {
 			OEMSPRINTF(buf, str_sasix, i+1);
 			ret |= statflag_checkpath(sfh, buf);
 		}
 	}
 	for (i=0; i<NELEMENTS(sds.scsi); i++) {
-		if (sds.scsi[i] != SXSIDEV_NC) {
+		if (sds.scsi[i] != SXSIDEV_NC && sds.ide[i] != SXSIDEV_CDROM) {
 			OEMSPRINTF(buf, str_scsix, i);
 			ret |= statflag_checkpath(sfh, buf);
 		}

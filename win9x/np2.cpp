@@ -92,6 +92,9 @@
 #include "wab/cirrus_vga_extern.h"
 #endif
 #include "pcm86.h"
+#if defined(SUPPORT_PHYSICAL_CDDRV)
+#include "Dbt.h"
+#endif
 
 #ifdef BETA_RELEASE
 #define		OPENING_WAIT		1500
@@ -491,6 +494,26 @@ static void np2popup(HWND hWnd, LPARAM lp) {
 	DestroyMenu(hMenu);
 }
 
+#ifdef SUPPORT_PHYSICAL_CDDRV
+static void np2updatemenu() {
+	REG8 drv;
+	HMENU hMenu = np2class_gethmenu(g_hWndMain);
+	for (drv = 0x00; drv < 0x04; drv++)
+	{
+#if defined(SUPPORT_IDEIO)
+		if(np2cfg.idetype[drv]==SXSIDEV_CDROM)
+		{
+			EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_ENABLED);
+		}
+		else
+		{
+			EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_GRAYED);
+		}
+#endif
+	}	
+}
+#endif
+
 static void OnCommand(HWND hWnd, WPARAM wParam)
 {
 	UINT		update;
@@ -526,6 +549,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 				pccore_cfgupdate();
 				pccore_reset();
 				sysmng_updatecaption(1);
+#ifdef SUPPORT_PHYSICAL_CDDRV
+				np2updatemenu();
+#endif
 			}
 			break;
 
@@ -675,6 +701,66 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuileave();
 			sysmng_updatecaption(1);
 			break;
+
+#ifdef SUPPORT_PHYSICAL_CDDRV
+		case IDM_IDE0PHYSICALDRV:
+		case IDM_IDE1PHYSICALDRV:
+		case IDM_IDE2PHYSICALDRV:
+		case IDM_IDE3PHYSICALDRV:
+			{
+				TCHAR   szBuff[] = OEMTEXT("\\\\.\\A:\\");
+				TCHAR   *szBuff2;
+				DWORD   dwDrive;
+				INT     nDrive;
+				int		totaldrv = 0;
+				
+				// CDドライブの数を調べる
+				szBuff2 = szBuff+4;
+				dwDrive = GetLogicalDrives();
+				for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
+					if ( dwDrive & (1 << nDrive) ){
+						szBuff2[0] = nDrive + 'A';
+						if(GetDriveType(szBuff2)==DRIVE_CDROM){
+							totaldrv++;
+						}
+					}
+				}
+				if(totaldrv==0){
+					// 実ドライブ無し
+				}else if(totaldrv==1){
+					// CDドライブ一つの場合、それを選択
+					szBuff[6] = 0; // 最後の\を削る
+					sysmng_update(SYS_UPDATEOSCFG);
+					diskdrv_setsxsi(uID - IDM_IDE0PHYSICALDRV, szBuff);
+				}else{
+					// 複数ドライブがある場合、暫定でメッセージボックス連発（選べないよりはマシということで･･･）
+					int button_id;
+					for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
+						if ( dwDrive & (1 << nDrive) ){
+							szBuff2[0] = nDrive + 'A';
+							if(GetDriveType(szBuff2)==DRIVE_CDROM){
+								TCHAR msgbuf[200] = {0};
+								_stprintf_s(msgbuf, OEMTEXT("Mount Physical Drive \"%s\"?"), szBuff2);
+								button_id = MessageBox(NULL, msgbuf, OEMTEXT("Mount Physical Drive"), MB_YESNOCANCEL | MB_ICONQUESTION );
+								switch(button_id){
+								case IDYES:
+									szBuff[6] = 0; // 最後の\を削る
+									sysmng_update(SYS_UPDATEOSCFG);
+									diskdrv_setsxsi(uID - IDM_IDE0PHYSICALDRV, szBuff);
+									goto end_cddrvsel;
+								case IDNO:
+									break;
+								case IDCANCEL:
+									goto end_cddrvsel;
+								}
+							}
+						}
+					}
+end_cddrvsel:;
+				}
+			}
+			break;
+#endif
 #endif
 			
 		case IDM_IDE0STATE:
@@ -694,6 +780,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 #if defined(SUPPORT_IDEIO)
 					}
 #endif
+				}
+				if(_tcsnicmp(fname, OEMTEXT("\\\\.\\"), 4)==0){
+					fname += 4;
 				}
 				if(fname && *fname){
 					TCHAR seltmp[500];
@@ -1921,6 +2010,62 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case MM_MIM_LONGDATA:
 			CComMidiIn32::RecvExcv(reinterpret_cast<HMIDIIN>(wParam), reinterpret_cast<MIDIHDR*>(lParam));
 			break;
+			
+#if defined(SUPPORT_IDEIO)
+#ifdef SUPPORT_PHYSICAL_CDDRV
+		case WM_DEVICECHANGE:
+			{
+				PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)lParam;
+				switch(wParam)
+				{
+				case DBT_DEVICEARRIVAL:
+				case DBT_DEVICEREMOVECOMPLETE:
+					// See if a CD-ROM or DVD was inserted into a drive.
+					if (lpdb -> dbch_devicetype == DBT_DEVTYP_VOLUME)
+					{
+						PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
+
+						if (lpdbv -> dbcv_flags & DBTF_MEDIA)
+						{
+							int i;
+							int drvlnum;
+							int unitmask = lpdbv ->dbcv_unitmask;
+							OEMCHAR *fname;
+							OEMCHAR fnamebuf[MAX_PATH];
+							OEMCHAR drvstr[] = OEMTEXT("x:");
+							for (drvlnum = 0; drvlnum < 26; ++drvlnum)
+							{
+								if (unitmask & 0x1)
+									break;
+								unitmask = unitmask >> 1;
+							}
+							drvstr[0] = 'A' + drvlnum;
+							for(i=0;i<4;i++){
+								if(sxsi_getdevtype(i)==SXSIDEV_CDROM){
+									fname = np2cfg.idecd[i];
+									if(_tcsnicmp(fname, OEMTEXT("\\\\.\\"), 4)==0){
+										fname += 4;
+										if(_tcsicmp(fname, drvstr)==0){
+											_tcscpy(fnamebuf, np2cfg.idecd[i]);
+											if(wParam == DBT_DEVICEARRIVAL){
+												// CD挿入
+												diskdrv_setsxsi(0x02, fnamebuf);
+											}else{
+												// CD取出 XXX: 中身が空でもマウントは継続
+												diskdrv_setsxsi(0x02, fnamebuf);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					break;
+				}
+			}
+			break;
+#endif
+#endif
 
 		default:
 			return(DefWindowProc(hWnd, msg, wParam, lParam));
@@ -2390,6 +2535,10 @@ void loadNP2INI(const OEMCHAR *fname){
 #ifdef HOOK_SYSKEY
 	hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
 #endif
+	
+#ifdef SUPPORT_PHYSICAL_CDDRV
+	np2updatemenu();
+#endif
 
 	pccore_reset();
 
@@ -2677,6 +2826,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 #ifdef HOOK_SYSKEY
 	hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
+#endif
+	
+#ifdef SUPPORT_PHYSICAL_CDDRV
+	np2updatemenu();
 #endif
 
 	pccore_reset();
