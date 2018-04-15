@@ -176,9 +176,14 @@ static REG8 sasibios_init(UINT type, SXSIDEV sxsi) {
 
 	diskequip = GETBIOSMEM16(MEMW_DISK_EQUIP);
 	diskequip &= 0xf0ff;
+	
+#if defined(SUPPORT_IDEIO)
+	for (i=0x00, bit=0x0100; i<0x04; i++, bit<<=1) {
+#else
 	for (i=0x00, bit=0x0100; i<0x02; i++, bit<<=1) {
+#endif
 		sxsi = sxsi_getptr(i);
-		if ((sxsi) && (sxsi->flag & SXSIFLAG_READY)) {
+		if ((sxsi) && (sxsi->flag & SXSIFLAG_READY) && sxsi->devtype==SXSIDEV_HDD) {
 			diskequip |= bit;
 		}
 	}

@@ -94,7 +94,11 @@ const OEMCHAR *diskdrv_getsxsi(REG8 drv)
 	if (!(drv & 0x20))
 	{
 		/* SASI or IDE */
+#if defined(SUPPORT_IDEIO)
+		if (num < 4)
+#else
 		if (num < 2)
+#endif
 		{
 			return np2cfg.sasihdd[num];
 		}
