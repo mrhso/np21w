@@ -176,6 +176,22 @@ static REG8 IOINPCALL ifab(UINT port) {
 void cs4231io_reset(void) {
 
 	cs4231.enable = 1;
+/*		7	未使用
+	R/W	6	不明
+	R/W	5-3	PCM音源割り込みアドレス
+			000b= サウンド機能を使用しない
+			001b= INT 0
+			010b= INT 1
+			011b= INT 41
+			100b= INT 5
+	R/W	2-0	DMAチャネル設定
+			000b= DMAを使用しない
+			001b= DMA #0
+			010b= DMA #1 (PC-9821Npを除く)
+			011b= DMA #3
+			100b～101b= 未定義
+			111b= DMAを使用しない
+*/		
 	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
 		cs4231.adrs = 0x0a;////0b00 001 010  INT0 DMA1
 	}else{
@@ -190,10 +206,14 @@ void cs4231io_reset(void) {
 	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
 		cs4231.port[1] = 0xb460; // Sound ID I/O port
 	}else{
-		cs4231.port[1] = 0xb460; // Sound ID I/O port
+		cs4231.port[1] = 0xa460; // Sound ID I/O port
 	}
 	cs4231.port[2] = 0x0f48; // WSS FIFO port
-	cs4231.port[4] = 0x0388; // OPN port
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
+		cs4231.port[4] = 0x0388; // OPN port
+	}else{
+		cs4231.port[4] = 0x0188; // OPN port
+	}
 	cs4231.port[5] = 0x0f4a; // canbe mixer i/o port?
 	cs4231.port[6] = 0x548e; // YMF-701/715?
 	cs4231.port[8] = 0x1480; // Joystick

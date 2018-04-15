@@ -8,6 +8,7 @@
 #include	"cbuscore.h"
 #include	"mpu98ii.h"
 
+
 enum {
 	MIDI_STOP			= 0xfc,
 
@@ -990,6 +991,7 @@ TRACEOUT(("mpu98ii out %.4x %.2x", port, dat));
 }
 
 REG8 IOINPCALL mpu98ii_i0(UINT port) {
+
 	if (cm_mpu98 == NULL) {
 		cm_mpu98 = commng_create(COMCREATE_MPU98II);
 	}
@@ -1068,9 +1070,6 @@ void mpu98ii_reset(const NP2CFG *pConfig) {
 	mpu98.data = MPUMSG_ACK;
 	mpu98.port = 0xc0d0 | ((pConfig->mpuopt & 0xf0) << 6);
 	mpu98.irqnum = mpuirqnum[pConfig->mpuopt & 3];
-	mpu98.port2 = 0x148c; //118 MIDI
-	mpu98.irqnum2 = 10;
-	mpu98.port3 = 0x80d2;//SB16 MIDI
 	setdefaultcondition();
 //	pic_registext(mpu98.irqnum);
 
@@ -1080,26 +1079,15 @@ void mpu98ii_reset(const NP2CFG *pConfig) {
 void mpu98ii_bind(void) {
 
 	UINT	port;
-	UINT	port2;
-	UINT	port3;
 
 	mpu98.xferclock = pccore.realclock / 3125;
 	makeintclock();
 	port = mpu98.port;
 	iocore_attachout(port, mpu98ii_o0);
 	iocore_attachinp(port, mpu98ii_i0);
-		port2 = mpu98.port2;
-		iocore_attachout(port2, mpu98ii_o0);
-		iocore_attachinp(port2, mpu98ii_i0);
-		iocore_attachout(port2+1, mpu98ii_o2);
-		iocore_attachinp(port2+1, mpu98ii_i2);
-
-/*		port3 = mpu98.port3;
-		iocore_attachout(port3, mpu98ii_o0);
-		iocore_attachinp(port3, mpu98ii_i0);
-		iocore_attachout(port3+0x100, mpu98ii_o2);
-		iocore_attachinp(port3+0x100, mpu98ii_i2);
-*/	port |= 2;
+	//iocore_attachout(port+1, mpu98ii_o2);
+	//iocore_attachinp(port+1, mpu98ii_i2);
+	port |= 2;
 	iocore_attachout(port, mpu98ii_o2);
 	iocore_attachinp(port, mpu98ii_i2);
 	

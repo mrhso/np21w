@@ -22,12 +22,14 @@ static void *opl3;
 static const UINT8 sb16base[] = {0xd2,0xd4,0xd6,0xd8,0xda,0xdc,0xde};
 static int samplerate;
 
+#ifdef USE_MAME
 void *YMF262Init(INT clock, INT rate);
 void YMF262ResetChip(void *chip);
 void YMF262Shutdown(void *chip);
 INT YMF262Write(void *chip, INT a, INT v);
 UINT8 YMF262Read(void *chip, INT a);
 void YMF262UpdateOne(void *chip, INT16 **buffer, INT length);
+#endif
 
 static void IOOUTCALL sb16_o0400(UINT port, REG8 dat) {
 	port = dat;
@@ -55,26 +57,34 @@ static void IOOUTCALL sb16_o8100(UINT port, REG8 dat) {
 static void IOOUTCALL sb16_o2000(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.addr = dat;
+#ifdef USE_MAME
 	YMF262Write(opl3, 0, dat);
+#endif
 }
 
 static void IOOUTCALL sb16_o2100(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr] = dat;
 	//S98_put(NORMAL2608, g_opl.addr, dat);
+#ifdef USE_MAME
 	YMF262Write(opl3, 1, dat);
+#endif
 }
 static void IOOUTCALL sb16_o2200(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.addr2 = dat;
+#ifdef USE_MAME
 	YMF262Write(opl3, 2, dat);
+#endif
 }
 
 static void IOOUTCALL sb16_o2300(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr2 + 0x100] = dat;
 	//S98_put(EXTEND2608, opl.addr2, dat);
+#ifdef USE_MAME
 	YMF262Write(opl3, 3, dat);
+#endif
 }
 
 static void IOOUTCALL sb16_o2800(UINT port, REG8 dat) {
@@ -83,11 +93,15 @@ static void IOOUTCALL sb16_o2800(UINT port, REG8 dat) {
 	 * UltimaUnderWorld‚Å‚Í‚±‚¿‚ç‚ð’@‚­
 	 */
 	port = dat;
+#ifdef USE_MAME
 	YMF262Write(opl3, 0, dat);
+#endif
 }
 static void IOOUTCALL sb16_o2900(UINT port, REG8 dat) {
 	port = dat;
+#ifdef USE_MAME
 	YMF262Write(opl3, 1, dat);
+#endif
 }
 
 static REG8 IOINPCALL sb16_i0400(UINT port) {
@@ -114,17 +128,23 @@ static REG8 IOINPCALL sb16_i8100(UINT port) {
 
 static REG8 IOINPCALL sb16_i2000(UINT port) {
 	(void)port;
+#ifdef USE_MAME
 	return YMF262Read(opl3, 0);
+#endif
 }
 
 static REG8 IOINPCALL sb16_i2200(UINT port) {
 	(void)port;
+#ifdef USE_MAME
 	return YMF262Read(opl3, 1);
+#endif
 }
 
 static REG8 IOINPCALL sb16_i2800(UINT port) {
 	(void)port;
+#ifdef USE_MAME
 	return YMF262Read(opl3, 0);
+#endif
 }
 
 // ----
@@ -140,7 +160,9 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 	buf[3] = &s2r;
 	for (i=0; i < count; i++) {
 		s1l = s1r = s2l = s2r = 0;
+#ifdef USE_MAME
 		YMF262UpdateOne(opl3, buf, 1);
+#endif
 		outbuf[0] += s1l << 1;
 		outbuf[1] += s1r << 1;
 		outbuf += 2;
@@ -150,11 +172,15 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 void boardsb16_reset(const NP2CFG *pConfig) {
 	if (opl3) {
 		if (samplerate != pConfig->samplingrate) {
+#ifdef USE_MAME
 			YMF262Shutdown(opl3);
 			opl3 = YMF262Init(14400000, pConfig->samplingrate);
+#endif
 			samplerate = pConfig->samplingrate;
 		} else {
+#ifdef USE_MAME
 			YMF262ResetChip(opl3);
+#endif
 		}
 	}
 	ZeroMemory(&g_sb16, sizeof(g_sb16));
@@ -197,7 +223,9 @@ void boardsb16_bind(void) {
 	iocore_attachinp(0x8100 + g_sb16.base, sb16_i8100);	/* MIDI Port */
 
 	if (!opl3) {
+#ifdef USE_MAME
 		opl3 = YMF262Init(14400000, np2cfg.samplingrate);
+#endif
 		samplerate = np2cfg.samplingrate;
 	}
 	sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm);

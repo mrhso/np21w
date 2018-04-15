@@ -19,6 +19,7 @@ static int opna_idx = 0;
 
 /* for OPL */
 
+#ifdef USE_MAME
 #ifdef SUPPORT_SOUND_SB16
 #include "boardsb16.h"
 static void *opl3;
@@ -41,6 +42,7 @@ static void IOOUTCALL sb16_o21d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr] = dat;
 	//S98_put(NORMAL2608, g_opl.addr, dat);
+	//opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat);
 	YMF262Write(opl3, 1, dat);
 }
 static void IOOUTCALL sb16_o22d2(UINT port, REG8 dat) {
@@ -52,6 +54,7 @@ static void IOOUTCALL sb16_o22d2(UINT port, REG8 dat) {
 static void IOOUTCALL sb16_o23d2(UINT port, REG8 dat) {
 	(void)port;
 	g_opl.reg[g_opl.addr2 + 0x100] = dat;
+	//opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat);
 	//S98_put(EXTEND2608, opl.addr2, dat);
 	YMF262Write(opl3, 3, dat);
 }
@@ -83,6 +86,7 @@ static REG8 IOINPCALL sb16_i28d2(UINT port) {
 	(void)port;
 	return YMF262Read(opl3, 0);
 }
+#endif
 #endif
 
 static void IOOUTCALL ymf_o188(UINT port, REG8 dat)
@@ -357,6 +361,7 @@ static REG8 IOINPCALL sb98_i81d2(UINT port) {
 }
 
 // ----
+#ifdef USE_MAME
 #ifdef SUPPORT_SOUND_SB16
 void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 	UINT i;
@@ -367,6 +372,7 @@ void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 	buf[1] = &s1r;
 	buf[2] = &s2l;
 	buf[3] = &s2r;
+	oplfm_volume = np2cfg.vol_fm / 64.0;
 	for (i=0; i < count; i++) {
 		s1l = s1r = s2l = s2r = 0;
 		YMF262UpdateOne(opl3, buf, 1);
@@ -375,6 +381,7 @@ void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 		outbuf += 2;
 	}
 }
+#endif
 #endif
 static const IOOUT ymf_o[4] = {
 			ymf_o188,	ymf_o18a,	ymf_o18c,	ymf_o18e};
@@ -407,6 +414,7 @@ void board118_reset(const NP2CFG *pConfig)
 	soundrom_load(0xcc000, OEMTEXT("118"));
 	fmboard_extreg(extendchannel);
 #ifdef SUPPORT_SOUND_SB16
+#ifdef USE_MAME
 	if (opl3) {
 		if (samplerate != pConfig->samplingrate) {
 			YMF262Shutdown(opl3);
@@ -422,9 +430,9 @@ void board118_reset(const NP2CFG *pConfig)
 	g_sb16.base = 0xd2;
 	g_sb16.dmach = 0x3;
 	g_sb16.dmairq = 0x5;
-	oplfm_volume = np2cfg.vol_fm / 64.0;
-	(void)pConfig;
 #endif
+#endif
+	(void)pConfig;
 }
 
 /**
@@ -445,13 +453,14 @@ void board118_bind(void)
 		opna_bind(&g_opna[opna_idx]);
 		cbuscore_attachsndex(cs4231.port[4],ymf_o, ymf_i);
 #ifdef SUPPORT_SOUND_SB16
+#ifdef USE_MAME
 		iocore_attachout(cs4231.port[9], sb16_o20d2);
 		iocore_attachinp(cs4231.port[9], sb16_i20d2);
 		iocore_attachout(cs4231.port[9]+1, sb16_o21d2);
 		iocore_attachout(cs4231.port[9]+2, sb16_o22d2);
 		iocore_attachout(cs4231.port[9]+3, sb16_o23d2);
 
-	//偽SB-16 mode
+		//偽SB-16 mode
 		iocore_attachout(0x20d2, sb16_o20d2);//sb16 opl
 		iocore_attachinp(0x20d2, sb16_i20d2);//sb16 opl
 		iocore_attachout(0x21d2, sb16_o21d2);//sb16 opl
@@ -464,11 +473,24 @@ void board118_bind(void)
 		iocore_attachinp(0x81d2, sb98_i81d2);// sb16 midi port 以下３つはMSDRV4を騙すために必要
 		iocore_attachinp(0x2ad2, sb98_i2ad2);// DSP Read Data Port
 		iocore_attachinp(0x2ed2, sb98_i2ed2);// DSP Read Buffer Status (Bit 7)
-	if (!opl3) {
-		opl3 = YMF262Init(14400000, np2cfg.samplingrate);
-		samplerate = np2cfg.samplingrate;
-	}
-	sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm2);
+		if (!opl3) {
+			opl3 = YMF262Init(14400000, np2cfg.samplingrate);
+			samplerate = np2cfg.samplingrate;
+		}
+		sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm2);
+#else
+		iocore_attachout(0x20d2, ym_o1488);//sb16 opl
+		iocore_attachinp(0x20d2, ym_i1488);//sb16 opl
+		iocore_attachout(0x21d2, ym_o1489);//sb16 opl
+		iocore_attachout(0x22d2, ym_o148a);//sb16 opl3
+		iocore_attachout(0x23d2, ym_o148b);//sb16 opl3
+		iocore_attachout(0x28d2, ym_o1488);//sb16 opl?
+		iocore_attachinp(0x28d2, ym_i1488);//sb16 opl
+		iocore_attachout(0x29d2, ym_o1489);//sb16 opl?
+		iocore_attachinp(0x81d2, csctrl_i486);// sb16 midi port
+		iocore_attachinp(0x2ad2, sb98_i2ad2);// DSP Read Data Port
+		iocore_attachinp(0x2ed2, sb98_i2ed2);// DSP Read Buffer Status (Bit 7)
+#endif
 #else
 		iocore_attachout(cs4231.port[9], ym_o1488);
 		iocore_attachinp(cs4231.port[9], ym_i1488);
@@ -497,7 +519,7 @@ void board118_bind(void)
 //		iocore_attachinp(cs4231.port[10], mpu98ii_i0);
 //		iocore_attachout(cs4231.port[10]+1, mpu98ii_o2);
 //		iocore_attachinp(cs4231.port[10]+1, mpu98ii_i2);
-		mpu98.irqnum = mpu98.irqnum2;
+		//mpu98.irqnum = mpu98.irqnum2;
 
 	}
 }

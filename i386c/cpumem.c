@@ -1,5 +1,10 @@
 #include	"compiler.h"
 
+#if 1
+#undef	TRACEOUT
+#define	TRACEOUT(s)	(void)(s)
+#endif	/* 1 */
+
 #ifndef NP2_MEMORY_ASM
 
 #include	"cpucore.h"

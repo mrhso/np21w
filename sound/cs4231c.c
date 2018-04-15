@@ -8,12 +8,11 @@
 #include "iocore.h"
 #include "fmboard.h"
 #include "dmac.h"
-#include	"cpucore.h"
+#include "cpucore.h"
 
 	CS4231CFG	cs4231cfg;
 
-	int cs4231_dma_compflag = 1;
-	int cs4231_dma_enable = 0;
+	static SINT32 cs4231_totalsample = 0;
 
 enum {
 	CS4231REG_LINPUT	= 0x00,
@@ -51,7 +50,7 @@ enum {
 };
 
 
-UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT size);
+UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size);
 static const UINT32 cs4231xtal64[2] = {24576000/64, 16934400/64};
 
 static const UINT8 cs4231cnt64[8] = {
@@ -66,19 +65,6 @@ static const UINT8 cs4231cnt64[8] = {
 
 //    640:441
 
-static int cs4231_hThreadDMA_enable = 0;
-static HANDLE	cs4231_hThreadDMA = NULL; // DMA用スレッド
-static DWORD WINAPI cs4231_hThreadDMAFunc(LPVOID vdParam) {
-	_NEVENTITEM nitem = {NULL};
-	nitem.flag |= NEVENT_SETEVENT;
-	while (cs4231_hThreadDMA_enable) {
-		if(cs4231_dma_enable) cs4231_dma(&nitem);
-		Sleep(1);
-		//SleepEx(0, TRUE);
-	}
-	return 0;
-}
-
 void cs4231_initialize(UINT rate) {
 
 	cs4231cfg.rate = rate;
@@ -89,6 +75,7 @@ void cs4231_setvol(UINT vol) {
 	(void)vol;
 }
 
+// CS4231 DMA処理
 void cs4231_dma(NEVENTITEM item) {
 
 	DMACH	dmach;
@@ -97,37 +84,27 @@ void cs4231_dma(NEVENTITEM item) {
 	UINT	size;
 	UINT	r;
 	SINT32	cnt;
-	static int xx = 0;
 	if (item->flag & NEVENT_SETEVENT) {
 		if (cs4231.dmach != 0xff) {
+			dmach = dmac.dmach + cs4231.dmach;
+
+			// バッファに空きがあればデータを読み出す
+			if (cs4231.bufsize-4 > cs4231.bufdatas) {
+				rem = cs4231.bufsize - 4 - cs4231.bufdatas; //読み取り単位は16bitステレオの1サンプル分(4byte)にしておかないと雑音化する
+				pos = cs4231.bufwpos & CS4231_BUFMASK; // バッファ書き込み位置
+				size = min(rem, dmach->startcount); // バッファ書き込みサイズ
+				r = dmac_getdata_(dmach, cs4231.buffer, pos, size); // DMA読み取り実行
+				cs4231.bufwpos = (cs4231.bufwpos + r) & CS4231_BUFMASK; // バッファ書き込み位置を更新
+				cs4231.bufdatas += r; // バッファ内の有効なデータ数を更新 = (bufwpos-bufpos)&CS4231_BUFMASK
+			}
+
+			// サウンド再生用バッファに送る？(cs4231g.c)
 			sound_sync();
-			if(!cs4231_lock && !cs4231_dma_compflag){
-				cs4231_lock = 1;
-				dmach = dmac.dmach + cs4231.dmach;
-				if (cs4231.bufsize > cs4231.bufdatas) {
-					rem = cs4231.bufsize - cs4231.bufdatas;
-					pos = (cs4231.bufpos + cs4231.bufdatas) & CS4231_BUFMASK;
-					size = min(rem, CS4231_BUFFERS - pos);
-					r = dmac_getdata_(dmach, (cs4231.buffer + pos), size);
-					rem -= r;
-					cs4231.bufdatas += r;
-					if (r != size) {
-						if ((dmach->leng.w ==0) && rem ){
-							dmach->leng.w = rem;
-						}
-						pos = (cs4231.bufpos + cs4231.bufdatas) & CS4231_BUFMASK;
-						r = dmac_getdata_(dmach,cs4231.buffer+pos, rem);
-						cs4231.bufdatas += r;
-					}
-				}
-				if ((dmach->leng.w) && (cs4231cfg.rate)) {
-					cnt = pccore.realclock * 16 / cs4231cfg.rate;
-					nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_RELATIVE);		
-				}else{
-					//cs4231_hThreadDMA_enable = 0;
-					cs4231_dma_enable = 0;
-				}
-				cs4231_lock = 0;
+
+			// まだデータがありそうならNEVENTをセット
+			if ((dmach->leng.w) && (cs4231cfg.rate)) {
+				cnt = pccore.realclock * 16 / cs4231cfg.rate;
+				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_RELATIVE);
 			}
 		}
 
@@ -135,6 +112,7 @@ void cs4231_dma(NEVENTITEM item) {
 	(void)item;
 }
 
+// PIO再生用
 void cs4231_datasend(REG8 dat) {
 	UINT	pos;
 	if (cs4231.reg.iface & PPIO) {		// PIO play enable
@@ -142,57 +120,43 @@ void cs4231_datasend(REG8 dat) {
 			sound_sync();
 		}
 		if (cs4231.bufsize > cs4231.bufdatas) {
-			pos = (cs4231.bufpos + cs4231.bufdatas) & CS4231_BUFMASK;
+			pos = (cs4231.bufwpos) & CS4231_BUFMASK;
 			cs4231.buffer[pos] = dat;
 			cs4231.bufdatas++;
+			cs4231.bufwpos = (cs4231.bufwpos + 1) & CS4231_BUFMASK;
 		}
 	}
 }
 
+// DMA再生開始・終了・中断時に呼ばれる（つもり）
 REG8 DMACCALL cs4231dmafunc(REG8 func) {
 	SINT32	cnt;
 	switch(func) {
 		case DMAEXT_START:
 			if (cs4231cfg.rate) {
-				DWORD dwID = 0;
 				DMACH	dmach;
 				dmach = dmac.dmach + cs4231.dmach;
-				//if(cs4231_hThreadDMA){
-				//	cs4231_hThreadDMA_enable = 0;
-				//	WaitForSingleObject(cs4231_hThreadDMA,  INFINITE);
-				//	CloseHandle(cs4231_hThreadDMA);
-				//}
-				cs4231_dma_enable = 1;
-				cs4231_lock = 0;
+				dmach->adrs.d = dmach->startaddr;
+				cs4231.bufpos = cs4231.bufwpos;
 				cs4231.bufdatas = 0;
-				cs4231_dma_compflag = 0;
-				//if(!cs4231_hThreadDMA){
-				//	cs4231_hThreadDMA_enable = 1;
-				//	cs4231_hThreadDMA = CreateThread(NULL , 0 , cs4231_hThreadDMAFunc  , NULL , 0 , &dwID);
-				//}
+				cs4231_totalsample = 0;
 				cnt = pccore.realclock * 16 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
 			}
 			break;
 		case DMAEXT_END:
-			if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
-				cs4231.intflag |= INt;
-				cs4231.reg.featurestatus |= PI;
-				pic_setirq(cs4231.dmairq);
-			}
+			// ここでの割り込みは要らない？
+			//if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
+			//	cs4231.intflag |= INt;
+			//	cs4231.reg.featurestatus |= PI;
+			//	pic_setirq(cs4231.dmairq);
+			//}
 			break;
 
 		case DMAEXT_BREAK:
 			nevent_reset(NEVENT_CS4231);
-			cs4231_dma_enable = 0;
-			//cs4231_hThreadDMA_enable = 0;
-			//if(cs4231_hThreadDMA){
-			//	WaitForSingleObject(cs4231_hThreadDMA,  INFINITE);
-			//	CloseHandle(cs4231_hThreadDMA);
-			//	cs4231_hThreadDMA = NULL;
-			//}
-			cs4231_lock = 0;
 			break;
+
 	}
 	return(0);
 }
@@ -204,36 +168,44 @@ void cs4231_reset(void) {
 //	cs4231.proc = cs4231_nodecode;
 	cs4231.dmach = 0xff;
 	cs4231.dmairq = 0xff;
+	//cs4231.timer = 200; // XXX: 何も入れてくれないのでそれっぽいのを入れる･･･(10usec単位)
 	FillMemory(cs4231.port, sizeof(cs4231.port), 0xff);
 }
 
 void cs4231_update(void) {
 }
 
-
+// バッファ位置がズレ修正用（雑音化防止）
 static void setdataalign(void) {
 
 	UINT	step;
-
+	
+	// バッファ位置がズレていたら修正（4byte単位に）
 	step = (0 - cs4231.bufpos) & 3;
 	if (step) {
 		cs4231.bufpos += step;
 		cs4231.bufdatas -= min(step, cs4231.bufdatas);
 	}
 	cs4231.bufdatas &= ~3;
+	step = (0 - cs4231.bufwpos) & 3;
+	if (step) {
+		cs4231.bufwpos += step;
+	}
 }
 
+// CS4231 Indexed Data registerの処理
 void cs4231_control(UINT idx, REG8 dat) {
 	UINT8	modify;
 	DMACH	dmach;
 	switch(idx){
-		case 0xd:break;
-		case 0xc:
+	case 0xd:
+		break;
+	case 0xc:
 		dat &= 0x40;
 		dat |= 0x8a;
 		break;
-		case 0xb://ErrorStatus 
-		case 0x19://Version ID
+	case 0xb://ErrorStatus 
+	case 0x19://Version ID
 		return;
 	default:
 		break;
@@ -244,89 +216,145 @@ void cs4231_control(UINT idx, REG8 dat) {
 	((UINT8 *)&cs4231.reg)[idx] = dat;
 	switch(idx) {
 	case CS4231REG_PLAYFMT:
-			if (modify & 0xf0) {
-				setdataalign();
-			}
-			if (cs4231cfg.rate) {
-				UINT32 r;
-				r = cs4231xtal64[dat & 1] / cs4231cnt64[(dat >> 1) & 7];
-				TRACEOUT(("samprate = %d", r));
-				r <<= 12;
-				r /= cs4231cfg.rate;
-				cs4231.step12 = r;
-				TRACEOUT(("step12 = %d", r));
-			}
-			else {
-				cs4231.step12 = 0;
-			}
-			break;
-		case CS4231REG_INTERFACE:
-			if (modify & PEN ) {
-				if (cs4231.dmach != 0xff) {
-					dmach = dmac.dmach + cs4231.dmach;
-					if ((dat & (PEN)) == (PEN)){
-						dmach->ready = 1;
-					}
-					else {
-						dmach->ready = 0;
-					}
-					dmac_check();
-				}	
-				if (!(dat & PEN)) {		// stop!
-					cs4231.pos12 = 0; 
+		// 再生フォーマット設定とか　Fs and Playback Data Format (I8)
+		if (modify & 0xf0) {
+			setdataalign();
+		}
+		if (cs4231cfg.rate) {
+			UINT32 r;
+			r = cs4231xtal64[dat & 1] / cs4231cnt64[(dat >> 1) & 7];
+			TRACEOUT(("samprate = %d", r));
+			r <<= 12;
+			r /= cs4231cfg.rate;
+			cs4231.step12 = r;
+			TRACEOUT(("step12 = %d", r));
+		}
+		else {
+			cs4231.step12 = 0;
+		}
+		break;
+	case CS4231REG_INTERFACE:
+		// 再生録音の有効無効とかDMAとかの設定　Interface Configuration (I9)
+		if (modify & PEN ) {
+			if (cs4231.dmach != 0xff) {
+				dmach = dmac.dmach + cs4231.dmach;
+				if ((dat & (PEN)) == (PEN)){
+					dmach->ready = 1;
 				}
+				else {
+					dmach->ready = 0;
+				}
+				dmac_check();
+			}	
+			if (!(dat & PEN)) {		// stop!
+				cs4231.pos12 = 0; 
 			}
-			break;
-		case CS4231REG_IRQSTAT:
-			if (modify & PI) {
-                	/* XXX: TI CI */
-                	pic_resetirq (cs4231.dmairq);
-                	cs4231.intflag &= ~INt;
-			}
-            		break;
+		}
+		break;
+	case CS4231REG_IRQSTAT:
+		// バッファオーバーラン・アンダーランや割り込みを検出するためのレジスタ？　Alternate Feature Status (I24)
+		if (modify & PI) {
+			/* XXX: TI CI */
+			pic_resetirq (cs4231.dmairq);
+			cs4231.intflag &= ~INt;
+		}
+        break;
+	//case CS4231REG_TIMERL:
+	//	// CS4231 割り込みタイマー設定(下位バイト)
+	//	cs4231.timer = (cs4231.timer & 0xff00) | dat;
+	//	break;
+	//case CS4231REG_TIMERH:
+	//	// CS4231 割り込みタイマー設定(上位バイト)
+	//	cs4231.timer = (cs4231.timer & 0x00ff) | (dat<<8);
+	//	break;
 	}
 }
 
+// 各フォーマットの割り込み間隔テーブル（たぶん1サンプルあたりのバイト数）
+static const SINT32 cs4231_irqsamples[16] = {
+			1  ,		// 0: 8bit PCM
+			1*2,
+			1  ,		// 1: u-Law
+			1  ,
+			1*2,		// 2: 16bit PCM(little endian)?
+			1*4,
+			1  ,		// 3: A-Law
+			1  ,
+			1  ,		// 4:
+			1  ,
+			1  ,		// 5: ADPCM
+			1  ,
+			1*2,		// 6: 16bit PCM
+			1*4,
+			1  ,		// 7: ADPCM
+			1  };
 
-UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT size) {
-	UINT	leng;
+// CS4231 DMAデータ読み取り
+UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
+	UINT	leng; // 読み取り数
+	UINT	lengsum; // 合計読み取り数
 	UINT32	addr;
-	UINT32 addr2;
 	UINT	i;
-	int over =0;
-	//static INT32 dma_w2 = 0;
-	//if(dma_w2 == 0) dma_w2 = dmach->leng.w;
-	leng = min(dmach->leng.w, size);
-	if (leng) {
-		addr = dmach->adrs.d;				// + mask
-		addr2 = dmach->startaddr;
-		if (!(dmach->mode & 0x20)) {			// dir +
-			for (i=0; i<leng ; i++) {
-				buf[i] = MEMP_READ8(addr);
-				addr++;
-				//dma_w2--;
-				if(addr > dmach->lastaddr){
-					addr = addr2;
+	SINT32 sampleirq = 0; // 割り込みまでに必要なデータ転送数(byte)
+	
+	lengsum = 0;
+	while(size > 0) {
+		leng = min(dmach->leng.w, size);
+		if (leng) {
+			addr = dmach->adrs.d; // 現在のメモリ読み取り位置
+			if (!(dmach->mode & 0x20)) {			// dir +
+				// +方向にDMA転送
+				for (i=0; i<leng ; i++) {
+					buf[offset] = MEMP_READ8(addr);
+					addr++;
+					if(addr > dmach->lastaddr){
+						addr = dmach->startaddr;
+					}
+					offset = (offset+1) & CS4231_BUFMASK;
 				}
+				dmach->adrs.d = addr;
 			}
-			dmach->adrs.d = addr;
-		}
-		else {									// dir -
-			for (i=0; i<leng; i++) {
-				buf[i] = MEMP_READ8(addr - i);
+			else {									// dir -
+				// -方向にDMA転送
+				for (i=0; i<leng; i++) {
+					buf[offset] = MEMP_READ8(addr);
+					addr--;
+					if(addr < dmach->startaddr){
+						addr = dmach->lastaddr;
+					}
+					offset = (offset-1) & CS4231_BUFMASK;
+				}
+				dmach->adrs.d = addr;
 			}
-			dmach->adrs.d -= leng;
-		}
-		dmach->leng.w -= leng;
-		if (dmach->leng.w <= 0) {
-		//if(dma_w2 <= 0){
-			dmach->leng.w = dmach->startcount;//戻す
-			dmach->proc.extproc(DMAEXT_END);
-			//if((MEMP_READ8(addr)|MEMP_READ8(addr+1)|MEMP_READ8(addr+2)|MEMP_READ8(addr+3))==0){
-			//	cs4231_dma_compflag = 1;
-			//}
+			dmach->leng.w -= leng;
+
+			if (dmach->leng.w <= 0) {
+				dmach->leng.w = dmach->startcount; // 戻す
+				dmach->proc.extproc(DMAEXT_END);
+			}
+
+			// 読み取り数カウント
+			cs4231_totalsample += leng;
+			
+			// 読み取り数と残り数更新
+			lengsum += leng;
+			size -= leng;
+			
+			// XXX: 一定バイト数読む毎に割り込みする（あまり根拠のない実装･･･）
+			sampleirq = cs4231_irqsamples[cs4231.reg.datafmt >> 4] * ((cs4231.step12*cs4231cfg.rate)>>12) / 32; // * 1100/1000; //XXX: 割り込み間隔実験式
+			if(cs4231_totalsample >= sampleirq){
+				if ((cs4231.reg.pinctrl & 2) && (cs4231.dmairq != 0xff)) {
+					cs4231.intflag |= INt;
+					cs4231.reg.featurestatus |= PI;
+					pic_setirq(cs4231.dmairq);
+				}
+				cs4231_totalsample -= sampleirq;
+			}
+		}else{
+			break;
 		}
 	}
-	return(leng);
+
+	return(lengsum);
 }
 

@@ -9,7 +9,7 @@ sudo make - * @file	cs4231.h
 #include "io/dmac.h"
 
 enum {
-	CS4231_BUFFERS	= (1 << 14),
+	CS4231_BUFFERS	= (1 << 10),
 	CS4231_BUFMASK	= (CS4231_BUFFERS - 1)
 };
 
@@ -45,9 +45,10 @@ typedef struct {
 } CS4231REG;
 
 typedef struct {
-	UINT		bufsize;
-	UINT		bufdatas;
-	UINT		bufpos;
+	UINT		bufsize; // サウンド再生用の循環バッファサイズ。データのread/writeは4byte単位（16bitステレオの1サンプル単位）で行うこと
+	UINT		bufdatas; // = (bufwpos-bufpos)&CS4231_BUFMASK
+	UINT		bufpos; // バッファの読み取り位置。bufwposと一致してもよいが追い越してはいけない
+	UINT		bufwpos; // バッファの書き込み位置。周回遅れのbufposに追いついてはいけない（一致も不可）
 	UINT32		pos12;
 	UINT32		step12;
 
@@ -62,9 +63,12 @@ typedef struct {
 	UINT8		outenable;
 	UINT8		extfunc;
 	UINT8		extindex;
+	
+	UINT16		timer;
+	SINT32		timercounter;
 
 	CS4231REG	reg;
-	UINT8		buffer[CS4231_BUFFERS*2];
+	UINT8		buffer[CS4231_BUFFERS];
 } _CS4231, *CS4231;
 
 typedef struct {
@@ -128,8 +132,6 @@ void cs4231_update(void);
 void cs4231_control(UINT index, REG8 dat);
 
 void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count);
-
-extern int cs4231_lock;
 
 #ifdef __cplusplus
 }

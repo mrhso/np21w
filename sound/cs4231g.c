@@ -5,9 +5,9 @@
 
 #include "compiler.h"
 #include "cs4231.h"
+#include "iocore.h"
 
 extern	CS4231CFG	cs4231cfg;
-int  cs4231_lock = 0;
 
 static void SOUNDCALL pcm8m(CS4231 cs, SINT32 *pcm, UINT count) {
 
@@ -46,7 +46,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos += (leng << 0);
+	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -90,7 +90,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 1);
-	cs->bufpos += (leng << 1);
+	cs->bufpos = (cs->bufpos + (leng << 1)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -131,7 +131,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 1);
-	cs->bufpos += (leng << 1);
+	cs->bufpos = (cs->bufpos + (leng << 1)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -175,7 +175,7 @@ const UINT8	*ptr2;
 	
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 2);
-	cs->bufpos += (leng << 2);
+	cs->bufpos = (cs->bufpos + (leng << 2)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -194,7 +194,7 @@ const UINT8	*ptr2;
 	if(cs->bufdatas & 1){
 		oddflag = 1;
 	}
-
+	
 	leng = cs->bufdatas >> 1;
 	if (!leng) {
 		return;
@@ -224,7 +224,7 @@ const UINT8	*ptr2;
 	}
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 1);
-	cs->bufpos += (leng << 1);
+	cs->bufpos = (cs->bufpos + (leng << 1)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -275,7 +275,7 @@ const UINT8	*ptr2;
 	}
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 2);
-	cs->bufpos += (leng << 2);
+	cs->bufpos = (cs->bufpos + (leng << 2)) & CS4231_BUFMASK;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
@@ -294,7 +294,7 @@ static const CS4231FN cs4231fn[16] = {
 			pcm8s,
 			nomake,		// 1: u-Law
 			nomake,
-			pcm16m_ex,		// 2:
+			pcm16m_ex,	// 2: 16bit PCM(little endian)?
 			pcm16s_ex,
 			nomake,		// 3: A-Law
 			nomake,
@@ -313,10 +313,23 @@ static const CS4231FN cs4231fn[16] = {
 void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	if ((cs->reg.iface & 1) && (count)) {
-		while(cs4231_lock) return;
-		cs4231_lock = 1;
 		(*cs4231fn[cs->reg.datafmt >> 4])(cs, pcm, count);
-		cs4231_lock = 0;
+		//// CS4231タイマー割り込み（手抜き）
+		//if ((cs->reg.pinctrl & 2) && (cs->dmairq != 0xff) && (cs->timer)) {
+		//	static double timercount = 0;
+		//	int decval = 0;
+		//	timercount += (double)count/44100 * 1000 * 100; // 10usec timer
+		//	decval = (int)(timercount);
+		//	timercount -= (double)decval;
+		//	cs->timercounter -= decval;
+		//	if(cs->timercounter < 0){
+		//		cs->timercounter = 3000;//cs->timer;
+		//		cs->intflag |= INt;
+		//		cs->reg.featurestatus |= PI;
+		//		pic_setirq(cs->dmairq);
+		//	}
+		//}
 	}
+		
 }
 

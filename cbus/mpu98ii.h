@@ -75,10 +75,6 @@ typedef struct {
 	MPUCMDS	cmd;
 	MPUTR	tr[8];
 	MPUCMDS	cond;
-	
-	UINT16 port2;
-	UINT8 irqnum2;
-	UINT16 port3;
 } _MPU98II, *MPU98II;
 
 
@@ -96,7 +92,6 @@ void mpu98ii_destruct(void);
 
 void mpu98ii_reset(const NP2CFG *pConfig);
 void mpu98ii_bind(void);
-
 
 void mpu98ii_callback(void);
 void mpu98ii_midipanic(void);
