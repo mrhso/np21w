@@ -115,7 +115,7 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 		return(FAILURE);
 	readlen = file_read(fh, (UINT8 *)(&footer) + sizeof(footer.Cookie), (UINT)(footerlen - sizeof(footer.Cookie)));
 	if (readlen < (VPCVHD_FPOS)(footerlen - sizeof(footer.Cookie)))
-		return(FALSE);
+		return(FAILURE);
 
 	// validate footer's checksum
 	checksum = LOADBEDWORD(footer.CheckSum);
@@ -123,7 +123,7 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 	mychecksum = vpc_calc_checksum((UINT8*)&footer,footerlen);
 	if (mychecksum != checksum) {
 		TRACEOUT(("vpc_vhd: bad checksum (file=%x, calc=%x)",checksum,mychecksum));
-		return(FALSE);
+		return(FAILURE);
 	}
 
 	formatversion = LOADBEDWORD(footer.FileFormatVersion);
@@ -134,11 +134,11 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 	if (formatversion != 0x00010000 || disktype != VPCVHD_DISK_FIXED) {
 		/* todo: support dynamic disk */
 		TRACEOUT(("vpc_vhd: unsupported vhd image"));
-		return(FALSE);
+		return(FAILURE);
 	}
 	totals = (UINT64)sectors * surfaces * cylinders;
 	if (totals == 0)
-		return(FALSE);
+		return(FAILURE);
 
 	/* QEMU hack */
 	if (!memcmp(footer.CreatorApplication, CookieVPCQEMUCreator, sizeof(footer.CreatorApplication)) && (totals * 512U + footerlen > (UINT64)vhdlen)) {
@@ -176,6 +176,6 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 		TRACEOUT(("vpc_vhd: vhd fixed image mounted (c=%u h=%u s=%u %luMbytes)", (unsigned)cylinders, (unsigned)surfaces, (unsigned)sectors, (unsigned long)(totals /2U / 1024U)));
 		return(SUCCESS);
 	}
-	return(FALSE);
+	return(FAILURE);
 }
 

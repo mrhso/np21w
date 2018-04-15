@@ -12,6 +12,7 @@
 #define IDD_NEWHDDDISK                  122
 #define IDD_NEWSASI                     123
 #define IDD_NEWDISK2                    124
+#define IDD_NEWHDDPROC                  125
 #define IDD_SCROPT1                     131
 #define IDD_SCROPT_FULLSCREEN           132
 #define IDD_SCROPT2                     133
@@ -80,6 +81,15 @@
 #define IDC_MAKE144                     12104
 #define IDC_HDDSIZE                     12201
 #define IDC_HDDLIMIT                    12202
+#define IDC_HDDADVANCED                 12203
+#define IDC_HDDADVANCED_C               12204
+#define IDC_HDDADVANCED_H               12205
+#define IDC_HDDADVANCED_S               12206
+#define IDC_HDDADVANCED_SS              12207
+#define IDC_HDDADVANCED_FIXSIZE         12210
+#define IDC_HDDADVANCED_DYNSIZE         12211
+#define IDC_HDDCREATE_PROGRESS          12290
+#define IDC_HDDCREATE_VAL	            12291
 #define IDC_NEWSASI5MB                  12301
 #define IDC_NEWSASI10MB                 12302
 #define IDC_NEWSASI15MB                 12303

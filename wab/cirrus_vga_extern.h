@@ -78,7 +78,7 @@
 #define TEST_ADDR		0xF0000000
 #define TEST_ADDR_SIZE	0//0x8000
 
-#define CIRRUS_MELCOWAB_OFS	0x0
+#define CIRRUS_MELCOWAB_OFS	0x2
 
 typedef	signed char		int8_t;
 typedef	unsigned char	uint8_t;

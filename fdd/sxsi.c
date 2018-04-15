@@ -247,6 +247,9 @@ static void cdchange_timeoutset(void) {
 	nevent_setbyms(NEVENT_CDWAIT, 5000, cdchange_timeoutproc, NEVENT_ABSOLUTE);
 }
 
+#ifdef SUPPORT_NVL_IMAGES
+BRESULT sxsihdd_nvl_open(SXSIDEV sxsi, const OEMCHAR *fname);
+#endif
 
 BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 
@@ -263,6 +266,12 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 				goto sxsiope_err;
 			}
 			r = sxsihdd_open(sxsi, fname);
+#ifdef SUPPORT_NVL_IMAGES
+			if (r == FAILURE)
+			{
+				r = sxsihdd_nvl_open(sxsi, fname);
+			}
+#endif
 			break;
 
 		case SXSIDEV_CDROM:

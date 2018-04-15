@@ -1212,6 +1212,9 @@
     <ClCompile Include="..\cbus\ct1745io.c">
       <Filter>ソース ファイル\cbus</Filter>
     </ClCompile>
+    <ClCompile Include="..\fdd\sxsihdd_nvl.c">
+      <Filter>ソース ファイル\fdd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">

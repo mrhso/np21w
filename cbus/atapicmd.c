@@ -1,6 +1,6 @@
 #include	"compiler.h"
 
-#if 0
+#if 1
 #undef	TRACEOUT
 #define	TRACEOUT(s)	(void)(s)
 #endif	/* 1 */
