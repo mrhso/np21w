@@ -611,6 +611,8 @@ static const PFTBL s_IniItems[] =
 	
 	PFVAL("SYSIOMSK", PFTYPE_HEX16,		&np2cfg.sysiomsk), // システムIOマスク
 	
+	PFMAX("MEMCHKMX", PFTYPE_UINT8,		&np2cfg.memchkmx,		0), // メモリチェックする最大サイズ（最小は15MB・0は制限無し・メモリチェックが長いのが嫌だけど見かけ上カウントだけはしておきたい人向け）
+	
 	// OS依存？
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),
 	PFVAL("F12_COPY", PFTYPE_UINT8,		&np2oscfg.F12COPY),
