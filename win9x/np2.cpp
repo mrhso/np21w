@@ -496,21 +496,68 @@ static void np2popup(HWND hWnd, LPARAM lp) {
 
 #ifdef SUPPORT_PHYSICAL_CDDRV
 static void np2updatemenu() {
+	static char drvMenuVisible[4][26] = {0}; // 実ドライブメニューの表示状態
+	char drvAvailable[26] = {0}; // 使える実ドライブ
+	
 	REG8 drv;
 	HMENU hMenu = np2class_gethmenu(g_hWndMain);
+	HMENU hMenuTgt;
+	int hMenuTgtPos;
+	MENUITEMINFO mii = {0};
+
+	DWORD dwDrive;
+	int nDrive;
+	TCHAR szBuff2[] = OEMTEXT("A:\\");
+
+	// 有効なCDドライブのドライブ文字を調べる
+	dwDrive = GetLogicalDrives();
+	for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
+		if ( dwDrive & (1 << nDrive) ){
+			szBuff2[0] = nDrive + 'A';
+			if(GetDriveType(szBuff2)==DRIVE_CDROM){
+				drvAvailable[nDrive] = 1;
+			}
+		}
+	}
+	szBuff2[2] = 0;
+#if defined(SUPPORT_IDEIO)
 	for (drv = 0x00; drv < 0x04; drv++)
 	{
-#if defined(SUPPORT_IDEIO)
-		if(np2cfg.idetype[drv]==SXSIDEV_CDROM)
-		{
-			EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_ENABLED);
+		int mnupos = 1;
+		if(menu_searchmenu(hMenu, IDM_IDE0OPEN+drv, &hMenuTgt, &hMenuTgtPos)){
+			// 一旦全部消す
+			for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
+				if(drvMenuVisible[drv][nDrive]){
+					DeleteMenu(hMenuTgt, IDM_IDE0PHYSICALDRV_ID0 + 26*drv + nDrive, MF_BYCOMMAND);
+					drvMenuVisible[drv][nDrive] = 0;
+				}
+			}
+			if(np2cfg.idetype[drv]==SXSIDEV_CDROM){
+				// 再追加
+				for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
+					if(drvAvailable[nDrive]){
+						TCHAR mnuText[200] = {0};
+						szBuff2[0] = nDrive + 'A';
+						if(!LoadString(g_hInstance, IDS_PHYSICALDRIVE, mnuText, sizeof(mnuText)/sizeof(mnuText[0]) - sizeof(szBuff2)/sizeof(szBuff2[0]))){
+							_tcscpy(mnuText, OEMTEXT("&Physical Drive "));
+						}
+						_tcscat(mnuText, szBuff2);
+						InsertMenu(hMenuTgt, mnupos++, MF_BYPOSITION, IDM_IDE0PHYSICALDRV_ID0 + 26*drv + nDrive, mnuText); 
+						drvMenuVisible[drv][nDrive] = 1;
+					}
+				}
+			}
 		}
-		else
-		{
-			EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_GRAYED);
-		}
-#endif
+		//if(np2cfg.idetype[drv]==SXSIDEV_CDROM)
+		//{
+		//	EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_ENABLED);
+		//}
+		//else
+		//{
+		//	EnableMenuItem(hMenu, IDM_IDE0PHYSICALDRV+drv, MF_BYCOMMAND|MFS_GRAYED);
+		//}
 	}	
+#endif
 }
 #endif
 
@@ -522,6 +569,18 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 
 	update = 0;
 	uID = LOWORD(wParam);
+#if defined(SUPPORT_IDEIO)
+#if defined(SUPPORT_PHYSICAL_CDDRV)
+	if(IDM_IDE0PHYSICALDRV_ID0 <= uID && uID < IDM_IDE0PHYSICALDRV_ID0 + 26*4){
+		TCHAR szBuff[] = OEMTEXT("\\\\.\\A:");
+		int idedrv = (uID - IDM_IDE0PHYSICALDRV_ID0) / 26;
+		int drvnum = (uID - IDM_IDE0PHYSICALDRV_ID0) % 26;
+		szBuff[4] = drvnum + 'A';
+		sysmng_update(SYS_UPDATEOSCFG);
+		diskdrv_setsxsi(idedrv, szBuff);
+	}
+#endif
+#endif
 	switch(uID)
 	{
 		case IDM_RESET:
@@ -701,66 +760,6 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuileave();
 			sysmng_updatecaption(1);
 			break;
-
-#ifdef SUPPORT_PHYSICAL_CDDRV
-		case IDM_IDE0PHYSICALDRV:
-		case IDM_IDE1PHYSICALDRV:
-		case IDM_IDE2PHYSICALDRV:
-		case IDM_IDE3PHYSICALDRV:
-			{
-				TCHAR   szBuff[] = OEMTEXT("\\\\.\\A:\\");
-				TCHAR   *szBuff2;
-				DWORD   dwDrive;
-				INT     nDrive;
-				int		totaldrv = 0;
-				
-				// CDドライブの数を調べる
-				szBuff2 = szBuff+4;
-				dwDrive = GetLogicalDrives();
-				for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
-					if ( dwDrive & (1 << nDrive) ){
-						szBuff2[0] = nDrive + 'A';
-						if(GetDriveType(szBuff2)==DRIVE_CDROM){
-							totaldrv++;
-						}
-					}
-				}
-				if(totaldrv==0){
-					// 実ドライブ無し
-				}else if(totaldrv==1){
-					// CDドライブ一つの場合、それを選択
-					szBuff[6] = 0; // 最後の\を削る
-					sysmng_update(SYS_UPDATEOSCFG);
-					diskdrv_setsxsi(uID - IDM_IDE0PHYSICALDRV, szBuff);
-				}else{
-					// 複数ドライブがある場合、暫定でメッセージボックス連発（選べないよりはマシということで･･･）
-					int button_id;
-					for ( nDrive = 0 ; nDrive < 26 ; nDrive++ ){
-						if ( dwDrive & (1 << nDrive) ){
-							szBuff2[0] = nDrive + 'A';
-							if(GetDriveType(szBuff2)==DRIVE_CDROM){
-								TCHAR msgbuf[200] = {0};
-								_stprintf_s(msgbuf, OEMTEXT("Mount Physical Drive \"%s\"?"), szBuff2);
-								button_id = MessageBox(NULL, msgbuf, OEMTEXT("Mount Physical Drive"), MB_YESNOCANCEL | MB_ICONQUESTION );
-								switch(button_id){
-								case IDYES:
-									szBuff[6] = 0; // 最後の\を削る
-									sysmng_update(SYS_UPDATEOSCFG);
-									diskdrv_setsxsi(uID - IDM_IDE0PHYSICALDRV, szBuff);
-									goto end_cddrvsel;
-								case IDNO:
-									break;
-								case IDCANCEL:
-									goto end_cddrvsel;
-								}
-							}
-						}
-					}
-end_cddrvsel:;
-				}
-			}
-			break;
-#endif
 #endif
 			
 		case IDM_IDE0STATE:

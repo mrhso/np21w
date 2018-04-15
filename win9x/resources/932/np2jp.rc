@@ -1049,7 +1049,6 @@ BEGIN
     POPUP "IDE #0"
     BEGIN
         MENUITEM "開く(&O)...",                 IDM_IDE0OPEN
-        MENUITEM "物理ドライブ(&P)...",         IDM_IDE0PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "取り外し(&R)...",             IDM_IDE0EJECT
         MENUITEM SEPARATOR
@@ -1058,7 +1057,6 @@ BEGIN
     POPUP "IDE #1"
     BEGIN
         MENUITEM "開く(&O)...",                 IDM_IDE1OPEN
-        MENUITEM "物理ドライブ(&P)...",         IDM_IDE1PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "取り外し(&R)...",             IDM_IDE1EJECT
         MENUITEM SEPARATOR
@@ -1067,7 +1065,6 @@ BEGIN
     POPUP "IDE #2"
     BEGIN
         MENUITEM "開く(&O)...",                 IDM_IDE2OPEN
-        MENUITEM "物理ドライブ(&P)...",         IDM_IDE2PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "取り出し(&E)...",             IDM_IDE2EJECT
         MENUITEM SEPARATOR
@@ -1076,7 +1073,6 @@ BEGIN
     POPUP "IDE #3"
     BEGIN
         MENUITEM "開く(&O)...",                 IDM_IDE3OPEN
-        MENUITEM "物理ドライブ(&P)...",         IDM_IDE3PHYSICALDRV,  GRAYED
         MENUITEM SEPARATOR
         MENUITEM "取り出し(&E)...",             IDM_IDE3EJECT
         MENUITEM SEPARATOR
@@ -1457,6 +1453,11 @@ BEGIN
     IDS_IDETYPE_NONE        "なし"
     IDS_IDETYPE_HDD         "HDD"
     IDS_IDETYPE_CDROM       "CD-ROM"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_PHYSICALDRIVE       "実ドライブ(&H) "
 END
 
 STRINGTABLE

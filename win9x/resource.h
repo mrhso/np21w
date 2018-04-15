@@ -381,6 +381,7 @@
 #define IDS_IDETYPE_NONE                30700
 #define IDS_IDETYPE_HDD                 30701
 #define IDS_IDETYPE_CDROM               30702
+#define IDS_PHYSICALDRIVE               30710
 #define IDS_FONTTITLE                   31001
 #define IDS_FONTEXT                     31002
 #define IDS_FONTFILTER                  31003
@@ -657,6 +658,8 @@
 #define IDM_COPYPASTE_PASTE             43210
 #define IDM_WABSYSMENU_RESETSIZE        43301
 #define IDM_WABSYSMENU_HALFTONE         43302
+#define IDM_IDE0PHYSICALDRV_ID0         43400 // size = 26*4
+#define IDM_IDE0PHYSICALDRV_LAST        43503
 
 // Next default values for new objects
 // 

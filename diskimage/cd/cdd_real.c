@@ -72,10 +72,8 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 	for(i=0;i<trks;i++){
 		if((tocCDROM.TrackData[i].Control & 0xC) == 0x4){
 			trk[i].adr_ctl		= TRACKTYPE_DATA;
-			//trk[i].sector_size	= sector_size;
 		}else{
 			trk[i].adr_ctl		= TRACKTYPE_AUDIO;
-			//trk[i].sector_size	= 2352;
 		}
 		trk[i].point			= tocCDROM.TrackData[i].TrackNumber;
 		trk[i].pos				= (msf2lba(LOADMOTOROLADWORD(tocCDROM.TrackData[i].Address)) - 150);
@@ -84,7 +82,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 		trk[i].sector_size	= sector_size;
 
 		trk[i].pregap_sector	= trk[i].pos;
-		trk[i].start_sector		= trk[i].pos;
+		//trk[i].start_sector		= trk[i].pos;
 		if(i==trks-1){
 			trk[i].end_sector		= totals;
 		}else{
@@ -102,15 +100,9 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 		trk[i].end_sec		= trk[i].end_sector;
 		trk[i].sectors		= trk[i].track_sectors;
 		
-		//if(i==0){
-			trk[i].pregap_offset	= trk[i].start_sector * trk[i].sector_size;
-			trk[i].start_offset		= trk[i].start_sector * trk[i].sector_size;
-			trk[i].end_offset		= trk[i].end_sector * trk[i].sector_size;
-		//}else{
-		//	trk[i].pregap_offset	= trk[i-1].end_offset + trk[i-1].sector_size;
-		//	trk[i].start_offset		= trk[i-1].end_offset + trk[i-1].sector_size;
-		//	trk[i].end_offset		= trk[i-1].end_offset + trk[i-1].sector_size + (trk[i].sectors-1) * trk[i].sector_size;
-		//}
+		trk[i].pregap_offset	= trk[i].start_sector * trk[i].sector_size;
+		trk[i].start_offset		= trk[i].start_sector * trk[i].sector_size;
+		trk[i].end_offset		= trk[i].end_sector * trk[i].sector_size;
 	}
 
 	//trk[0].adr_ctl			= TRACKTYPE_DATA;
@@ -136,7 +128,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 	//trk[0].track_sectors	= totals;
 	//trks = 1;
 
-	sxsi->totals = totals;
+	sxsi->totals = trk[trks-1].end_sector;
 
 	file_close(fh);
 
