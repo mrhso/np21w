@@ -47,6 +47,9 @@
 
 #include "compiler.h"
 
+#ifndef USE_FPU_ASM
+#ifdef USE_FPU
+
 #include <float.h>
 #include <math.h>
 #include "ia32/cpu.h"
@@ -58,8 +61,6 @@
 #undef	TRACEOUT
 #define	TRACEOUT(s)	(void)(s)
 #endif	/* 0 */
-
-#ifdef USE_FPU
 
 #define FPU_WORKCLOCK	6
 
@@ -248,7 +249,8 @@ static INLINE void FPU_SetTag(UINT16 tag)
 }
 
 static void FPU_FCLEX(void){
-	FPU_STATUSWORD &= 0xff00;			//should clear exceptions
+	//FPU_STATUSWORD &= 0xff00;			//should clear exceptions
+	FPU_STATUSWORD &= 0x7f00;			//should clear exceptions?
 }
 
 static void FPU_FNOP(void){
@@ -256,7 +258,7 @@ static void FPU_FNOP(void){
 }
 
 static void FPU_PUSH(double in){
-	FPU_STAT_TOP = (FPU_STAT_TOP - 1) &7;
+	FPU_STAT_TOP = (FPU_STAT_TOP - 1) & 7;
 	//actually check if empty
 	FPU_STAT.tag[FPU_STAT_TOP] = TAG_Valid;
 	FPU_STAT.reg[FPU_STAT_TOP].d = in;
@@ -265,7 +267,7 @@ static void FPU_PUSH(double in){
 }
 
 static void FPU_PREP_PUSH(void){
-	FPU_STAT_TOP = (FPU_STAT_TOP - 1) &7;
+	FPU_STAT_TOP = (FPU_STAT_TOP - 1) & 7;
 	FPU_STAT.tag[FPU_STAT_TOP] = TAG_Valid;
 }
 
@@ -520,13 +522,14 @@ static void FPU_FBST(UINT32 addr)
 #define isdenormal(x) (_fpclass(x) == _FPCLASS_ND || _fpclass(x) == _FPCLASS_PD)
 
 static void FPU_FADD(UINT op1, UINT op2){
-	// HACK: Set the denormal flag according to whether the source or final result is a denormalized number.
-	//       This is vital if we don't want certain DOS programs to mis-detect our FPU emulation as an IIT clone chip when cputype == 286
-	BOOL was_not_normal;
+	//// HACK: Set the denormal flag according to whether the source or final result is a denormalized number.
+	////       This is vital if we don't want certain DOS programs to mis-detect our FPU emulation as an IIT clone chip when cputype == 286
+	//BOOL was_not_normal;
 
-	was_not_normal = isdenormal(FPU_STAT.reg[op1].d);
-	FPU_STAT.reg[op1].d+=FPU_STAT.reg[op2].d;
-	FPU_SET_D(was_not_normal || isdenormal(FPU_STAT.reg[op1].d) || isdenormal(FPU_STAT.reg[op2].d));
+	//was_not_normal = isdenormal(FPU_STAT.reg[op1].d);
+	//FPU_STAT.reg[op1].d += FPU_STAT.reg[op2].d;
+	//FPU_SET_D(was_not_normal || isdenormal(FPU_STAT.reg[op1].d) || isdenormal(FPU_STAT.reg[op2].d));
+	FPU_STAT.reg[op1].d += FPU_STAT.reg[op2].d;
 	//flags and such :)
 	return;
 }
@@ -757,12 +760,14 @@ static void FPU_FSTENV(UINT32 addr)
 		fpu_memorywrite_w(addr+0,FPU_CTRLWORD);
 		fpu_memorywrite_w(addr+2,FPU_STATUSWORD);
 		fpu_memorywrite_w(addr+4,FPU_GetTag());
+		fpu_memorywrite_w(addr+10,FPU_LASTINSTOP);
 		break;
 		
 	case 0x100: case 0x101:
-		fpu_memorywrite_w(addr+0,FPU_CTRLWORD);
-		fpu_memorywrite_w(addr+4,FPU_STATUSWORD);
-		fpu_memorywrite_w(addr+8,(FPU_GetTag()));				
+		fpu_memorywrite_d(addr+0,(UINT32)(FPU_CTRLWORD));
+		fpu_memorywrite_d(addr+4,(UINT32)(FPU_STATUSWORD));
+		fpu_memorywrite_d(addr+8,(UINT32)(FPU_GetTag()));	
+		fpu_memorywrite_d(addr+20,FPU_LASTINSTOP);			
 		break;
 	}
 }
@@ -777,12 +782,14 @@ static void FPU_FLDENV(UINT32 addr)
 		FPU_SetCW(fpu_memoryread_w(addr+0));
 		FPU_STATUSWORD = fpu_memoryread_w(addr+2);
 		FPU_SetTag(fpu_memoryread_w(addr+4));
+		FPU_LASTINSTOP = fpu_memoryread_w(addr+10);
 		break;
 		
 	case 0x100: case 0x101:
-		FPU_SetCW(fpu_memoryread_w(addr+0));
-		FPU_STATUSWORD = fpu_memoryread_w(addr+4);
-		FPU_SetTag(fpu_memoryread_w(addr+8));			
+		FPU_SetCW((UINT16)fpu_memoryread_d(addr+0));
+		FPU_STATUSWORD = (UINT16)fpu_memoryread_d(addr+4);
+		FPU_SetTag((UINT16)fpu_memoryread_d(addr+8));
+		FPU_LASTINSTOP = (UINT16)fpu_memoryread_d(addr+20);		
 		break;
 	}
 }
@@ -1067,30 +1074,31 @@ ESC1(void)
 	{
 		switch (idx) {
 		case 0: /* FLD ST(0), ST(i) */
-		{
-			UINT reg_from;
+			{
+				UINT reg_from;
 			
-			TRACEOUT(("FLD STi"));
-			reg_from = FPU_ST(sub);
-			FPU_PREP_PUSH();
-			FPU_FST(reg_from, FPU_STAT_TOP);
+				TRACEOUT(("FLD STi"));
+				reg_from = FPU_ST(sub);
+				FPU_PREP_PUSH();
+				FPU_FST(reg_from, FPU_STAT_TOP);
+			}
 			break;
-		}
 
 		case 1:	/* FXCH ST(0), ST(i) */
-		TRACEOUT(("FXCH STi"));
-		FPU_FXCH(FPU_STAT_TOP,FPU_ST(sub));
-		break;
+			TRACEOUT(("FXCH STi"));
+			FPU_FXCH(FPU_STAT_TOP,FPU_ST(sub));
+			break;
 
 		case 2: /* FNOP */
-		TRACEOUT(("FNOP"));
-		FPU_FNOP();
-		break;
+			TRACEOUT(("FNOP"));
+			FPU_FNOP();
+			break;
 
 		case 3: /* FSTP STi */
-		TRACEOUT(("FSTP STi"));
-		FPU_FST(FPU_STAT_TOP,FPU_ST(sub));
-		break;
+			TRACEOUT(("FSTP STi"));
+			FPU_FST(FPU_STAT_TOP,FPU_ST(sub));
+			FPU_FPOP();
+			break;
 		
 		case 4:
 			switch (sub) {
@@ -1104,6 +1112,10 @@ ESC1(void)
 				FPU_FABS();
 				break;
 
+			case 0x2:  /* UNKNOWN */
+			case 0x3:  /* ILLEGAL */
+				break;
+
 			case 0x4:	/* FTST */
 				TRACEOUT(("FTST"));
 				FPU_FTST();
@@ -1112,6 +1124,10 @@ ESC1(void)
 			case 0x5:	/* FXAM */
 				TRACEOUT(("FXAM"));
 				FPU_FXAM();
+				break;
+
+			case 0x06:       /* FTSTP (cyrix)*/
+			case 0x07:       /* UNKNOWN */
 				break;
 			}
 			break;
@@ -1151,6 +1167,9 @@ ESC1(void)
 			case 0x6:	/* FLDZ */
 				TRACEOUT(("FLDZ"));
 				FPU_FLDZ();
+				break;
+				
+			case 0x07: /* ILLEGAL */
 				break;
 			}
 			break;
@@ -1255,6 +1274,9 @@ ESC1(void)
 			FPU_PREP_PUSH();
 			FPU_FLD_F32(madr,FPU_STAT_TOP);
 			break;
+			
+		case 1:	/* UNKNOWN */
+			break;
 
 		case 2:	/* FST (íPê∏ìxé¿êî) */
 			TRACEOUT(("FST float"));
@@ -1310,14 +1332,14 @@ ESC2(void)
 		switch (idx) {
 		case 5:
 			switch (sub) {
-				case 1: /* FUCOMPP */
+			case 1: /* FUCOMPP */
 				TRACEOUT(("FUCOMPP"));
 				FPU_FUCOM(FPU_STAT_TOP,FPU_ST(1));
 				FPU_FPOP();
 				FPU_FPOP();
 				break;
 				
-				default:
+			default:
 				break;
 			}
 			break;
@@ -1350,30 +1372,29 @@ ESC3(void)
 		switch (idx) {
 		case 4:
 			switch (sub) {
-				case 0:
-				case 1:
+			case 0: /* FNENI */
+			case 1: /* FNDIS */
 				break;
 				
-				case 2: /* FCLEX */
+			case 2: /* FCLEX */
 				TRACEOUT(("FCLEX"));
 				FPU_FCLEX();
 				break;
 				
-				case 3: /* FNINIT/FINIT */
+			case 3: /* FNINIT/FINIT */
 				TRACEOUT(("FNINIT/FINIT"));
 				fpu_init();
 				break;
 				
-				case 4:
-				case 5:
+			case 4: /* FNSETPM */
+			case 5: /* FRSTPM */
 				FPU_FNOP();
 				break;
 				
-				default:
+			default:
 				break;
 			}
 			break;
-			/*FALLTHROUGH*/
 		default:
 			break;
 		}
@@ -1384,6 +1405,16 @@ ESC3(void)
 			TRACEOUT(("FILD"));
 			FPU_PREP_PUSH();
 			FPU_FLD_I32(madr,FPU_STAT_TOP);
+			break;
+			
+		case 1:	/* FISTTP (DWORD) */
+			{
+				FP_RND oldrnd = FPU_STAT.round;
+				FPU_STAT.round = ROUND_Down;
+				FPU_FST_I32(madr);
+				FPU_STAT.round = oldrnd;
+			}
+			FPU_FPOP();
 			break;
 			
 		case 2:	/* FIST (DWORD) */
@@ -1585,12 +1616,14 @@ ESC6(void)
 		case 0:	/* FADDP */
 			TRACEOUT(("FADDP"));
 			FPU_FADD(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
 			break;
 		case 1:	/* FMULP */
 			TRACEOUT(("FMULP"));
 			FPU_FMUL(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
+			break;
+		case 2:	/* FCOMP5 */
+			TRACEOUT(("FCOMP5"));
+			FPU_FCOM(FPU_STAT_TOP,FPU_ST(sub));
 			break;
 		case 3: /* FCOMPP */
 			TRACEOUT(("FCOMPP"));
@@ -1599,32 +1632,28 @@ ESC6(void)
 			}
 			FPU_FCOM(FPU_STAT_TOP,FPU_ST(1));
 			FPU_FPOP(); /* extra pop at the bottom*/
-			FPU_FPOP();
 			break;			
 		case 4:	/* FSUBRP */
 			TRACEOUT(("FSUBRP"));
 			FPU_FSUBR(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
 			break;
 		case 5:	/* FSUBP */
 			TRACEOUT(("FSUBP"));
 			FPU_FSUB(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
 			break;
 		case 6:	/* FDIVRP */
 			TRACEOUT(("FDIVRP"));
 			FPU_FDIVR(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
 			break;
 		case 7:	/* FDIVP */
 			TRACEOUT(("FDIVP"));
 			FPU_FDIV(FPU_ST(sub),FPU_STAT_TOP);
-			FPU_FPOP();
 			break;
 			/*FALLTHROUGH*/
 		default:
 			break;
 		}
+		FPU_FPOP();
 	} else {
 		madr = calc_ea_dst(op);
 		FPU_FLD_I16_EA(madr);
@@ -1667,13 +1696,13 @@ ESC7(void)
 		case 4:
 			switch (sub)
 			{
-				case 0: /* FSTSW AX */
+			case 0: /* FSTSW AX */
 				TRACEOUT(("FSTSW AX"));
 				FPU_SET_TOP(FPU_STAT_TOP);
 				CPU_AX = FPU_STATUSWORD;
 				break;
 				
-				default:
+			default:
 				break;
 			}
 			break;
@@ -1879,4 +1908,5 @@ ESC7(void)
 }
 
 
+#endif
 #endif

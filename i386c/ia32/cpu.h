@@ -205,6 +205,9 @@ typedef struct {
 
 typedef struct {
 	UINT16		control; // 制御レジスター
+#ifdef USE_FPU_ASM
+	UINT16		cw_mask_all; // 制御レジスターmask
+#endif
 	UINT16		status; // ステータスレジスター
 	UINT16		op; // オペコードレジスター
 	UINT16		tag; // タグワードレジスター
@@ -261,12 +264,29 @@ typedef union {
 } FP_REG;
 
 typedef struct {
+    UINT32 m1;
+    UINT32 m2;
+    UINT16 m3;
+	
+    UINT16 d1;
+    UINT32 d2;
+} FP_P_REG;
+
+typedef struct {
+#ifdef USE_FPU_ASM
+	unsigned int top;
+#else
 	UINT8		top;
+#endif
 	UINT8		pc;
 	UINT8		rc;
 	UINT8		dmy[1];
 
+#ifdef USE_FPU_ASM
+	FP_P_REG	p_reg[FPU_REG_NUM+1]; // R0 to R7	
+#else
 	FP_REG		reg[FPU_REG_NUM+1]; // R0 to R7	
+#endif
 	FP_TAG		tag[FPU_REG_NUM+1]; // R0 to R7
 	FP_RND		round;
 } FPU_STAT;
@@ -713,6 +733,7 @@ void dbg_printf(const char *str, ...);
  */
 #define	FPU_REGS		CPU_STATSAVE.fpu_regs
 #define	FPU_CTRLWORD		FPU_REGS.control
+#define	FPU_CTRLWORDMASK	FPU_REGS.cw_mask_all
 #define	FPU_STATUSWORD		FPU_REGS.status
 #define	FPU_INSTPTR		FPU_REGS.inst
 #define	FPU_DATAPTR		FPU_REGS.data

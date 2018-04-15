@@ -2463,7 +2463,8 @@ void unloadNP2INI(){
 #ifdef SUPPORT_NET
 	//np2net_shutdown();
 #endif
-
+	
+	sxsi_alltrash();
 	//pccore_term();
 
 	CSoundMng::GetInstance()->Close();

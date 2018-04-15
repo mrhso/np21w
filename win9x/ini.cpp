@@ -612,6 +612,8 @@ static const PFTBL s_IniItems[] =
 	PFVAL("SYSIOMSK", PFTYPE_HEX16,		&np2cfg.sysiomsk), // システムIOマスク
 	
 	PFMAX("MEMCHKMX", PFTYPE_UINT8,		&np2cfg.memchkmx,		0), // メモリチェックする最大サイズ（最小は15MB・0は制限無し・メモリチェックが長いのが嫌だけど見かけ上カウントだけはしておきたい人向け）
+	PFMAX("SBEEPLEN", PFTYPE_UINT8,		&np2cfg.sbeeplen,		0), // ピポ音の長さ（0でデフォルト・4がNP2標準）
+	PFMAX("SBEEPADJ", PFTYPE_BOOL,		&np2cfg.sbeepadj,		0), // ピポ音の長さ自動調整
 	
 	// OS依存？
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),

@@ -122,7 +122,8 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_CL_GD5430)
 				0, 0x5B, 0,
 #endif
-				0, 0xff00, 0,
+				0, 0xff00, 
+				0, 0, 0,
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,

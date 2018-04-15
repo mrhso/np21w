@@ -1263,6 +1263,9 @@
     <ClCompile Include="..\sound\mame\ymf262.c">
       <Filter>ソース ファイル\sound\mame</Filter>
     </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox_asm.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\fpu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">

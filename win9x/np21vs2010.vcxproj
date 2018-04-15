@@ -325,8 +325,8 @@
     <ClCompile Include="..\i386c\ia32\instructions\fpu.c" />
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpdummy.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -334,7 +334,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c" />
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c">
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Precise</FloatingPointModel>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precise</FloatingPointModel>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotSet</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox_asm.c">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precise</FloatingPointModel>
+      <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</FloatingPointExceptions>
+    </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\logic_arith.c" />
     <ClCompile Include="..\i386c\ia32\instructions\misc_inst.c" />
     <ClCompile Include="..\i386c\ia32\instructions\seg_reg.c" />
