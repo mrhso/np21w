@@ -386,7 +386,7 @@ static const FSELPRM fddprm = {fddtitle, diskfilter, fddext};
 static const FSELPRM sasiprm = {hddtitle, diskfilter, sasiext};
 
 #if defined(SUPPORT_SCSI)
-static const OEMCHAR scsiext[] = OEMTEXT("hdd\0");
+static const OEMCHAR scsiext[] = OEMTEXT("hdd\0") OEMTEXT("hdn\0");
 static const FSELPRM scsiprm = {hddtitle, diskfilter, scsiext};
 #endif
 

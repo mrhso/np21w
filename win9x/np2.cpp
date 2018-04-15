@@ -113,7 +113,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 		NP2OSCFG	np2oscfg = {
 						OEMTEXT(PROJECTNAME) OEMTEXT(PROJECTSUBNAME),
 						OEMTEXT("NP2"),
-						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 0, 0, 1, 0, 0,
+						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 0, 0, 1, 0, 1,
 						0, 0, KEY_UNKNOWN, 0,
 						0, 0, 0, {1, 2, 2, 1},
 						{5, 0, 0x3e, 19200,
@@ -2444,7 +2444,7 @@ void unloadNP2INI(){
 	//np2net_shutdown();
 #endif
 
-	pccore_term();
+	//pccore_term();
 
 	CSoundMng::GetInstance()->Close();
 	CSoundMng::Deinitialize();
