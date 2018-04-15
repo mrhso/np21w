@@ -1,0 +1,10 @@
+hostdrv_initialize PM=0
+hzbase/clockbase = 882/1376256 PM=0
+use simulate ide.rom PM=0
+softkbd_led(0) PM=0
+load pc98bank3.bin PM=0
+hostdrv_deinitialize PM=0
+hostdrv_initialize PM=0
+softkbd_led(0) PM=0
+softkbd_led(0) PM=0
+hostdrv_deinitialize PM=0
