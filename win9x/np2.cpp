@@ -1074,6 +1074,12 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			dialog_writebmp(hWnd);
 			winuileave();
 			break;
+			
+		case IDM_TXTSAVE:
+			winuienter();
+			dialog_writetxt(hWnd);
+			winuileave();
+			break;
 
 		case IDM_S98LOGGING:
 			winuienter();

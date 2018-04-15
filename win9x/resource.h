@@ -245,6 +245,8 @@
 #define IDC_IDE2TYPE                    19101
 #define IDC_IDE3TYPE                    19102
 #define IDC_IDE4TYPE                    19103
+#define IDC_IDEWWAIT                    19104
+#define IDC_SPINIDEWWAIT				19105
 #define IDS_APP_NAME2                   30001
 #define IDS_APP_NAME21                  30002
 #define IDS_FILENAME_HELP               30003
@@ -382,6 +384,9 @@
 #define IDS_SKINTITLE                   31101
 #define IDS_SKINEXT                     31102
 #define IDS_SKINFILTER                  31103
+#define IDS_TXTTITLE                    31111
+#define IDS_TXTEXT                      31112
+#define IDS_TXTFILTER                   31113
 #define IDM_TOOLWIN                     40001
 #define IDM_KEYDISP                     40002
 #define IDM_SOFTKBD                     40003
@@ -547,6 +552,7 @@
 #define IDM_HELP                        40712
 #define IDM_ABOUT                       40713
 #define IDM_ITFWORK                     40714
+#define IDM_TXTSAVE                     40715
 #define IDM_ALTENTER                    40721
 #define IDM_ALTF4                       40722
 #define IDM_SYSKHOOK                    40729

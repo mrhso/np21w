@@ -70,7 +70,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0, 0, 0,
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
-				128, 0x00, 0,
+				128, 0x00, 0, 0, 
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},

@@ -73,6 +73,9 @@ typedef struct {
 	UINT8	bank[2];
 	UINT8	daplaying;
 	UINT8	padding;
+	UINT8   bios;
+	TCHAR   biosname[16];
+	UINT8   wwait;
 	_IDEDEV	dev[2];
 } IDEIO;
 
@@ -89,7 +92,10 @@ enum {
 	IDEDIR_IN			= 2,
 
 	IDETC_TRANSFEREND	= 0,
-	IDETC_ATAPIREAD		= 1
+	IDETC_ATAPIREAD		= 1,
+
+	IDETC_NOBIOS        = 0,
+	IDETC_BIOS			= 1
 };
 
 // error
@@ -180,6 +186,7 @@ UINT32 IOINPCALL ideio_r32(UINT port);
 void ideio_reset(const NP2CFG *pConfig);
 void ideio_bind(void);
 void ideio_notify(REG8 sxsidrv, UINT action);
+void ideioint(NEVENTITEM item);
 
 #ifdef __cplusplus
 }

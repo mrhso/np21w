@@ -156,6 +156,49 @@ static void setintr(IDEDRV drv) {
 	}
 }
 
+// 遅延付き割り込み（IDE BIOSは遅延があることが前提？）
+static void setdintr(IDEDRV drv, UINT8 errno, UINT8 status) {
+
+	if (!(drv->ctrl & IDECTRL_NIEN)) {
+		//drv->status |= IDESTAT_BSY;
+		ideio.bank[0] = ideio.bank[1] | 0x80;           // ????
+		TRACEOUT(("ideio: reg setdintr()"));
+
+		// 指定した時間遅延
+		if(ideio.bios == IDETC_BIOS){
+			nevent_set(NEVENT_SASIIO, max(20000, np2cfg.idewwait), ideioint, NEVENT_ABSOLUTE);
+		}else{
+			nevent_set(NEVENT_SASIIO, np2cfg.idewwait, ideioint, NEVENT_ABSOLUTE);
+		}
+	}
+}
+
+void ideioint(NEVENTITEM item) {
+
+	IDEDEV  dev;
+
+	//ドライブがあるか
+	dev = getidedev();
+	if (dev == NULL) {
+		return;
+	}
+
+	//BUSY解除
+	if(dev->drv[0].status != 0xFF){
+		dev->drv[0].status &= ~IDESTAT_BSY;
+	}
+	if(dev->drv[1].status != 0xFF){
+		dev->drv[1].status &= ~IDESTAT_BSY;
+	}
+
+	//割り込み実行(割り込みはドライブ毎には指定できない仕様)
+	if(!(dev->drv[0].ctrl & IDECTRL_NIEN) || !(dev->drv[1].ctrl & IDECTRL_NIEN)){
+		TRACEOUT(("ideio: run setdintr()"));
+		pic_setirq(IDE_IRQ);
+	}
+   (void)item;
+}
+
 static void cmdabort(IDEDRV drv) {
 
 	TRACEOUT(("ideio: cmdabort()"));
@@ -178,7 +221,8 @@ static void drvreset(IDEDRV drv) {
 		drv->sc = 0x01;
 		drv->sn = 0x01;
 		drv->cy = 0x0000;
-		drv->status = IDESTAT_DRDY;
+		//drv->status = IDESTAT_DRDY;
+		drv->status = IDESTAT_DRDY | IDESTAT_DSC;
 	}
 }
 
@@ -290,7 +334,12 @@ static void writesec(IDEDRV drv) {
 	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
 		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 		drv->error = 0;
-		setintr(drv);
+		//setintr(drv);
+		if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
+			setdintr(drv, 0, 0);
+		}else{
+			setintr(drv);
+		}
 	}
 	return;
 
@@ -630,9 +679,13 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xe1:		// idle immediate
 			TRACEOUT(("ideio: idle immediate dr = %.2x", drv->dr));
-			//drv->status = drv->status & ~0x20;
-			//drv->error = 0;
-			//cmdabort(drv);
+			//必ず成功するはず
+			if(drv->status & IDESTAT_DRDY){
+				drv->status = IDESTAT_DRDY | IDESTAT_DSC;
+				drv->error = 0;
+				setintr(drv);
+			}
+			cmdabort(drv);
 			break;
 			
 		case 0xe5:		// Check power mode
@@ -712,9 +765,17 @@ static void IOOUTCALL ideio_o74c(UINT port, REG8 dat) {
 				dev->drv[0].status = IDESTAT_DRDY | IDESTAT_DSC;
 				dev->drv[0].error = IDEERR_AMNF;
 			}
+			if (dev->drv[0].device == IDETYPE_CDROM) {
+				dev->drv[0].status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_ERR;
+				dev->drv[0].error = IDEERR_AMNF;
+			}
 			drvreset(&dev->drv[1]);
 			if (dev->drv[1].device == IDETYPE_HDD) {
 				dev->drv[1].status = IDESTAT_DRDY | IDESTAT_DSC;
+				dev->drv[1].error = IDEERR_AMNF;
+			}
+			if (dev->drv[1].device == IDETYPE_CDROM) {
+				dev->drv[1].status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_ERR;
 				dev->drv[1].error = IDEERR_AMNF;
 			}
 		}
@@ -947,10 +1008,12 @@ static void IOOUTCALL ideio_o1e8e(UINT port, REG8 dat) {
 
 void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 
+	IDEDEV  dev;
 	IDEDRV	drv;
 	UINT8	*p;
 	FILEPOS	sec;
 
+	dev = getidedev();
 	drv = getidedrv();
 	if ((drv != NULL) &&
 		(drv->status & IDESTAT_DRQ) && (drv->bufdir == IDEDIR_OUT)) {
@@ -962,6 +1025,11 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 		drv->bufpos += 2;
 		if (drv->bufpos >= drv->bufsize) {
 			drv->status &= ~IDESTAT_DRQ;
+			if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
+				//割り込み前にポーリングされる問題の対策
+				dev->drv[0].status |= IDESTAT_BSY;
+				dev->drv[1].status |= IDESTAT_BSY;
+			}
 			switch(drv->cmd) {
 				case 0x30:
 				case 0x31:
@@ -975,13 +1043,28 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						break;
 					}
 					drv->mulcnt++;
-					incsec(drv);
+					//incsec(drv);
 					drv->sc--;
-					if (drv->sc) {
-						writesec(drv);
-					}else{
-						setintr(drv);
+					//if (drv->sc) {
+					//	writesec(drv);
+					//}else{
+					//	setintr(drv);
+					//}
+					if (!drv->sc) {
+						//カウントが終わったらDRQを消す
+						drv->bufpos = 0;
+						drv->error = 0;
+						if(ideio.bios == IDETC_BIOS || ideio.wwait > 0){
+							setdintr(drv, 0, 0);
+						}else{
+							setintr(drv);
+						}
+						break;
 					}
+
+					//次セクタ書き込み準備
+					incsec(drv);
+					writesec(drv);
 					break;
 
 				case 0xa0:
@@ -1156,37 +1239,36 @@ void ideio_reset(const NP2CFG *pConfig) {
 	FILEH	fh;
 	REG8	i;
 	IDEDRV	drv;
+	TCHAR tmpbiosname[16];
 
 	ZeroMemory(&ideio, sizeof(ideio));
 	for (i=0; i<4; i++) {
 		drv = ideio.dev[i >> 1].drv + (i & 1);
 		devinit(drv, i);
-		//drv->ctrl = drv->ctrl & ~IDECTRL_SRST;
-		//drv->status = drv->status & ~0x0d;
-		//drv->error = 0x01;
 	}
-	//ideio.dev[0].drv[0].ctrl = ideio.dev[0].drv[0].ctrl & ~IDECTRL_SRST;
-	//ideio.dev[0].drv[1].ctrl = ideio.dev[0].drv[1].ctrl & ~IDECTRL_SRST;
-	//ideio.dev[1].drv[0].ctrl = ideio.dev[0].drv[0].ctrl & ~IDECTRL_SRST;
-	//ideio.dev[1].drv[1].ctrl = ideio.dev[0].drv[1].ctrl & ~IDECTRL_SRST;
 	
-	//memset(mem + 0x0d8000, 0xcb, 0x2000);
-	getbiospath(path, OEMTEXT("ide.rom"), NELEMENTS(path));
+	ideio.wwait = np2cfg.idewwait;
+	ideio.bios = IDETC_NOBIOS;
+
+	_tcscpy(tmpbiosname, OEMTEXT("ide.rom"));
+	getbiospath(path, tmpbiosname, NELEMENTS(path));
 	fh = file_open_rb(path);
 	if (fh == FILEH_INVALID) {
-		getbiospath(path, OEMTEXT("d8000.rom"), NELEMENTS(path));
+		_tcscpy(tmpbiosname, OEMTEXT("d8000.rom"));
+		getbiospath(path, tmpbiosname, NELEMENTS(path));
 		fh = file_open_rb(path);
 	}
 	if (fh == FILEH_INVALID) {
-		getbiospath(path, OEMTEXT("bank3.bin"), NELEMENTS(path));
+		_tcscpy(tmpbiosname, OEMTEXT("bank3.bin"));
+		getbiospath(path, tmpbiosname, NELEMENTS(path));
 		fh = file_open_rb(path);
 	}
 	if (fh != FILEH_INVALID) {
 		// IDE BIOS
 		if (file_read(fh, mem + 0x0d8000, 0x2000) == 0x2000) {
-			//STOREINTELWORD(mem + 0x0d8009, 0);
+			ideio.bios = IDETC_BIOS;
 			TRACEOUT(("load ide.rom"));
-			//memset(mem + 0x0da000, 0x00, 0x2000);
+			_tcscpy(ideio.biosname, tmpbiosname);
 		}else{
 			CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
 			TRACEOUT(("use simulate ide.rom"));
@@ -1196,66 +1278,6 @@ void ideio_reset(const NP2CFG *pConfig) {
 		CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
 		TRACEOUT(("use simulate ide.rom"));
 	}
-	//CopyMemory(mem + 0xd0000, idebios, sizeof(idebios));
-	//CopyMemory(mem + 0xd8000, idebios, sizeof(idebios));
-	//
-	//getbiospath(path, OEMTEXT("test.bin"), NELEMENTS(path));
-	//fh = file_open_rb(path);
-	//if (fh != FILEH_INVALID) {
-	//	// IDE BIOS
-	//	if (file_read(fh, mem + 0x0dA000, 0x2000) == 0x2000) {
-	//		//STOREINTELWORD(mem + 0x0d8009, 0);
-	//		TRACEOUT(("load test.bin"));
-	//	}
-	//	file_close(fh);
-	//}
-	//
-	//{
-	//	OEMCHAR	path[MAX_PATH];
-	//	FILEH	fh;
-	//	getbiospath(path, OEMTEXT("test2.bin"), NELEMENTS(path));
-	//	fh = file_open_rb(path);
-	//	if (fh != FILEH_INVALID) {
-	//		// IDE BIOS
-	//		if (file_read(fh, mem + 0x000390, 0x50) == 0x50) {
-	//			//STOREINTELWORD(mem + 0x0d8009, 0);
-	//			TRACEOUT(("load test2.bin"));
-	//		}
-	//		file_close(fh);
-	//	}
-	//}
-	//
-	//mem[0x457] |= 0x97;
-	//mem[0x457] |= 0xd2;
-	////
-	////mem[0x4b0] |= 0xd0;
-	////mem[0x4b8] |= 0xd0;
-
-	//mem[0x4b0] |= 0xd8;
-	//mem[0x4b8] |= 0xd8;
-
-	//mem[0x4d8] |= 0xea;
-	//mem[0x4d9] |= 0xaa;
-	//mem[0x4da] |= 0xaa;
-	//mem[0x4db] |= 0xaa;
-	//
-	//mem[0x5a9] |= 0xf3;
-	//mem[0x5aa] |= 0x6d;
-	//mem[0x5ab] |= 0xcb;
-	//mem[0x5b0] |= 0xff;
-	//mem[0x5ba] |= 0x03;
-	//
-	//mem[0x44] |= 0x7D;
-	//mem[0x45] |= 0x1A;
-	//mem[0x46] |= 0x00;
-	//mem[0x47] |= 0xD8;
-
-	//mem[0x5e8] |= 0x8F;
-	//mem[0x5e9] |= 0x07;
-	//mem[0x5eb] |= 0xD8;
-	//mem[0x5ec] |= 0x8F;
-	//mem[0x5ed] |= 0x07;
-	//mem[0x5ef] |= 0xD8;
 	(void)pConfig;
 }
 

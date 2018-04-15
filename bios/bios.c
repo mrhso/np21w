@@ -174,6 +174,10 @@ static void bios_reinitbyswitch(void) {
 #if defined(SUPPORT_IDEIO)
 	mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 						  (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
+	mem[0x0457] = (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x42 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x90 : 0x0);
+	//mem[0x045D] |= 0x0C;
+	//mem[0x045E] |= 0x60;
+	mem[0x0481] |= 0x03;
 #endif
 	mem[0xF8E80+0x0011] = mem[0xF8E80+0x0011] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
 	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number

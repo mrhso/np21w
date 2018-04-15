@@ -44,6 +44,7 @@ private:
 	CComboData m_cmbps;			//!< プライマリ スレーブ
 	CComboData m_cmbsm;			//!< セカンダリ マスタ
 	CComboData m_cmbss;			//!< セカンダリ スレーブ
+	CWndProc m_nudwwait;		//!< 割り込み（書き込み）ディレイ
 };
 
 /**
@@ -72,6 +73,7 @@ CIdeDlg::CIdeDlg(HWND hwndParent)
  */
 BOOL CIdeDlg::OnInitDialog()
 {
+	TCHAR numbuf[31];
 	m_cmbpm.SubclassDlgItem(IDC_IDE1TYPE, this);
 	m_cmbpm.Add(s_type, _countof(s_type));
 	m_cmbpm.SetCurItemData(np2cfg.idetype[0]);
@@ -87,6 +89,10 @@ BOOL CIdeDlg::OnInitDialog()
 	m_cmbss.SubclassDlgItem(IDC_IDE4TYPE, this);
 	m_cmbss.Add(s_type, _countof(s_type));
 	m_cmbss.SetCurItemData(np2cfg.idetype[3]);
+	
+	m_nudwwait.SubclassDlgItem(IDC_IDEWWAIT, this);
+	_stprintf(numbuf, _T("%d"), np2cfg.idewwait);
+	m_nudwwait.SetWindowTextW(numbuf);
 
 	m_cmbpm.SetFocus();
 
@@ -99,6 +105,8 @@ BOOL CIdeDlg::OnInitDialog()
 void CIdeDlg::OnOK()
 {
 	UINT update = 0;
+	UINT32 valtmp;
+	TCHAR numbuf[31];
 
 	if (m_cmbpm.GetCurItemData(np2cfg.idetype[0])!=np2cfg.idetype[0])
 	{
@@ -119,6 +127,15 @@ void CIdeDlg::OnOK()
 	{
 		np2cfg.idetype[3] = m_cmbss.GetCurItemData(np2cfg.idetype[3]);
 		update |= SYS_UPDATECFG | SYS_UPDATEHDD;
+	}
+	m_nudwwait.GetWindowTextW(numbuf, 30);
+	valtmp = _ttol(numbuf);
+	if (valtmp < 0) valtmp = 0;
+	if (valtmp > 10000000) valtmp = 10000000;
+	if (valtmp != np2cfg.idewwait)
+	{
+		np2cfg.idewwait = valtmp;
+		update |= SYS_UPDATECFG;
 	}
 	sysmng_update(update);
 
@@ -153,6 +170,32 @@ BOOL CIdeDlg::OnCommand(WPARAM wParam, LPARAM lParam)
  */
 LRESULT CIdeDlg::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
+	LPNMUPDOWN lpnud;
+	UINT32 nudnum;
+	TCHAR numbuf[31];
+	switch(wParam)
+	{
+		case IDC_SPINIDEWWAIT:
+			lpnud = (LPNMUPDOWN)lParam;
+			if(lpnud->hdr.code == UDN_DELTAPOS)
+			{
+				m_nudwwait.GetWindowTextW(numbuf, 30);
+				nudnum = _ttol(numbuf);
+				if(lpnud->iDelta > 0)
+				{
+					if(nudnum <= 0) nudnum = 0;
+					else nudnum--;
+				}
+				else if(lpnud->iDelta < 0)
+				{
+					if(nudnum >= 10000000) nudnum = 10000000;
+					else nudnum++;
+				}
+				_stprintf(numbuf, _T("%d"), nudnum);
+				m_nudwwait.SetWindowTextW(numbuf);
+			}
+	}
+
 	return CDlgProc::WindowProc(nMsg, wParam, lParam);
 }
 

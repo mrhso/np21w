@@ -11,6 +11,9 @@ void dialog_about(HWND hwndParent);
 // d_bmp.cpp
 void dialog_writebmp(HWND hWnd);
 
+// d_txt.cpp
+void dialog_writetxt(HWND hWnd);
+
 // d_clnd.cpp
 void dialog_calendar(HWND hwndParent);
 

@@ -8,6 +8,9 @@
 #include	"fmboard.h"
 #include	"np2info.h"
 #include "sound/soundrom.h"
+#if defined(SUPPORT_IDEIO)
+#include	"ideio.h"
+#endif
 
 static const OEMCHAR str_comma[] = OEMTEXT(", ");
 static const OEMCHAR str_2halfMHz[] = OEMTEXT("2.5MHz");
@@ -302,6 +305,14 @@ static void info_bios(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 		}
 		milstr_ncat(str, soundrom.name, maxlen);
 	}
+#if defined(SUPPORT_IDEIO)
+	if (ideio.bios) {
+		if (str[0]) {
+			milstr_ncat(str, str_comma, maxlen);
+		}
+		milstr_ncat(str, ideio.biosname, maxlen);
+	}
+#endif
 	if (str[0] == '\0') {
 		milstr_ncat(str, str_notexist, maxlen);
 	}

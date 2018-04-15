@@ -509,6 +509,7 @@
     <ClCompile Include="dialog\d_serial.cpp" />
     <ClCompile Include="dialog\d_sound.cpp" />
     <ClCompile Include="dialog\d_soundlog.cpp" />
+    <ClCompile Include="dialog\d_txt.cpp" />
     <ClCompile Include="dialog\d_wab.cpp" />
     <ClCompile Include="dialog\np2class.cpp" />
     <ClCompile Include="dosio.cpp" />
