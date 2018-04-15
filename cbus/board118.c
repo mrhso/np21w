@@ -500,6 +500,8 @@ void board118_reset(const NP2CFG *pConfig)
 		//g_sb16.dmairq = 0x5;
 #endif
 #endif
+		//cs4231.extfunc = 0x01;
+		//extendchannel((REG8)(cs4231.extfunc & 1));
 	}
 	(void)pConfig;
 }

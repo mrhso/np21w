@@ -916,9 +916,9 @@ static REG8 IOINPCALL ideio_i644(UINT port) {
 	if (drv) {
 		UINT8 ret = drv->sc;
 		TRACEOUT(("ideio get SC %.2x [%.4x:%.8x]", drv->sc, CPU_CS, CPU_EIP));
-		if (drv->device == IDETYPE_CDROM && drv->cmd == 0xa0) {
-			drv->sc = 7; // ????
-		}
+		//if (drv->device == IDETYPE_CDROM && drv->cmd == 0xa0) {
+		//	drv->sc = 7; // ????
+		//}
 		return(ret);
 	}
 	else {
@@ -1196,8 +1196,8 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 						break;
 					}
 					drv->sc = IDEINTR_IO | IDEINTR_CD;
-					drv->status &= ~(IDESTAT_BSY | IDESTAT_SERV | IDESTAT_CHK);
-					drv->status |= IDESTAT_DRDY;
+					drv->status &= ~(IDESTAT_BSY | IDESTAT_SERV | IDESTAT_CHK | IDESTAT_DRQ); // clear DRQ bit np21w ver0.86 rev38
+					drv->status |= IDESTAT_DRDY | IDESTAT_DSC;
 					drv->error = 0;
 					setintr(drv);
 					break;
