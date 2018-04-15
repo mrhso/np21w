@@ -40,7 +40,7 @@ void CDebugUtyView::Initialize(HINSTANCE hInstance)
 	np2vc.lpfnWndProc = ::DefWindowProc;
 	np2vc.cbClsExtra = 0;
 	np2vc.cbWndExtra = 0;
-	np2vc.hInstance = hInstance;
+	np2vc.hInstance = sm_hInstance;//hInstance; // XXX: 言語リソースを使うとデバッグユーティリティが表示できなくなるのをごまかす np21w ver0.86 rev13
 	np2vc.hIcon = ::LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	np2vc.hCursor = ::LoadCursor(NULL, IDC_ARROW);
 	np2vc.hbrBackground = static_cast<HBRUSH>(NULL);

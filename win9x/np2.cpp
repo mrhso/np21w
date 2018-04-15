@@ -130,7 +130,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0, 0
+						0, 0, 0, 1, 0, 1, 1
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -683,16 +683,12 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			break;
 
 		case IDM_ROLLEFT:
-//#ifndef SUPPORT_PC9821 // XXX: 再び動くようにしたい
 			changescreen((g_scrnmode & (~SCRNMODE_ROTATEMASK)) | SCRNMODE_ROTATELEFT);
 			break;
-//#endif
 
 		case IDM_ROLRIGHT:
-//#ifndef SUPPORT_PC9821 // XXX: 再び動くようにしたい
 			changescreen((g_scrnmode & (~SCRNMODE_ROTATEMASK)) | SCRNMODE_ROTATERIGHT);
 			break;
-//#endif
 
 		case IDM_DISPSYNC:
 			np2cfg.DISPSYNC = !np2cfg.DISPSYNC;
@@ -994,6 +990,46 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
 			update |= SYS_UPDATECFG;
 			break;
+			
+		case IDM_MOUSERAW:
+			np2oscfg.rawmouse = !np2oscfg.rawmouse;
+			mousemng_updateclip(); // キャプチャし直す
+			break;
+			
+		case IDM_MOUSE30X:
+			np2oscfg.mousemul = 3;
+			np2oscfg.mousediv = 1;
+			break;
+
+		case IDM_MOUSE20X:
+			np2oscfg.mousemul = 2;
+			np2oscfg.mousediv = 1;
+			break;
+
+		case IDM_MOUSE15X:
+			np2oscfg.mousemul = 3;
+			np2oscfg.mousediv = 2;
+			break;
+
+		case IDM_MOUSE10X:
+			np2oscfg.mousemul = 1;
+			np2oscfg.mousediv = 1;
+			break;
+
+		case IDM_MOUSED2X:
+			np2oscfg.mousemul = 1;
+			np2oscfg.mousediv = 2;
+			break;
+
+		case IDM_MOUSED3X:
+			np2oscfg.mousemul = 1;
+			np2oscfg.mousediv = 3;
+			break;
+
+		case IDM_MOUSED4X:
+			np2oscfg.mousemul = 1;
+			np2oscfg.mousediv = 4;
+			break;
 
 		case IDM_SERIAL1:
 			winuienter();
@@ -1058,6 +1094,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 
 		case IDM_ALTF4:
 			np2oscfg.shortcut ^= 2;
+			update |= SYS_UPDATECFG;
+			break;
+			
+		case IDM_SYSKHOOK:
+			np2oscfg.syskhook = !np2oscfg.syskhook;
 			update |= SYS_UPDATECFG;
 			break;
 
@@ -1219,6 +1260,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 			}
 			break;
+
 		case WM_CREATE:
 			np2class_wmcreate(hWnd);
 			np2class_windowtype(hWnd, np2oscfg.wintype);
@@ -1644,64 +1686,66 @@ HHOOK hHook = NULL;
 // システムショートカットキー
 LRESULT CALLBACK LowLevelKeyboardProc (INT nCode, WPARAM wParam, LPARAM lParam)
 {
-    // By returning a non-zero value from the hook procedure, the
-    // message does not get passed to the target window
-    KBDLLHOOKSTRUCT *pkbhs = (KBDLLHOOKSTRUCT *) lParam;
-    BOOL bControlKeyDown = 0;
-    BOOL bShiftKeyDown = 0;
-    BOOL bAltKeyDown = 0;
+	if(np2oscfg.syskhook){
+		// By returning a non-zero value from the hook procedure, the
+		// message does not get passed to the target window
+		KBDLLHOOKSTRUCT *pkbhs = (KBDLLHOOKSTRUCT *) lParam;
+		BOOL bControlKeyDown = 0;
+		BOOL bShiftKeyDown = 0;
+		BOOL bAltKeyDown = 0;
 
-    switch (nCode)
-    {
-        case HC_ACTION:
-        {
-			if(GetForegroundWindow()==g_hWndMain){
-				KBDLLHOOKSTRUCT *kbstruct = (KBDLLHOOKSTRUCT*)lParam;
-				// Check to see if the CTRL,DHIFT,ALT key is pressed
-				bControlKeyDown = GetAsyncKeyState (VK_LCONTROL) >> ((sizeof(SHORT) * 8) - 1);
-				bShiftKeyDown = GetAsyncKeyState (VK_LSHIFT) >> ((sizeof(SHORT) * 8) - 1);
-				bAltKeyDown = GetAsyncKeyState (VK_LMENU) >> ((sizeof(SHORT) * 8) - 1);
+		switch (nCode)
+		{
+			case HC_ACTION:
+			{
+				if(GetForegroundWindow()==g_hWndMain){
+					KBDLLHOOKSTRUCT *kbstruct = (KBDLLHOOKSTRUCT*)lParam;
+					// Check to see if the CTRL,DHIFT,ALT key is pressed
+					bControlKeyDown = GetAsyncKeyState (VK_LCONTROL) >> ((sizeof(SHORT) * 8) - 1);
+					bShiftKeyDown = GetAsyncKeyState (VK_LSHIFT) >> ((sizeof(SHORT) * 8) - 1);
+					bAltKeyDown = GetAsyncKeyState (VK_LMENU) >> ((sizeof(SHORT) * 8) - 1);
             
-				// Disable CTRL+ESC, ALT+TAB, ALT+ESC
-				if (pkbhs->vkCode == VK_ESCAPE && bControlKeyDown
-					|| pkbhs->vkCode == VK_TAB && bAltKeyDown
-					|| pkbhs->vkCode == VK_ESCAPE && bAltKeyDown
-					|| pkbhs->vkCode == VK_LWIN
-					|| pkbhs->vkCode == VK_APPS){
+					// Disable CTRL+ESC, ALT+TAB, ALT+ESC
+					if (pkbhs->vkCode == VK_ESCAPE && bControlKeyDown
+						|| pkbhs->vkCode == VK_TAB && bAltKeyDown
+						|| pkbhs->vkCode == VK_ESCAPE && bAltKeyDown
+						|| pkbhs->vkCode == VK_LWIN
+						|| pkbhs->vkCode == VK_APPS){
 
-					switch((int)wParam){
-					case WM_KEYDOWN:
-					case WM_SYSKEYDOWN:
-						winkbd_keydown(kbstruct->vkCode, ((kbstruct->flags)<<24)|(kbstruct->scanCode<<16));
-						break;
-					case WM_KEYUP:
-					case WM_SYSKEYUP:
-						winkbd_keyup(kbstruct->vkCode, ((kbstruct->flags)<<24)|(kbstruct->scanCode<<16));
-						break;
+						switch((int)wParam){
+						case WM_KEYDOWN:
+						case WM_SYSKEYDOWN:
+							winkbd_keydown(kbstruct->vkCode, ((kbstruct->flags)<<24)|(kbstruct->scanCode<<16));
+							break;
+						case WM_KEYUP:
+						case WM_SYSKEYUP:
+							winkbd_keyup(kbstruct->vkCode, ((kbstruct->flags)<<24)|(kbstruct->scanCode<<16));
+							break;
+						}
+						return 1;
 					}
-					return 1;
-				}
-				if(pkbhs->vkCode == VK_SCROLL && bAltKeyDown && bControlKeyDown){
-					// Ctrl+Alt+ScrollLock → Ctrl+Alt+Delete
-					switch((int)wParam){
-					case WM_KEYDOWN:
-					case WM_SYSKEYDOWN:
-						keystat_keydown(0x39);
-						break;
-					case WM_KEYUP:
-					case WM_SYSKEYUP:
-						keystat_keyup(0x39);
-						break;
+					if(pkbhs->vkCode == VK_SCROLL && bAltKeyDown && bControlKeyDown){
+						// Ctrl+Alt+ScrollLock → Ctrl+Alt+Delete
+						switch((int)wParam){
+						case WM_KEYDOWN:
+						case WM_SYSKEYDOWN:
+							keystat_keydown(0x39);
+							break;
+						case WM_KEYUP:
+						case WM_SYSKEYUP:
+							keystat_keyup(0x39);
+							break;
+						}
+						return 1;
 					}
-					return 1;
 				}
+				break;
 			}
-            break;
-        }
 
-        default:
-            break;
-    }
+			default:
+				break;
+		}
+	}
     return CallNextHookEx (hHook, nCode, wParam, lParam);
 }
 #endif
@@ -1859,8 +1903,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		CDebugUtyView::Initialize(hInstance);
 	}
 
-	mousemng_initialize();
-
 	style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX;
 	if (np2oscfg.thickframe) {
 		style |= WS_THICKFRAME;
@@ -1869,6 +1911,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 						np2oscfg.winx, np2oscfg.winy, 640, 400,
 						NULL, NULL, hInstance, NULL);
 	g_hWndMain = hWnd;
+
+	mousemng_initialize(); // 場所移動 np21w ver0.96 rev13
+
 	scrnmng_initialize();
 
 	if(np2oscfg.dragdrop)
@@ -2124,6 +2169,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	CSoundMng::Deinitialize();
 	scrnmng_destroy();
 	recvideo_close();
+
+	mousemng_destroy();
 
 	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
 		initsave();

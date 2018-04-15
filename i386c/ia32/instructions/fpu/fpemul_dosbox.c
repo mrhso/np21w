@@ -54,6 +54,11 @@
 
 #include "ia32/instructions/fpu/fp.h"
 
+#if 1
+#undef	TRACEOUT
+#define	TRACEOUT(s)	(void)(s)
+#endif	/* 0 */
+
 #ifdef USE_FPU
 
 #define PI		3.14159265358979323846
@@ -1738,9 +1743,6 @@ ESC5(void)
 			//cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, FPU_CTRLWORD);
 			cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, FPU_STATUSWORD);
 			break;
-			//fpu_memorywrite_w(madr,
-			//    FPU_STATUSWORD);
-			//break;
 
 		default:
 			break;

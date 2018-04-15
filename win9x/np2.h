@@ -87,6 +87,10 @@ typedef struct {
 	UINT8	emuddraw; // DirectDraw Emulation Only
 	UINT8	dragdrop; // Drag and drop support
 	UINT8	makelhdd; // Large HDD creation support
+	UINT8	syskhook; // Low-level keyboard hook support
+	UINT8	rawmouse; // Raw mouse input support
+	SINT16	mousemul; // Mouse speed (mul)
+	SINT16	mousediv; // Mouse speed (div)
 } NP2OSCFG;
 
 

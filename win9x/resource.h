@@ -156,6 +156,8 @@
 #define IDC_VOLRHYTHM                   15209
 #define IDC_VOLRHYTHMSTR                15210
 #define IDC_SNDMIXDEF                   15211
+#define IDC_VOLCDDA                     15220
+#define IDC_VOLCDDASTR                  15221
 #define IDC_VOL14L                      15301
 #define IDC_VOL14LSTR                   15302
 #define IDC_VOL14R                      15303
@@ -524,6 +526,14 @@
 #define IDM_SNDOPT                      40675
 #define IDM_NETOPT                      40676
 #define IDM_WABOPT                      40677
+#define IDM_MOUSERAW                    40690
+#define IDM_MOUSE30X                    40691
+#define IDM_MOUSE20X                    40692
+#define IDM_MOUSE15X                    40693
+#define IDM_MOUSE10X                    40694
+#define IDM_MOUSED2X                    40695
+#define IDM_MOUSED3X                    40696
+#define IDM_MOUSED4X                    40697
 #define IDM_BMPSAVE                     40701
 #define IDM_S98LOGGING                  40702
 #define IDM_WAVEREC                     40703
@@ -539,6 +549,7 @@
 #define IDM_ITFWORK                     40714
 #define IDM_ALTENTER                    40721
 #define IDM_ALTF4                       40722
+#define IDM_SYSKHOOK                    40729
 #define IDM_IDEOPT                      40800
 #define IDM_CLOSE                       41001
 #define IDM_TOOL_SKIN                   41101

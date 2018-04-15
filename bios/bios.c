@@ -90,7 +90,7 @@ static void bios_reinitbyswitch(void) {
 	UINT8	prxcrt;
 	UINT8	prxdupd;
 	UINT8	biosflag;
-	UINT16	extmem; // LARGE_MEM //UINT8	extmem;
+	UINT8	extmem; // LARGE_MEM //UINT16	extmem;
 	UINT8	boot;
 
 	if (!(pccore.dipsw[2] & 0x80)) {

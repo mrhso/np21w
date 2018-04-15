@@ -19,6 +19,8 @@
 
 #define	YUIDEBUG
 
+#define	SUPPORT_NECCDD
+
 
 // INQUIRY
 static const UINT8 cdrom_inquiry[] = {
@@ -74,7 +76,7 @@ static void cmddone(IDEDRV drv) {
 
 	drv->sc = IDEINTR_IO|IDEINTR_CD;
 	drv->status &= ~(IDESTAT_BSY|IDESTAT_DRQ|IDESTAT_SERV|IDESTAT_CHK);
-	drv->status |= IDESTAT_DRDY;
+	drv->status |= IDESTAT_DRDY|IDESTAT_DSC; // XXX: set Drive Seek Complete bit np21w ver0.86 rev13
 	drv->error = 0;
 	ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_NO_SENSE);
 	drv->asc = ATAPI_ASC_NO_ADDITIONAL_SENSE_INFORMATION;
@@ -106,6 +108,49 @@ static void sendabort(IDEDRV drv) {
 	senderror(drv);
 }
 
+static void stop_daplay(IDEDRV drv)
+{
+
+	/*
+		"Play operation SHALL stopped" commands (INF-8090)
+		0xA1 blank
+		0x5B close track/session
+		0x04 format unit
+		0xA6 load/unload medium
+		0x28 read(10)
+		0xA8 read(12)
+		0x58 repair rzone
+		0x2B seek
+		0x1B start/stop unit
+		0x4E stop play/scan
+		0x2F verify(10)
+		0x2A write(10)
+		0xAA write(12)
+		0x2E write and verify(10)
+		
+		"Play operation SHALL NOT stopped" commands (INF-8090)
+		0x46 get configuration
+		0x4A get event/status notification
+		0x12 inquiry
+		0xBD mechanism status
+		0x55 mode select
+		0x5A mode sense
+		0x1E prevent allow medium removal
+		0x5C read buffer capacity
+		0x25 read capacity
+		0x03 request sense
+		0xA7 set read ahead
+		0x35 synchronize cache(10)
+		0x00 test unit ready
+	*/
+	if (ideio.daplaying & (1 << (drv->sxsidrv & 3))) {
+		/* stop playing audio */
+		ideio.daplaying &= ~(1 << (drv->sxsidrv & 3));
+		drv->daflag = 0x13;
+		drv->dacurpos = 0;
+		drv->dalength = 0;
+	}
+}
 
 // ----- ATAPI packet command
 
@@ -117,8 +162,10 @@ static void atapi_cmd_mode_select(IDEDRV drv);
 static void atapi_cmd_mode_sense(IDEDRV drv);
 static void atapi_cmd_readsubch(IDEDRV drv);
 static void atapi_cmd_readtoc(IDEDRV drv);
+static void atapi_cmd_playaudio(IDEDRV drv);
 static void atapi_cmd_playaudiomsf(IDEDRV drv);
 static void atapi_cmd_pauseresume(IDEDRV drv);
+static void atapi_cmd_seek(IDEDRV drv, UINT32 lba);
 
 void atapicmd_a0(IDEDRV drv) {
 
@@ -148,7 +195,7 @@ void atapicmd_a0(IDEDRV drv) {
 		break;
 
 	case 0x03:		// request sense
-		//TRACEOUT(("atapicmd: request sense"));
+		TRACEOUT(("atapicmd: request sense"));
 		leng = drv->buf[4];
 		ZeroMemory(drv->buf, 18);
 		drv->buf[0] = 0x70;
@@ -159,46 +206,51 @@ void atapicmd_a0(IDEDRV drv) {
 		break;
 
 	case 0x12:		// inquiry
-		//TRACEOUT(("atapicmd: inquiry"));
+		TRACEOUT(("atapicmd: inquiry"));
 		leng = drv->buf[4];
 		CopyMemory(drv->buf, cdrom_inquiry, sizeof(cdrom_inquiry));
 		senddata(drv, sizeof(cdrom_inquiry), leng);
 		break;
 
 	case 0x1b:		// start stop unit
-		//TRACEOUT(("atapicmd: start stop unit"));
+		TRACEOUT(("atapicmd: start stop unit"));
 		atapi_cmd_start_stop_unit(drv);
 		break;
 
 	case 0x1e:		// prevent allow medium removal
-		//TRACEOUT(("atapicmd: prevent allow medium removal"));
+		TRACEOUT(("atapicmd: prevent allow medium removal"));
 		atapi_cmd_prevent_allow_medium_removal(drv);
 		break;
 
 	case 0x25:		// read capacity
-		//TRACEOUT(("atapicmd: read capacity"));
+		TRACEOUT(("atapicmd: read capacity"));
 		atapi_cmd_read_capacity(drv);
 		break;
 
 	case 0x28:		// read(10)
-		//TRACEOUT(("atapicmd: read(10)"));
+		TRACEOUT(("atapicmd: read(10)"));
 		lba = (drv->buf[2] << 24) + (drv->buf[3] << 16) + (drv->buf[4] << 8) + drv->buf[5];
 		leng = (drv->buf[7] << 8) + drv->buf[8];
 		atapi_cmd_read(drv, lba, leng);
 		break;
+		
+	case 0x2b:		// Seek
+		lba = (drv->buf[2] << 24) + (drv->buf[3] << 16) + (drv->buf[4] << 8) + drv->buf[5];
+		atapi_cmd_seek(drv, lba);
+		break;
 
 	case 0x55:		// mode select
-		//TRACEOUT(("atapicmd: mode select"));
+		TRACEOUT(("atapicmd: mode select"));
 		atapi_cmd_mode_select(drv);
 		break;
 
 	case 0x5a:		// mode sense(10)
-		//TRACEOUT(("atapicmd: mode sense(10)"));
+		TRACEOUT(("atapicmd: mode sense(10)"));
 		atapi_cmd_mode_sense(drv);
 		break;
 
 	case 0x42:
-		//TRACEOUT(("atapicmd: read sub channel"));
+		TRACEOUT(("atapicmd: read sub channel"));
 		atapi_cmd_readsubch(drv);
 		break;
 
@@ -207,13 +259,18 @@ void atapicmd_a0(IDEDRV drv) {
 		atapi_cmd_readtoc(drv);
 		break;
 
+	case 0x45:		// Play Audio
+		TRACEOUT(("atapicmd: Play Audio"));
+		atapi_cmd_playaudio(drv);
+		break;
+
 	case 0x47:		// Play Audio MSF
-		//TRACEOUT(("atapicmd: Play Audio MSF"));
+		TRACEOUT(("atapicmd: Play Audio MSF"));
 		atapi_cmd_playaudiomsf(drv);
 		break;
 
 	case 0x4b:
-		//TRACEOUT(("atapicmd: pause resume"));
+		TRACEOUT(("atapicmd: pause resume"));
 		atapi_cmd_pauseresume(drv);
 		break;
 		
@@ -232,6 +289,8 @@ static void atapi_cmd_start_stop_unit(IDEDRV drv) {
 
 	UINT	power;
 
+	stop_daplay(drv);
+
 	power = (drv->buf[4] >> 4);
 	if (power != 0) {
 		/* power control is not supported */
@@ -244,6 +303,8 @@ static void atapi_cmd_start_stop_unit(IDEDRV drv) {
 		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
 		drv->asc = ATAPI_ASC_INVALID_FIELD_IN_CDB;
 		goto send_error;
+	}else{
+		// XXX:
 	}
 	if (!(drv->media & IDEIO_MEDIA_LOADED)) {
 		/* medium not present */
@@ -255,6 +316,7 @@ static void atapi_cmd_start_stop_unit(IDEDRV drv) {
 	/* XXX play/read TOC, stop */
 
 	cmddone(drv);
+
 	return;
 
 send_error:
@@ -272,6 +334,21 @@ static void atapi_cmd_prevent_allow_medium_removal(IDEDRV drv) {
 static void atapi_cmd_read_capacity(IDEDRV drv) {
 
 	/* XXX */
+	UINT32 blklen = 2048; // drv->secsize;
+	UINT8 *b = drv->buf;
+	UINT32 totals = drv->nsectors;
+
+	b[0] = (UINT8)(totals >> 24);
+	b[1] = (UINT8)(totals >> 16);
+	b[2] = (UINT8)(totals >> 8);
+	b[3] = (UINT8)(totals);
+	b[4] = (UINT8)(blklen >> 24);
+	b[5] = (UINT8)(blklen >> 16);
+	b[6] = (UINT8)(blklen >> 8);
+	b[7] = (UINT8)(blklen);
+	
+	senddata(drv, 8, 8);
+
 	cmddone(drv);
 }
 
@@ -363,10 +440,31 @@ static const UINT8 defval_pagecode_2a[PC_2A_SIZE] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00,
 #endif
+}; 
+
+#if defined(SUPPORT_NECCDD)
+#define	PC_0F_SIZE	16
+
+// "NEC CD-ROM" unique? (for neccdd.sys)
+// It's just a stub, all values are unknown...
+static const UINT8 chgval_pagecode_0f[PC_0F_SIZE] = {
+	0x0f, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
+static const UINT8 defval_pagecode_0f[PC_0F_SIZE] = {
+	0x0f, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+#endif
+
 
 // 0x55: MODE SELECT
 static void atapi_cmd_mode_select(IDEDRV drv) {
+	
+	UINT leng;
+
+	leng = (drv->buf[7] << 8) + drv->buf[8];
+	TRACEOUT(("atapi_cmd_mode_select: leng=%u SP=%u", leng, drv->buf[1] & 1));
 
 	if (drv->buf[1] & 1) {
 		/* Saved Page is not supported */
@@ -375,8 +473,13 @@ static void atapi_cmd_mode_select(IDEDRV drv) {
 		senderror(drv);
 		return;
 	}
-
+	
+#if 1
+	cmddone(drv);	/* workaround */
+#else
 	sendabort(drv);	/* XXX */
+#endif
+
 }
 
 // 0x5a: MODE SENSE
@@ -422,6 +525,35 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 	/* Mode Page */
 	//TRACEOUT(("pcode = %.2x", pcode));
 	switch (pcode) {
+#if defined(SUPPORT_NECCDD)
+	case 0x0f:
+	{
+		// some NEC CD-ROM specific support (required for neccdd.sys)
+		const UINT8 *p2a;
+		UINT8 *p = drv->buf + cnt;
+		if (pctrl == 1) {
+			p2a = chgval_pagecode_2a;
+			ptr = chgval_pagecode_0f;
+		}
+		else {
+			p2a = defval_pagecode_2a;
+			ptr = defval_pagecode_0f;
+		}
+		CopyMemory(p, ptr, min((leng - cnt), PC_0F_SIZE));
+		p[4] = (p2a[4] & 1);				// byte04 bit0 = Audioplay supported?
+		p[4] |= ((p2a[6] & 2) << 6);		// byte04 bit7 = lock state?
+		p[4] |= ((p2a[5] & 4) << 2);		// byte04 bit4 = R-W supported?
+		p[5] = ((p2a[7] & 3) << 3);		// byte05 bit4,3 = audio manipulation?
+		// note: When byte04 bit1 is set, neccdd.sys will set bit10 in device status call.
+		// (bit10 is "reserved" in the Microsoft's reference)
+		// for drive specific applications? or simply a bug?)
+	}
+		cnt += PC_0F_SIZE;
+		if (cnt > leng) {
+			goto length_exceeded;
+		}
+		break;
+#endif
 	case 0x3f:
 		/*FALLTHROUGH*/
 
@@ -474,6 +606,7 @@ static void atapi_cmd_mode_sense(IDEDRV drv) {
 		if (pcode == 0x0e) {
 			break;
 		}
+		//np2cfg.davolume = drv->buf[11];
 		/*FALLTHROUGH*/
 
 	case 0x2a:	/* CD-ROM Capabilities & Mechanical Status Page */
@@ -537,7 +670,6 @@ static void storemsf(UINT8 *ptr, UINT32 pos) {
 	ptr[2] = (UINT8)m;
 	ptr[3] = (UINT8)f;
 }
-
 
 // 0x42: READ SUB CHANNEL
 static void atapi_cmd_readsubch(IDEDRV drv) {
@@ -668,7 +800,10 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 		drv->buf[2] = 1;
 		drv->buf[3] = (UINT8)tracks;
 		ptr = drv->buf + 4;
-		for (i=0; i<=tracks; i++) {
+		//for (i=0; i<=tracks; i++) {
+		i = drv->buf[6];
+		if (i > 0) --i;
+		for (/* i=0 */; i<=tracks; i++) {
 			ptr[0] = 0;
 #ifdef SUPPORT_KAI_IMAGES
 			ptr[1] = trk[i].adr_ctl;
@@ -700,6 +835,25 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 		break;
 	}
 }
+ 
+static void atapi_cmd_playaudio_sub(IDEDRV drv, UINT32 pos, UINT32 leng) {
+
+	ideio.daplaying |= 1 << (drv->sxsidrv & 3);
+	drv->daflag = 0x11;
+	drv->dacurpos = pos;
+	drv->dalength = leng;
+	drv->dabufrem = 0;
+	cmddone(drv);
+}
+// 0x45: Play Audio
+static void atapi_cmd_playaudio(IDEDRV drv) {
+	UINT32	pos;
+	UINT32	leng;
+	
+	pos = (drv->buf[2] << 24) | (drv->buf[3] << 16) | (drv->buf[4] << 8) | drv->buf[5];
+	leng = (drv->buf[7] << 16) | drv->buf[8];
+	atapi_cmd_playaudio_sub(drv, pos, leng);
+}
 
 // 0x47: Play Audio MSF
 static void atapi_cmd_playaudiomsf(IDEDRV drv) {
@@ -707,8 +861,14 @@ static void atapi_cmd_playaudiomsf(IDEDRV drv) {
 	UINT32	pos;
 	UINT32	leng;
 
-	pos = (((drv->buf[3] * 60) + drv->buf[4]) * 75) + drv->buf[5];
-	leng = (((drv->buf[6] * 60) + drv->buf[7]) * 75) + drv->buf[8];
+	int M = drv->buf[3];
+	int S = drv->buf[4];
+	int F = drv->buf[5];
+	pos = (((M * 60) + S) * 75) + F;
+	M = drv->buf[6];
+	S = drv->buf[7];
+	F = drv->buf[8];
+	leng = (((M * 60) + S) * 75) + F;
 	if (leng > pos) {
 		leng -= pos;
 	}
@@ -721,12 +881,7 @@ static void atapi_cmd_playaudiomsf(IDEDRV drv) {
 	else {
 		pos = 0;
 	}
-	ideio.daplaying |= 1 << (drv->sxsidrv & 3);
-	drv->daflag = 0x11;
-	drv->dacurpos = pos;
-	drv->dalength = leng;
-	drv->dabufrem = 0;
-	cmddone(drv);
+	atapi_cmd_playaudio_sub(drv, pos, leng);
 }
 
 // 0x4B: PAUSE RESUME
@@ -745,6 +900,24 @@ static void atapi_cmd_pauseresume(IDEDRV drv) {
 			ideio.daplaying &= ~(1 << (drv->sxsidrv & 3));
 			drv->daflag = 0x12;
 		}
+	}
+	cmddone(drv);
+}
+
+// 0x2B: SEEK
+static void atapi_cmd_seek(IDEDRV drv, UINT32 lba)
+{
+	CDTRK	trk;
+	UINT	tracks;
+	SXSIDEV sxsi;
+
+	stop_daplay(drv);
+
+	sxsi = sxsi_getptr(drv->sxsidrv);
+	trk = sxsicd_gettrk(sxsi, &tracks);
+	TRACEOUT(("atapicmd: seek LBA=%d NSEC=%d", lba, trk[tracks-1].pos + trk[tracks-1].sectors));
+	if (lba < drv->nsectors) {
+		drv->dacurpos = lba;
 	}
 	cmddone(drv);
 }

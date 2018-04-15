@@ -2,6 +2,11 @@
 // FDC É PD765A
 //
 
+#if 1
+#undef	TRACEOUT
+#define	TRACEOUT(s)	(void)(s)
+#endif	/* 0 */
+
 
 #include	"compiler.h"
 #include	"cpucore.h"
@@ -426,6 +431,9 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 			else {
 				fdd_seek();
 			}
+			fdc_interrupt();
+			break;
+		default:
 			fdc_interrupt();
 			break;
 	}

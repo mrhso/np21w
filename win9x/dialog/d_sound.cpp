@@ -45,6 +45,7 @@ private:
 	CSliderValue m_adpcm;		//!< ADPCM ヴォリューム
 	CSliderValue m_pcm;			//!< PCM ヴォリューム
 	CSliderValue m_rhythm;		//!< RHYTHM ヴォリューム
+	CSliderValue m_cdda;		//!< CD-DA ヴォリューム
 };
 
 /**
@@ -93,6 +94,11 @@ BOOL SndOptMixerPage::OnInitDialog()
 	m_rhythm.SetStaticId(IDC_VOLRHYTHMSTR);
 	m_rhythm.SetRange(0, 128);
 	m_rhythm.SetPos(np2cfg.vol_rhythm);
+	
+	m_cdda.SubclassDlgItem(IDC_VOLCDDA, this);
+	m_cdda.SetStaticId(IDC_VOLCDDASTR);
+	m_cdda.SetRange(0, 255);
+	m_cdda.SetPos(np2cfg.davolume);
 
 	return TRUE;
 }
@@ -152,6 +158,14 @@ void SndOptMixerPage::OnOK()
 		}
 		bUpdated = true;
 	}
+	
+	const UINT8 cCDDA = static_cast<UINT8>(m_cdda.GetPos());
+	if (np2cfg.davolume != cCDDA)
+	{
+		np2cfg.davolume = cCDDA;
+		//ideio_setdavol(cCDDA);
+		bUpdated = true;
+	}
 
 	if (bUpdated)
 	{
@@ -174,6 +188,7 @@ BOOL SndOptMixerPage::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_adpcm.SetPos(64);
 		m_pcm.SetPos(64);
 		m_rhythm.SetPos(64);
+		m_cdda.SetPos(128);
 		return TRUE;
 	}
 	return FALSE;
@@ -210,6 +225,10 @@ LRESULT SndOptMixerPage::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 			case IDC_VOLRHYTHM:
 				m_rhythm.UpdateValue();
+				break;
+				
+			case IDC_VOLCDDA:
+				m_cdda.UpdateValue();
 				break;
 
 			default:

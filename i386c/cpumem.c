@@ -359,6 +359,12 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 		}
 	}
 #endif
+	//if(0x0502 <= address && address <= 0x053A){
+	//}else{
+	//	if(0x0400 <= address && address <= 0x05FF){
+	//		return(mem[address]);
+	//	}
+	//}
 	if(0xF8E80 <= address && address <= 0xF8E80+0x003F){
 		//if (address == 0xF8E80+0x0000) 
 		//	return 0x98;

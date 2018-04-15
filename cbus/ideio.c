@@ -1,5 +1,10 @@
 #include	"compiler.h"
 
+#if 0
+#undef	TRACEOUT
+#define	TRACEOUT(s)	(void)(s)
+#endif	/* 0 */
+
 // win‚Åidentify‚Ü‚Å‚ÍŽæ“¾‚És‚­‚ñ‚¾‚¯‚Ç‚Èc‚Á‚ÄAnex86‚à“¯‚¶‚©
 
 #if defined(SUPPORT_IDEIO)
@@ -756,6 +761,7 @@ static REG8 IOINPCALL ideio_i644(UINT port) {
 	drv = getidedrv();
 	if (drv) {
 		TRACEOUT(("ideio get SC %.2x [%.4x:%.8x]", drv->sc, CPU_CS, CPU_EIP));
+		//drv->status = drv->status | IDESTAT_DSC; // test
 		return(drv->sc);
 	}
 	else {
@@ -843,6 +849,20 @@ static REG8 IOINPCALL ideio_i64e(UINT port) {
 			TRACEOUT(("ideio: resetirq"));
 			pic_resetirq(IDE_IRQ);
 		}
+		//if (drv->device == IDETYPE_CDROM) { // test
+		//	static int tmp = 0;
+		//	REG8 ret = drv->status;
+		//	//drv->sc++;
+		//	//if(tmp){
+		//	//	tmp = 0;
+		//	//	drv->sc++;
+		//	//}else{
+		//	//	tmp = 1;
+		//	//	drv->sc--;
+		//	//}
+		//	ret = ret & ~IDESTAT_DSC;
+		//	return(ret);
+		//}
 		return(drv->status);
 	}
 	else {
@@ -860,6 +880,20 @@ static REG8 IOINPCALL ideio_i74c(UINT port) {
 	if (drv) {
 		TRACEOUT(("ideio alt status %.2x [%.4x:%.8x]",
 											drv->status, CPU_CS, CPU_EIP));
+		//if (drv->device == IDETYPE_CDROM) { // test
+		//	static int tmp = 0;
+		//	REG8 ret = drv->status;
+		//	//drv->sc++;
+		//	if(tmp){
+		//		tmp = 0;
+		//		drv->sc++;
+		//	}else{
+		//		tmp = 1;
+		//		drv->sc--;
+		//	}
+		//	//ret = ret & ~IDESTAT_DSC;
+		//	return(ret);
+		//}
 		return(drv->status);
 	}
 	else {
@@ -1013,8 +1047,8 @@ const UINT8	*ptr;
 			do {
 				sampl = ((SINT8)ptr[1] << 8) + ptr[0];
 				sampr = ((SINT8)ptr[3] << 8) + ptr[2];
-				pcm[0] += sampl;
-				pcm[1] += sampr;
+				pcm[0] += (SINT)((int)(sampl)*np2cfg.davolume/255);
+				pcm[1] += (SINT)((int)(sampr)*np2cfg.davolume/255);
 				ptr += 4;
 				pcm += 2;
 			} while(--r);

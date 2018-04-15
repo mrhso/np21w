@@ -37,7 +37,9 @@ BOOL mousemng_buttonevent(UINT event);
 void mousemng_enable(UINT proc);
 void mousemng_disable(UINT proc);
 void mousemng_toggle(UINT proc);
+void mousemng_destroy(void);
 
+UINT8 mousemng_supportrawinput(); // 生データ入力サポート
 
 #ifdef __cplusplus
 extern "C" { // XXX: wab.c用。もっとスマートにすべき

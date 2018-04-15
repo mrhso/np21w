@@ -553,8 +553,6 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USELGY98", PFTYPE_BOOL,		&np2cfg.uselgy98),
 	PFVAL("LGY98_IO", PFTYPE_UINT16,	&np2cfg.lgy98io),
 	PFVAL("LGY98IRQ", PFTYPE_UINT8,		&np2cfg.lgy98irq),
-	PFVAL("USENE2000", PFTYPE_BOOL,		&np2cfg.usene2000), // おまけ
-	PFVAL("NE2000_IO", PFTYPE_UINT16,	&np2cfg.ne2000io), // おまけ
 #endif
 #if defined(SUPPORT_WAB)
 	PFVAL("WAB_ANSW", PFTYPE_UINT8,		&np2cfg.wabasw),
@@ -563,6 +561,8 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USEGD5430", PFTYPE_BOOL,		&np2cfg.usegd5430),
 	PFVAL("GD5430TYPE",PFTYPE_UINT8,	&np2cfg.gd5430type),
 #endif
+	
+	PFAND("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
 
 	// OS依存？
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),
@@ -633,6 +633,10 @@ static const PFTBL s_IniItems[] =
 	
 	PFVAL("DRAGDROP", PFRO_BOOL,		&np2oscfg.dragdrop), // どらっぐあんどどろっぷサポート
 	PFVAL("MAKELHDD", PFRO_BOOL,		&np2oscfg.makelhdd), // 巨大HDDイメージ作成サポート
+	PFVAL("SYSKHOOK", PFTYPE_BOOL,		&np2oscfg.syskhook), // システムキーフックサポート
+	PFVAL("RAWMOUSE", PFTYPE_BOOL,		&np2oscfg.rawmouse), // 直接マウスデータ読み取り
+	PFVAL("MOUSEMUL", PFTYPE_SINT16,	&np2oscfg.mousemul), // マウススピード倍率（分子）
+	PFVAL("MOUSEDIV", PFTYPE_SINT16,	&np2oscfg.mousediv), // マウススピード倍率（分母）
 
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };

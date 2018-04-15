@@ -292,6 +292,9 @@ BEGIN
     LTEXT           "Rhythm",IDC_STATIC,8,65,30,8
     CONTROL         "Slider8",IDC_VOLRHYTHM,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,40,65,88,10
     LTEXT           "",IDC_VOLRHYTHMSTR,134,64,16,10,SS_SUNKEN,WS_EX_RIGHT
+    LTEXT           "CD-DA",IDC_STATIC,8,79,30,8
+    CONTROL         "Slider32",IDC_VOLCDDA,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,40,79,88,10
+    LTEXT           "",IDC_VOLCDDASTR,134,78,16,10,SS_SUNKEN,WS_EX_RIGHT
     PUSHBUTTON      "Defaults",IDC_SNDMIXDEF,136,102,40,14
 END
 
@@ -428,7 +431,7 @@ CLASS "np2dialog"
 FONT 9, "MS Sans Serif"
 BEGIN
     ICON            IDI_ICON1,IDC_NP2ICON,8,8,20,20
-    LTEXT           "",IDC_NP2VER,36,16,102,8
+    LTEXT           "",IDC_NP2VER,36,16,132,8
     DEFPUSHBUTTON   "&OK",IDOK,148,8,40,14,WS_GROUP
     PUSHBUTTON      "More >>",IDC_MORE,148,26,40,14
     EDITTEXT        IDC_NP2INFO,8,52,180,48,ES_MULTILINE | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
@@ -441,6 +444,7 @@ FONT 9, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     LTEXT           "TAP device name",IDC_STATIC,8,8,76,8
     COMBOBOX        IDC_NETTAP,8,18,168,12,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Enable Power Management",IDC_NETPMM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,36,140,10
 END
 
 IDD_LGY98 DIALOGEX 0, 0, 184, 124
@@ -829,6 +833,8 @@ BEGIN
             MENUITEM "F12 = tenkey [ , ]",          IDM_F12COMMA
             MENUITEM "F12 = User1",                 IDM_USERKEY1
             MENUITEM "F12 = User2",                 IDM_USERKEY2
+            MENUITEM SEPARATOR
+            MENUITEM "&System Key Hook",            IDM_SYSKHOOK
         END
         POPUP "&Sound"
         BEGIN
@@ -866,8 +872,19 @@ BEGIN
             MENUITEM "&64.6MB",                     IDM_MEM646
             MENUITEM "&120.6MB",                    IDM_MEM1206
         END
-        MENUITEM "&Mouse",                      IDM_MOUSE
-        MENUITEM SEPARATOR
+        POPUP "&Mouse"
+        BEGIN
+            MENUITEM "&Mouse Capture",              IDM_MOUSE
+            MENUITEM "&Raw Input Mode",             IDM_MOUSERAW
+            MENUITEM SEPARATOR
+            MENUITEM "x3.0",                        IDM_MOUSE30X
+            MENUITEM "x2.0",                        IDM_MOUSE20X
+            MENUITEM "x1.5",                        IDM_MOUSE15X
+            MENUITEM "x1.0",                        IDM_MOUSE10X
+            MENUITEM "x1/2",                        IDM_MOUSED2X
+            MENUITEM "x1/3",                        IDM_MOUSED3X
+            MENUITEM "x1/4",                        IDM_MOUSED4X
+        END
         MENUITEM "Se&rial option...",           IDM_SERIAL1
         MENUITEM SEPARATOR
         MENUITEM "MIDI &option...",             IDM_MPUPC98
@@ -1371,7 +1388,7 @@ STRINGTABLE
 BEGIN
     IDS_FDDTITLE            "Select floppy image"
     IDS_FDDEXT              "d88"
-    IDS_FDDFILTER           "D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|Floppy disk images (*.xdf;*.hdm;*.dup;*.2hd)|*.xdf;*.hdm;*.hd4;*.dup;*.2hd;*.tfd|All supported files|*.d88;*.88d;*.d98;*.98d;*.fdi;*.xdf;*.hdm;*.hd4;*.dup;*.2hd;*.tfd|All files (*.*)|*.*|"
+    IDS_FDDFILTER           "Anex86 floppy disk images (*.fdi)|*.fdi|T98-Next floppy disk images (*.nfd)|*.nfd|Virtual floppy disk images (*.fdd)|*.fdd|BKDSK images (*.hdm;*.hd4;*.hd5;*.hd9;*.h01;*.hdb;*.ddb;*.dd6;*.dd9)|*.hdm;*.hd4;*.hd5;*.hd9;*.h01;*.hdb;*.ddb;*.dd6;*.dd9|D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|DCP/DCU image files (*.dcp;*.dcu)|*.dcp;*.dcu|Floppy disk images (*.xdf;*.hdm;*.dup;*.2hd;*.flp;*.bin;*.tfd)|*.fdi;*.hdm;*.hd4;*.hd5;*.hd9;*.h01;*.hdb;*.ddb;*.dd6;*.dd9;*.dcp;*.dcu;*.xdf;*.dup;*.2hd;*.flp;*.bin;*.tfd;*.fim|All supported files|*.fdi;*.nfd;*.fdd;*.hdm;*.hd4;*.hd5;*.hd9;*.h01;*hdb;*.ddb;*.dd6;*.dd9;*.d88;*.88d;*.d98;*.98d;*.dcp;*.dcu;*.xdf;*.dup;*.2hd;*.flp;*.bin;*.tfd;*.fim|All files (*.*)|*.*|"
 END
 
 STRINGTABLE
@@ -1383,7 +1400,7 @@ BEGIN
     IDS_IDETITLE            "Select IDE HDD image"
     IDS_ISOTITLE            "Select ISO-9660 image"
     IDS_ISOEXT              "iso"
-    IDS_ISOFILTER           "Cue sheets (*.cue)|*.cue|ISO-9660 image files (*.iso)|*.iso;*.img|All supported files|*.cue;*.iso;*.img|All files (*.*)|*.*|"
+    IDS_ISOFILTER           "Cue sheets (*.cue)|*.cue|CloneCD Image (*.ccd)|*.ccd|CD Manipulator Image (*.cdm)|*.cdm|Media Descriptor (*.mds)|*.mds|Nero Image (*.nrg)|*.nrg|ISO-9660 image files (*.iso)|*.iso;*.img|All supported files|*.cue;*.ccd;*.cdm;*.mds;*.nrg;*.iso;*.img|All files (*.*)|*.*|"
 END
 
 STRINGTABLE
@@ -1397,8 +1414,8 @@ END
 STRINGTABLE
 BEGIN
     IDS_NEWDISKEXT          "d88"
-    IDS_NEWDISKFILTER       "D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|Virtual98 harddisk image files (*.hdd)|*.hdd|"
-    IDS_NEWDISKFILTER2      "D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|"
+    IDS_NEWDISKFILTER       "D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|Virtual98 harddisk image files (*.hdd)|*.hdd|VirtualPC harddisk image files (*.vhd)|*.vhd|"
+    IDS_NEWDISKFILTER2      "D88 image files (*.d88;*.d98)|*.d88;*.88d;*.d98;*.98d|Anex86 harddisk image files (*.hdi)|*.hdi|T98 harddisk image files (*.thd)|*.thd|T98-Next harddisk image files (*.nhd)|*.nhd|VirtualPC harddisk image files (*.vhd)|*.vhd|"
     IDS_S98TITLE            "Save as S98 log"
     IDS_S98EXT              "s98"
     IDS_S98FILTER           "S98 log (*.s98)|*.s98|"

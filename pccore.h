@@ -86,6 +86,8 @@ struct tagNP2Config
 	UINT8	calendar;
 	UINT8	usefd144;
 	UINT8	wait[6];
+	
+	UINT8	davolume;
 
 	// リセット時とかあんまり参照されない奴
 	OEMCHAR	model[8];
@@ -157,8 +159,6 @@ struct tagNP2Config
 	UINT8	uselgy98;
 	UINT16	lgy98io;
 	UINT8	lgy98irq;
-	UINT8	usene2000; // おまけ
-	UINT16	ne2000io; // おまけ
 #endif
 #ifdef SUPPORT_NET
 	UINT8	wabasw;

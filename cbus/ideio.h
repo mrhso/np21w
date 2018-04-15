@@ -60,6 +60,7 @@ typedef struct {
 	UINT32	dalength;
 	UINT	dabufrem;
 	UINT8	dabuf[2352];
+	UINT8	davolume;
 } _IDEDRV, *IDEDRV;
 
 typedef struct {

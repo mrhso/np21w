@@ -18,6 +18,7 @@
 #if defined(SUPPORT_S98)
 #include "sound\s98.h"
 #endif
+#include "mousemng.h"
 
 /**
  * åüçı
@@ -383,11 +384,26 @@ void xmenu_update(HMENU hMenu)
 
 	// Device
 	CheckMenuItem(hMenu, IDM_MOUSE, MF_BYCOMMAND | MFCHECK(np2oscfg.MOUSE_SW));
+	
+	// Mouse
+	CheckMenuItem(hMenu, IDM_MOUSERAW, MF_BYCOMMAND | MFCHECK(np2oscfg.rawmouse));
+	const UINT8 MMUL = np2oscfg.mousemul;
+	const UINT8 MDIV = np2oscfg.mousediv;
+	CheckMenuItem(hMenu, IDM_MOUSE30X, MF_BYCOMMAND | MFCHECK(MMUL == 3 && MDIV == 1));
+	CheckMenuItem(hMenu, IDM_MOUSE20X, MF_BYCOMMAND | MFCHECK(MMUL == 2 && MDIV == 1));
+	CheckMenuItem(hMenu, IDM_MOUSE15X, MF_BYCOMMAND | MFCHECK(MMUL == 3 && MDIV == 2));
+	CheckMenuItem(hMenu, IDM_MOUSE10X, MF_BYCOMMAND | MFCHECK(MMUL == 1 && MDIV == 1));
+	CheckMenuItem(hMenu, IDM_MOUSED2X, MF_BYCOMMAND | MFCHECK(MMUL == 1 && MDIV == 2));
+	CheckMenuItem(hMenu, IDM_MOUSED3X, MF_BYCOMMAND | MFCHECK(MMUL == 1 && MDIV == 3));
+	CheckMenuItem(hMenu, IDM_MOUSED4X, MF_BYCOMMAND | MFCHECK(MMUL == 1 && MDIV == 4));
 
 	// Other-ShortcutKey
 	const UINT8 shortcut = np2oscfg.shortcut;
 	CheckMenuItem(hMenu, IDM_ALTENTER, MF_BYCOMMAND | MFCHECK(shortcut & 1));
 	CheckMenuItem(hMenu, IDM_ALTF4, MF_BYCOMMAND | MFCHECK(shortcut & 2));
+	
+	CheckMenuItem(hMenu, IDM_SYSKHOOK,MF_BYCOMMAND | MFCHECK(np2oscfg.syskhook));
+	
 
 	// Other
 	bool bLogging = false;
