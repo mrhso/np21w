@@ -1,4 +1,6 @@
 
+#define	SOUNDMNG_USEBUFFERING
+
 enum {
 	SOUND_PCMSEEK		= 0,
 	SOUND_PCMSEEK1		= 1,
@@ -16,14 +18,24 @@ void soundmng_destroy(void);
 #define soundmng_reset()
 void soundmng_play(void);
 void soundmng_stop(void);
+#if defined(SOUNDMNG_USEBUFFERING)
+void soundmng_sync(void);
+#else
 #define	soundmng_sync()
-#define soundmng_setreverse(reverse)
+#endif
+void soundmng_setreverse(BOOL reverse);
 
-#define soundmng_pcmplay(num, loop)
-#define	soundmng_pcmstop(num)
+BOOL soundmng_pcmplay(UINT num, BOOL loop);
+void soundmng_pcmstop(UINT num);
 
 
 // ---- for mac
+
+BOOL soundmng_initialize(void);
+void soundmng_deinitialize(void);
+
+void soundmng_pcmload(UINT num, const char *filename, UINT type);
+void soundmng_pcmvolume(UINT num, int volume);
 
 #ifdef __cplusplus
 }

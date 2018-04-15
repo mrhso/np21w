@@ -1,11 +1,10 @@
 #include	"compiler.h"
 #include	"bmpdata.h"
-#include	"scrnmng.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"scrndraw.h"
-#include	"palettes.h"
 #include	"dispsync.h"
+#include	"palettes.h"
 #include	"scrnbmp.h"
 
 
@@ -119,7 +118,14 @@ SCRNBMP scrnbmp(void) {
 			col = *p++;
 			if (!remapflg[col]) {
 				remapflg[col] = 1;
-				curpal = np2_pal32[col].d & 0x00ffffff;		// !!!!
+#if defined(BYTESEX_LITTLE)
+				curpal = np2_pal32[col].p.b + (np2_pal32[col].p.g << 8) +
+						(np2_pal32[col].p.r << 16);
+#else
+				curpal = (np2_pal32[col].p.b << 24) +
+							(np2_pal32[col].p.g << 16) +
+							(np2_pal32[col].p.r << 8);
+#endif
 				for (pos=0; pos<pals; pos++) {
 					if (pal[pos] == curpal) {
 						break;
@@ -171,7 +177,6 @@ SCRNBMP scrnbmp(void) {
 	q += sizeof(bi);
 	CopyMemory(q, pal, palsize);
 	q += palsize;
-
 	p = scrn + (SURFACE_WIDTH * bd.height);
 	do {
 		p -= SURFACE_WIDTH;

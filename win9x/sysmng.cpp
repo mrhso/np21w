@@ -2,9 +2,13 @@
 #include	"np2.h"
 #include	"dosio.h"
 #include	"sysmng.h"
+#include	"i286.h"
 #include	"pccore.h"
 #include	"fddfile.h"
-
+#if 0
+#include	"sound.h"
+#include	"fmboard.h"
+#endif
 
 	UINT	sys_updates;
 
@@ -25,7 +29,7 @@ static struct {
 void sysmng_workclockreset(void) {
 
 	workclock.tick = GETTICK();
-	workclock.clock = nevent.clock;
+	workclock.clock = I286_CLOCK;
 	workclock.draws = drawcount;
 }
 
@@ -40,8 +44,8 @@ BOOL sysmng_workclockrenewal(void) {
 	workclock.tick += tick;
 	workclock.fps = ((drawcount - workclock.draws) * 10000) / tick;
 	workclock.draws = drawcount;
-	workclock.khz = (nevent.clock - workclock.clock) / tick;
-	workclock.clock = nevent.clock;
+	workclock.khz = (I286_CLOCK - workclock.clock) / tick;
+	workclock.clock = I286_CLOCK;
 	return(TRUE);
 }
 
@@ -80,6 +84,11 @@ void sysmng_updatecaption(BYTE flag) {
 				milstr_ncpy(clock, " -", sizeof(clock));
 			}
 			milstr_ncat(clock, work, sizeof(clock));
+#if 0
+			SPRINTF(work, " (debug: OPN %d / PSG %s)", opngen.playing,
+									(psg1.mixer & 0x3f)?"ON":"OFF");
+			milstr_ncat(clock, work, sizeof(clock));
+#endif
 		}
 	}
 	milstr_ncpy(work, np2oscfg.titles, sizeof(work));

@@ -1,18 +1,19 @@
 #include	"compiler.h"
-#include	"resource.h"
 #include	"strres.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"sysmng.h"
 #include	"timemng.h"
-#include	"pccore.h"
 #include	"dialog.h"
 #include	"dialogs.h"
+#include	"pccore.h"
 #include	"calendar.h"
+
 
 static	BYTE	cbuf[8];
 
 typedef struct {
-	WORD	res;
+	UINT16	res;
 	BYTE	min;
 	BYTE	max;
 } VIRCAL_T;

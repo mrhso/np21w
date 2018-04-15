@@ -1,5 +1,6 @@
 #include	"compiler.h"
 #include	"mousemng.h"
+#include	"i286.h"
 #include	"pccore.h"
 #include	"iocore.h"
 
@@ -17,11 +18,13 @@ void mouseif_sync(void) {
 
 	// ¡‰ñ‚ÌˆÚ“®—Ê‚ðŽæ“¾
 	mouseif.b = mousemng_getstat(&mouseif.sx, &mouseif.sy, 1);
+	if (np2cfg.KEY_MODE == 3) {
+		mouseif.b &= keyext_getmouse(&mouseif.sx, &mouseif.sy);
+	}
 	mouseif.rx = mouseif.sx;
 	mouseif.ry = mouseif.sy;
 
-	mouseif.lastc = nevent.clock + nevent.baseclock
-											- nevent.remainclock;
+	mouseif.lastc = I286_CLOCK + I286_BASECLOCK + I286_REMCLOCK;
 }
 
 static void calc_mousexy(void) {
@@ -29,7 +32,7 @@ static void calc_mousexy(void) {
 	UINT32	clock;
 	SINT32	diff;
 
-	clock = nevent.clock + nevent.baseclock - nevent.remainclock;
+	clock = I286_CLOCK + I286_BASECLOCK + I286_REMCLOCK;
 	diff = clock - mouseif.lastc;
 	if (diff >= 2000) {
 		SINT16 dx;

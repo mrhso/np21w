@@ -15,3 +15,8 @@ void menu_setf12copy(BYTE value);
 void menu_setextmem(BYTE value);
 void menu_setraster(BYTE value);
 
+void menu_setmouse(BYTE value);
+
+void menu_sets98logging(BYTE value);
+void menu_setrecording(bool end);
+void menu_setmsrapid(BYTE value);

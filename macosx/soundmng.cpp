@@ -9,6 +9,7 @@
 #include	"vermouth.h"
 #endif
 
+#include	"soundrecording.h"
 
 #define	SOUNDBUFFERS	2
 
@@ -18,6 +19,10 @@ typedef struct {
 	UINT			rate;
 	UINT			samples;
 	UINT			buffersize;
+#if defined(SOUNDMNG_USEBUFFERING)
+	SINT16			*indata;
+	SINT16			*extendbuffer;
+#endif
 	ExtSoundHeader	*buf[SOUNDBUFFERS];
 	SndCommand		cmd[SOUNDBUFFERS];
 	SndCommand		cbcmd[SOUNDBUFFERS];
@@ -31,6 +36,8 @@ static	BOOL		QSound_Playing = FALSE;
 		MIDIMOD		vermouth_module = NULL;
 #endif
 
+static	void				(PARTSCALL *fnmix)(SINT16 *dst,
+												const SINT32 *src, UINT size);
 
 static pascal void QSoundCallback(SndChannelPtr /*inChannel*/,
 												SndCommand *inCommand) {
@@ -38,21 +45,33 @@ static pascal void QSoundCallback(SndChannelPtr /*inChannel*/,
 	QSOUND		qs;
 	int			nextbuf;
 	void		*dst;
+#if !defined(SOUNDMNG_USEBUFFERING)
 const SINT32	*src;
+#endif
 
 	if (QS_Avail) {
 		qs = &QSound;
 		nextbuf = inCommand->param1;
 		dst = qs->buf[nextbuf]->sampleArea;
+#if defined(SOUNDMNG_USEBUFFERING)
+		if (qs->indata) {
+			CopyMemory((SINT16 *)dst, qs->indata, qs->buffersize);
+			qs->indata = NULL;
+		}
+#else
 		src = NULL;
 		if (QSound_Playing) {
 			src = sound_pcmlock();
-			if (src) {
-				satuation_s16((SINT16 *)dst, src, qs->buffersize);
-			}
+		}
+		if (src) {
+			(*fnmix)((SINT16 *)dst, src, qs->buffersize);
+            if (QSound_Playing) {
+                recOPM((BYTE*)dst, qs->buffersize);
+            }
 			sound_pcmunlock(src);
 		}
-		if (src == NULL) {
+#endif
+		else {
 			ZeroMemory(dst, qs->buffersize);
 		}
 		SndDoCommand(qs->hdl, &qs->cmd[nextbuf], TRUE);
@@ -117,6 +136,14 @@ static BOOL SoundBuffer_Init(UINT rate, UINT samples) {
 	qs->buffersize = buffersize;
 	drate = rate;
 	dtox80(&drate, &extFreq);
+
+#if defined(SOUNDMNG_USEBUFFERING)
+	qs->extendbuffer = (SINT16 *)_MALLOC(buffersize, "Extend buffer");
+	if (qs->extendbuffer == NULL) {
+		goto sbinit_err;
+	}
+#endif
+
 	buffersize += sizeof(ExtSoundHeader);
 	for (i=0; i<SOUNDBUFFERS; i++) {
 		buf = (ExtSoundHeader *)_MALLOC(buffersize, "ExtSoundHeader");
@@ -161,6 +188,13 @@ static void SoundBuffer_Term(void) {
 			buf[i] = NULL;
 		}
 	}
+#if defined(SOUNDMNG_USEBUFFERING)
+	qs->indata = NULL;
+	if (qs->extendbuffer) {
+		_MFREE(qs->extendbuffer);
+		qs->extendbuffer = NULL;
+	}
+#endif
 }
 
 UINT soundmng_create(UINT rate, UINT ms) {
@@ -182,7 +216,13 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	if (SoundChannel_Init()) {
 		goto qsinit_err;
 	}
-	samples = (rate / 3) & (~3);
+#if defined(SOUNDMNG_USEBUFFERING)
+	samples = rate * ms / (SOUNDBUFFERS * 1000);
+	samples = (samples + 3) & (~3);
+#else
+	samples = rate * ms / 1000;
+	samples = (samples + 255) & (~255);
+#endif
 	if (SoundBuffer_Init(rate, samples)) {
 		goto qsinit_err;
 	}
@@ -197,30 +237,125 @@ UINT soundmng_create(UINT rate, UINT ms) {
 
 qsinit_err:
 	soundmng_destroy();
-	(void)ms;
 	return(0);
 }
 
 void soundmng_destroy(void) {
 
 	if (QS_Avail) {
+		QS_Avail = FALSE;
+		SoundBuffer_Term();
+		SoundChannel_Term();
 #if defined(VERMOUTH_LIB)
 		midimod_destroy(vermouth_module);
 		vermouth_module = NULL;
 #endif
-		QS_Avail = FALSE;
-		SoundBuffer_Term();
-		SoundChannel_Term();
 	}
 }
 
 void soundmng_play(void) {
 
-	QSound_Playing = TRUE;
+    if (!QSound_Playing) QSound_Playing = TRUE;
 }
 
 void soundmng_stop(void) {
 
-	QSound_Playing = FALSE;
+	if (QSound_Playing) QSound_Playing = FALSE;
+}
+
+void soundmng_setreverse(BOOL reverse) {
+
+	if (!reverse) {
+        fnmix = satuation_s16;
+	}
+	else {
+		fnmix = satuation_s16x;
+	}
+}
+
+#if defined(SOUNDMNG_USEBUFFERING)
+void soundmng_sync(void) {
+
+	QSOUND		qs;
+const SINT32	*src;
+
+	qs = &QSound;
+
+	if ((QSound_Playing) && (qs->indata == NULL)) {
+		src = sound_pcmlock();
+		if (src) {
+			(*fnmix)(qs->extendbuffer, src, qs->buffersize);
+			recOPM((BYTE *)qs->extendbuffer, qs->buffersize);
+			sound_pcmunlock(src);
+			qs->indata = qs->extendbuffer;
+		}
+	}
+}
+#endif
+
+// --------------------------------------------------------------------------
+#include <QuickTime/Movies.h>
+#include "np2.h"
+#include "dosio.h"
+
+static	Movie	seekWAV[2];
+
+static	Movie	setupWAV(const char* name) {
+    FSSpec	fs;
+    short	movieRefNum;
+    short	resID = 0;
+    Movie	wav = NULL;    
+
+	char	path[MAX_PATH];
+	Str255	fname;
+
+	file_cpyname(path, file_getcd(name), MAX_PATH);
+	mkstr255(fname, path);
+	FSMakeFSSpec(0, 0, fname, &fs);
+    if (OpenMovieFile( &fs, &movieRefNum, fsRdPerm ) == noErr) {
+        if (NewMovieFromFile(&wav,movieRefNum, &resID, NULL, newMovieActive, NULL) != noErr) {
+            return NULL;
+        }
+    }
+    return  wav;
+}
+
+void soundmng_deinitialize(void) {
+    StopMovie(seekWAV[0]);
+    StopMovie(seekWAV[1]);
+    seekWAV[0]  = NULL;
+    seekWAV[1] = NULL;
+    ExitMovies();
+}
+
+BOOL soundmng_initialize(void) {
+    EnterMovies();
+    seekWAV[0] = setupWAV("Fddseek.wav");
+    seekWAV[1] = setupWAV("Fddseek1.wav");
+    if (seekWAV[0] == NULL || seekWAV[1] == NULL) {
+        return  false;
+    }
+    return(true);
+}
+
+void soundmng_pcmvolume(UINT num, int volume) {
+    if (seekWAV[num]) {
+        SetMovieVolume(seekWAV[num], kFullVolume*volume/100);
+    }
+}
+
+BOOL soundmng_pcmplay(UINT num, BOOL loop) {
+    if (seekWAV[num]) {
+        GoToBeginningOfMovie(seekWAV[num]);
+        StartMovie(seekWAV[num]);
+        return SUCCESS;
+    }
+	return(FAILURE);
+}
+
+void soundmng_pcmstop(UINT num) {
+    if (seekWAV[num]) {
+        StopMovie(seekWAV[num]);
+    }
 }
 

@@ -2,10 +2,9 @@
 #include	"np2.h"
 #include	"joymng.h"
 #include	"menu.h"
-#include	"pccore.h"
 
 
-static	int		joyactive = 0;
+// static	int		joyactive = 0;
 static	BYTE	joyflag = 0xff;
 
 #define	JOY_LEFT_BIT	0x04

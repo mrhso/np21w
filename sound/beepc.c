@@ -1,4 +1,5 @@
 #include	"compiler.h"
+#include	"i286.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"sound.h"
@@ -22,8 +23,19 @@ void beep_setvol(UINT vol) {
 	beepcfg.vol = vol & 3;
 }
 
+void beep_changeclock(void) {
+
+	UINT32	hz;
+	UINT	rate;
+
+	hz = pc.realclock / 25;
+	rate = beepcfg.rate / 25;
+	beepcfg.samplebase = (1 << 16) * rate / hz;
+}
+
 void beep_reset(void) {
 
+	beep_changeclock();
 	ZeroMemory(&beep, sizeof(beep));
 	beep.mode = 1;
 }
@@ -63,16 +75,16 @@ static void beep_eventset(void) {
 
 	BPEVENT	*evt;
 	int		enable;
-	int		clock;
+	SINT32	clock;
 
 	enable = beep.low & beep.buz;
 	if (beep.enable != enable) {
 		beep.enable = enable;
 		if (beep.events < BEEPEVENT_MAX) {
-			clock = nevent.clock + nevent.baseclock - nevent.remainclock;
+			clock = I286_CLOCK + I286_BASECLOCK - I286_REMCLOCK;
 			evt = beep.event + beep.events;
 			beep.events++;
-			evt->clock = clock - beep.clock;
+			evt->clock = (clock - beep.clock) * beepcfg.samplebase;
 			evt->enable = enable;
 			beep.clock = clock;
 		}
@@ -84,7 +96,7 @@ void beep_eventinit(void) {
 	beep.low = 0;
 	beep.enable = 0;
 	beep.lastenable = 0;
-	beep.clock = dsound_lastclock;
+	beep.clock = soundcfg.lastclock;
 					// nevent.clock + nevent.baseclock - nevent.remainclock;
 	beep.events = 0;
 }
@@ -92,7 +104,7 @@ void beep_eventinit(void) {
 void beep_eventreset(void) {
 
 	beep.lastenable = beep.enable;
-	beep.clock = dsound_lastclock;
+	beep.clock = soundcfg.lastclock;
 	beep.events = 0;
 }
 
@@ -102,9 +114,9 @@ void beep_lheventset(int low) {
 	if (beep.low != low) {
 		beep.low = low;
 		if (!beep.mode) {
-//			if ((low) && (beep.events >= (BEEPEVENT_MAX / 2))) {
+			if (beep.events >= (BEEPEVENT_MAX / 2)) {
 				sound_sync();
-//			}
+			}
 			beep_eventset();
 		}
 	}

@@ -62,14 +62,14 @@ static const PROCTBL dmaproc[] = {
 			{PROCID('d','m','e','c'), cs4231dmafunc}};
 
 static const STENTRY np2tbl[] = {
-	{"CPU286",		0,	NP2FLAG_BIN,	&i286reg,		sizeof(i286reg)},
+	{"CPU286",		0,	NP2FLAG_CLOCK,	&i286reg,		sizeof(i286reg)},
 	{"MEMORY",		0,	NP2FLAG_BIN,	mem,			0x10fff0},
 	{"VIDEO",		0,	NP2FLAG_BIN,	mem + VRAM1_B,	0x18000},
 	{"VIDEO2",		0,	NP2FLAG_BIN,	mem + VRAM1_E,	0x8000},
 	{"EXTMEM",		0,	NP2FLAG_EXT,	NULL,			0},
 
-	{"ITF",			0,	NP2FLAG_CORE,	&itf,			sizeof(itf)},
-	{"CORE",		0,	NP2FLAG_CORE,	&pc,			sizeof(pc)},
+	{"ITF",			0,	NP2FLAG_BIN,	&itf,			sizeof(itf)},
+	{"CORE",		0,	NP2FLAG_CLOCK,	&pc,			sizeof(pc)},
 	{"ARTIC",		0,	NP2FLAG_BIN,	&artic,			sizeof(artic)},
 	{"CGROM",		0,	NP2FLAG_BIN,	&cgrom,			sizeof(cgrom)},
 	{"CGWINDOW",	0,	NP2FLAG_BIN,	&cgwindow,		sizeof(cgwindow)},
@@ -97,11 +97,9 @@ static const STENTRY np2tbl[] = {
 	{"CALENDAR",	0,	NP2FLAG_BIN,	&cal,			sizeof(cal)},
 	{"PALEVENT",	0,	NP2FLAG_BIN,	&palevent,		sizeof(palevent)},
 	{"FMBOARD",		0,	NP2FLAG_FM,		NULL,			0},
-	{"BEEP",		0,	NP2FLAG_BEEP,	&beep,			sizeof(beep)},
-#if defined(MIDICH)
-	{"MIDI_MPU",	0,	NP2FLAG_MIDI,	(void *)0,		0},
-	{"MIDI_RS",		0,	NP2FLAG_MIDI,	(void *)1,		0},
-#endif
+	{"BEEP",		0,	NP2FLAG_BIN,	&beep,			sizeof(beep)},
+	{"CMMPU98",		0,	NP2FLAG_COM,	(void *)0,		0},
+	{"CMRS232C",	0,	NP2FLAG_COM,	(void *)1,		0},
 	{"DISK",		0,	NP2FLAG_DISK,	NULL,			0},
 	{"TERMINATE",	0,	NP2FLAG_TERM,	NULL,			0}};
 

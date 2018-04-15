@@ -4,7 +4,13 @@ typedef struct {
 	BYTE	DRAW_SKIP;
 	BYTE	DISPCLK;
 	BYTE	F12COPY;
-
+    
+	BYTE	MOUSE_SW;
+	BYTE	JOYPAD1;
+    
+	BYTE	comfirm;
+	BYTE	resume;
+    
 	BYTE	I286SAVE;
 } NP2OSCFG;
 
@@ -21,4 +27,6 @@ enum {
 extern	WindowPtr	hWndMain;
 extern	BOOL		np2running;
 extern	NP2OSCFG	np2oscfg;
+extern	BYTE		scrnmode;
 
+void recieveCommand(long param);

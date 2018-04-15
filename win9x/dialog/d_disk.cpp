@@ -1,13 +1,15 @@
 #include	"compiler.h"
-#include	"resource.h"
 #include	"strres.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"dosio.h"
+#include	"sysmng.h"
+#include	"toolwin.h"
 #include	"dialog.h"
 #include	"dialogs.h"
 #include	"pccore.h"
-#include	"fddfile.h"
 #include	"diskdrv.h"
+#include	"fddfile.h"
 #include	"newdisk.h"
 
 
@@ -47,26 +49,39 @@ static const FILESEL newdiskui = {newdisk_title, str_d88, newdisk_filter, 1};
 void dialog_changefdd(HWND hWnd, BYTE drv) {
 
 const char	*p;
+	char	path[MAX_PATH];
 	int		readonly;
 
 	if (drv < 4) {
-		p = dlgs_selectfile(hWnd, &fddui, fdd_diskname(drv),
-									fddfolder, sizeof(fddfolder), &readonly);
-		if (p != NULL) {
-			diskdrv_setfdd(drv, p, readonly);
+		p = fdd_diskname(drv);
+		if ((p == NULL) || (p[0] == '\0')) {
+			p = fddfolder;
+		}
+		file_cpyname(path, p, sizeof(path));
+		if (dlgs_selectfile(hWnd, &fddui, path, sizeof(path), &readonly)) {
+			file_cpyname(fddfolder, path, sizeof(fddfolder));
+			sysmng_update(SYS_UPDATEOSCFG);
+			diskdrv_setfdd(drv, path, readonly);
+			toolwin_setfdd(drv, path);
 		}
 	}
 }
 
 void dialog_changehdd(HWND hWnd, BYTE drv) {
 
-const char *p;
+const char	*p;
+	char	path[MAX_PATH];
 
 	if (drv < 2) {
-		p = dlgs_selectfile(hWnd, &hddui, np2cfg.hddfile[drv],
-									hddfolder, sizeof(hddfolder), NULL);
-		if (p != NULL) {
-			diskdrv_sethdd(drv, p);
+		p = np2cfg.hddfile[drv];
+		if ((p == NULL) || (p[0] == '\0')) {
+			p = hddfolder;
+		}
+		file_cpyname(path, p, sizeof(path));
+		if (dlgs_selectfile(hWnd, &hddui, path, sizeof(path), NULL)) {
+			file_cpyname(hddfolder, path, sizeof(hddfolder));
+			sysmng_update(SYS_UPDATEOSCFG);
+			diskdrv_sethdd(drv, path);
 		}
 	}
 }
@@ -194,30 +209,28 @@ static LRESULT CALLBACK NewdiskDlgProc(HWND hWnd, UINT msg,
 void dialog_newdisk(HWND hWnd) {
 
 	char		path[MAX_PATH];
-const char		*p;
 	HINSTANCE	hinst;
 
 	file_cpyname(path, fddfolder, sizeof(path));
 	file_cutname(path);
 	file_catname(path, str_newdisk, sizeof(path));
 
-	p = dlgs_selectwritefile(hWnd, &newdiskui, path, NULL, 0);
-	if (p == NULL) {
+	if (!dlgs_selectwritefile(hWnd, &newdiskui, path, sizeof(path))) {
 		return;
 	}
 	hinst = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
-	if (!file_cmpname(file_getext((char *)p), str_thd)) {
+	if (!file_cmpname(file_getext(path), str_thd)) {
 		hddsize = 0;
 		if (DialogBox(hinst, MAKEINTRESOURCE(IDD_NEWHDDDISK),
 									hWnd, (DLGPROC)NewHddDlgProc) == IDOK) {
-			newdisk_hdd(p, hddsize);	// (hddsize < 5) || (hddsize > 256)
+			newdisk_hdd(path, hddsize);	// (hddsize < 5) || (hddsize > 256)
 		}
 	}
 	else {
 		if (DialogBox(hinst,
 				MAKEINTRESOURCE(np2cfg.usefd144?IDD_NEWDISK2:IDD_NEWDISK),
 									hWnd, (DLGPROC)NewdiskDlgProc) == IDOK) {
-			newdisk_fdd(p, makefdtype, disklabel);
+			newdisk_fdd(path, makefdtype, disklabel);
 		}
 	}
 }

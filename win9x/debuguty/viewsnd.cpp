@@ -1,6 +1,6 @@
 #include	"compiler.h"
-#include	"resource.h"
 #include	"strres.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"viewer.h"
 #include	"viewcmn.h"
@@ -180,3 +180,4 @@ void viewsnd_init(NP2VIEW_T *dst, NP2VIEW_T *src) {
 	dst->mul = 1;
 	dst->pos = 0;
 }
+

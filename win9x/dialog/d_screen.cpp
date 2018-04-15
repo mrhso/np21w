@@ -1,17 +1,18 @@
 #include	"compiler.h"
 #include	<commctrl.h>
 #include	<prsht.h>
-#include	"resource.h"
 #include	"strres.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"scrnmng.h"
 #include	"sysmng.h"
+#include	"np2class.h"
+#include	"dialog.h"
+#include	"dialogs.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"scrndraw.h"
 #include	"palettes.h"
-#include	"dialog.h"
-#include	"dialogs.h"
 
 
 static const char str_scropt[] = "Screen option";
@@ -60,7 +61,7 @@ static LRESULT CALLBACK Scropt1DlgProc(HWND hWnd, UINT msg,
 			break;
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				renewal = 0;
 				b = GetDlgItemCheck(hWnd, IDC_SKIPLINE);
 				if (np2cfg.skipline != b) {
@@ -117,7 +118,7 @@ static LRESULT CALLBACK Scropt2DlgProc(HWND hWnd, UINT msg,
 			return(TRUE);
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				update = 0;
 				b = GetDlgItemCheck(hWnd, IDC_GDC72020);
 				if (np2cfg.uPD72020 != b) {
@@ -212,7 +213,7 @@ static LRESULT CALLBACK Scropt3DlgProc(HWND hWnd, UINT msg,
 			break;
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				update = 0;
 				ZeroMemory(value, sizeof(value));
 				value[0] = (BYTE)SendDlgItemMessage(hWnd, IDC_TRAMWAIT,
@@ -278,12 +279,14 @@ void dialog_scropt(HWND hWnd) {
 
 	ZeroMemory(&psh, sizeof(psh));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
-	psh.dwFlags = PSH_NOAPPLYNOW;
+	psh.dwFlags = PSH_NOAPPLYNOW | PSH_USEHICON | PSH_USECALLBACK;
 	psh.hwndParent = hWnd;
 	psh.hInstance = hinst;
+	psh.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(IDI_ICON2));
 	psh.nPages = 3;
 	psh.phpage = hpsp;
 	psh.pszCaption = str_scropt;
+	psh.pfnCallback = np2class_propetysheet;
 	PropertySheet(&psh);
 	InvalidateRect(hWndMain, NULL, TRUE);
 }

@@ -12,14 +12,14 @@
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
 #include	"board14.h"
-#include	"vram.h"
-#include	"maketext.h"
-#include	"palettes.h"
-#include	"font.h"
-#include	"sound.h"
 #include	"bios.h"
+#include	"vram.h"
+#include	"palettes.h"
+#include	"maketext.h"
+#include	"sound.h"
 #include	"fmboard.h"
 #include	"beep.h"
+#include	"font.h"
 #include	"fddfile.h"
 #include	"fdd_mtr.h"
 #include	"sxsi.h"
@@ -38,20 +38,19 @@ typedef struct {
 	char	index[10];
 	UINT16	ver;
 	UINT32	size;
-} NP2FLAGPART_T;
+} NP2FENT;
 
 enum {
 	NP2FLAG_BIN			= 0,
 	NP2FLAG_TERM,
-	NP2FLAG_CORE,
+	NP2FLAG_CLOCK,
 	NP2FLAG_DMA,
 	NP2FLAG_EGC,
 	NP2FLAG_EXT,
 	NP2FLAG_EVT,
 	NP2FLAG_GIJ,
 	NP2FLAG_FM,
-	NP2FLAG_BEEP,
-	NP2FLAG_MIDI,
+	NP2FLAG_COM,
 	NP2FLAG_DISK
 };
 
@@ -73,9 +72,9 @@ typedef struct {
 	int		num;
 } ENUMTBL;
 
-#define	PROCID(a, b, c, d)	(((d) << 24) | ((c) << 16) | ((b) << 8) | (a))
-#define	PROC2NUM(a, b)		proc2num(&(a), b, sizeof(b)/sizeof(PROCTBL))
-#define	NUM2PROC(a, b)		num2proc(&(a), b, sizeof(b)/sizeof(PROCTBL))
+#define	PROCID(a, b, c, d)	(((d) << 24) + ((c) << 16) + ((b) << 8) + (a))
+#define	PROC2NUM(a, b)		proc2num(&(a), (b), sizeof(b)/sizeof(PROCTBL))
+#define	NUM2PROC(a, b)		num2proc(&(a), (b), sizeof(b)/sizeof(PROCTBL))
 
 #include "statsave.tbl"
 
@@ -139,15 +138,15 @@ static BOOL num2proc(void *func, const PROCTBL *tbl, int size) {
 // ----
 
 typedef struct {
-	FILEH		fh;
-	long		pos;
-	long		bak;
-	long		next;
-	NP2FHDR		f;
-	NP2FLAGPART_T	p;
-} NP2FFILE;
+	FILEH	fh;
+	long	pos;
+	long	bak;
+	long	next;
+	NP2FHDR	f;
+	NP2FENT	p;
+} _NP2FFILE, *NP2FFILE;
 
-static int flagopen(NP2FFILE *f, const char *filename, ERR_BUF *e) {
+static int flagopen(NP2FFILE f, const char *filename, ERR_BUF *e) {
 
 	if (f) {
 		f->fh = file_open(filename);
@@ -186,7 +185,7 @@ static int flagopen(NP2FFILE *f, const char *filename, ERR_BUF *e) {
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagcreate(NP2FFILE *f, const char *filename) {
+static int flagcreate(NP2FFILE f, const char *filename) {
 
 	if (f) {
 		f->fh = file_create(filename);
@@ -204,10 +203,10 @@ static int flagcreate(NP2FFILE *f, const char *filename) {
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagload_create(NP2FFILE *f) {
+static int flagload_create(NP2FFILE f) {
 
 	if (f) {
-		ZeroMemory(&f->p, sizeof(NP2FLAGPART_T));
+		ZeroMemory(&f->p, sizeof(NP2FENT));
 		if (f->pos & 15) {
 			f->pos += 15;
 			f->pos &= ~0xf;
@@ -215,18 +214,17 @@ static int flagload_create(NP2FFILE *f) {
 				return(NP2FLAG_FAILURE);
 			}
 		}
-		if (file_read(f->fh, &f->p, sizeof(NP2FLAGPART_T))
-												!= sizeof(NP2FLAGPART_T)) {
+		if (file_read(f->fh, &f->p, sizeof(NP2FENT)) != sizeof(NP2FENT)) {
 			return(NP2FLAG_FAILURE);
 		}
-		f->pos += sizeof(NP2FLAGPART_T);
+		f->pos += sizeof(NP2FENT);
 		f->next = f->pos + f->p.size;
 		return(NP2FLAG_SUCCESS);
 	}
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagload_load(NP2FFILE *f, void *buf, UINT size) {
+static int flagload_load(NP2FFILE f, void *buf, UINT size) {
 
 	if (f && buf && size && (file_read(f->fh, buf, size) == size)) {
 		f->pos += size;
@@ -235,7 +233,7 @@ static int flagload_load(NP2FFILE *f, void *buf, UINT size) {
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagload_close(NP2FFILE *f) {
+static int flagload_close(NP2FFILE f) {
 
 	if (file_seek(f->fh, f->next, 0) != f->next) {
 		return(NP2FLAG_FAILURE);
@@ -244,11 +242,11 @@ static int flagload_close(NP2FFILE *f) {
 	return(NP2FLAG_SUCCESS);
 }
 
-static int flagsave_create(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_create(NP2FFILE f, const STENTRY *t) {
 
 	if (f && t) {
 		int		len;
-		ZeroMemory(&f->p, sizeof(NP2FLAGPART_T));
+		ZeroMemory(&f->p, sizeof(NP2FENT));
 		if (f->pos & 15) {
 			UINT rem;
 			rem = 16 - (f->pos & 15);
@@ -267,17 +265,16 @@ static int flagsave_create(NP2FFILE *f, const STENTRY *t) {
 			CopyMemory(f->p.index, t->index, len);
 		}
 		f->p.ver = t->ver;
-		if (file_write(f->fh, &f->p, sizeof(NP2FLAGPART_T))
-												!= sizeof(NP2FLAGPART_T)) {
+		if (file_write(f->fh, &f->p, sizeof(NP2FENT)) != sizeof(NP2FENT)) {
 			return(NP2FLAG_FAILURE);
 		}
-		f->pos += sizeof(NP2FLAGPART_T);
+		f->pos += sizeof(NP2FENT);
 		return(NP2FLAG_SUCCESS);
 	}
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagsave_save(NP2FFILE *f, void *buf, UINT size) {
+static int flagsave_save(NP2FFILE f, void *buf, UINT size) {
 
 	if (f && buf && size && (file_write(f->fh, buf, size) == size)) {
 		f->pos += size;
@@ -287,7 +284,7 @@ static int flagsave_save(NP2FFILE *f, void *buf, UINT size) {
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagsave_close(NP2FFILE *f) {
+static int flagsave_close(NP2FFILE f) {
 
 	if (!f) {
 		goto fs_closeerr;
@@ -295,8 +292,7 @@ static int flagsave_close(NP2FFILE *f) {
 	if (file_seek(f->fh, f->bak, 0) != f->bak) {
 		goto fs_closeerr;
 	}
-	if (file_write(f->fh, &f->p, sizeof(NP2FLAGPART_T))
-												!= sizeof(NP2FLAGPART_T)) {
+	if (file_write(f->fh, &f->p, sizeof(NP2FENT)) != sizeof(NP2FENT)) {
 		goto fs_closeerr;
 	}
 	if (file_seek(f->fh, f->pos, 0) == f->pos) {
@@ -307,7 +303,7 @@ fs_closeerr:
 	return(NP2FLAG_FAILURE);
 }
 
-static void flagclose(NP2FFILE *f) {
+static void flagclose(NP2FFILE f) {
 
 	if (f) {
 		file_close(f->fh);
@@ -317,7 +313,7 @@ static void flagclose(NP2FFILE *f) {
 
 // ----
 
-static int flagsave_term(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_term(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 
@@ -329,7 +325,7 @@ static int flagsave_term(NP2FFILE *f, const STENTRY *t) {
 
 // ----
 
-static int flagsave_common(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_common(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 
@@ -341,7 +337,7 @@ static int flagsave_common(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int flagload_common(NP2FFILE *f, const STENTRY *t) {
+static int flagload_common(NP2FFILE f, const STENTRY *t) {
 
 	return(flagload_load(f, t->arg1, t->arg2));
 }
@@ -349,24 +345,20 @@ static int flagload_common(NP2FFILE *f, const STENTRY *t) {
 
 // -----
 
-static int flagload_core(NP2FFILE *f, const STENTRY *t) {
+static int flagload_clock(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 
 	ret = flagload_common(f, t);
-	if (opna_rate) {
-		pc.sampleclock = (pc.realclock / opna_rate) + 1;
-	}
-	else {
-		pc.sampleclock = 0;
-	}
+	sound_changeclock();
+	beep_changeclock();
 	return(ret);
 }
 
 
 // -----
 
-static int flagsave_dma(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_dma(NP2FFILE f, const STENTRY *t) {
 
 	int			ret;
 	int			i;
@@ -388,7 +380,7 @@ static int flagsave_dma(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int flagload_dma(NP2FFILE *f, const STENTRY *t) {
+static int flagload_dma(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	int		i;
@@ -416,7 +408,7 @@ static int flagload_dma(NP2FFILE *f, const STENTRY *t) {
 
 // -----
 
-static int flagsave_egc(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_egc(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	_EGC	egcbak;
@@ -433,7 +425,7 @@ static int flagsave_egc(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int flagload_egc(NP2FFILE *f, const STENTRY *t) {
+static int flagload_egc(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 
@@ -447,7 +439,7 @@ static int flagload_egc(NP2FFILE *f, const STENTRY *t) {
 
 // -----
 
-static int flagsave_ext(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_ext(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 
@@ -462,7 +454,7 @@ static int flagsave_ext(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int flagload_ext(NP2FFILE *f, const STENTRY *t) {
+static int flagload_ext(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	int		i;
@@ -499,9 +491,6 @@ static int flagload_ext(NP2FFILE *f, const STENTRY *t) {
 // -----
 
 typedef struct {
-	SINT32		remainclock;
-	SINT32		baseclock;
-	UINT32		clock;
 	UINT		readyevents;
 	UINT		waitevents;
 } NEVTSAVE;
@@ -513,7 +502,7 @@ typedef struct {
 	NEVENTCB	proc;
 } NEVTITEM;
 
-static int nevent_save(NP2FFILE *f, int num) {
+static int nevent_save(NP2FFILE f, int num) {
 
 	NEVTITEM	nit;
 	UINT		i;
@@ -534,15 +523,12 @@ static int nevent_save(NP2FFILE *f, int num) {
 	return(flagsave_save(f, &nit, sizeof(nit)));
 }
 
-static int flagsave_evt(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_evt(NP2FFILE f, const STENTRY *t) {
 
 	NEVTSAVE	nevt;
 	int			ret;
 	UINT		i;
 
-	nevt.remainclock = nevent.remainclock;
-	nevt.baseclock = nevent.baseclock;
-	nevt.clock = nevent.clock;
 	nevt.readyevents = nevent.readyevents;
 	nevt.waitevents = nevent.waitevents;
 
@@ -560,7 +546,7 @@ static int flagsave_evt(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int nevent_load(NP2FFILE *f, UINT *tbl, UINT *pos) {
+static int nevent_load(NP2FFILE f, UINT *tbl, UINT *pos) {
 
 	int			ret;
 	NEVTITEM	nit;
@@ -593,7 +579,7 @@ static int nevent_load(NP2FFILE *f, UINT *tbl, UINT *pos) {
 	return(ret);
 }
 
-static int flagload_evt(NP2FFILE *f, const STENTRY *t) {
+static int flagload_evt(NP2FFILE f, const STENTRY *t) {
 
 	int			ret;
 	NEVTSAVE	nevt;
@@ -601,9 +587,6 @@ static int flagload_evt(NP2FFILE *f, const STENTRY *t) {
 
 	ret = flagload_load(f, &nevt, sizeof(nevt));
 
-	nevent.remainclock = nevt.remainclock;
-	nevent.baseclock = nevt.baseclock;
-	nevent.clock = nevt.clock;
 	nevent.readyevents = 0;
 	nevent.waitevents = 0;
 
@@ -620,7 +603,7 @@ static int flagload_evt(NP2FFILE *f, const STENTRY *t) {
 
 // ----
 
-static int flagsave_gij(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_gij(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	int		i;
@@ -641,7 +624,7 @@ static int flagsave_gij(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int flagload_gij(NP2FFILE *f, const STENTRY *t) {
+static int flagload_gij(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	int		i;
@@ -682,7 +665,7 @@ typedef struct {
 	BYTE	extop[4];
 } OPNKEY;
 
-static int flagsave_fm(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_fm(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	UINT	saveflg;
@@ -769,14 +752,12 @@ static int flagsave_fm(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static void play_fmreg(BYTE num) {
+static void play_fmreg(BYTE num, UINT reg) {
 
 	UINT	chbase;
-	UINT	reg;
 	UINT	i;
 
 	chbase = num * 3;
-	reg = num * 0x100;
 	for (i=0x30; i<0xa0; i++) {
 		opngen_setreg((BYTE)chbase, (BYTE)i, opn.reg[reg + i]);
 	}
@@ -797,11 +778,15 @@ static void play_psgreg(PSGGEN psg) {
 	}
 }
 
-static int flagload_fm(NP2FFILE *f, const STENTRY *t) {
+static int flagload_fm(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	UINT	saveflg;
 	OPNKEY	opnkey;
+	UINT	fmreg1a;
+	UINT	fmreg1b;
+	UINT	fmreg2a;
+	UINT	fmreg2b;
 
 	opngen_reset();
 	psggen_reset(&psg1);
@@ -815,6 +800,10 @@ static int flagload_fm(NP2FFILE *f, const STENTRY *t) {
 	ret = flagload_load(f, &usesound, sizeof(usesound));
 	fmboard_reset((BYTE)usesound);
 
+	fmreg1a = 0x000;
+	fmreg1b = 0x100;
+	fmreg2a = 0x200;
+	fmreg2b = 0x300;
 	switch(usesound) {
 		case 0x01:
 			saveflg = FLAG_MG;
@@ -832,6 +821,9 @@ static int flagload_fm(NP2FFILE *f, const STENTRY *t) {
 		case 0x06:
 			saveflg = FLAG_FM1A | FLAG_FM1B | FLAG_FM2A | FLAG_PSG1 |
 										FLAG_PSG2 | FLAG_RHYTHM | FLAG_PCM86;
+			fmreg1a = 0x200;	// ‹t“]‚µ‚Ä‚é‚Ì‚ñc
+			fmreg1b = 0x000;
+			fmreg2a = 0x100;
 			break;
 
 		case 0x08:
@@ -855,6 +847,7 @@ static int flagload_fm(NP2FFILE *f, const STENTRY *t) {
 			break;
 
 		default:
+			saveflg = 0;
 			break;
 	}
 
@@ -902,16 +895,16 @@ static int flagload_fm(NP2FFILE *f, const STENTRY *t) {
 	}
 
 	if (saveflg & FLAG_FM1A) {
-		play_fmreg(0);
+		play_fmreg(0, fmreg1a);
 	}
 	if (saveflg & FLAG_FM1B) {
-		play_fmreg(1);
+		play_fmreg(1, fmreg1b);
 	}
 	if (saveflg & FLAG_FM2A) {
-		play_fmreg(2);
+		play_fmreg(2, fmreg2a);
 	}
 	if (saveflg & FLAG_FM2B) {
-		play_fmreg(3);
+		play_fmreg(3, fmreg2b);
 	}
 	if (saveflg & FLAG_PSG1) {
 		play_psgreg(&psg1);
@@ -933,7 +926,7 @@ typedef struct {
 	DOSTIME	time;
 } STATDISK;
 
-static int disksave(NP2FFILE *f, const char *path, int readonly) {
+static int disksave(NP2FFILE f, const char *path, int readonly) {
 
 	STATDISK	st;
 	FILEH		fh;
@@ -951,7 +944,7 @@ static int disksave(NP2FFILE *f, const char *path, int readonly) {
 	return(flagsave_save(f, &st, sizeof(st)));
 }
 
-static int flagsave_disk(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_disk(NP2FFILE f, const STENTRY *t) {
 
 	int		ret;
 	BYTE	i;
@@ -973,7 +966,7 @@ static int flagsave_disk(NP2FFILE *f, const STENTRY *t) {
 	return(ret);
 }
 
-static int diskcheck(NP2FFILE *f, const char *name, ERR_BUF *e) {
+static int diskcheck(NP2FFILE f, const char *name, ERR_BUF *e) {
 
 	int			ret;
 	FILEH		fh;
@@ -1004,7 +997,7 @@ static int diskcheck(NP2FFILE *f, const char *name, ERR_BUF *e) {
 	return(ret);
 }
 
-static int flagcheck_disk(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
+static int flagcheck_disk(NP2FFILE f, const STENTRY *t, ERR_BUF *e) {
 
 	int		ret;
 	int		i;
@@ -1028,7 +1021,7 @@ static int flagcheck_disk(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
 	return(ret);
 }
 
-static int flagload_disk(NP2FFILE *f, const STENTRY *t) {
+static int flagload_disk(NP2FFILE f, const STENTRY *t) {
 
 	int			ret;
 	BYTE		i;
@@ -1063,13 +1056,12 @@ static int flagload_disk(NP2FFILE *f, const STENTRY *t) {
 
 // -----
 
-#ifdef _MIDICH
-static int flagsave_midi(NP2FFILE *f, const STENTRY *t) {
+static int flagsave_com(NP2FFILE f, const STENTRY *t) {
 
 	UINT	device;
 	COMMNG	cm;
 	int		ret;
-	_MIDICH	mch[16];
+	COMFLAG	flag;
 
 	device = (UINT)t->arg1;
 	switch(device) {
@@ -1086,55 +1078,78 @@ static int flagsave_midi(NP2FFILE *f, const STENTRY *t) {
 			break;
 	}
 	ret = NP2FLAG_SUCCESS;
-	if ((cm != NULL) && (cm->msg(cm, COMMSG_MIDISTATGET, (long)mch))) {
-		ret = flagsave_create(f, t);
-		if (ret != NP2FLAG_FAILURE) {
-			ret |= flagsave_save(f, mch, sizeof(mch));
-			ret |= flagsave_close(f);
+	if (cm) {
+		flag = (COMFLAG)cm->msg(cm, COMMSG_GETFLAG, 0);
+		if (flag) {
+			ret = flagsave_create(f, t);
+			if (ret != NP2FLAG_FAILURE) {
+				ret |= flagsave_save(f, flag, flag->size);
+				ret |= flagsave_close(f);
+			}
+			_MFREE(flag);
 		}
 	}
 	return(ret);
 }
 
-static int flagload_midi(NP2FFILE *f, const STENTRY *t) {
+static int flagload_com(NP2FFILE f, const STENTRY *t) {
 
-	_MIDICH	mch[16];
-	UINT	device;
-	COMMNG	cm;
-	int		ret;
+	UINT		device;
+	COMMNG		cm;
+	int			ret;
+	_COMFLAG	fhdr;
+	COMFLAG		flag;
 
-	ret = flagload_load(f, mch, sizeof(mch));
-	if (ret != NP2FLAG_FAILURE) {
-		device = (UINT)t->arg1;
-		switch(device) {
-			case 0:
-				commng_destroy(cm_mpu98);
-				cm = commng_create(COMCREATE_MPU98II);
-				cm_mpu98 = cm;
-				break;
-
-			case 1:
-				commng_destroy(cm_rs232c);
-				cm = commng_create(COMCREATE_SERIAL);
-				cm_rs232c = cm;
-				break;
-
-			default:
-				cm = NULL;
-				break;
-		}
-		if (cm) {
-			cm->msg(cm, COMMSG_MIDISTATSET, (long)mch);
-		}
+	ret = flagload_load(f, &fhdr, sizeof(fhdr));
+	if (ret != NP2FLAG_SUCCESS) {
+		goto flcom_err1;
 	}
+	if (fhdr.size < sizeof(fhdr)) {
+		goto flcom_err1;
+	}
+	flag = (COMFLAG)_MALLOC(fhdr.size, "com stat flag");
+	if (flag == NULL) {
+		goto flcom_err1;
+	}
+	CopyMemory(flag, &fhdr, sizeof(fhdr));
+	ret |= flagload_load(f, flag + 1, fhdr.size - sizeof(fhdr));
+	if (ret != NP2FLAG_SUCCESS) {
+		goto flcom_err2;
+	}
+
+	device = (UINT)t->arg1;
+	switch(device) {
+		case 0:
+			commng_destroy(cm_mpu98);
+			cm = commng_create(COMCREATE_MPU98II);
+			cm_mpu98 = cm;
+			break;
+
+		case 1:
+			commng_destroy(cm_rs232c);
+			cm = commng_create(COMCREATE_SERIAL);
+			cm_rs232c = cm;
+			break;
+
+		default:
+			cm = NULL;
+			break;
+	}
+	if (cm) {
+		cm->msg(cm, COMMSG_SETFLAG, (long)flag);
+	}
+
+flcom_err2:
+	_MFREE(flag);
+
+flcom_err1:
 	return(ret);
 }
-#endif
 
 
 // ----
 
-static int flagcheck_versize(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
+static int flagcheck_versize(NP2FFILE f, const STENTRY *t, ERR_BUF *e) {
 
 	if ((f) && (t)) {
 		if ((f->p.ver == t->ver) && (f->p.size == t->arg2)) {
@@ -1146,7 +1161,7 @@ static int flagcheck_versize(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
 	return(NP2FLAG_FAILURE);
 }
 
-static int flagcheck_veronly(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
+static int flagcheck_veronly(NP2FFILE f, const STENTRY *t, ERR_BUF *e) {
 
 	if ((f) && (t)) {
 		if (f->p.ver == t->ver) {
@@ -1163,7 +1178,7 @@ static int flagcheck_veronly(NP2FFILE *f, const STENTRY *t, ERR_BUF *e) {
 
 int statsave_save(const char *filename) {
 
-	NP2FFILE	f;
+	_NP2FFILE	f;
 	int			ret;
 	UINT		i;
 
@@ -1174,8 +1189,7 @@ int statsave_save(const char *filename) {
 	for (i=0; i<sizeof(np2tbl)/sizeof(STENTRY); i++) {
 		switch(np2tbl[i].type) {
 			case NP2FLAG_BIN:
-			case NP2FLAG_CORE:
-			case NP2FLAG_BEEP:
+			case NP2FLAG_CLOCK:
 				ret |= flagsave_common(&f, &np2tbl[i]);
 				break;
 
@@ -1211,11 +1225,9 @@ int statsave_save(const char *filename) {
 				ret |= flagsave_disk(&f, &np2tbl[i]);
 				break;
 
-#if defined(MIDICH)
-			case NP2FLAG_MIDI:
-				ret |= flagsave_midi(&f, &np2tbl[i]);
+			case NP2FLAG_COM:
+				ret |= flagsave_com(&f, &np2tbl[i]);
 				break;
-#endif
 		}
 	}
 	flagclose(&f);
@@ -1224,7 +1236,7 @@ int statsave_save(const char *filename) {
 
 int statsave_check(const char *filename, char *buf, int size) {
 
-	NP2FFILE	f;
+	_NP2FFILE	f;
 	int			ret;
 	UINT		i;
 	BOOL		done;
@@ -1258,6 +1270,7 @@ int statsave_check(const char *filename, char *buf, int size) {
 			if (i < (sizeof(np2tbl)/sizeof(STENTRY))) {
 				switch(np2tbl[i].type) {
 					case NP2FLAG_BIN:
+					case NP2FLAG_CLOCK:
 						ret |= flagcheck_versize(&f, &np2tbl[i], &e);
 						break;
 
@@ -1265,16 +1278,12 @@ int statsave_check(const char *filename, char *buf, int size) {
 						done = TRUE;
 						break;
 
-					case NP2FLAG_CORE:
 					case NP2FLAG_DMA:
 					case NP2FLAG_EGC:
 					case NP2FLAG_EXT:
 					case NP2FLAG_EVT:
 					case NP2FLAG_GIJ:
-					case NP2FLAG_BEEP:
-#if defined(MIDICH)
-					case NP2FLAG_MIDI:
-#endif
+					case NP2FLAG_COM:
 						ret |= flagcheck_veronly(&f, &np2tbl[i], &e);
 						break;
 
@@ -1305,7 +1314,7 @@ int statsave_check(const char *filename, char *buf, int size) {
 
 int statsave_load(const char *filename) {
 
-	NP2FFILE	f;
+	_NP2FFILE	f;
 	int			ret;
 	UINT		i;
 	BOOL		done;
@@ -1336,7 +1345,6 @@ int statsave_load(const char *filename) {
 		if (i < (sizeof(np2tbl)/sizeof(STENTRY))) {
 			switch(np2tbl[i].type) {
 				case NP2FLAG_BIN:
-				case NP2FLAG_BEEP:
 					ret |= flagload_common(&f, &np2tbl[i]);
 					break;
 
@@ -1344,8 +1352,8 @@ int statsave_load(const char *filename) {
 					done = TRUE;
 					break;
 
-				case NP2FLAG_CORE:
-					ret |= flagload_core(&f, &np2tbl[i]);
+				case NP2FLAG_CLOCK:
+					ret |= flagload_clock(&f, &np2tbl[i]);
 					break;
 
 				case NP2FLAG_DMA:
@@ -1376,11 +1384,9 @@ int statsave_load(const char *filename) {
 					ret |= flagload_disk(&f, &np2tbl[i]);
 					break;
 
-#if defined(MIDICH)
-				case NP2FLAG_MIDI:
-					ret |= flagload_midi(&f, &np2tbl[i]);
+				case NP2FLAG_COM:
+					ret |= flagload_com(&f, &np2tbl[i]);
 					break;
-#endif
 
 				default:
 					ret |= NP2FLAG_WARNING;

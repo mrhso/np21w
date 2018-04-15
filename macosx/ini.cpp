@@ -14,6 +14,33 @@ const INITBL	*tblterm;
 	UINT		count;
 } _INIARG, *INIARG;
 
+static void inirdargs16(const char *src, const INITBL *ini) {
+
+	SINT16	*dst;
+	int		dsize;
+	int		i;
+	char	c;
+
+	dst = (SINT16 *)ini->value;
+	dsize = ini->size;
+
+	for (i=0; i<dsize; i++) {
+		while(*src == ' ') {
+			src++;
+		}
+		if (*src == '\0') {
+			break;
+		}
+		dst[i] = (SINT16)milstr_solveINT(src);
+		while(*src != '\0') {
+			c = *src++;
+			if (c == ',') {
+				break;
+			}
+		}
+	}
+}
+
 static void inirdarg8(BYTE *dst, int dsize, const char *src) {
 
 	int		i;
@@ -58,6 +85,7 @@ static BOOL inireadcb(void *arg, const char *para,
 										const char *key, const char *data) {
 
 const INITBL	*p;
+      char		work[512];
 
 	if (arg == NULL) {
 		return(FAILURE);
@@ -76,6 +104,11 @@ const INITBL	*p;
 				case INITYPE_BOOL:
 					*((BYTE *)p->value) = (!milstr_cmp(data, str_true))?1:0;
 					break;
+
+                case INITYPE_ARGS16:
+                    milstr_ncpy(work, data, 512);
+                    inirdargs16(work, p);
+                    break;
 
 				case INITYPE_BYTEARG:
 					inirdarg8((BYTE *)p->value, p->size, data);
@@ -193,7 +226,7 @@ static void iniwrsetarg8(char *work, int size, const BYTE *ptr, int arg) {
 }
 
 void ini_write(const char *path, const char *title,
-											const INITBL *tbl, UINT count) {
+								const INITBL *tbl, UINT count, BOOL create) {
 
 	FILEH		fh;
 const INITBL	*p;
@@ -201,13 +234,22 @@ const INITBL	*pterm;
 	BOOL		set;
 	char		work[512];
 
-	fh = file_create(path);
+	fh = FILEH_INVALID;
+	if (!create) {
+		fh = file_open(path);
+		if (fh != FILEH_INVALID) {
+			file_seek(fh, 0, FSEEK_END);
+		}
+	}
+	if (fh == FILEH_INVALID) {
+		fh = file_create(path);
+	}
 	if (fh == FILEH_INVALID) {
 		return;
 	}
 	milstr_ncpy(work, "[", sizeof(work));
 	milstr_ncat(work, title, sizeof(work));
-	milstr_ncat(work, "]\r\n", sizeof(work));
+	milstr_ncat(work, "]\r", sizeof(work));
 	file_write(fh, work, strlen(work));
 
 	p = tbl;
@@ -273,7 +315,7 @@ const INITBL	*pterm;
 			file_write(fh, p->item, strlen(p->item));
 			file_write(fh, " = ", 3);
 			file_write(fh, work, strlen(work));
-			file_write(fh, "\r\n", 2);
+			file_write(fh, "\r", 1);
 		}
 		p++;
 	}
@@ -352,6 +394,9 @@ static const INITBL iniitem[] = {
 	{"pc9861_j", INITYPE_BYTEARG,	np2cfg.pc9861jmp,		6},
 	{"calendar", INITYPE_BOOL,		&np2cfg.calendar,		0},
 	{"USE144FD", INITYPE_BOOL,		&np2cfg.usefd144,		0},
+	{"Mouse_sw", INITYPE_BOOL,		&np2oscfg.MOUSE_SW,		0},
+	{"comfirm_", INITYPE_BOOL,		&np2oscfg.comfirm,		0},
+	{"e_resume", INITYPE_BOOL,		&np2oscfg.resume,		0},		// ver0.30
 	{"I286SAVE", INITYPE_BOOL,		&np2oscfg.I286SAVE,		0}};
 
 #define	INIITEMS	(sizeof(iniitem) / sizeof(INITBL))
@@ -361,7 +406,7 @@ void initload(void) {
 
 	char	path[MAX_PATH];
 
-	milstr_ncpy(path, file_getcd(inifile), sizeof(path));
+	file_cpyname(path, file_getcd(inifile), sizeof(path));
 	ini_read(path, ini_title, iniitem, INIITEMS);
 }
 
@@ -369,7 +414,7 @@ void initsave(void) {
 
 	char	path[MAX_PATH];
 
-	milstr_ncpy(path, file_getcd(inifile), sizeof(path));
-	ini_write(path, ini_title, iniitem, INIITEMS);
+	file_cpyname(path, file_getcd(inifile), sizeof(path));
+	ini_write(path, ini_title, iniitem, INIITEMS, TRUE);
 }
 

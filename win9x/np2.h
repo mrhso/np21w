@@ -52,12 +52,12 @@ typedef struct {
 
 	BYTE	resume;													// ver0.30
 	BYTE	statsave;
-
+	BYTE	disablemmx;
+	BYTE	wintype;
+	BYTE	toolwin;
+	BYTE	keydisp;
 	BYTE	I286SAVE;
 	BYTE	hostdrv_write;
-
-//	BYTE	MIMPIDEF;		// 0
-//	BYTE	REMOVEHD;		// 0
 } NP2OSCFG;
 
 
@@ -75,26 +75,28 @@ enum {
 };
 
 enum {
-	IDM_SCREENCENTER	= 20000,
-	IDM_SNAPENABLE		= 20001,
-	IDM_BACKGROUND		= 20002,
-	IDM_BGSOUND			= 20003,
-	IDM_TRACEONOFF		= 20004,
-	IDM_MEMORYDUMP		= 20005,
-	IDM_KEYDISP			= 20006,
-	IDM_DEBUGUTY		= 20007,
-	IDM_VIEWER			= 20008,
+	IDM_TOOLWIN			= 20000,
+	IDM_KEYDISP			= 20001,
+	IDM_SCREENCENTER	= 20002,
+	IDM_SNAPENABLE		= 20003,
+	IDM_BACKGROUND		= 20004,
+	IDM_BGSOUND			= 20005,
+	IDM_TRACEONOFF		= 20006,
+	IDM_MEMORYDUMP		= 20007,
+	IDM_DEBUGUTY		= 20008,
+	IDM_VIEWER			= 20009,
 
-	IDM_FLAGSAVE		= 20100,
-	IDM_FLAGLOAD		= 20150,
-
-	IDM_SCRNMUL			= 20200,					// ver0.26
+	IDM_SCRNMUL			= 20050,
 	IDM_SCRNMUL4		= (IDM_SCRNMUL + 4),
 	IDM_SCRNMUL6		= (IDM_SCRNMUL + 6),
 	IDM_SCRNMUL8		= (IDM_SCRNMUL + 8),
 	IDM_SCRNMUL10		= (IDM_SCRNMUL + 10),
 	IDM_SCRNMUL12		= (IDM_SCRNMUL + 12),
 	IDM_SCRNMUL16		= (IDM_SCRNMUL + 16),
+
+	IDM_FLAGSAVE		= 20100,
+	IDM_FLAGLOAD		= 20150,
+	IDM_I286SAVE		= 20200,
 
 	WM_NP2CMD			= (WM_USER + 200),
 	WM_SSTP				= (WM_USER + 201)
@@ -107,17 +109,24 @@ enum {
 	NP2CMD_DUMMY		= 0xffff
 };
 
+enum {
+	MMXFLAG_DISABLE		= 1,
+	MMXFLAG_NOTSUPPORT	= 2
+};
+
 
 extern	NP2OSCFG	np2oscfg;
 extern	HWND		hWndMain;
 extern	HINSTANCE	hInst;
 extern	HINSTANCE	hPrev;
+extern	int			mmxflag;
 extern	BYTE		np2break;
+extern	BOOL		winui_en;
+
 extern	char		modulefile[MAX_PATH];
 extern	char		fddfolder[MAX_PATH];
 extern	char		hddfolder[MAX_PATH];
 extern	char		bmpfilefolder[MAX_PATH];
-extern	char		mimpideffile[MAX_PATH];
 
 void np2active_renewal(void);
 

@@ -3,9 +3,9 @@
 #include	"memory.h"
 #include	"pccore.h"
 #include	"iocore.h"
-#include	"font.h"
 #include	"bios.h"
 #include	"biosmem.h"
+#include	"font.h"
 
 
 static	int		sti_waiting = 0;
@@ -223,7 +223,7 @@ void bios0x18(void) {
 			}
 			else {
 				I286_IP--;
-				nevent.remainclock = -1;
+				I286_REMCLOCK = -1;
 				break;
 			}
 			break;

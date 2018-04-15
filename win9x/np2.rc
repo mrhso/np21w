@@ -26,13 +26,14 @@ LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
 // Dialog
 //
 
-IDD_CONFIG DIALOG DISCARDABLE  0, 0, 180, 142
+IDD_CONFIG DIALOG DISCARDABLE  0, 0, 180, 156
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Configure"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     GROUPBOX        "CPU",IDC_STATIC,8,8,106,44
-    COMBOBOX        IDC_BASECLOCK,14,22,54,43,CBS_DROPDOWNLIST | CBS_SORT | 
+    COMBOBOX        IDC_BASECLOCK,14,22,54,43,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_GROUP | WS_TABSTOP
     LTEXT           "x",IDC_STATIC,72,26,8,8
     COMBOBOX        IDC_MULTIPLE,80,22,28,80,CBS_DROPDOWN | CBS_SORT | 
@@ -50,10 +51,12 @@ BEGIN
     LTEXT           "Buffer",IDC_STATIC,14,88,19,8
     EDITTEXT        IDC_SOUNDBUF,66,86,30,12,WS_GROUP
     LTEXT           "ms",IDC_STATIC,102,88,10,8
+    CONTROL         "Disable MMX",IDC_DISABLEMMX,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,8,112,162,10
     CONTROL         "Comfirm Dialog (on Reset/Exit)",IDC_COMFIRM,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,8,112,163,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,8,126,162,10
     CONTROL         "Resume",IDC_RESUME,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,8,126,163,10
+                    WS_TABSTOP,8,140,162,10
     DEFPUSHBUTTON   "&OK",IDOK,130,7,44,14,WS_GROUP
     PUSHBUTTON      "Cancel",IDCANCEL,130,24,44,14
 END
@@ -61,6 +64,7 @@ END
 IDD_NEWDISK DIALOG DISCARDABLE  0, 0, 180, 44
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Create New FD image"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     LTEXT           "Disk Label:",IDC_STATIC,8,10,32,8
@@ -77,6 +81,7 @@ END
 IDD_NEWDISK2 DIALOG DISCARDABLE  0, 0, 194, 44
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Create New FD image"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     LTEXT           "Disk Label:",IDC_STATIC,8,10,32,8
@@ -95,6 +100,7 @@ END
 IDD_NEWHDDDISK DIALOG DISCARDABLE  0, 0, 160, 45
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Create New HD image"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     LTEXT           "HDD size",IDC_STATIC,8,10,28,8
@@ -117,7 +123,7 @@ BEGIN
                     20,24,40,10
     CONTROL         "Use skipline revisions",IDC_SKIPLINE,"Button",
                     BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,8,40,81,10
-    LTEXT           "Raito",IDC_STATIC,20,55,16,8
+    LTEXT           "Ratio",IDC_STATIC,20,55,16,8
     CONTROL         "Slider1",IDC_SKIPLIGHT,"msctls_trackbar32",TBS_BOTH | 
                     TBS_NOTICKS | WS_TABSTOP,44,55,96,10
     RTEXT           "",IDC_LIGHTSTR,144,54,16,10,SS_SUNKEN
@@ -316,6 +322,7 @@ END
 IDD_MPUPC98 DIALOG DISCARDABLE  0, 0, 182, 176
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "MPU-PC98II"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     LTEXT           "I/O port",IDC_STATIC,8,10,24,8
@@ -326,8 +333,8 @@ BEGIN
                     WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "DEF",IDC_MPUDEF,92,24,18,12
     LTEXT           "DIP-SW",IDC_STATIC,8,46,24,8
-    CONTROL         "",IDC_MPUDIP,"Static",SS_ENHMETAFILE | SS_NOTIFY,42,46,
-                    80,20
+    CONTROL         "",IDC_MPUDIP,"Static",SS_ENHMETAFILE | SS_NOTIFY,42,46, 
+                    80,28
     GROUPBOX        "Assign",IDC_STATIC,8,72,166,98
     LTEXT           "MIDI-OUT",IDC_STATIC,16,87,31,8
     COMBOBOX        IDC_MPU98MMAP,54,84,112,96,CBS_DROPDOWNLIST | CBS_SORT | 
@@ -508,6 +515,7 @@ END
 IDD_CALENDAR DIALOG DISCARDABLE  0, 0, 164, 80
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Calendar"
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
     CONTROL         "Real (localtime)",IDC_CLNDREAL,"Button",
@@ -532,9 +540,9 @@ END
 IDD_ABOUT DIALOG DISCARDABLE  0, 0, 196, 100
 STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About..."
+CLASS "np2dialog"
 FONT 9, "ÇlÇr ÇoÉSÉVÉbÉN"
 BEGIN
-    CONTROL         "",IDC_EXTICON,"Static",SS_ENHMETAFILE,8,8,30,36
     ICON            IDI_ICON1,IDC_NP2ICON,8,8,20,20
     LTEXT           "",IDC_NP2VER,36,16,102,8
     DEFPUSHBUTTON   "&OK",IDOK,148,4,40,14
@@ -705,7 +713,7 @@ END
 // Menu
 //
 
-IDM_MAIN MENU DISCARDABLE 
+IDR_MAIN MENU DISCARDABLE 
 BEGIN
     POPUP "&Emulate"
     BEGIN
@@ -779,6 +787,8 @@ BEGIN
             MENUITEM "F12 = &Mouse",                IDM_F12MOUSE
             MENUITEM "F12 = Co&py",                 IDM_F12COPY
             MENUITEM "F12 = S&top",                 IDM_F12STOP
+            MENUITEM "F12 = tenkey [=]",            IDM_F12EQU
+            MENUITEM "F12 = tenkey [ , ]",          IDM_F12COMMA
         END
         POPUP "&Sound"
         BEGIN
@@ -831,14 +841,27 @@ BEGIN
         MENUITEM "Joy &Rapid",                  IDM_RAPID
         MENUITEM "&Mouse Rapid",                IDM_MSRAPID
         MENUITEM "&Use SSTP",                   IDM_SSTP
-        MENUITEM "&i286 save",                  IDM_I286SAVE
         MENUITEM SEPARATOR
         MENUITEM "&Help...",                    IDM_HELP
         MENUITEM "&About...",                   IDM_ABOUT
     END
 END
 
-IDM_VIEW MENU DISCARDABLE 
+IDR_TOOLWIN MENU DISCARDABLE 
+BEGIN
+    MENUITEM "&Skin",                           IDM_SKIN
+END
+
+IDR_KEYDISP MENU DISCARDABLE 
+BEGIN
+    POPUP "&Module"
+    BEGIN
+        MENUITEM "&FM",                         IDM_KDISPFM
+        MENUITEM "&MIDI",                       IDM_KDISPMIDI
+    END
+END
+
+IDR_VIEW MENU DISCARDABLE 
 BEGIN
     POPUP "&System"
     BEGIN
@@ -878,15 +901,6 @@ BEGIN
     END
 END
 
-IDM_KDISP MENU DISCARDABLE 
-BEGIN
-    POPUP "&Module"
-    BEGIN
-        MENUITEM "&FM",                         IDM_KDISPFM
-        MENUITEM "&Midi",                       IDM_KDISPMIDI
-    END
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -894,6 +908,7 @@ END
 //
 
 NP2BMP                  BITMAP  DISCARDABLE     "ICONS\\nekop2.bmp"
+NP2TOOL                 BITMAP  DISCARDABLE     "ICONS\\np2tool.bmp"
 
 #ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
@@ -920,12 +935,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "\0"
             VALUE "FileDescription", "PC-9801series emulator\0"
-            VALUE "FileVersion", "0, 2, 9, 0\0"
+            VALUE "FileVersion", "0, 7, 0, 0\0"
             VALUE "InternalName", "np2\0"
-            VALUE "LegalCopyright", "No Copyright!\0"
+            VALUE "LegalCopyright", "ÇÀÇ±Ç≥ÇÒäJî≠ÇøÅ[Çﬁ\0"
             VALUE "OriginalFilename", "np2.exe\0"
             VALUE "ProductName", "Neko Project II\0"
-            VALUE "ProductVersion", "0, 2, 9, 0\0"
+            VALUE "ProductVersion", "0, 7, 0, 0\0"
         END
     END
     BLOCK "VarFileInfo"

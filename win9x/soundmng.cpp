@@ -10,6 +10,14 @@
 #include	"vermouth.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+void __fastcall satuation_s16mmx(SINT16 *dst, const SINT32 *src, UINT size);
+#ifdef __cplusplus
+}
+#endif
+
 
 #if 1
 #define	DSBUFFERDESC_SIZE	20			// DirectX3 Structsize
@@ -30,7 +38,7 @@ static	LPDIRECTSOUNDBUFFER	pDSData3;
 static	UINT				dsstreambytes;
 static	BYTE				dsstreamevent;
 static	LPDIRECTSOUNDBUFFER pDSwave3[SOUND_MAXPCM];
-static	BYTE				mute;
+static	UINT				mute;
 static	void				(PARTSCALL *fnmix)(SINT16 *dst,
 												const SINT32 *src, UINT size);
 
@@ -87,7 +95,7 @@ UINT soundmng_create(UINT rate, UINT ms) {
 	samples = (rate * ms) / 2000;
 	samples = (samples + 3) & (~3);
 	dsstreambytes = samples * 2 * sizeof(SINT16);
-	fnmix = satuation_s16;
+	soundmng_setreverse(FALSE);
 
 	ZeroMemory(&pcmwf, sizeof(PCMWAVEFORMAT));
 	pcmwf.wf.wFormatTag = WAVE_FORMAT_PCM;
@@ -242,7 +250,17 @@ void soundmng_sync(void) {
 
 void soundmng_setreverse(BOOL reverse) {
 
-	fnmix = (reverse)?satuation_s16x:satuation_s16;
+	if (!reverse) {
+		if (mmxflag) {
+			fnmix = satuation_s16;
+		}
+		else {
+			fnmix = satuation_s16mmx;
+		}
+	}
+	else {
+		fnmix = satuation_s16x;
+	}
 }
 
 
@@ -447,21 +465,24 @@ void soundmng_deinitialize(void) {
 
 // ----
 
-void soundmng_enable(void) {
+void soundmng_enable(UINT proc) {
 
-	if (mute) {
-		mute = 0;
+	if (!(mute & (1 << proc))) {
+		return;
+	}
+	mute &= ~(1 << proc);
+	if (!mute) {
 		soundmng_reset();
 		streamenable(TRUE);
 	}
 }
 
-void soundmng_disable(void) {
+void soundmng_disable(UINT proc) {
 
 	if (!mute) {
-		mute = 1;
 		streamenable(FALSE);
 		pcmstop();
 	}
+	mute |= 1 << proc;
 }
 

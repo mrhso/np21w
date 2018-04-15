@@ -1,6 +1,4 @@
-#include	<windows.h>
-#include	"common.h"
-
+#include	"compiler.h"
 #include	"romeo.h"
 #include	"juliet.h"
 
@@ -54,9 +52,9 @@ static	_ROMEO		romeo = {NULL};
 
 BOOL juliet_load(void) {
 
-		int			i;
-const	DLLPROCESS	*dp;
-		BOOL		r = SUCCESS;
+	UINT			i;
+const DLLPROCESS	*dp;
+	BOOL			r = SUCCESS;
 
 	juliet_unload();
 

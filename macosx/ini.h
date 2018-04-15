@@ -2,6 +2,7 @@
 enum {
 	INITYPE_STR			= 0,
 	INITYPE_BOOL,
+    INITYPE_ARGS16,
 	INITYPE_BYTEARG,
 	INITYPE_SINT8,
 	INITYPE_SINT16,
@@ -28,9 +29,9 @@ extern "C" {
 #endif
 
 void ini_read(const char *path, const char *title,
-											const INITBL *tbl, UINT count);
+								const INITBL *tbl, UINT count);
 void ini_write(const char *path, const char *title,
-											const INITBL *tbl, UINT count);
+								const INITBL *tbl, UINT count, BOOL create);
 
 void initload(void);
 void initsave(void);

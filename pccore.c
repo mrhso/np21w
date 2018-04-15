@@ -1,59 +1,49 @@
 #include	"compiler.h"
-#include	"dosio.h"
-#include	"scrnmng.h"
 #include	"soundmng.h"
 #include	"sysmng.h"
 #include	"timemng.h"
-
 #include	"i286.h"
 #include	"memory.h"
 #include	"pccore.h"
-
 #include	"iocore.h"
 #include	"cbuscore.h"
-
+#include	"pc9861k.h"
+#include	"mpu98ii.h"
+#include	"bios.h"
 #include	"vram.h"
 #include	"scrndraw.h"
+#include	"dispsync.h"
 #include	"palettes.h"
 #include	"maketext.h"
 #include	"maketgrp.h"
 #include	"makegrph.h"
-
 #include	"sound.h"
-#include	"beep.h"
 #include	"fmboard.h"
-#include	"bios.h"
-#include	"timing.h"
-#include	"dialog.h"
+#include	"beep.h"
+#include	"font.h"
+#include	"diskdrv.h"
 #include	"fddfile.h"
 #include	"fdd_mtr.h"
-#include	"calendar.h"
-#include	"font.h"
-#include	"dispsync.h"
-//#include	"hostdrv.h"
-#include	"mpu98ii.h"
-#include	"diskdrv.h"
 #include	"sxsi.h"
+#include	"calendar.h"
+#include	"timing.h"
+//#include	"hostdrv.h"
 
-#include	"keydisp.h"
-#include	"pc9861k.h"
 
-
-	const char	np2version[] = "ver.0.36";
+	const char	np2version[] = "ver.0.70";
 
 	NP2CFG		np2cfg = {
 				PCBASECLOCK25, 4, 0,
 				{0x3e, 0x63, 0x7a},
 				{0x48, 0x05, 0x0c, 0x00, 0x01, 0x00, 0x00, 0x6E},
-				{0x0c, 0x08, 0x0c, 0x06, 0x03, 0x0c},				// ver0.27
+				{0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c},
 				{1, 1, 6, 1, 8, 1},
 				0, 4, 32, 22050, 800, 0, 1, 1, 0,
 				0, 0,
-//				0, 0, {1, 2, 2, 1},							// ver0.28
 				0, {0, 0, 0}, 0xd1, 0x7f, 0xd1, 0, 0, 1, 0x82,		// ver0.30
 				1, 80, 3, 1, 1, 0, 0x000000, 0xffffff,
 				0, 0, 0, 0x40, 0,
-				64, 64, 64, 64, 64,									// ver0.27
+				64, 64, 64, 64, 64,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 				2, 1, 0, 0,
 				{"", ""}, ""};
@@ -64,11 +54,8 @@
 							4 * PCBASECLOCK25 * 50 / 3104,
 							4 * PCBASECLOCK25 * 5 / 3104,
 							4 * PCBASECLOCK25 / 120,
-							4 * PCBASECLOCK25 / 200,
-							4 * PCBASECLOCK25 / 100,
 							4 * PCBASECLOCK25 / 1920,
 							4 * PCBASECLOCK25 / 3125,
-							(4 * PCBASECLOCK25 / 22050) + 1,
 							(4 * PCBASECLOCK25 / 56400),
 							100, 20,
 							0};
@@ -148,18 +135,9 @@ static void setpcclock(UINT base, UINT multiple) {			// ver0.28
 	pc.dispclock = pc.realclock * 50 / 3102;
 	pc.vsyncclock = pc.realclock * 5 / 3102;
 	pc.mouseclock = pc.realclock / 120;
-	pc.dsoundclock = (pc.realclock) / 200;				// ver0.28
-	pc.dsoundclock2 = pc.realclock / 100;
 	pc.keyboardclock = pc.realclock / 1920;
 	pc.midiclock = pc.realclock / 3125;
 	pc.frame1000 = pc.realclock / 56400;
-	if (opna_rate) {
-//		pc.sampleclock = (pc.realclock / opna_rate) + 1;
-		pc.sampleclock = (pc.realclock / opna_rate);
-	}
-	else {
-		pc.sampleclock = 0;
-	}
 }
 
 
@@ -223,6 +201,8 @@ void pccore_init(void) {
 
 void pccore_term(void) {
 
+	sound_term();
+
 	fdd_eject(0);
 	fdd_eject(1);
 	fdd_eject(2);
@@ -235,8 +215,6 @@ void pccore_term(void) {
 	pc9861k_destruct();
 	rs232c_destruct();
 	mpu98ii_destruct();
-
-	sound_term();
 
 	sxsi_trash();
 }
@@ -292,6 +270,8 @@ void pccore_reset(void) {
 	}
 
 	setpcclock(np2cfg.baseclock, np2cfg.multiple);
+	sound_changeclock();
+	beep_changeclock();
 	nevent_init();
 
 	sound_reset();
@@ -305,7 +285,7 @@ void pccore_reset(void) {
 	cbuscore_bind();
 	fmboard_bind();
 
-	timing_init();
+	timing_reset();
 	fddmtr_init();
 	calendar_init();
 	vram_init();
@@ -506,6 +486,7 @@ void screenvsync(NEVENTITEM item) {
 void pccore_exec(BOOL draw) {
 
 	drawframe = draw;
+	keyext_flash();
 	soundmng_sync();
 	mouseif_sync();
 	pal_eventclear();
@@ -533,7 +514,7 @@ void pccore_exec(BOOL draw) {
 		}
 
 #if 1 // ndef TRACE
-		if (nevent.remainclock > 0) {
+		if (I286_REMCLOCK > 0) {
 			if (!(CPUTYPE & CPUTYPE_V30)) {
 				i286();
 			}

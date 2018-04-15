@@ -1,8 +1,9 @@
 #include	"compiler.h"
 #include	<time.h>
 #include	<winnls32.h>
-#include	"resource.h"
 #include	"strres.h"
+#include	"parts.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"np2arg.h"
 #include	"dosio.h"
@@ -724,12 +725,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return(0L);
 }
 
+static void framereset(void) {
+
+	framecnt = 0;
+	sysmng_updatecaption();
+}
 
 static void processwait(UINT waitcnt) {
 
 	if (timing_getcount() >= waitcnt) {
 		timing_setcount(0);
-		framecnt = 0;
+		framereset();
 	}
 	else {
 		Sleep(1);
@@ -754,9 +760,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 	np2arg_analize(lpszCmdLine);				// タイミング修正	// ver0.29
 	initload();
 
-	srand((unsigned)time(NULL));
-
-//	np2arg_analize(lpszCmdLine);
+	rand_setseed((unsigned)time(NULL));
 
 	if ((hwndorg = FindWindow(szClassName, NULL)) != NULL) {
 		ShowWindow(hwndorg, SW_RESTORE);
@@ -930,21 +934,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst,
 			}
 			else {								// auto skip
 				if (!waitcnt) {
+					UINT cnt;
 					joy_flash();
 					mouse_callback();
 					pccore_exec(framecnt == 0);
 					framecnt++;
-					if (timing_getcount() < framecnt) {
+					cnt = timing_getcount();
+					if (framecnt > cnt) {
 						waitcnt = framecnt;
 						if (framemax > 1) {
 							framemax--;
 						}
 					}
 					else if (framecnt >= framemax) {
-						waitcnt = framecnt;
 						if (framemax < 12) {
 							framemax++;
 						}
+						if (cnt >= 12) {
+							timing_reset();
+						}
+						else {
+							timing_setcount(cnt - framecnt);
+						}
+						framereset();
 					}
 				}
 				else {

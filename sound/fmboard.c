@@ -56,12 +56,12 @@ BYTE fmboard_getjoy(PSGGEN psg) {
 	if (!(psg->reg.io2 & 0x40)) {
 		ret &= (joymng_getstat() | (rapids & 0x30));
 		if (np2cfg.KEY_MODE == 1) {
-			ret &= keystat_getjoy();
+			ret &= keyext_getjoy();
 		}
 	}
 	else {
 		if (np2cfg.KEY_MODE == 2) {
-			ret &= keystat_getjoy();
+			ret &= keyext_getjoy();
 		}
 	}
 	if (np2cfg.BTN_RAPID) {
@@ -194,7 +194,7 @@ void fmboard_bind(void) {
 			break;
 
 		case 0x06:
-			board86c_bind();
+			boardx2_bind();
 			break;
 
 		case 0x08:

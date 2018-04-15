@@ -1,16 +1,18 @@
 #include	"compiler.h"
-#include	"resource.h"
+#include	<prsht.h>
 #include	"strres.h"
+#include	"resource.h"
 #include	"np2.h"
 #include	"dosio.h"
 #include	"commng.h"
 #include	"sysmng.h"
+#include	"np2class.h"
+#include	"dialog.h"
+#include	"dialogs.h"
+#include	"bit2res.h"
 #include	"pccore.h"
 #include	"iocore.h"
 #include	"pc9861k.h"
-#include	"bit2res.h"
-#include	"dialog.h"
-#include	"dialogs.h"
 
 
 static const char str_none[] = "NONE";
@@ -152,6 +154,7 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 	} str;
 	COMCFG	*cfg;
 	UINT	update;
+	COMMNG	cm;
 
 	switch (msg) {
 		case WM_INITDIALOG:
@@ -218,7 +221,7 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 			break;
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				cfg = m->cfg;
 				update = 0;
 				r = SendDlgItemMessage(hWnd, m->idc[ID_PORT],
@@ -287,12 +290,18 @@ static LRESULT CALLBACK dlgitem_proc(HWND hWnd, UINT msg,
 				}
 
 				cfg->def_en = GetDlgItemCheck(hWnd, m->idc[ID_DEFE]);
+				cm = *m->cm;
+				if (cm) {
+					cm->msg(cm, COMMSG_MIMPIDEFEN, cfg->def_en);
+				}
 				GetDlgItemText(hWnd, m->idc[ID_DEFF],
 												str.mdef, sizeof(str.mdef));
 				if (milstr_cmp(cfg->def, str.mdef)) {
 					milstr_ncpy(cfg->def, str.mdef, sizeof(cfg->def));
 					update |= SYS_UPDATEOSCFG;
-//					commsmidi_toneload(m->comm, str.mdef);
+					if (cm) {
+						cm->msg(cm, COMMSG_MIMPIDEFFILE, (long)str.mdef);
+					}
 				}
 				sysmng_update(update);
 				return(TRUE);
@@ -342,22 +351,21 @@ static const PC9861MODE_T pc9861mode[2] = {
 			{IDC_CH2SPEED, IDC_CH2INT, IDC_CH2MODE,
 								&pc9861_s[2], &pc9861_s[1], 2}};
 
+enum {
+	PC9861S1_X		= 1,
+	PC9861S2_X		= 10,
+	PC9861S3_X		= 17,
+	PC9861S_Y		= 1,
 
-#define	PC9861S1_X	1
-#define	PC9861S2_X	10
-#define	PC9861S3_X	17
-#define	PC9861S_Y	1
-
-#define	PC9861J1_X	1
-#define	PC9861J2_X	9
-#define	PC9861J3_X	17
-#define	PC9861J4_X	1
-#define	PC9861J5_X	11
-#define	PC9861J6_X	19
-#define	PC9861J1_Y	4
-#define	PC9861J4_Y	7
-
-static	SUBCLASSPROC	oldidc_9861dip = NULL;
+	PC9861J1_X		= 1,
+	PC9861J2_X		= 9,
+	PC9861J3_X		= 17,
+	PC9861J4_X		= 1,
+	PC9861J5_X		= 11,
+	PC9861J6_X		= 19,
+	PC9861J1_Y		= 4,
+	PC9861J4_Y		= 7
+};
 
 static const UINT32 pc9861kint1[] = {0, 1, 2, 3};
 static const UINT32 pc9861kint2[] = {0, 4, 5, 6};
@@ -429,7 +437,7 @@ static void pc9861getspeed(HWND hWnd, const PC9861MODE_T *m) {
 static void pc9861getint(HWND hWnd, const PC9861MODE_T *m) {
 
 	LRESULT	r;
-	int		i;
+	UINT	i;
 
 	r = SendDlgItemMessage(hWnd, m->idc_int, CB_GETCURSEL, 0, 0);
 	if (r != CB_ERR) {
@@ -442,7 +450,6 @@ static void pc9861getint(HWND hWnd, const PC9861MODE_T *m) {
 		}
 	}
 }
-
 
 static void pc9861getmode(HWND hWnd, const PC9861MODE_T *m) {
 
@@ -494,69 +501,103 @@ static void pc9861setmode(HWND hWnd, const PC9861MODE_T *m) {
 								CB_SETCURSEL, (WPARAM)intnum, (LPARAM)0);
 }
 
-
-static LRESULT CALLBACK pc9861d(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
-
-	PAINTSTRUCT	ps;
-	HDC			hdc;
-	HBITMAP		hBitmap;
-	HDC			hMemDC;
-	BYTE		*image;
-	HANDLE		hwork;
-	BITMAPINFO	*work;
-	BYTE		*imgbtm;
-	int			align;
-
-	switch(msg) {
-		case WM_PAINT:
-			hdc = BeginPaint(hWnd, &ps);
-			if ((hwork = GlobalAlloc(GPTR, bit2res_getsize(&pc9861dip)))
-																== NULL) {
-				break;
-			}
-			if ((work = (BITMAPINFO *)GlobalLock(hwork)) == NULL) {
-				GlobalFree(hwork);
-				break;
-			}
-			bit2res_sethead(work, &pc9861dip);
-			hBitmap = CreateDIBSection(hdc, work, DIB_RGB_COLORS,
-												(void **)&image, NULL, 0);
-			bit2res_setdata(image, &pc9861dip);
-			align = ((pc9861dip.x + 7) / 2) & ~3;
-			imgbtm = image + align * (pc9861dip.y - 1);
-			setdip(imgbtm, PC9861S1_X, PC9861S_Y, align, pc9861_s[0], 6);
-			setdip(imgbtm, PC9861S2_X, PC9861S_Y, align, pc9861_s[1], 4);
-			setdip(imgbtm, PC9861S3_X, PC9861S_Y, align, pc9861_s[2], 6);
-			setjmp(imgbtm, PC9861J1_X, PC9861J1_Y, align, pc9861_j[0], 6);
-			setjmp(imgbtm, PC9861J2_X, PC9861J1_Y, align, pc9861_j[1], 6);
-			setjmp(imgbtm, PC9861J3_X, PC9861J1_Y, align, pc9861_j[2], 2);
-			setjmp(imgbtm, PC9861J4_X, PC9861J4_Y, align, pc9861_j[3], 8);
-			setjmp(imgbtm, PC9861J5_X, PC9861J4_Y, align, pc9861_j[4], 6);
-			setjmp(imgbtm, PC9861J6_X, PC9861J4_Y, align, pc9861_j[5], 6);
-			if ((hMemDC = CreateCompatibleDC(hdc)) != NULL) {
-				SelectObject(hMemDC, hBitmap);
-				StretchBlt(hdc, 0, 0, pc9861dip.x, pc9861dip.y, hMemDC,
-									0, 0, pc9861dip.x, pc9861dip.y, SRCCOPY);
-				DeleteDC(hMemDC);
-			}
-			DeleteObject(hBitmap);
-			EndPaint(hWnd, &ps);
-			GlobalUnlock(hwork);
-			GlobalFree(hwork);
-			break;
-		default:
-			return(CallWindowProc(oldidc_9861dip, hWnd, msg, wp, lp));
-	}
-	return(FALSE);
-}
-
-
-static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
-													WPARAM wp, LPARAM lp) {
+static void pc9861cmddipsw(HWND hWnd) {
 
 	RECT	rect1;
 	RECT	rect2;
 	POINT	p;
+	BYTE	bit;
+
+	GetWindowRect(GetDlgItem(hWnd, IDC_PC9861DIP), &rect1);
+	GetClientRect(GetDlgItem(hWnd, IDC_PC9861DIP), &rect2);
+	GetCursorPos(&p);
+	p.x += rect2.left - rect1.left;
+	p.y += rect2.top - rect1.top;
+	p.x /= 9;
+	p.y /= 9;
+	if ((p.y >= 1) && (p.y < 3)) {					// 1段目
+		if ((p.x >= 1) && (p.x < 7)) {				// S1
+			pc9861_s[0] ^= (1 << (p.x - 1));
+			pc9861setmode(hWnd, pc9861mode);
+		}
+		else if ((p.x >= 10) && (p.x < 14)) {		// S2
+			pc9861_s[1] ^= (1 << (p.x - 10));
+			pc9861setmode(hWnd, pc9861mode);
+			pc9861setmode(hWnd, pc9861mode+1);
+		}
+		else if ((p.x >= 17) && (p.x < 23)) {		// S3
+			pc9861_s[2] ^= (1 << (p.x - 17));
+			pc9861setmode(hWnd, pc9861mode+1);
+		}
+	}
+	else if ((p.y >= 4) && (p.y < 6)) {				// 2段目
+		if ((p.x >= 1) && (p.x < 7)) {				// J1
+			pc9861_j[0] ^= (1 << (p.x - 1));
+		}
+		else if ((p.x >= 9) && (p.x < 15)) {		// J2
+			pc9861_j[1] ^= (1 << (p.x - 9));
+		}
+		else if ((p.x >= 17) && (p.x < 19)) {		// J3
+			pc9861_j[2] = (1 << (p.x - 17));
+		}
+	}
+	else if ((p.y >= 7) && (p.y < 9)) {				// 3段目
+		if ((p.x >= 1) && (p.x < 9)) {				// J4
+			bit = (1 << (p.x - 1));
+			if (pc9861_j[3] == bit) {
+				bit = 0;
+			}
+			pc9861_j[3] = bit;
+		}
+		else if ((p.x >= 11) && (p.x < 17)) {		// J5
+			pc9861_j[4] ^= (1 << (p.x - 11));
+		}
+		else if ((p.x >= 19) && (p.x < 25)) {		// J6
+			pc9861_j[5] ^= (1 << (p.x - 19));
+		}
+	}
+}
+
+static void pc9861drawdipsw(HWND hWnd, HDC hdc) {
+
+	BITMAPINFO	*bmi;
+	HBITMAP		hbmp;
+	BYTE		*image;
+	int			align;
+	BYTE		*imgbtm;
+	HDC			hmdc;
+
+	bmi = (BITMAPINFO *)_MALLOC(bit2res_getsize(&pc9861dip), "bitmap");
+	if (bmi == NULL) {
+		return;
+	}
+	bit2res_sethead(bmi, &pc9861dip);
+	hbmp = CreateDIBSection(hdc, bmi, DIB_RGB_COLORS,
+												(void **)&image, NULL, 0);
+	bit2res_setdata(image, &pc9861dip);
+	align = ((pc9861dip.x + 7) / 2) & ~3;
+	imgbtm = image + align * (pc9861dip.y - 1);
+	setdip(imgbtm, PC9861S1_X, PC9861S_Y, align, pc9861_s[0], 6);
+	setdip(imgbtm, PC9861S2_X, PC9861S_Y, align, pc9861_s[1], 4);
+	setdip(imgbtm, PC9861S3_X, PC9861S_Y, align, pc9861_s[2], 6);
+	setjmp(imgbtm, PC9861J1_X, PC9861J1_Y, align, pc9861_j[0], 6);
+	setjmp(imgbtm, PC9861J2_X, PC9861J1_Y, align, pc9861_j[1], 6);
+	setjmp(imgbtm, PC9861J3_X, PC9861J1_Y, align, pc9861_j[2], 2);
+	setjmp(imgbtm, PC9861J4_X, PC9861J4_Y, align, pc9861_j[3], 8);
+	setjmp(imgbtm, PC9861J5_X, PC9861J4_Y, align, pc9861_j[4], 6);
+	setjmp(imgbtm, PC9861J6_X, PC9861J4_Y, align, pc9861_j[5], 6);
+	hmdc = CreateCompatibleDC(hdc);
+	SelectObject(hmdc, hbmp);
+	BitBlt(hdc, 0, 0, pc9861dip.x, pc9861dip.y, hmdc, 0, 0, SRCCOPY);
+	DeleteDC(hmdc);
+	DeleteObject(hbmp);
+	_MFREE(bmi);
+}
+
+static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
+													WPARAM wp, LPARAM lp) {
+
+	HWND	sub;
 	BYTE	r;
 	UINT	update;
 
@@ -576,10 +617,9 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 			pc9861setmode(hWnd, pc9861mode);
 			pc9861setmode(hWnd, pc9861mode+1);
 
-			oldidc_9861dip = (SUBCLASSPROC)GetWindowLong(GetDlgItem(hWnd,
-												IDC_PC9861DIP), GWL_WNDPROC);
-			SetWindowLong(GetDlgItem(hWnd, IDC_PC9861DIP), GWL_WNDPROC,
-													(LONG)pc9861d);
+			sub = GetDlgItem(hWnd, IDC_PC9861DIP);
+			SetWindowLong(sub, GWL_STYLE, SS_OWNERDRAW +
+							(GetWindowLong(sub, GWL_STYLE) & (~SS_TYPEMASK)));
 			return(TRUE);
 
 		case WM_COMMAND:
@@ -615,64 +655,8 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 					break;
 
 				case IDC_PC9861DIP:
-					GetWindowRect(GetDlgItem(hWnd, IDC_PC9861DIP), &rect1);
-					GetClientRect(GetDlgItem(hWnd, IDC_PC9861DIP), &rect2);
-					GetCursorPos(&p);
-					p.x += rect2.left - rect1.left;
-					p.y += rect2.top - rect1.top;
-					p.x /= 9;
-					p.y /= 9;
-					if ((p.y >= 1) && (p.y < 3)) {					// 1段目
-						if ((p.x >= 1) && (p.x < 7)) {				// S1
-							pc9861_s[0] ^= (1 << (p.x - 1));
-							pc9861setmode(hWnd, pc9861mode);
-							break;
-						}
-						else if ((p.x >= 10) && (p.x < 14)) {		// S2
-							pc9861_s[1] ^= (1 << (p.x - 10));
-							pc9861setmode(hWnd, pc9861mode);
-							pc9861setmode(hWnd, pc9861mode+1);
-							break;
-						}
-						else if ((p.x >= 17) && (p.x < 23)) {		// S3
-							pc9861_s[2] ^= (1 << (p.x - 17));
-							pc9861setmode(hWnd, pc9861mode+1);
-							break;
-						}
-					}
-					else if ((p.y >= 4) && (p.y < 6)) {				// 2段目
-						if ((p.x >= 1) && (p.x < 7)) {				// J1
-							pc9861_j[0] ^= (1 << (p.x - 1));
-							break;
-						}
-						else if ((p.x >= 9) && (p.x < 15)) {		// J2
-							pc9861_j[1] ^= (1 << (p.x - 9));
-							break;
-						}
-						else if ((p.x >= 17) && (p.x < 19)) {		// J3
-							pc9861_j[2] = (1 << (p.x - 17));
-							break;
-						}
-					}
-					else if ((p.y >= 7) && (p.y < 9)) {				// 3段目
-						if ((p.x >= 1) && (p.x < 9)) {				// J4
-							BYTE bit = (1 << (p.x - 1));
-							if (pc9861_j[3] == bit) {
-								bit = 0;
-							}
-							pc9861_j[3] = bit;
-							break;
-						}
-						else if ((p.x >= 11) && (p.x < 17)) {		// J5
-							pc9861_j[4] ^= (1 << (p.x - 11));
-							break;
-						}
-						else if ((p.x >= 19) && (p.x < 25)) {		// J6
-							pc9861_j[5] ^= (1 << (p.x - 19));
-							break;
-						}
-					}
-					return(FALSE);
+					pc9861cmddipsw(hWnd);
+					break;
 
 				default:
 					return(FALSE);
@@ -681,7 +665,7 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 			break;
 
 		case WM_NOTIFY:
-			if ((((NMHDR *)lp)->code) == PSN_APPLY) {
+			if ((((NMHDR *)lp)->code) == (UINT)PSN_APPLY) {
 				update = 0;
 				r = GetDlgItemCheck(hWnd, IDC_PC9861E);
 				if (np2cfg.pc9861enable != r) {
@@ -700,6 +684,12 @@ static LRESULT CALLBACK pc9861mainProc(HWND hWnd, UINT msg,
 				return(TRUE);
 			}
 			break;
+
+		case WM_DRAWITEM:
+			if (LOWORD(wp) == IDC_PC9861DIP) {
+				pc9861drawdipsw(hWnd, ((LPDRAWITEMSTRUCT)lp)->hDC);
+			}
+			return(FALSE);
 	}
 	return(FALSE);
 }
@@ -739,13 +729,15 @@ void dialog_serial(HWND hWnd) {
 
 	ZeroMemory(&psh, sizeof(psh));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
-	psh.dwFlags = PSH_NOAPPLYNOW;
+	psh.dwFlags = PSH_NOAPPLYNOW | PSH_USEHICON | PSH_USECALLBACK;
 	psh.hwndParent = hWnd;
 	psh.hInstance = hinst;
+	psh.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(IDI_ICON2));
 	psh.nPages = 4;
 	psh.phpage = hpsp;
 	psh.pszCaption = str_seropt;
+	psh.pfnCallback = np2class_propetysheet;
 	PropertySheet(&psh);
-	InvalidateRect(hWndMain, NULL, TRUE);
+	InvalidateRect(hWnd, NULL, TRUE);
 }
 

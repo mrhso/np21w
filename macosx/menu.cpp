@@ -4,7 +4,8 @@
 #include	"sysmng.h"
 #include	"menu.h"
 #include	"pccore.h"
-
+#include	"soundrecording.h"
+#include	"scrnmng.h"
 
 #define	MFCHECK(a)					((a)?1:0)
 #ifdef TARGET_API_MAC_CARBON
@@ -71,14 +72,14 @@ void menu_setkey(BYTE value) {
 	MenuHandle	hmenu;
 
 	hmenu = _GetMenu(IDM_KEYBOARD);
-	if (value >= 3) {
+	if (value >= 4) {
 		value = 0;
 	}
 	np2cfg.KEY_MODE = value;
 	_CheckMenuItem(hmenu, IDM_KEY, MFCHECK(value == 0));
 	_CheckMenuItem(hmenu, IDM_JOY1, MFCHECK(value == 1));
 	_CheckMenuItem(hmenu, IDM_JOY2, MFCHECK(value == 2));
-//	_CheckMenuItem(hmenu, IDM_MOUSEKEY, MFCHECK(value == 3));
+	_CheckMenuItem(hmenu, IDM_MOUSEKEY, MFCHECK(value == 3));
 }
 
 void menu_setxshift(BYTE value) {
@@ -185,5 +186,47 @@ void menu_setbtnmode(BYTE value) {
 	hmenu = _GetMenu(IDM_OTHER);
 	np2cfg.BTN_MODE = value & 1;
 	_CheckMenuItem(hmenu, IDM_JOYX, MFCHECK(np2cfg.BTN_MODE));
+}
+
+#if defined(NP2GCC)
+void menu_setmouse(BYTE value) {
+
+	value &= 1;
+	np2oscfg.MOUSE_SW = value;
+	_CheckMenuItem(GetMenu(IDM_DEVICE), IDM_MOUSE, MFCHECK(value));
+    if (scrnmode & SCRNMODE_FULLSCREEN) {
+        if (!value) {
+            ShowMenuBar();
+        }
+        else {
+            HideMenuBar();
+        }
+    }
+}
+#endif
+
+void menu_sets98logging(BYTE value) {
+
+	CheckMenuItem(GetMenuRef(IDM_OTHER), IDM_S98LOGGING, MFCHECK(value));
+}
+
+void menu_setrecording(bool end) {
+    int ret;
+    MenuRef	hmenu = GetMenuRef(IDM_OTHER);
+    
+    ret = soundRec(end);
+    if (ret == 1) {
+        CheckMenuItem(hmenu, IDM_RECORDING, true);
+    }
+    else {
+        CheckMenuItem(hmenu, IDM_RECORDING, false);
+    }
+}
+
+void menu_setmsrapid(BYTE value) {
+
+	value &= 1;
+	np2cfg.MOUSERAPID = value;
+	CheckMenuItem(GetMenuRef(IDM_OTHER), IDM_MSRAPID, MFCHECK(value));
 }
 

@@ -1,14 +1,34 @@
+
+#define	_WIN32_IE	0x0200
+
 #include	<windows.h>
 #include	<stdio.h>
 #include	<stddef.h>
 
 #define	BYTESEX_LITTLE
 
+#ifndef __GNUC__
 
 typedef	short			SINT16;
 typedef	unsigned short	UINT16;
 typedef	int				SINT32;
 typedef	unsigned int	UINT32;
+
+#else
+
+#include	<stdlib.h>
+typedef	short			SINT16;
+typedef	unsigned short	UINT16;
+typedef	int				SINT32;
+
+#endif
+
+
+#define	LOADINTELDWORD(a)		(*((UINT32 *)(a)))
+#define	LOADINTELWORD(a)		(*((UINT16 *)(a)))
+#define	STOREINTELDWORD(a, b)	*(UINT32 *)(a) = (b)
+#define	STOREINTELWORD(a, b)	*(UINT16 *)(a) = (b)
+
 
 #include	"common.h"
 #include	"milstr.h"
@@ -41,4 +61,6 @@ typedef	unsigned int	UINT32;
 #define	SUPPORT_24BPP
 #define	SUPPORT_32BPP
 #define SUPPORT_NORMALDISP
+
+#define	SOUNDRESERVE	20
 

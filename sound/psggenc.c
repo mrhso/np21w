@@ -45,8 +45,10 @@ void psggen_initialize(UINT rate) {
 	if (psggencfg.puchidec == 0) {
 		psggencfg.puchidec = 1;
 	}
-	psggencfg.base = (5000 * (1 << (32 - PSGFREQPADBIT - PSGADDEDBIT)))
+	if (rate) {
+		psggencfg.base = (5000 * (1 << (32 - PSGFREQPADBIT - PSGADDEDBIT)))
 															/ (rate / 25);
+	}
 }
 
 void psggen_setvol(UINT vol) {
@@ -111,6 +113,7 @@ void psggen_setreg(PSGGEN psg, BYTE reg, BYTE value) {
 		case 7:
 			keydisp_psgmix(psg);
 			psg->mixer = ~value;
+			psg->puchicount = psggencfg.puchidec;
 			break;
 
 		case 8:
@@ -125,6 +128,8 @@ void psggen_setreg(PSGGEN psg, BYTE reg, BYTE value) {
 				psg->tone[ch].pvol = ((BYTE *)&psg->reg) + reg;
 			}
 			psg->tone[ch].puchi = psggencfg.puchidec;
+			psg->puchicount = psggencfg.puchidec;
+//			TRACEOUT(("%d", value));
 			break;
 
 		case 11:

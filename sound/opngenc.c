@@ -187,6 +187,7 @@ void opngen_setVR(BYTE channel, BYTE value) {
 static void set_algorithm(OPNCH *ch) {
 
 	SINT32	*outd;
+	BYTE	outslot;
 
 	outd = &opngen.outdc;
 	if (ch->stereo) {
@@ -205,42 +206,49 @@ static void set_algorithm(OPNCH *ch) {
 			ch->connect1 = &opngen.feedback2;
 			ch->connect2 = &opngen.feedback3;
 			ch->connect3 = &opngen.feedback4;
+			outslot = 0x08;
 			break;
 
 		case 1:
 			ch->connect1 = &opngen.feedback3;
 			ch->connect2 = &opngen.feedback3;
 			ch->connect3 = &opngen.feedback4;
+			outslot = 0x08;
 			break;
 
 		case 2:
 			ch->connect1 = &opngen.feedback4;
 			ch->connect2 = &opngen.feedback3;
 			ch->connect3 = &opngen.feedback4;
+			outslot = 0x08;
 			break;
 
 		case 3:
 			ch->connect1 = &opngen.feedback2;
 			ch->connect2 = &opngen.feedback4;
 			ch->connect3 = &opngen.feedback4;
+			outslot = 0x08;
 			break;
 
 		case 4:
 			ch->connect1 = &opngen.feedback2;
 			ch->connect2 = outd;
 			ch->connect3 = &opngen.feedback4;
+			outslot = 0x0a;
 			break;
 
 		case 5:
 			ch->connect1 = 0;
 			ch->connect2 = outd;
 			ch->connect3 = outd;
+			outslot = 0x0e;
 			break;
 
 		case 6:
 			ch->connect1 = &opngen.feedback2;
 			ch->connect2 = outd;
 			ch->connect3 = outd;
+			outslot = 0x0e;
 			break;
 
 		case 7:
@@ -248,8 +256,10 @@ static void set_algorithm(OPNCH *ch) {
 			ch->connect1 = outd;
 			ch->connect2 = outd;
 			ch->connect3 = outd;
+			outslot = 0x0f;
 	}
 	ch->connect4 = outd;
+	ch->outslot = outslot;
 }
 
 static void set_dt1_mul(OPNSLOT *slot, BYTE value) {
@@ -404,10 +414,10 @@ void opngen_reset(void) {
 		ch++;
 	}
 	for (i=0x30; i<0xc0; i++) {
-		opngen_setreg((BYTE)i, 0xff, 0);
-		opngen_setreg((BYTE)i, 0xff, 3);
-		opngen_setreg((BYTE)i, 0xff, 6);
-		opngen_setreg((BYTE)i, 0xff, 9);
+		opngen_setreg(0, (BYTE)i, 0xff);
+		opngen_setreg(3, (BYTE)i, 0xff);
+		opngen_setreg(6, (BYTE)i, 0xff);
+		opngen_setreg(9, (BYTE)i, 0xff);
 	}
 }
 
@@ -555,7 +565,9 @@ void opngen_keyon(UINT chnum, BYTE value) {
 
 	sound_sync();
 	opngen.keyreg[chnum] = value;
+	opngen.playing++;
 	ch = opnch + chnum;
+	ch->playing |= value >> 4;
 	slot = ch->slot;
 	bit = 0x10;
 	for (i=0; i<4; i++) {

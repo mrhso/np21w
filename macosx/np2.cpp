@@ -3,6 +3,7 @@
 #include	"strres.h"
 #include	"np2.h"
 #include	"dosio.h"
+#include	"commng.h"
 #include	"scrnmng.h"
 #include	"soundmng.h"
 #include	"sysmng.h"
@@ -26,19 +27,32 @@
 #include	"diskdrv.h"
 #include	"fddfile.h"
 #include	"statsave.h"
+#include	"mousemng.h"
+#include	"configure.h"
+#include	"screenopt.h"
+#include	"soundopt.h"
+#include	"macnewdisk.h"
+#include	"fdefine.h"
+#include	"hid.h"
+#include	"midiopt.h"
+#include	"macalert.h"
+#include	"np2opening.h"
+#include	"toolwin.h"
 
-
+#include	<QuickTime/QuickTime.h>
 #define	USE_RESUME
+#define	NP2OPENING
+// #define	OPENING_WAIT	1500
 
 
-		NP2OSCFG	np2oscfg = {0, 2, 0, 0, 0};
+		NP2OSCFG	np2oscfg = {0, 2, 0, 0, 0, 0, 1, 0};
 
 		WindowPtr	hWndMain;
 		BOOL		np2running;
 static	UINT		framecnt = 0;
 static	UINT		waitcnt = 0;
 static	UINT		framemax = 1;
-static	BYTE		scrnmode;
+        BYTE		scrnmode;
 
 
 #define DRAG_THRESHOLD		5
@@ -56,13 +70,12 @@ static const char np2resume[] = "sav";
 
 // ---- おまじない
 
-#if TARGET_CARBON
 #define	AEProc(fn)	NewAEEventHandlerUPP((AEEventHandlerProcPtr)(fn))
-#else
-#define	AEProc(fn)	NewAEEventHandlerProc(fn)
-#endif
 
-#ifdef TARGET_API_MAC_CARBON
+static void setUpCarbonEvent(void);
+static bool setupMainWindow(void);
+static void toggleFullscreen(void);
+
 static pascal OSErr handleQuitApp(const AppleEvent *event, AppleEvent *reply,
 															long refcon) {
 
@@ -71,30 +84,42 @@ static pascal OSErr handleQuitApp(const AppleEvent *event, AppleEvent *reply,
 	(void)event, (void)reply, (void)refcon;
 	return(noErr);
 }
-#endif
+
+pascal OSErr OpenAppleEventHandler(const AppleEvent *event, AppleEvent *reply,long print)
+{
+	long		i,ct,len;
+	FSSpec		fsc,*pp;
+	DescType	rtype;
+	AEKeyword	key;
+	AEDescList	dlist;
+        
+	if(!AEGetParamDesc(event,keyDirectObject,typeAEList,&dlist))	{
+		AECountItems( &dlist,&ct );
+		for( i=1;i<=ct;i++ )	{
+            pp=&fsc;
+			if (!AEGetNthPtr( &dlist,i,typeFSS,&key,&rtype,(Ptr)pp,(long)sizeof(FSSpec),&len))	{
+                setDropFile(fsc, i-1);
+			}
+		}
+		AEDisposeDesc( &dlist );
+	}
+	return( 0 );
+}
+
 
 static void InitToolBox(void) {
 
-#if !TARGET_CARBON
-	MaxApplZone();
-	InitGraf(&qd.thePort);
-	InitFonts();
-	InitWindows();
-	InitMenus();
-	TEInit();
-	InitDialogs(0);
-#endif
 	FlushEvents(everyEvent, 0);
 	InitCursor();
 
-#ifdef TARGET_API_MAC_CARBON
 	AEInstallEventHandler(kCoreEventClass, kAEQuitApplication,
 						AEProc(handleQuitApp), 0L, false);
-#endif
+	AEInstallEventHandler(kCoreEventClass, kAEOpenDocuments,
+						AEProc(OpenAppleEventHandler), 0L, false);
 }
 
 static void MenuBarInit(void) {
-
+#if 1
 	Handle		hMenu;
 	MenuHandle	happlemenu;
 
@@ -112,21 +137,54 @@ static void MenuBarInit(void) {
 	InsertMenu(GetMenu(IDM_KEYBOARD), -1);
 	InsertMenu(GetMenu(IDM_SOUND), -1);
 	InsertMenu(GetMenu(IDM_MEMORY), -1);
+    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2OPEN, kMenuOptionModifier);
+    SetMenuItemModifiers(GetMenuRef(IDM_FDD2), IDM_FDD2EJECT, kMenuOptionModifier);
+    SetMenuItemModifiers(GetMenuRef(IDM_SASI2), IDM_SASI2OPEN, kMenuOptionModifier);
 	DrawMenuBar();
+#else
+    OSStatus	err;
+    IBNibRef	nibRef;    
+    err = CreateNibReference(CFSTR("np2"), &nibRef);
+    if (err!=noErr) return;
+    err = SetMenuBarFromNib(nibRef, CFSTR("MainMenu"));
+    DisposeNibReference(nibRef);
+#endif
 }
-
 
 static void changescreen(BYTE mode) {
 
-	(void)mode;
-}
+	BYTE	change;
+	BYTE	renewal;
 
+	change = scrnmode ^ mode;
+	renewal = (change & SCRNMODE_FULLSCREEN);
+	if (mode & SCRNMODE_FULLSCREEN) {
+		renewal |= (change & SCRNMODE_HIGHCOLOR);
+	}
+	else {
+		renewal |= (change & SCRNMODE_ROTATEMASK);
+	}
+	if (renewal) {
+		soundmng_stop();
+		mouse_running(MOUSE_STOP);
+		scrnmng_destroy();
+		if (scrnmng_create(mode) == SUCCESS) {
+			scrnmode = mode;
+		}
+		scrndraw_redraw();
+		mouse_running(MOUSE_CONT);
+		soundmng_play();
+	}
+	else {
+		scrnmode = mode;
+	}
+}
 
 static void HandleMenuChoice(long wParam) {
 
 	UINT	update;
-	Str255	applname;
 
+    soundmng_stop();
 	update = 0;
 	switch(wParam) {
 		case IDM_ABOUT:
@@ -134,20 +192,28 @@ static void HandleMenuChoice(long wParam) {
 			break;
 
 		case IDM_RESET:
-			pccore_cfgupdate();
-			pccore_reset();
+            if (ResetWarningDialogProc()) {
+                pccore_cfgupdate();
+                pccore_reset();
+            }
+			break;
+            
+		case IDM_CONFIGURE:
+			initConfig();
 			break;
 
-#if 0
-		case IDM_NEWFDD:
-			newdisk();
+		case IDM_NEWDISK:
+            newdisk();
 			break;
-#endif
 #if 0
 		case IDM_NEWHDD:
 			newhdddisk();
 			break;
 #endif
+        case IDM_FONT:
+            dialog_font();
+            break;
+            
 		case IDM_EXIT:
 			np2running = FALSE;
 			break;
@@ -158,6 +224,7 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_FDD1EJECT:
 			diskdrv_setfdd(0, NULL, 0);
+            toolwin_setfdd(0, NULL);
 			break;
 
 		case IDM_FDD2OPEN:
@@ -166,6 +233,7 @@ static void HandleMenuChoice(long wParam) {
 
 		case IDM_FDD2EJECT:
 			diskdrv_setfdd(1, NULL, 0);
+            toolwin_setfdd(1, NULL);
 			break;
 
 		case IDM_SASI1OPEN:
@@ -184,6 +252,10 @@ static void HandleMenuChoice(long wParam) {
 			diskdrv_sethdd(1, NULL);
 			break;
 
+		case IDM_FULLSCREEN:
+            toggleFullscreen();
+            break;
+            
 		case IDM_ROLNORMAL:
 			menu_setrotate(0);
 			changescreen(scrnmode & (~SCRNMODE_ROTATEMASK));
@@ -240,6 +312,30 @@ static void HandleMenuChoice(long wParam) {
 			menu_setframe(4);
 			update |= SYS_UPDATECFG;
 			break;
+
+		case IDM_SCREENOPT:
+			initScreenOpt();
+			break;
+
+        case IDM_MOUSE:
+            mouse_running(MOUSE_XOR);
+            menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
+            sysmng_update(SYS_UPDATECFG);
+			break;
+            
+        case IDM_MIDIOPT:
+            initMidiOpt();
+            break;
+            
+		case IDM_MIDIPANIC:
+			rs232c_midipanic();
+			mpu98ii_midipanic();
+			pc9861k_midipanic();
+			break;
+
+        case IDM_SNDOPT:
+            initSoundOpt();
+            break;
 
 		case IDM_KEY:
 			menu_setkey(0);
@@ -388,6 +484,14 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATECFG;
 			break;
 
+		case IDM_BMPSAVE:
+			dialog_writebmp();
+			break;
+
+        case IDM_S98LOGGING:
+            dialog_s98();
+            break;
+            
 		case IDM_DISPCLOCK:
 			menu_setdispclk(np2oscfg.DISPCLK ^ 1);
 			update |= SYS_UPDATECFG;
@@ -408,110 +512,57 @@ static void HandleMenuChoice(long wParam) {
 			update |= SYS_UPDATECFG;
 			break;
 
+        case IDM_MSRAPID:
+            menu_setmsrapid(np2cfg.MOUSERAPID ^ 1);
+            update |= SYS_UPDATECFG;
+            break;
+
 		case IDM_I286SAVE:
 			debugsub_status();
 			break;
 
+        case IDM_RECORDING:
+            menu_setrecording(false);
+            break;
+
 		default:
-			if (HiWord(wParam) == IDM_APPLE) {
-				GetMenuItemText(GetMenuHandle(IDM_APPLE), 
-											LoWord(wParam), applname);
-#if !TARGET_API_MAC_CARBON
-				(void)OpenDeskAcc(applname);
-#endif
-			}
 			break;
 	}
 	sysmng_update(update);
 	HiliteMenu(0);
 }
 
-static void HandleUpdateEvent(EventRecord *pevent) {
-
-	WindowPtr	hWnd;
-
-	hWnd = (WindowPtr)pevent->message;
-	BeginUpdate(hWnd);
-	scrndraw_redraw();
-	EndUpdate(hWnd);
-}
-
 static void HandleMouseDown(EventRecord *pevent) {
 
 	WindowPtr	hWnd;
-	Rect		rDrag;
 
+    soundmng_stop();
 	switch(FindWindow(pevent->where, &hWnd)) {
 		case inMenuBar:
 			HandleMenuChoice(MenuSelect(pevent->where));
 			break;
+	}
+}
 
-		case inDrag:
-#if TARGET_API_MAC_CARBON
-		{
-			BitMap	gscreenBits;
-			GetQDGlobalsScreenBits(&gscreenBits);
-			rDrag = gscreenBits.bounds;
-			InsetRect(&rDrag, DRAG_THRESHOLD, DRAG_THRESHOLD);
-			DragWindow(hWnd, pevent->where, &rDrag);
+
+// ----
+
+static void framereset(UINT waitcnt) {
+
+	framecnt = 0;
+	toolwin_draw((BYTE)waitcnt);
+	if (np2oscfg.DISPCLK & 3) {
+		if (sysmng_workclockrenewal()) {
+			sysmng_updatecaption(3);
 		}
-#else
-			rDrag = qd.screenBits.bounds;
-			InsetRect(&rDrag, DRAG_THRESHOLD, DRAG_THRESHOLD);
-			DragWindow(hWnd, pevent->where, &rDrag);
-#endif
-			break;
-
-		case inContent:
-			break;
-
-		case inGoAway:
-			if (TrackGoAway(hWnd, pevent->where)) { }
-			np2running = FALSE;
-			break;
 	}
 }
-
-static void eventproc(EventRecord *event) {
-
-	switch(event->what) {
-		case mouseDown:
-			HandleMouseDown(event);
-			break;
-
-		case updateEvt:
-			HandleUpdateEvent(event);
-			break;
-
-		case keyDown:
-		case autoKey:
-			if (event->modifiers & cmdKey) {
-				if (!mackbd_down(1, ((event->message) & keyCodeMask) >> 8)) {
-					HandleMenuChoice(MenuKey(event->message & charCodeMask));
-				}
-			}
-			else {
-				mackbd_down(0, ((event->message) & keyCodeMask) >> 8);
-			}
-			break;
-
-		case keyUp:
-			mackbd_up(((event->message) & keyCodeMask) >> 8);
-			break;
-	}
-}
-
 
 static void processwait(UINT waitcnt) {
 
 	if (timing_getcount() >= waitcnt) {
 		timing_setcount(0);
-		framecnt = 0;
-		if (np2oscfg.DISPCLK & 3) {
-			if (sysmng_workclockrenewal()) {
-				sysmng_updatecaption(3);
-			}
-		}
+		framereset(waitcnt);
 	}
 }
 
@@ -530,24 +581,46 @@ static void flagsave(const char *ext) {
 	statsave_save(path);
 }
 
+static void flagdelete(const char *ext) {
+
+	char	path[MAX_PATH];
+
+	getstatfilename(path, ext, sizeof(path));
+	file_delete(path);
+}
+
 static void flagload(const char *ext) {
 
 	char	path[MAX_PATH];
 	char	buf[1024];
-	int		ret;
+	int		ret, r;
 
+    ret = IDOK;
 	getstatfilename(path, ext, sizeof(path));
-	ret = statsave_check(path, buf, sizeof(buf));
-	if (ret == NP2FLAG_SUCCESS) {
-		statsave_load(path);
+	r = statsave_check(path, buf, sizeof(buf));
+	if (r & (~NP2FLAG_DISKCHG)) {
+		ResumeErrorDialogProc();
+		ret = IDCANCEL;
 	}
+	else if (r & NP2FLAG_DISKCHG) {
+		ret = ResumeWarningDialogProc(buf);
+	}
+	if (ret == IDOK) {
+		statsave_load(path);
+		toolwin_setfdd(0, fdd_diskname(0));
+		toolwin_setfdd(1, fdd_diskname(1));
+	}
+	return;
 }
 
 int main(int argc, char *argv[]) {
 
-	Rect		wRect;
-	EventRecord	event;
-
+    EventRef		theEvent;
+    EventTargetRef	theTarget;
+#ifdef OPENING_WAIT
+	UINT32		tick;
+#endif
+  
 	dosio_init();
 	file_setcd(target);
 
@@ -557,17 +630,19 @@ int main(int argc, char *argv[]) {
 
 	initload();
 
-	SetRect(&wRect, 100, 100, 100, 100);
-	hWndMain = NewWindow(0, &wRect, "\pNeko Project II", FALSE,
-								noGrowDocProc, (WindowPtr)-1, TRUE, 0);
-	if (!hWndMain) {
-		macossub_term();
-		dosio_term();
-		return(0);
-	}
-	scrnmng_initialize();
-	SizeWindow(hWndMain, 640, 400, TRUE);
-	ShowWindow(hWndMain);
+	TRACEINIT();
+    
+    toolwin_readini();
+    if (!(setupMainWindow())) {
+        return(0);
+    }
+
+#ifdef    NP2OPENING
+    openingNP2();
+#endif
+#ifdef OPENING_WAIT
+	tick = GETTICK();
+#endif
 
 	menu_setrotate(0);
 	menu_setdispmode(np2cfg.DISPSYNC);
@@ -586,33 +661,53 @@ int main(int argc, char *argv[]) {
 
 	scrnmode = 0;
 	if (scrnmng_create(scrnmode) != SUCCESS) {
+		TRACETERM();
 		macossub_term();
 		dosio_term();
 		DisposeWindow(hWndMain);
 		return(0);
 	}
 
+	commng_initialize();
 	sysmng_initialize();
+	mackbd_initialize();
 	pccore_init();
 	S98_init();
 
-	scrndraw_redraw();
+    hid_init();
+	if (soundmng_initialize() == SUCCESS) {
+		soundmng_pcmvolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
+		soundmng_pcmvolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
+	}
+
+#if defined(NP2GCC)
+	if (np2oscfg.MOUSE_SW) {										// ver0.30
+		mouse_running(MOUSE_ON);
+	}
+#endif
+#ifdef OPENING_WAIT
+	while((GETTICK() - tick) < OPENING_WAIT);
+#endif
 	pccore_reset();
 
 #if defined(USE_RESUME)
-	flagload(np2resume);
+    if (np2oscfg.resume) {
+        flagload(np2resume);
+    }
 #endif
 
-	SetEventMask(everyEvent);
-
+    theTarget = GetEventDispatcherTarget();
+    
 	np2running = TRUE;
 	while(np2running) {
-		if (WaitNextEvent(everyEvent, &event, 0, 0)) {
-			eventproc(&event);
-		}
+        if (ReceiveNextEvent(0, NULL,kEventDurationNoWait,true, &theEvent)== noErr)
+        {
+            SendEventToEventTarget (theEvent, theTarget);
+            ReleaseEvent(theEvent);
+        }
 		else {
+            soundmng_play();
 			if (np2oscfg.NOWAIT) {
-				mackbd_callback();
 				pccore_exec(framecnt == 0);
 				if (np2oscfg.DRAW_SKIP) {			// nowait frame skip
 					framecnt++;
@@ -629,7 +724,6 @@ int main(int argc, char *argv[]) {
 			}
 			else if (np2oscfg.DRAW_SKIP) {			// frame skip
 				if (framecnt < np2oscfg.DRAW_SKIP) {
-					mackbd_callback();
 					pccore_exec(framecnt == 0);
 					framecnt++;
 				}
@@ -639,20 +733,27 @@ int main(int argc, char *argv[]) {
 			}
 			else {								// auto skip
 				if (!waitcnt) {
-					mackbd_callback();
+					UINT cnt;
 					pccore_exec(framecnt == 0);
 					framecnt++;
-					if (timing_getcount() < framecnt) {
+					cnt = timing_getcount();
+					if (framecnt > cnt) {
 						waitcnt = framecnt;
 						if (framemax > 1) {
 							framemax--;
 						}
 					}
 					else if (framecnt >= framemax) {
-						waitcnt = framecnt;
 						if (framemax < 12) {
 							framemax++;
 						}
+						if (cnt >= 12) {
+							timing_reset();
+						}
+						else {
+							timing_setcount(cnt - framecnt);
+						}
+						framereset(0);
 					}
 				}
 				else {
@@ -663,29 +764,325 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	np2running = FALSE;
+    menu_setrecording(true);
 
+    if (scrnmode & SCRNMODE_FULLSCREEN) {
+        toggleFullscreen();
+    }
+    
 	pccore_cfgupdate();
 
 #if defined(USE_RESUME)
-	flagsave(np2resume);
+    if (np2oscfg.resume) {
+        flagsave(np2resume);
+    }
+	else {
+		flagdelete(np2resume);
+	}
 #endif
 
 	pccore_term();
 	S98_trash();
 
+    hid_clear();
+#if defined(NP2GCC)
+	mouse_running(MOUSE_OFF);
+#endif
+
+	soundmng_deinitialize();
 	scrnmng_destroy();
 
-	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
-		initsave();
+	if (sys_updates & (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
+		initsave();						// np2.cfg create
+	    toolwin_writeini();				// np2.cfg append
 	}
 	TRACETERM();
 	macossub_term();
 	dosio_term();
 
 	DisposeWindow(hWndMain);
+    toolwin_close();
 
 	(void)argc;
 	(void)argv;
 	return(0);
 }
 
+//以下、ごっそりIIxからマージ
+static pascal OSStatus np2appevent (EventHandlerCallRef myHandlerChain, EventRef event, void* userData)
+{
+    UInt32          whatHappened;
+    OSStatus        result = eventNotHandledErr;
+    
+    long		eventClass;
+    
+    eventClass = GetEventClass(event);
+    whatHappened = GetEventKind(event);
+
+    EventRecord         eve;
+    ConvertEventRefToEventRecord( event,&eve );
+
+    if (IsDialogEvent(&eve)) return result;
+
+    UInt32 modif;
+    GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
+
+#if defined(NP2GCC)
+    HIPoint delta;
+    EventMouseButton buttonKind;
+    GetEventParameter (event, kEventParamMouseButton, typeMouseButton, NULL, sizeof(EventMouseButton), NULL, &buttonKind);
+
+	BYTE ret;
+#endif
+        
+    switch (eventClass)
+        {
+                case kEventClassAppleEvent:  
+                    if (whatHappened == kEventAppleEvent) {
+                        AEProcessAppleEvent(&eve);
+                    }
+                    break;
+
+                case kEventClassMouse: 
+#if defined(NP2GCC)
+                    switch (whatHappened)
+                        {
+                        case kEventMouseMoved:
+                            GetEventParameter (event, kEventParamMouseDelta, typeHIPoint, NULL, sizeof(HIPoint), NULL, &delta);
+                            mouse_callback(delta);
+                            result = noErr;
+                            break;
+                       case kEventMouseDown:
+                            if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                                ret=mouse_btn(MOUSE_RIGHTDOWN);
+                            }
+                            else {
+                                HandleMouseDown(&eve);
+                            }
+                            result=noErr;
+                            break;
+                        case kEventMouseUp:
+                            if (buttonKind == kEventMouseButtonSecondary | modif & controlKey) {
+                                ret=mouse_btn(MOUSE_RIGHTUP);
+                            }
+                            else if (buttonKind == kEventMouseButtonTertiary) {
+                                mouse_running(MOUSE_XOR);
+                                menu_setmouse(np2oscfg.MOUSE_SW ^ 1);
+                                sysmng_update(SYS_UPDATECFG);
+                            }
+                            else {
+                                ret=mouse_btn(MOUSE_LEFTUP);
+                            }
+                            result=noErr;
+                            break;    
+                        }
+#else
+						if (whatHappened == kEventMouseDown) {
+							HandleMouseDown(&eve);
+						}
+#endif
+                        break;
+            default:
+                    break; 
+        }
+
+	(void)myHandlerChain;
+	(void)userData;
+    return result; 
+}
+
+static pascal OSStatus np2windowevent(EventHandlerCallRef myHandler,  EventRef event, void* userData)
+{
+    WindowRef	window;
+    UInt32		whatHappened;
+    OSStatus	result = eventNotHandledErr;    
+    long		eventClass;
+    static UInt32 backup = 0;
+    
+    GetEventParameter(event, kEventParamDirectObject, typeWindowRef, NULL,
+                         sizeof(window), NULL, &window);
+    eventClass = GetEventClass(event);
+    whatHappened = GetEventKind(event);
+        
+    switch (eventClass)
+        {        
+            case kEventClassWindow:
+                switch (whatHappened)
+                {
+                    case kEventWindowClose:
+                        taskmng_exit();
+                        result = noErr;
+                        break;
+                    case kEventWindowActivated:
+                        DisableAllMenuItems(GetMenuHandle(IDM_EDIT));
+                        break;
+                    case kEventWindowToolbarSwitchMode:
+                        toolwin_open();
+                        break;
+                    case kEventWindowDragStarted:
+                        soundmng_stop();
+                        break;
+                    case kEventWindowDragCompleted:
+                        soundmng_play();
+                        break;
+                    case kEventWindowShown:
+                        scrndraw_redraw();
+                        break;
+                }
+                break;
+            case kEventClassKeyboard:
+                UInt32 key;
+                GetEventParameter (event, kEventParamKeyCode, typeUInt32, NULL, sizeof(UInt32), NULL, &key);
+                UInt32 modif;
+                GetEventParameter (event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &modif);
+                switch (whatHappened)
+                {
+                    case kEventRawKeyUp:
+                        mackbd_f12up(key);
+                        result = noErr;
+                        break;
+                    case kEventRawKeyRepeat:
+                        mackbd_f12down(key);
+                        result = noErr;
+                        break;
+                    case kEventRawKeyDown:
+                        if (modif & cmdKey) {
+                            EventRecord	eve;
+                            ConvertEventRefToEventRecord( event,&eve );
+                            HandleMenuChoice(MenuEvent(&eve));
+                        }
+                        else {
+                            mackbd_f12down(key);
+                        }
+                        result = noErr;
+                        break;
+                    case kEventRawKeyModifiersChanged:
+                        if (modif & shiftKey) keystat_senddata(0x70);
+                        else keystat_senddata(0x70 | 0x80);
+                        if (modif & optionKey) keystat_senddata(0x73);
+                        else keystat_senddata(0x73 | 0x80);
+                        if (modif & controlKey) keystat_senddata(0x74);
+                        else keystat_senddata(0x74 | 0x80);
+                        if ((modif & alphaLock) != (backup & alphaLock)) {
+                            keystat_senddata(0x71);
+                            backup = modif;
+                        }
+                        result = noErr;
+                        break;
+                    default: 
+                        break;             
+                }
+            default: 
+                break;                
+        }
+
+	(void)myHandler;
+	(void)userData;
+    return result;
+}
+
+static const EventTypeSpec appEventList[] = {
+				{kEventClassAppleEvent,	kEventAppleEvent},
+				{kEventClassMouse,		kEventMouseDown},
+#if defined(NP2GCC)
+				{kEventClassMouse,		kEventMouseMoved},
+				{kEventClassMouse,		kEventMouseUp},
+#endif
+			};
+
+static const EventTypeSpec windEventList[] = {
+				{kEventClassWindow,		kEventWindowClose},
+				{kEventClassWindow,		kEventWindowActivated},
+				{kEventClassWindow,		kEventWindowToolbarSwitchMode},
+				{kEventClassWindow,		kEventWindowDragStarted},
+				{kEventClassWindow,		kEventWindowDragCompleted},
+				{kEventClassWindow,		kEventWindowShown},
+				{kEventClassKeyboard,	kEventRawKeyDown},
+				{kEventClassKeyboard,	kEventRawKeyUp},
+				{kEventClassKeyboard,	kEventRawKeyRepeat},
+				{kEventClassKeyboard,	kEventRawKeyModifiersChanged},
+			};
+
+
+static void setUpCarbonEvent(void) {
+
+	InstallStandardEventHandler(GetWindowEventTarget(hWndMain));
+	InstallApplicationEventHandler(NewEventHandlerUPP(np2appevent),
+								GetEventTypeCount(appEventList),
+								appEventList, 0, NULL);
+	InstallWindowEventHandler(hWndMain, NewEventHandlerUPP(np2windowevent),
+								GetEventTypeCount(windEventList),
+								windEventList, 0, NULL);
+}
+
+static bool setupMainWindow(void) {
+#if defined(NP2GCC)
+    OSStatus	err;
+    IBNibRef	nibRef;
+
+    err = CreateNibReference(CFSTR("np2"), &nibRef);
+    if (err ==noErr ) {
+        CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &hWndMain);
+        DisposeNibReference ( nibRef);
+    }
+    else {
+         return(false);
+    }
+    
+#else
+    Rect wRect;
+    
+	SetRect(&wRect, 100, 100, 100, 100);
+	hWndMain = NewWindow(0, &wRect, "\pNeko Project II", FALSE,
+								noGrowDocProc, (WindowPtr)-1, TRUE, 0);
+	if (!hWndMain) {
+		TRACETERM();
+		macossub_term();
+		dosio_term();
+		return(false);
+	}
+	SizeWindow(hWndMain, 640, 400, TRUE);
+#endif
+	scrnmng_initialize();
+    setUpCarbonEvent();
+	ShowWindow(hWndMain);
+    return(true);
+}
+
+static void toggleFullscreen(void) {
+    static Ptr 	bkfullscreen;
+    static BYTE mouse = 0;
+
+    soundmng_stop();
+    if (!scrnmode & SCRNMODE_FULLSCREEN) {
+        RGBColor col = {0, 0, 0};
+        short	w=640, h=480;
+        DisposeWindow(hWndMain);
+        BeginFullScreen(&bkfullscreen,0,&w,&h,&hWndMain,&col,(fullScreenAllowEvents | fullScreenDontChangeMenuBar));	
+        HideMenuBar();
+        setUpCarbonEvent();
+        if (!np2oscfg.MOUSE_SW) {
+            mouse = np2oscfg.MOUSE_SW;
+            mouse_running(MOUSE_ON);
+            menu_setmouse(1);
+        }
+        changescreen(scrnmode | SCRNMODE_FULLSCREEN);
+    }
+    else {
+        scrnmng_destroy();
+        EndFullScreen(bkfullscreen, 0);
+        setupMainWindow();
+        changescreen(scrnmode & (~SCRNMODE_FULLSCREEN));
+        if (!mouse) {
+            mouse_running(MOUSE_OFF);
+            menu_setmouse(0);
+        }
+        ShowMenuBar();
+    }
+    CheckMenuItem(GetMenuHandle(IDM_SCREEN), LoWord(IDM_FULLSCREEN), scrnmode & SCRNMODE_FULLSCREEN);
+    soundmng_play();
+}
+
+void recieveCommand(long param) {
+    HandleMenuChoice(param);
+}

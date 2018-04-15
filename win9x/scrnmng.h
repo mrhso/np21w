@@ -63,16 +63,20 @@ void scrnmng_dispclock(void);
 #define	scrnmng_allflash()		scrnmng.allflash = TRUE
 #define	scrnmng_palchanged()	scrnmng.palchanged = TRUE
 
-UINT16 scrnmng_makepal16(RGB32 pal32);
+RGB16 scrnmng_makepal16(RGB32 pal32);
 
 
 // ---- for windows
 
 void scrnmng_setmultiple(int multiple);
 void scrnmng_querypalette(void);
+void scrnmng_fullscrnmenu(int y);
 void scrnmng_topwinui(void);
 void scrnmng_clearwinui(void);
 
+void scrnmng_entersizing(void);
+void scrnmng_sizing(UINT side, RECT *rect);
+void scrnmng_exitsizing(void);
 
 #ifdef __cplusplus
 }
