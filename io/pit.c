@@ -23,7 +23,7 @@ static void setsystimerevent(UINT32 cnt, NEVENTPOSITION absolute) {
 
 	if(np2cfg.timeradj && GetKeyState(VK_SCROLL) & 0x1){
 		if (cnt > 8) {									// ª‹’‚È‚µ
-			cnt *= pccore.multiple/10;
+			cnt = cnt * pccore.multiple * 10 / 90;
 		}
 		else {
 			cnt = pccore.multiple << 16;

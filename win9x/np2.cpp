@@ -2195,6 +2195,9 @@ void unloadNP2INI(){
 		skbdwin_writeini();
 		mdbgwin_writeini();
 	}
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_writeini();
+#endif	// defined(SUPPORT_HOSTDRV)
 #if defined(SUPPORT_WAB)
 	wabwin_writeini();
 #endif	// defined(SUPPORT_WAB)
@@ -2231,6 +2234,10 @@ void loadNP2INI(const OEMCHAR *fname){
 #if defined(SUPPORT_WAB)
 	wabwin_readini();
 #endif	// defined(SUPPORT_WAB)
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_readini();
+#endif	// defined(SUPPORT_HOSTDRV)
+	toolwin_readini();
 
 	rand_setseed((unsigned)time(NULL));
 
@@ -2477,6 +2484,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #if defined(SUPPORT_WAB)
 	wabwin_readini();
 #endif	// defined(SUPPORT_WAB)
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_readini();
+#endif	// defined(SUPPORT_HOSTDRV)
 
 	rand_setseed((unsigned)time(NULL));
 
@@ -2852,6 +2862,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		skbdwin_writeini();
 		mdbgwin_writeini();
 	}
+#if defined(SUPPORT_HOSTDRV)
+	hostdrv_writeini();
+#endif	// defined(SUPPORT_HOSTDRV)
 #if defined(SUPPORT_WAB)
 	wabwin_writeini();
 #endif	// defined(SUPPORT_WAB)

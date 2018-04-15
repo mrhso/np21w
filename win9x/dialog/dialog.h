@@ -68,4 +68,6 @@ void dialog_ideopt(HWND hwndParent);
 // d_hostdrv.cpp
 #if defined(SUPPORT_HOSTDRV)
 void dialog_hostdrvopt(HWND hwndParent);
+void hostdrv_readini(); // b’è hostdrv.c‚ ‚½‚è‚ÉˆÚ“®‚·‚×‚«H
+void hostdrv_writeini(); // b’è hostdrv.c‚ ‚½‚è‚ÉˆÚ“®‚·‚×‚«H
 #endif

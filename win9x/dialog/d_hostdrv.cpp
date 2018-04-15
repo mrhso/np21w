@@ -14,6 +14,7 @@
 #include "pccore.h"
 #include "common/strres.h"
 #include "hostdrv.h"
+#include "ini.h"
 
 #include <shlobj.h>
 
@@ -25,6 +26,12 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+void hostdrv_readini();
+void hostdrv_writeini();
+void hostdrv_setcurrentpath(const TCHAR* newpath);
+
+static TCHAR s_hostdrvdir[10][MAX_PATH] = {0};
 
 int CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
@@ -50,11 +57,11 @@ protected:
 	virtual LRESULT WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam);
 
 private:
-	TCHAR m_hdrvenable;			//!< 有効
+	UINT8 m_hdrvenable;			//!< 有効
 	TCHAR m_hdrvroot[MAX_PATH];	//!< 共有ディレクトリ
 	UINT8 m_hdrvacc;			//!< アクセス権限
 	CWndProc m_chkenabled;		//!< Enabled
-	CWndProc m_edtdir;			//!< Shared Directory
+	CComboData m_cmbdir;			//!< Shared Directory
 	CWndProc m_chkread;			//!< Permission: Read
 	CWndProc m_chkwrite;		//!< Permission: Write
 	CWndProc m_chkdelete;		//!< Permission: Delete
@@ -76,8 +83,8 @@ CHostdrvDlg::CHostdrvDlg(HWND hwndParent)
  */
 BOOL CHostdrvDlg::OnInitDialog()
 {
-	
 	_tcscpy(m_hdrvroot, np2cfg.hdrvroot);
+	hostdrv_setcurrentpath(m_hdrvroot);
 	m_hdrvacc = np2cfg.hdrvacc;
 	m_hdrvenable = np2cfg.hdrvenable;
 	
@@ -87,8 +94,12 @@ BOOL CHostdrvDlg::OnInitDialog()
 	else
 		m_chkenabled.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 	
-	m_edtdir.SubclassDlgItem(IDC_HOSTDRVDIR, this);
-	m_edtdir.SetWindowText(m_hdrvroot);
+	m_cmbdir.SubclassDlgItem(IDC_HOSTDRVDIR, this);
+	for(int i=0;i<_countof(s_hostdrvdir);i++){
+		if(s_hostdrvdir[i][0]==0) break;
+		m_cmbdir.Add(s_hostdrvdir[i], i);
+	}
+	m_cmbdir.SetWindowText(m_hdrvroot);
 	
 	m_chkread.SubclassDlgItem(IDC_HOSTDRVREAD, this);
 	if(m_hdrvacc & HDFMODE_READ)
@@ -108,7 +119,7 @@ BOOL CHostdrvDlg::OnInitDialog()
 	else
 		m_chkdelete.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 
-	m_edtdir.SetFocus();
+	m_cmbdir.SetFocus();
 
 	return FALSE;
 }
@@ -122,6 +133,7 @@ void CHostdrvDlg::OnOK()
 	UINT32 valtmp;
 	TCHAR numbuf[31];
 	
+	hostdrv_setcurrentpath(m_hdrvroot);
 	if (m_hdrvenable!=np2cfg.hdrvenable || _tcscmp(np2cfg.hdrvroot, m_hdrvroot)!=0 || m_hdrvacc!=np2cfg.hdrvacc)
 	{
 		np2cfg.hdrvenable = m_hdrvenable;
@@ -152,18 +164,38 @@ BOOL CHostdrvDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 			return TRUE;
 
 		case IDC_HOSTDRVDIR:
-			m_edtdir.GetWindowText(hdrvroottmp, NELEMENTS(hdrvroottmp));
-			hdrvpathlen = _tcslen(hdrvroottmp);
-			if(hdrvroottmp[hdrvpathlen-1]=='\\'){
-				hdrvroottmp[hdrvpathlen-1] = '\0';
+			hdrvroottmp[0] = 0;
+			if (HIWORD(wParam) == CBN_EDITCHANGE){
+				m_cmbdir.GetWindowText(hdrvroottmp, NELEMENTS(hdrvroottmp));
+			}else if(HIWORD(wParam) == CBN_SELCHANGE) {
+				int selindex = m_cmbdir.GetCurSel();
+				if(selindex!=CB_ERR){
+					_tcscpy(hdrvroottmp, s_hostdrvdir[selindex]);
+				}else{
+					break;
+				}
 			}
-			if(_tcscmp(hdrvroottmp, m_hdrvroot)!=0){
-				_tcscpy(m_hdrvroot, hdrvroottmp);
-				m_hdrvacc = (m_hdrvacc & ~(HDFMODE_WRITE|HDFMODE_DELETE));
-				m_chkwrite.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
-				m_chkdelete.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
-			}
-			return TRUE;
+			if(hdrvroottmp[0]){
+				hdrvpathlen = _tcslen(hdrvroottmp);
+				if(hdrvroottmp[hdrvpathlen-1]=='\\'){
+					hdrvroottmp[hdrvpathlen-1] = '\0';
+				}
+				if(_tcscmp(hdrvroottmp, m_hdrvroot)!=0){
+					_tcscpy(m_hdrvroot, hdrvroottmp);
+					m_hdrvacc = (m_hdrvacc & ~(HDFMODE_WRITE|HDFMODE_DELETE));
+					m_chkwrite.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+					m_chkdelete.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+					//hostdrv_setcurrentpath(m_hdrvroot);
+					//m_cmbdir.ResetContent();
+					//for(int i=0;i<_countof(s_hostdrvdir);i++){
+					//	if(s_hostdrvdir[i][0]==0) break;
+					//	m_cmbdir.Add(s_hostdrvdir[i], i);
+					//}
+					//m_cmbdir.SetWindowText(hdrvroottmp);
+				}
+				return TRUE;
+				}
+			break;
 
 		case IDC_HOSTDRVBROWSE:
 			{
@@ -171,7 +203,7 @@ BOOL CHostdrvDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 				BROWSEINFO  binfo;
 				LPITEMIDLIST idlist;
     
-				m_edtdir.GetWindowText(hdrvroottmp, NELEMENTS(hdrvroottmp));
+				m_cmbdir.GetWindowText(hdrvroottmp, NELEMENTS(hdrvroottmp));
 
 				binfo.hwndOwner = g_hWndMain;
 				binfo.pidlRoot = NULL;
@@ -189,8 +221,20 @@ BOOL CHostdrvDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 					if(hdrvroottmp[hdrvpathlen-1]=='\\'){
 						hdrvroottmp[hdrvpathlen-1] = '\0';
 					}
-					m_edtdir.SetWindowText(hdrvroottmp);
-					CoTaskMemFree(idlist);               
+					if(_tcscmp(hdrvroottmp, m_hdrvroot)!=0){
+						_tcscpy(m_hdrvroot, hdrvroottmp);
+						m_hdrvacc = (m_hdrvacc & ~(HDFMODE_WRITE|HDFMODE_DELETE));
+						m_chkwrite.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+						m_chkdelete.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+						hostdrv_setcurrentpath(m_hdrvroot);
+						m_cmbdir.ResetContent();
+						for(int i=0;i<_countof(s_hostdrvdir);i++){
+							if(s_hostdrvdir[i][0]==0) break;
+							m_cmbdir.Add(s_hostdrvdir[i], i);
+						}
+						m_cmbdir.SetWindowText(hdrvroottmp);
+					}
+					CoTaskMemFree(idlist);
 				}
 			}
 			return TRUE;
@@ -233,4 +277,67 @@ void dialog_hostdrvopt(HWND hwndParent)
 {
 	CHostdrvDlg dlg(hwndParent);
 	dlg.DoModal();
+}
+
+
+//! タイトル
+static const TCHAR s_hostdrvapp[] = TEXT("NP2 hostdrv");
+
+/**
+ * 設定
+ */
+static const PFTBL s_hostdrvini[] =
+{
+	PFSTR("HOSTDRV0", PFTYPE_STR,		s_hostdrvdir[0]),
+	PFSTR("HOSTDRV1", PFTYPE_STR,		s_hostdrvdir[1]),
+	PFSTR("HOSTDRV2", PFTYPE_STR,		s_hostdrvdir[2]),
+	PFSTR("HOSTDRV3", PFTYPE_STR,		s_hostdrvdir[3]),
+	PFSTR("HOSTDRV4", PFTYPE_STR,		s_hostdrvdir[4]),
+	PFSTR("HOSTDRV5", PFTYPE_STR,		s_hostdrvdir[5]),
+	PFSTR("HOSTDRV6", PFTYPE_STR,		s_hostdrvdir[6]),
+	PFSTR("HOSTDRV7", PFTYPE_STR,		s_hostdrvdir[7]),
+	PFSTR("HOSTDRV8", PFTYPE_STR,		s_hostdrvdir[8]),
+	PFSTR("HOSTDRV9", PFTYPE_STR,		s_hostdrvdir[9])
+};
+
+/**
+ * 設定読み込み
+ */
+void hostdrv_readini()
+{
+	ZeroMemory(&s_hostdrvdir, sizeof(s_hostdrvdir));
+
+	OEMCHAR szPath[MAX_PATH];
+	initgetfile(szPath, _countof(szPath));
+	ini_read(szPath, s_hostdrvapp, s_hostdrvini, _countof(s_hostdrvini));
+}
+
+/**
+ * 設定書き込み
+ */
+void hostdrv_writeini()
+{
+	TCHAR szPath[MAX_PATH];
+	initgetfile(szPath, _countof(szPath));
+	ini_write(szPath, s_hostdrvapp, s_hostdrvini, _countof(s_hostdrvini));
+}
+
+/**
+ * 指定したパスを最上位に
+ */
+void hostdrv_setcurrentpath(const TCHAR* newpath)
+{
+	int i;
+	if(!newpath[0]) 
+		return;
+	for(i=0;i<_countof(s_hostdrvini);i++){
+		if(_tcsicmp(s_hostdrvdir[i], newpath)==0){
+			i++;
+			break;
+		}
+	}
+	for(i=i-1;i>=1;i--){
+		_tcscpy(s_hostdrvdir[i], s_hostdrvdir[i-1]);
+	}
+	_tcscpy(s_hostdrvdir[0], newpath);
 }

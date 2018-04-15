@@ -204,7 +204,8 @@ void cs4231_control(UINT idx, REG8 dat) {
 			if (modify & 5) {
 				if (cs4231.dmach != 0xff) {
 					dmach = dmac.dmach + cs4231.dmach;
-					if ((dat & 0x5) == 0x5) {
+					//if ((dat & 0x5) == 0x5) {
+					if ((dat & 0x1) == 0x1) { // np21w ver0.86 rev29
 						dmach->ready = 1;
 					}
 					else {

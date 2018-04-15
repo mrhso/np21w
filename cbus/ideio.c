@@ -1366,15 +1366,6 @@ void ideio_reset(const NP2CFG *pConfig) {
 		CopyMemory(mem + 0xd8000, idebios, sizeof(idebios));
 		TRACEOUT(("use simulate ide.rom"));
 	}
-	
-	//if(ideio.bios == IDETC_BIOS){
-	//	if(ideio.wwait < ideio.mwait){
-	//		ideio.wwait = ideio.mwait;
-	//	}
-	//	if(ideio.rwait < ideio.mwait/4){
-	//		ideio.rwait = ideio.mwait/4;
-	//	}
-	//}
 
 	(void)pConfig;
 }

@@ -12,6 +12,9 @@
 #include "oemtext.h"
 #endif
 #include "pccore.h"
+#include "ini.h"
+
+#include <shlwapi.h>
 
 /*! ƒ‹[ƒgî•ñ */
 static const HDRVFILE s_hddroot = {{' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '}, 0, 0, 0x10, {0}, {0}};
@@ -381,7 +384,21 @@ static BRESULT FindSinglePath(HDRVPATH *phdp, const char *lpFcbname)
 UINT hostdrvs_getrealdir(HDRVPATH *phdp, char *lpFcbname, const char *lpDosPath)
 {
 	phdp->file = s_hddroot;
-	file_cpyname(phdp->szPath, np2cfg.hdrvroot, NELEMENTS(phdp->szPath));
+	if(PathIsRelative(np2cfg.hdrvroot)){
+		TCHAR pathbuf[MAX_PATH+1];
+		TCHAR *pathtmp;
+		initgetfile(pathbuf, _countof(pathbuf));
+		pathtmp = _tcsrchr(pathbuf, '\\');
+		if(pathtmp){
+			*(pathtmp+1) = 0;
+		}else{
+			pathbuf[0] = 0;
+		}
+		_tcscat(pathbuf, np2cfg.hdrvroot);
+		file_cpyname(phdp->szPath, pathbuf, NELEMENTS(phdp->szPath));
+	}else{
+		file_cpyname(phdp->szPath, np2cfg.hdrvroot, NELEMENTS(phdp->szPath));
+	}
 
 	if (lpDosPath[0] == '\\')
 	{
