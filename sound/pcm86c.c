@@ -112,6 +112,7 @@ void pcm86_setnextintr(void) {
 
 	if (pcm86->fifo & 0x80)
 	{
+		pcm86->virbuf = pcm86->virbuf & ~0x1; // XXX: Windowsでフリーズする問題の暫定対症療法
 		cnt = pcm86->virbuf - pcm86->fifosize;
 		if (cnt > 0)
 		{
