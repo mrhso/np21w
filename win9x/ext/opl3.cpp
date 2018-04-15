@@ -133,7 +133,9 @@ void opl3_bind(POPL3 opl3)
 	}
 	else
 	{
+#ifndef USE_MAME
 		oplgen_reset(&opl3->oplgen, nBaseClock);
+#endif
 	}
 	restore(opl3);
 	

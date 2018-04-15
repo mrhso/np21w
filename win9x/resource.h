@@ -275,6 +275,7 @@
 #define IDC_IDERWAIT                    19106
 #define IDC_SPINIDERWAIT				19107
 #define IDC_USEIDEBIOS					19108
+#define IDC_AUTOIDEBIOS					19109
 #define IDS_APP_NAME2                   30001
 #define IDS_APP_NAME21                  30002
 #define IDS_FILENAME_HELP               30003

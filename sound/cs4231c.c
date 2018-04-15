@@ -68,8 +68,6 @@ static const UINT8 cs4231cnt64[8] = {
 
 //    640:441
 				
-static void setdataalign(void);
-
 void cs4231_initialize(UINT rate) {
 
 	cs4231cfg.rate = rate;
@@ -98,7 +96,7 @@ void cs4231_dma(NEVENTITEM item) {
 
 			// バッファに空きがあればデータを読み出す
 			if (cs4231.bufsize-4 > cs4231.bufdatas) {
-				rem = cs4231.bufsize - 4 - cs4231.bufdatas; //読み取り単位は16bitステレオの1サンプル分(4byte)にしておかないと雑音化する
+				rem = min(cs4231.bufsize - 4 - cs4231.bufdatas, 512); //読み取り単位は16bitステレオの1サンプル分(4byte)にしておかないと雑音化する
 				pos = cs4231.bufwpos & CS4231_BUFMASK; // バッファ書き込み位置
 				size = min(rem, dmach->startcount); // バッファ書き込みサイズ
 				r = dmac_getdata_(dmach, cs4231.buffer, pos, size); // DMA読み取り実行
@@ -108,7 +106,7 @@ void cs4231_dma(NEVENTITEM item) {
 
 			// まだデータがありそうならNEVENTをセット
 			if ((dmach->leng.w) && (cs4231cfg.rate)) {
-				cnt = pccore.realclock * 16 / cs4231cfg.rate;
+				cnt = pccore.realclock * 4 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_RELATIVE);
 			}
 		}
@@ -145,7 +143,7 @@ REG8 DMACCALL cs4231dmafunc(REG8 func) {
 				//cs4231.bufpos = cs4231.bufwpos;
 				//cs4231.bufdatas = 0;
 				cs4231_totalsample = 0;
-				cnt = pccore.realclock * 16 / cs4231cfg.rate;
+				cnt = pccore.realclock * 4 / cs4231cfg.rate;
 				nevent_set(NEVENT_CS4231, cnt, cs4231_dma, NEVENT_ABSOLUTE);
 			}
 			break;
@@ -228,7 +226,7 @@ void cs4231_control(UINT idx, REG8 dat) {
 	case CS4231REG_PLAYFMT:
 		// 再生フォーマット設定とか　Fs and Playback Data Format (I8)
 		if (modify & 0xf0) {
-			dmach->adrs.d = dmach->startaddr;
+			//dmach->adrs.d = dmach->startaddr;
 			cs4231.bufpos = cs4231.bufwpos;
 			cs4231.bufdatas = 0;
 			setdataalign();

@@ -313,30 +313,50 @@ static REG8 IOINPCALL ym_i148b(UINT port) //  ???
 	TRACEOUT(("%x read",port));
 	return opl3_readExtendedRegister(&g_opl3, g_opl3.s.addrh);
 }
+
 REG8 sound118;
 static void IOOUTCALL csctrl_o148e(UINT port, REG8 dat) {
+	TRACEOUT(("write %x %x",port,dat));
 	sound118 = dat;
 }
 
 static REG8 IOINPCALL csctrl_i148e(UINT port) {
 	return(sound118);
+	TRACEOUT(("%x read",port));
 }
 REG8 control118;
 static REG8 IOINPCALL csctrl_i148f(UINT port) {
-
+	TRACEOUT(("%x read",port));
 	(void)port;
-	if(sound118 == 0)	return(0x03);
-/*	if(sound118 == 0x05) {
-		if(control118 == 0x04)return (0x04);
-		else if(control118 == 0) return 0;}
+	if(sound118 == 0)	return(0x3);//PC-9801-118は3だけどYMFは0xff 2000はこれだけじゃまだダメ
+	if(sound118 == 0x05){
+		if(control118==4)return 4;
+		if(control118==0x0c) return 4;
+		if(control118==0)return 0;
+	}
 	if(sound118 == 0x04) return (0x00);
-	if(sound118 == 0x21) return (0x00);
-	if(sound118 == 0xff) return (0x00);
+	if(sound118 == 0x21) switch(0x00/*mpu98.irqnum2*/){//MIDI割り込み 00:IRQ10　01:IRQ6 02:IRQ5 03:IRQ3
+			case 10:return 0;
+			case 6: return 1;
+			case 5: return 2;
+			case 3: return 3;
+			default: return 0;
+	}
+	if(sound118 == 0xff) return (0x05);//bit0 MIDI割り込みあり bit1:Cb Na7 bit2:Mate-X bit3:A-Mate Ce2
 	else
-*/	return(0xff);
+	return(0xff);
 }
 
 static void IOOUTCALL csctrl_o148f(UINT port, REG8 dat) {
+	TRACEOUT(("write %x %x",port,dat));
+
+	//if (sound118 == 0x21) switch(dat){
+	//				case 0:mpu98.irqnum2 = 10;break;
+	//				case 1:mpu98.irqnum2 = 6;break;
+	//				case 2:mpu98.irqnum2 = 5;break;
+	//				case 3:mpu98.irqnum2 = 3;break;
+	//				default: break;
+	//}
 	control118 = dat;
 }
 

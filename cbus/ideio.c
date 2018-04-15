@@ -1507,6 +1507,7 @@ void ideio_reset(const NP2CFG *pConfig) {
 	REG8	i;
 	IDEDRV	drv;
 	OEMCHAR tmpbiosname[16];
+	UINT8 useidebios;
 
 	ZeroMemory(&ideio, sizeof(ideio));
 	for (i=0; i<4; i++) {
@@ -1518,7 +1519,21 @@ void ideio_reset(const NP2CFG *pConfig) {
 	ideio.wwait = np2cfg.idewwait;
 	ideio.bios = IDETC_NOBIOS;
 
-	if(np2cfg.idebios){
+	useidebios = np2cfg.idebios;
+	if(useidebios && np2cfg.autoidebios){
+		SXSIDEV	sxsi;
+		for (i=0; i<4; i++) {
+			sxsi = sxsi_getptr(i);
+			if ((sxsi != NULL) && (np2cfg.idetype[i] == SXSIDEV_HDD) && 
+					(sxsi->devtype == SXSIDEV_HDD) && (sxsi->flag & SXSIFLAG_READY)) {
+				if(sxsi->surfaces != 8 || sxsi->sectors != 17){
+					TRACEOUT(("Incompatible CHS parameter detected. IDE BIOS automatically disabled."));
+					useidebios = 0;
+				}
+			}
+		}
+	}
+	if(useidebios){
 		_tcscpy(tmpbiosname, OEMTEXT("ide.rom"));
 		getbiospath(path, tmpbiosname, NELEMENTS(path));
 		fh = file_open_rb(path);

@@ -497,6 +497,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("IDE3TYPE", PFTYPE_UINT8,		&np2cfg.idetype[2]),
 	PFVAL("IDE4TYPE", PFTYPE_UINT8,		&np2cfg.idetype[3]),
 	PFVAL("IDE_BIOS", PFTYPE_BOOL,		&np2cfg.idebios),  // 実機IDE BIOS使用
+	PFVAL("AIDEBIOS", PFTYPE_BOOL,		&np2cfg.autoidebios),  // 実機IDE BIOS使用を自動設定する
 	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
 	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
 	PFVAL("IDEMWAIT", PFTYPE_UINT32,	&np2cfg.idemwait),

@@ -189,11 +189,6 @@ const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
 	SINT32	samp2;
-	UINT8	oddflag = 0;
-	
-	if(cs->bufdatas & 1){
-		oddflag = 1;
-	}
 	
 	leng = cs->bufdatas >> 1;
 	if (!leng) {
@@ -219,9 +214,6 @@ const UINT8	*ptr2;
 		pos12 += cs->step12;
 	} while(--count);
 	
-	if(oddflag){
-		cs->bufdatas--;
-	}
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 1);
 	cs->bufpos = (cs->bufpos + (leng << 1)) & CS4231_BUFMASK;
@@ -238,11 +230,7 @@ const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
 	SINT32	samp2;
-	UINT8	oddflag = 0;
-	
-	if(cs->bufdatas & 1){
-		oddflag = 1;
-	}
+
 	leng = cs->bufdatas >> 2;
 	if (!leng) {
 		return;
@@ -270,9 +258,6 @@ const UINT8	*ptr2;
 		pos12 += cs->step12;
 	} while(--count);
 	
-	if(oddflag){
-		cs->bufdatas--;
-	}
 	leng = min(leng, (pos12 >> 12));
 	cs->bufdatas -= (leng << 2);
 	cs->bufpos = (cs->bufpos + (leng << 2)) & CS4231_BUFMASK;
