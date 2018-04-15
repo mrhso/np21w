@@ -125,7 +125,7 @@ const OEMCHAR	*p;			//	BKDSK(DD6) or BKDSK(DDB)判定用
 //			fdd_fn->readid		= fdd_readid_xdf;
 			fdd_fn->readid		= fdd_readid_common;
 			fdd_fn->writeid		= fdd_dummy_xxx;
-			fdd_fn->formatinit	= fdd_dummy_xxx;
+			fdd_fn->formatinit	= fdd_formatinit_xdf;	/* 170107 to support format command */
 			fdd_fn->formating	= fdd_formating_xxx;
 			fdd_fn->isformating	= fdd_isformating_xxx;
 			//
@@ -233,7 +233,7 @@ BRESULT fdd_set_fdi(FDDFILE fdd, FDDFUNC fdd_fn, const OEMCHAR *fname, int ro) {
 	fdd_fn->write		= fdd_write_xdf;
 	fdd_fn->readid		= fdd_readid_common;
 	fdd_fn->writeid		= fdd_dummy_xxx;
-	fdd_fn->formatinit	= fdd_dummy_xxx;
+	fdd_fn->formatinit	= fdd_formatinit_xdf;	/* 170107 modified to work on Windows 9x/2000 */
 	fdd_fn->formating	= fdd_formating_xxx;
 	fdd_fn->isformating	= fdd_isformating_xxx;
 	//
@@ -391,6 +391,98 @@ BRESULT fdd_write_xdf(FDDFILE fdd) {
 	fddlasterror = 0x00;
 	return(SUCCESS);
 }
+
+/* 170107 modified to work on Windows 9x/2000 form ... */
+/* 実装補足 先頭からのオフセット値は単純にトラック数ｘ1トラック当たりのセクタ数ｘセクタサイズ
+   で行っているため、トラックごとに異なるセクタ構造を持つフォーマットには対応できません 
+   元々ファイルのデータ構造的にサポートできません */
+BRESULT fdd_formatinit_xdf(FDDFILE fdd) {
+	FILEH	hdl;
+	FDIHDR	fdi;
+	UINT32	fddtype;
+	UINT32	cylinders;
+	long	seekp;
+	UINT    size;
+
+	if (fdd->protect) {
+		fddlasterror = 0x70;
+		return(FAILURE);
+	}
+
+	hdl = file_open(fdd->fname);
+	if (hdl == FILEH_INVALID) {
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+
+	size = (128 << fdc.N) * fdc.sc;
+	seekp = (fdc.treg[fdc.us] << 1) + fdc.hd;
+	seekp *= size;
+	seekp += fdd->inf.xdf.headersize;
+	memset(fdc.buf, fdc.d, size);
+
+	if ((file_seek(hdl, seekp, FSEEK_SET) != seekp) ||
+		(file_write(hdl, fdc.buf, size) != size)) {
+		file_close(hdl);
+		fddlasterror = 0xc0;
+		return(FAILURE);
+	}
+
+	if (seekp == fdd->inf.xdf.headersize) {
+		
+		fdd->inf.xdf.disktype = DISKTYPE_2HD;
+		cylinders = 77;
+		switch(fdc.N) {
+			case 1:		// BASIC (sector size = 256)
+				fddtype = 0x10;
+				break;
+			case 2:		// 1.44M/1.21M/2DD
+				fddtype = 0x30;
+				if (fdc.sc < 10) {
+					fddtype = 0x70;
+					fdd->inf.xdf.disktype = DISKTYPE_2DD;
+				}
+				else if (fdc.sc < 18) {
+					fddtype = 0x90;
+				}
+				cylinders = 80;
+				break;
+			default:	// 1.25M
+				fddtype = 0x90;
+				break;
+		}
+
+		fdd->inf.xdf.tracks = (UINT8)(cylinders * 2);
+		fdd->inf.xdf.sectors = fdc.sc;
+		fdd->inf.xdf.n = fdc.N;
+		fdd->inf.xdf.rpm = fdc.rpm[fdc.us];
+
+		if(fdd->inf.xdf.headersize) {			/* for FDI */
+			if ((file_seek(hdl, 0, FSEEK_SET) == 0) &&
+				(file_read(hdl, &fdi, sizeof(fdi)) == sizeof(fdi))) {
+				if (fdd->inf.xdf.headersize == LOADINTELDWORD(fdi.headersize)) {
+					STOREINTELDWORD(fdi.fddtype, fddtype);
+					STOREINTELDWORD(fdi.fddsize, size * cylinders * 2);
+					STOREINTELDWORD(fdi.sectorsize, 128 << fdc.N);
+					STOREINTELDWORD(fdi.sectors, fdc.sc);
+					STOREINTELDWORD(fdi.surfaces, 2);
+					STOREINTELDWORD(fdi.cylinders, cylinders);
+					file_seek(hdl, 0, FSEEK_SET);
+					file_write(hdl, &fdi, sizeof(fdi));
+				}
+			}
+		}
+		// trim media image
+		seekp = fdd->inf.xdf.tracks * size + fdd->inf.xdf.headersize;
+		file_seek(hdl, seekp, FSEEK_SET);
+		file_write(hdl, fdc.buf, 0);
+	}
+
+	file_close(hdl);
+	fddlasterror = 0x00;
+	return(SUCCESS);
+}
+/* 170107 modified to work on Windows 9x/2000 ... to */
 
 #if 0	//	共通関数化したので廃止(fddfile.cへ)(kai9)
 //BRESULT fddxdf_readid(FDDFILE fdd) {

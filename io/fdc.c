@@ -263,7 +263,7 @@ static void FDC_SenseDeviceStatus(void) {				// cmd: 04
 				if (!fdc.treg[fdc.us]) {
 					fdc.buf[0] |= 0x10;
 				}
-				if (fddfile[fdc.us].fname[0]) {
+				if ((fddfile[fdc.us].fname[0]) || (fdc.ctrlreg & 0x40)) {/* 170107 ”O‚Ì‚½‚ß */
 					fdc.buf[0] |= 0x20;
 				}
 				if (fddfile[fdc.us].protect) {
@@ -452,17 +452,27 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 		case FDCEVENT_CMDRECV:
 			get_hdus();
 			fdc.ncn = 0;
+			fdc.R = 1;						/* 170107 for Windows95 */
+			fdc.crcn = fdc.R;				/* 170107 for Windows95 */
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
 			fdc.stat[fdc.us] |= FDCRLT_SE;
 			if (!(fdc.equip & (1 << fdc.us))) {
 				fdc.stat[fdc.us] |= FDCRLT_NR | FDCRLT_IC0;
 			}
-			/* 170101 ST modified to work on Windows 9x/2000 */
-			else if ((!fddfile[fdc.us].fname[0]) && (!(fdc.ctrlreg & 0x40))) {
+			/* 170107 modified to work on Windows 9x/2000 from ...*/
+			else if (fdc.ctrlreg & 0x40) {
+				fdc.treg[fdc.us] = fdc.ncn;
+			}
+			/* 170107 modified to work on Windows 9x/2000 ... to */
+			else if (!fddfile[fdc.us].fname[0]) {
 				fdc.stat[fdc.us] |= FDCRLT_NR;
 			}
 			else {
-				fdd_seek();
+				/* 170107 for Windows95 form ... */
+				if (fdd_seek()) {
+					fdc.stat[fdc.us] |= FDCRLT_IC0;
+				}
+				/* 170107 for Windows95 ... to */
 			}
 			fdc_interrupt();
 			break;
@@ -559,6 +569,13 @@ static void FDC_WriteID(void) {							// cmd: 0d
 					fdcsend_error7();
 					break;
 				}
+				/* 170107 modified to work on Windows 9x/2000 form ... */
+				if (!fdd_isformating()) {
+					fdc.crcn = 1;
+					fdcsend_success7();
+					break;
+				}
+				/* 170107 modified to work on Windows 9x/2000 ... to */
 //				TRACE_("FDC_WriteID FDCEVENT_BUFRECV", 0);
 				fdc.event = FDCEVENT_BUFRECV;
 				fdc.bufcnt = 4;
@@ -613,6 +630,7 @@ static void FDC_Seek(void) {							// cmd: 0f
 			fdc.ncn = fdc.cmds[1];
 			fdc.treg[fdc.us] = fdc.ncn;
 			fdc.R = 1;
+			fdc.crcn = fdc.R;				/* 170107 for Windows95 */
 			/* 170101 ST modified to work on Windows 9x/2000 */
 			fdc.stat[fdc.us] = /*(fdc.hd << 2) |*/ fdc.us;	
 			fdc.stat[fdc.us] |= FDCRLT_SE;
@@ -621,7 +639,11 @@ static void FDC_Seek(void) {							// cmd: 0f
 				fdc.stat[fdc.us] |= FDCRLT_NR | FDCRLT_IC0;
 			}
 			else {
-				fdd_seek();
+				/* 170107 for Windows95 form ... */
+				if (fdd_seek()) {
+					fdc.stat[fdc.us] |= FDCRLT_IC0;
+				}
+				/* 170107 for Windows95 ... to */
 			}
 			fdc_interrupt();
 			break;
@@ -821,7 +843,7 @@ static void IOOUTCALL fdc_o94(UINT port, REG8 dat) {
 		dmac_check();
 	}
 	/* 170101 ST modified to work on Windows 9x/2000 form ... */
-	if(dat & 0x80) {
+	if (dat & 0x80) {
 		fdcstatusreset();
 	} else if ((fdc.ctrlreg ^ dat) & 0x88) {
 		if (dat & 0x08) {

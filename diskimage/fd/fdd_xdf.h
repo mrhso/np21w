@@ -15,6 +15,7 @@ BRESULT	fdd_set_fdi(FDDFILE fdd, FDDFUNC fdd_fn, const OEMCHAR *fname, int ro);
 BRESULT	fdd_read_xdf(FDDFILE fdd);
 BRESULT	fdd_write_xdf(FDDFILE fdd);
 //BRESULT	fdd_readid_xdf(FDDFILE fdd);
+BRESULT	fdd_formatinit_xdf(FDDFILE fdd);	/* 170107 to support format command */
 #else
 BRESULT fddxdf_set(FDDFILE fdd, const OEMCHAR *fname, int ro);
 BRESULT fddxdf_setfdi(FDDFILE fdd, const OEMCHAR *fname, int ro);

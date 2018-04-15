@@ -265,7 +265,10 @@ BRESULT fdd_formating_xxx(FDDFILE fdd, const UINT8 *ID) {
 BOOL fdd_isformating_xxx(FDDFILE fdd) {
 
 	(void)fdd;
-	return(FAILURE);
+	/* 170107 to support format command form ... */
+	//return(FAILURE);
+	return FALSE;
+	/* 170107 to support format command ... to */
 }
 // ----
 //	ベタ系イメージ用共通処理関数群(Kai1)
@@ -281,7 +284,7 @@ BRESULT fdd_seek_common(FDDFILE fdd) {
 
 	if ((CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
-		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
+		//!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
 		(fdc.ncn >= (fdd->inf.xdf.tracks >> 1))) {
 		return(FAILURE);
 	}
@@ -292,7 +295,7 @@ BRESULT fdd_seeksector_common(FDDFILE fdd) {
 
 	if ((CTRL_FDMEDIA != fdd->inf.xdf.disktype) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
-		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
+		//!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
 		(fdc.treg[fdc.us] >= (fdd->inf.xdf.tracks >> 1))) {
 TRACEOUT(("fdd_seek_common FAILURE CTRL_FDMEDIA[%02x], DISKTYPE[%02x]", CTRL_FDMEDIA, fdd->inf.xdf.disktype));
 TRACEOUT(("fdd_seek_common FAILURE fdc.rpm[%02x], fdd->rpm[%02x]", fdc.rpm[fdc.us], fdd->inf.xdf.rpm));
@@ -332,8 +335,9 @@ BRESULT fdd_readid_common(FDDFILE fdd) {
 	/* 170101 ST modified to work on Windows 9x/2000 ... to */
 	if ((!fdc.mf) ||
 		(fdc.rpm[fdc.us] != fdd->inf.xdf.rpm) ||
-		!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
-		(fdc.crcn >= fdd->inf.xdf.sectors)) {
+		(CTRL_FDMEDIA != fdd->inf.xdf.disktype)) {
+		//!(fdc.chgreg & fdd->inf.xdf.disktype) ||  // np21w ver0.86 rev20
+		//(fdc.crcn >= fdd->inf.xdf.sectors)) {
 		fddlasterror = 0xe0;
 		return(FAILURE);
 	}
@@ -537,7 +541,10 @@ BOOL fdd_isformating(void) {
 	fdd = fddfile + fdc.us;		//	追加(Kai1)
 	fdd_fn = fddfunc + fdc.us;	//	追加(Kai1)
 #if 1							//	変更(Kai1)
-	return(fdd_fn->formatinit(fdd));
+	/* 170107 to support format command form ... */
+	//return(fdd_fn->formatinit(fdd));
+	return(fdd_fn->isformating(fdd));
+	/* 170107 to support format command ... to */
 #else
 	if (fddfile[fdc.us].type == DISKTYPE_D88) {
 //		return(fdd_isformating_d88());
