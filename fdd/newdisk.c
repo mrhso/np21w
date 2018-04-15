@@ -8,6 +8,10 @@
 #include	"sxsi.h"
 #include	"hddboot.res"
 
+#ifdef SUPPORT_VPCVHD
+#include "hdd_vpc.h"
+#endif
+
 
 // ---- fdd
 
@@ -114,7 +118,7 @@ void newdisk_nhd(const OEMCHAR *fname, UINT hddsize) {
 	FILELEN	size;
 	BRESULT	r;
 	
-	if ((fname == NULL) || (hddsize < 5) || (hddsize > NHD_MAXSIZE)) {
+	if ((fname == NULL) || (hddsize < 5) || (hddsize > NHD_MAXSIZE2)) {
 		goto ndnhd_err;
 	}
 	fh = file_create(fname);
@@ -242,3 +246,92 @@ ndvhd_err:
 	return;
 }
 
+#ifdef SUPPORT_VPCVHD
+const char vpcvhd_sig[8] = "conectix";
+const char vpcvhd_creator[4] = "vpc ";
+const char vpcvhd_os[4] = "Wi2k";
+
+void newdisk_vpcvhd(const OEMCHAR *fname, UINT hddsize) {
+
+   FILEH   fh;
+   VPCVHDFOOTER    vpcvhd;
+   FILELEN size;
+   BRESULT r;
+   UINT64  origsize;
+   UINT32  checksum;
+   size_t footerlen;
+
+   if ((fname == NULL) || (hddsize < 5) || (hddsize > NHD_MAXSIZE2)) {
+       goto vpcvhd_err;
+   }
+   fh = file_create(fname);
+   if (fh == FILEH_INVALID) {
+       goto vpcvhd_err;
+   }
+
+   footerlen = sizeof(VPCVHDFOOTER);
+   ZeroMemory(&vpcvhd, footerlen);
+
+   CopyMemory(&vpcvhd.Cookie, vpcvhd_sig, 8);
+   STOREMOTOROLADWORD(vpcvhd.Features, 2);
+   STOREMOTOROLADWORD(vpcvhd.FileFormatVersion, 0x10000);
+   CopyMemory(&vpcvhd.CreatorApplication, vpcvhd_creator, 4);
+   STOREMOTOROLADWORD(vpcvhd.CreatorVersion, 0x50003);
+   CopyMemory(&vpcvhd.CreatorHostOS, vpcvhd_os, 4);
+   STOREMOTOROLAQWORD(vpcvhd.DataOffset, (SINT64)-1);
+   STOREMOTOROLADWORD(vpcvhd.DiskType, 2);
+
+#ifdef SUPPORT_LARGE_HDD
+   if(hddsize <= 4000){
+       size = hddsize * 15;
+       STOREMOTOROLAWORD(vpcvhd.Cylinder, (UINT16)size);
+       vpcvhd.Heads = 8;
+       vpcvhd.SectorsPerCylinder = 17;
+       origsize = size * 8 * 17 * 512;
+       STOREMOTOROLAQWORD(vpcvhd.OriginalSize, origsize);
+       CopyMemory(&vpcvhd.CurrentSize, &vpcvhd.OriginalSize, 8);
+       r = writehddipl(fh, 512, origsize);
+   }else if(hddsize <= 32000){
+       size = hddsize * 15 * 17 / 2 / 63;
+       STOREMOTOROLAWORD(vpcvhd.Cylinder, (UINT16)size);
+       vpcvhd.Heads = 16;
+       vpcvhd.SectorsPerCylinder = 63;
+       origsize = (UINT64)size * 16 * 63 * 512;
+       STOREMOTOROLAQWORD(vpcvhd.OriginalSize, origsize);
+       CopyMemory(&vpcvhd.CurrentSize, &vpcvhd.OriginalSize, 8);
+       r = writehddipl(fh, 512, origsize);
+   }else{
+       size = hddsize * 15 * 17 / 2 / 255;
+       STOREMOTOROLAWORD(vpcvhd.Cylinder, (UINT16)size);
+       vpcvhd.Heads = 16;
+       vpcvhd.SectorsPerCylinder = 255;
+       origsize = (UINT64)size * 16 * 255 * 512;
+       STOREMOTOROLAQWORD(vpcvhd.OriginalSize, origsize);
+       CopyMemory(&vpcvhd.CurrentSize, &vpcvhd.OriginalSize, 8);
+       r = writehddipl(fh, 512, origsize);
+   }
+#else
+   size = hddsize * 15;
+   STOREMOTOROLAWORD(vpcvhd.Cylinder, (UINT16)size);
+   vpcvhd.Heads = 8;
+   vpcvhd.SectorsPerCylinder = 17;
+   origsize = size * 8 * 17 * 512;
+   STOREMOTOROLAQWORD(vpcvhd.OriginalSize, origsize);
+   CopyMemory(&vpcvhd.CurrentSize, &vpcvhd.OriginalSize, 8);
+   r = writehddipl(fh, 512, origsize);
+#endif
+
+   checksum = vpc_calc_checksum(&vpcvhd,footerlen);
+   STOREMOTOROLADWORD(vpcvhd.CheckSum, checksum);
+
+   r |= (file_write(fh, &vpcvhd, sizeof(vpcvhd)) == sizeof(vpcvhd)) ? SUCCESS : FAILURE;
+
+   file_close(fh);
+   if (r != SUCCESS) {
+       file_delete(fname);
+   }
+
+vpcvhd_err:
+   return;
+}
+#endif

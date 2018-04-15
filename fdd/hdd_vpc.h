@@ -56,6 +56,7 @@ typedef struct VPCVHDDDH {
 extern "C" {
 #endif
 
+UINT32 vpc_calc_checksum(UINT8* buf, size_t size);
 BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh);
 
 

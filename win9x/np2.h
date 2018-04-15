@@ -86,6 +86,7 @@ typedef struct {
 
 	UINT8	emuddraw; // DirectDraw Emulation Only
 	UINT8	dragdrop; // Drag and drop support
+	UINT8	makelhdd; // Large HDD creation support
 } NP2OSCFG;
 
 

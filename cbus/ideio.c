@@ -447,8 +447,8 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 	drv->cmd = dat;
 	TRACEOUT(("ideio set cmd %.2x [%.4x:%.8x]", dat, CPU_CS, CPU_EIP));
 	switch(dat) {
-		//case 0x00:		// NOP
-		//	break;
+		case 0x00:		// NOP
+			break;
 		case 0x08:		// device reset
 			TRACEOUT(("ideio: device reset"));
 			drvreset(drv);

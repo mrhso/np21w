@@ -130,7 +130,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0
+						0, 0, 0
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];

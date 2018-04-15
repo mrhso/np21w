@@ -393,6 +393,10 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 	//	return 0xCB;
 	//if (address == 0x30000+0x0000) 
 	//	return 0xCB;
+	//if (address == 0x055e) 
+	//	return 0x0f;
+	//if (address == 0x055f) 
+	//	return 0x01;
 
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);

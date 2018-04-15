@@ -78,10 +78,11 @@ static int sendDataToBuffer(UCHAR *pSendBuf, DWORD len){
 		return 1;
 	}
 	if(np2net_membuf_readpos==(np2net_membuf_writepos+1)%NET_ARYLEN){
+		np2net_highspeedmode = 1;
 		TRACEOUT(("LGY-98: buffer full"));
 		while(np2net_membuf_readpos==(np2net_membuf_writepos+1)%NET_ARYLEN){
-			Sleep(0); // バッファがいっぱいなので待つ
-			//return 1; // バッファがいっぱいなので捨てる
+			//Sleep(0); // バッファがいっぱいなので待つ
+			return 1; // バッファがいっぱいなので捨てる
 		}
 	}
 	memcpy(np2net_membuf[np2net_membuf_writepos], pSendBuf, len);
@@ -108,8 +109,7 @@ static void np2net_updateHighSpeedMode(){
 	//HDC hdc;
 	//RECT r = {0, 0, 100, 100};
 	int timediff;
-
-	if(np2net_pmm){
+	if(np2net_pmm && np2net_membuf_readpos!=(np2net_membuf_writepos+1)%NET_ARYLEN){
 		timediff = GetTickCount() - np2net_highspeedtimer;
 		if(timediff<0) timediff = INT_MAX;
 		if((!np2net_highspeedmode && timediff>1000)

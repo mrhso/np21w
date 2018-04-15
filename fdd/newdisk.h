@@ -9,6 +9,9 @@ void newdisk_thd(const OEMCHAR *fname, UINT hddsize);
 void newdisk_nhd(const OEMCHAR *fname, UINT hddsize);
 void newdisk_hdi(const OEMCHAR *fname, UINT hddtype);
 void newdisk_vhd(const OEMCHAR *fname, UINT hddsize);
+#ifdef SUPPORT_VPCVHD
+void newdisk_vpcvhd(const OEMCHAR *fname, UINT hddsize);
+#endif
 
 #ifdef __cplusplus
 }

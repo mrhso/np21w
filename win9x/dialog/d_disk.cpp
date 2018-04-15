@@ -421,7 +421,7 @@ void dialog_newdisk(HWND hWnd)
 	}
 	else if (!file_cmpname(ext, str_nhd))
 	{
-		CNewHddDlg dlg(hWnd, 5, NHD_MAXSIZE);
+		CNewHddDlg dlg(hWnd, 5, np2oscfg.makelhdd ? NHD_MAXSIZE2 : NHD_MAXSIZE);
 		if (dlg.DoModal() == IDOK)
 		{
 			newdisk_nhd(lpPath, dlg.GetSize());
@@ -442,6 +442,16 @@ void dialog_newdisk(HWND hWnd)
 		if (dlg.DoModal() == IDOK)
 		{
 			newdisk_vhd(lpPath, dlg.GetSize());
+		}
+	}
+#endif
+#ifdef SUPPORT_VPCVHD
+	else if (!file_cmpname(ext, str_vhd))
+	{
+		CNewHddDlg dlg(hWnd, 5, np2oscfg.makelhdd ? NHD_MAXSIZE2 : NHD_MAXSIZE);
+		if (dlg.DoModal() == IDOK)
+		{
+			newdisk_vpcvhd(lpPath, dlg.GetSize());
 		}
 	}
 #endif

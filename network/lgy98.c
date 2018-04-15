@@ -129,6 +129,7 @@
 	LGY98	lgy98;
 
 UINT lgy98_baseaddr = 0x10D0;
+UINT ne2000_baseaddr = 0x0200;
 
 static void ne2000_reset(LGY98 *s)
 {
@@ -797,45 +798,51 @@ void lgy98_bind(void){
     VLANState *vlan;
 	//NICInfo *nd;
 
-	if(!np2cfg.uselgy98) return;
-	if(np2cfg.lgy98io) base = np2cfg.lgy98io;
-	if(np2cfg.lgy98irq) irq = np2cfg.lgy98irq;
-	
-	TRACEOUT(("LGY-98: I/O:%04X, IRQ:%d, TAP:%s", base, irq, np2cfg.np2nettap));
+	if(!np2cfg.uselgy98 && !np2cfg.usene2000) return;
 
+	// 初期化
     vlan = np2net_find_vlan(0);
-
-	lgy98_baseaddr = base;
-	//
-	//if(np2net_reset(np2cfg.lgy98tap)){
-	//	TRACEOUT(("LGY-98: reset falied"));
-	//	return;
-	//}
-
-    //np2net_check_nic_model(nd, "ne2k_isa");
-
 	memset(&lgy98, 0, sizeof(lgy98));
 	
-	lgy98.base = base;
-	lgy98.irq = irq;
-	memcpy(lgy98.macaddr, macaddr, 6);
-	for(i=0;i<16;i++){
-		iocore_attachout(base + i, lgy98_ob000);
-		iocore_attachinp(base + i, lgy98_ib000);
-	}
+	if(np2cfg.uselgy98){
+		if(np2cfg.lgy98io) base = np2cfg.lgy98io;
+		if(np2cfg.lgy98irq) irq = np2cfg.lgy98irq;
 	
-	iocore_attachout(base + 0x200, lgy98_ob200_8);
-	iocore_attachinp(base + 0x200, lgy98_ib200_8);
-	//iocore_attachout(base + 0x200, lgy98_ob200_16); // in iocore.c iocore_out16()
-	//iocore_attachinp(base + 0x200, lgy98_ib200_16); // in iocore.c iocore_inp16()
-	
-	for(i=0;i<16;i++){
-		iocore_attachout(base + 0x300 + i, lgy98_ob300_16);
-		iocore_attachinp(base + 0x300 + i, lgy98_ib300_16);
-	}
+		TRACEOUT(("LGY-98: I/O:%04X, IRQ:%d, TAP:%s", base, irq, np2cfg.np2nettap));
 
-	iocore_attachout(base + 0x018, lgy98_ob018);
-	iocore_attachinp(base + 0x018, lgy98_ib018);
+		lgy98_baseaddr = base;
+		//
+		//if(np2net_reset(np2cfg.lgy98tap)){
+		//	TRACEOUT(("LGY-98: reset falied"));
+		//	return;
+		//}
+
+		//np2net_check_nic_model(nd, "ne2k_isa");
+
+		lgy98.base = base;
+		lgy98.irq = irq;
+		memcpy(lgy98.macaddr, macaddr, 6);
+		for(i=0;i<16;i++){
+			iocore_attachout(base + i, lgy98_ob000);
+			iocore_attachinp(base + i, lgy98_ib000);
+		}
+	
+		iocore_attachout(base + 0x200, lgy98_ob200_8);
+		iocore_attachinp(base + 0x200, lgy98_ib200_8);
+		//iocore_attachout(base + 0x200, lgy98_ob200_16); // in iocore.c iocore_out16()
+		//iocore_attachinp(base + 0x200, lgy98_ib200_16); // in iocore.c iocore_inp16()
+	
+		for(i=0;i<16;i++){
+			iocore_attachout(base + 0x300 + i, lgy98_ob300_16);
+			iocore_attachinp(base + 0x300 + i, lgy98_ib300_16);
+		}
+
+		iocore_attachout(base + 0x018, lgy98_ob018);
+		iocore_attachinp(base + 0x018, lgy98_ib018);
+	}
+	if(np2cfg.usene2000){
+		// TODO: 邪道 AT互換機用NE2000をむりやり付けてみたらNTとか2000で使えるかも
+	}
 	
 	ne2000_reset(&lgy98);
 	

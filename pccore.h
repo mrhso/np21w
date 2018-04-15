@@ -157,6 +157,8 @@ struct tagNP2Config
 	UINT8	uselgy98;
 	UINT16	lgy98io;
 	UINT8	lgy98irq;
+	UINT8	usene2000; // ‚¨‚Ü‚¯
+	UINT16	ne2000io; // ‚¨‚Ü‚¯
 #endif
 #ifdef SUPPORT_NET
 	UINT8	wabasw;
@@ -176,7 +178,7 @@ typedef struct {
 	UINT8	cpumode;
 	UINT8	model;
 	UINT8	hddif;
-	UINT8	extmem;
+	UINT8	extmem; // LARGEMEM // UINT16	extmem;
 	UINT8	dipsw[3];		// ƒŠƒZƒbƒgŽž‚ÌDIPSW
 	UINT8	rom;
 

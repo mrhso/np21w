@@ -467,7 +467,7 @@ static const PFTBL s_IniItems[] =
 
 	PFEXT("DIPswtch", PFTYPE_BIN,		np2cfg.dipsw,			3),
 	PFEXT("MEMswtch", PFTYPE_BIN,		np2cfg.memsw,			8),
-	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			127),
+	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			244),
 	PFVAL("ITF_WORK", PFTYPE_BOOL,		&np2cfg.ITF_WORK),
 
 	PFSTR("HDD1FILE", PFTYPE_STR,		np2cfg.sasihdd[0]),
@@ -553,6 +553,8 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USELGY98", PFTYPE_BOOL,		&np2cfg.uselgy98),
 	PFVAL("LGY98_IO", PFTYPE_UINT16,	&np2cfg.lgy98io),
 	PFVAL("LGY98IRQ", PFTYPE_UINT8,		&np2cfg.lgy98irq),
+	PFVAL("USENE2000", PFTYPE_BOOL,		&np2cfg.usene2000), // おまけ
+	PFVAL("NE2000_IO", PFTYPE_UINT16,	&np2cfg.ne2000io), // おまけ
 #endif
 #if defined(SUPPORT_WAB)
 	PFVAL("WAB_ANSW", PFTYPE_UINT8,		&np2cfg.wabasw),
@@ -630,6 +632,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("EMUDDRAW", PFRO_BOOL,		&np2oscfg.emuddraw), // 最近はEMULATIONONLYにした方速かったりする（特にピクセル操作する場合とか）
 	
 	PFVAL("DRAGDROP", PFRO_BOOL,		&np2oscfg.dragdrop), // どらっぐあんどどろっぷサポート
+	PFVAL("MAKELHDD", PFRO_BOOL,		&np2oscfg.makelhdd), // 巨大HDDイメージ作成サポート
 
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };

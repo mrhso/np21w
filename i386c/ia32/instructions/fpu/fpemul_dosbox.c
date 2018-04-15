@@ -397,10 +397,20 @@ static INLINE void FPU_SET_D(UINT C){
 	if(C) FPU_STATUSWORD |= 0x0002;
 }
 
+static INLINE void FPU_SetCW(UINT16 cword)
+{
+	// HACK: Bits 13-15 are not defined. Apparently, one program likes to test for
+	// Cyrix EMC87 by trying to set bit 15. We want the test program to see
+	// us as an Intel 287 when cputype == 286.
+	cword &= 0x7FFF;
+	FPU_CTRLWORD = cword;
+	FPU_STAT.round = (FP_RND)((cword >> 10) & 3);
+}
+
 static void FPU_FLDCW(UINT32 addr)
 {
 	UINT16 temp = cpu_vmemoryread_w(CPU_INST_SEGREG_INDEX, addr);
-	FPU_CTRLWORD = temp;
+	FPU_SetCW(temp);
 }
 
 static UINT16 FPU_GetTag(void)
@@ -792,7 +802,7 @@ static void FPU_FXCH(UINT st, UINT other){
 
 static void FPU_FST(UINT st, UINT other){
 	FPU_STAT.tag[other] = FPU_STAT.tag[st];
-	FPU_STAT.tag[other] = FPU_STAT.tag[st];
+	FPU_STAT.reg[other] = FPU_STAT.reg[st];
 }
 
 static void FPU_FCOM(UINT st, UINT other){
@@ -925,15 +935,15 @@ static void FPU_FSTENV(UINT32 addr)
 	descriptor_t *sdp = &CPU_CS_DESC;	
 	FPU_SET_TOP(FPU_STAT_TOP);
 	
-	switch ((CPU_CR0 & 1) | SEG_IS_32BIT(sdp))
+	switch ((CPU_CR0 & 1) | (SEG_IS_32BIT(sdp) ? 0x100 : 0x000))
 	{
-		case 0x000: case 0x001:
+	case 0x000: case 0x001:
 		fpu_memorywrite_w(addr+0,FPU_CTRLWORD);
 		fpu_memorywrite_w(addr+2,FPU_STATUSWORD);
 		fpu_memorywrite_w(addr+4,FPU_GetTag());
 		break;
 		
-		case 0x100: case 0x101:
+	case 0x100: case 0x101:
 		fpu_memorywrite_w(addr+0,FPU_CTRLWORD);
 		fpu_memorywrite_w(addr+4,FPU_STATUSWORD);
 		fpu_memorywrite_w(addr+8,(FPU_GetTag()));				
@@ -946,16 +956,15 @@ static void FPU_FLDENV(UINT32 addr)
 	descriptor_t *sdp = &CPU_CS_DESC;	
 	FPU_STAT_TOP = FPU_GET_TOP();
 	
-	switch ((CPU_CR0 & 1) | SEG_IS_32BIT(sdp))
-	{
-		case 0x000: case 0x001:
-		FPU_CTRLWORD = fpu_memoryread_w(addr+0);
+	switch ((CPU_CR0 & 1) | (SEG_IS_32BIT(sdp) ? 0x100 : 0x000)) {
+	case 0x000: case 0x001:
+		FPU_SetCW(fpu_memoryread_w(addr+0));
 		FPU_STATUSWORD = fpu_memoryread_w(addr+2);
 		FPU_SetTag(fpu_memoryread_w(addr+4));
 		break;
 		
-		case 0x100: case 0x101:
-		FPU_CTRLWORD = fpu_memoryread_w(addr+0);
+	case 0x100: case 0x101:
+		FPU_SetCW(fpu_memoryread_w(addr+0));
 		FPU_STATUSWORD = fpu_memoryread_w(addr+4);
 		FPU_SetTag(fpu_memoryread_w(addr+8));			
 		break;
@@ -1089,7 +1098,7 @@ void
 fpu_init(void)
 {
 	int i;
-	FPU_CTRLWORD = 0x37F;
+	FPU_SetCW(0x37F);
 	FPU_STATUSWORD = 0;
 	FPU_STAT_TOP=FPU_GET_TOP();
 	for(i=0;i<8;i++){
@@ -1726,7 +1735,8 @@ ESC5(void)
 
 		case 7:	/* FSTSW */
 			FPU_SET_TOP(FPU_STAT_TOP);
-			cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, FPU_CTRLWORD);
+			//cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, FPU_CTRLWORD);
+			cpu_vmemorywrite_w(CPU_INST_SEGREG_INDEX, madr, FPU_STATUSWORD);
 			break;
 			//fpu_memorywrite_w(madr,
 			//    FPU_STATUSWORD);

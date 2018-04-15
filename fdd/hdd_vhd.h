@@ -16,12 +16,20 @@
 //#include "hdd_vpc.h"
 #endif
 
+#define LOADBEWORD LOADMOTOROLAWORD
+#define LOADBEDWORD LOADMOTOROLADWORD
+#define LOADBEQWORD LOADMOTOROLAQWORD
+#define STOREBEWORD STOREMOTOROLAWORD
+#define STOREBEDWORD STOREMOTOROLADWORD
+#define STOREBEQWORD STOREMOTOROLAQWORD
+
 static const UINT8 CookieVPCVHDFooter[8] = { 'c','o','n','e','c','t','i','x' };
 static const UINT8 CookieVPCVHDDDH[8] = { 'c','x','s','p','a','r','s','e' };
-
+static const UINT8 CookieVPCQEMUCreator[4] = { 'q','e','m','u' };
 
 /* load/store with "network order" (big endian) */
 
+#if 0
 static UINT16 LOADBEWORD(const void *p)
 {
   const UINT8 *b = (UINT8 *)p;
@@ -67,6 +75,19 @@ static UINT64 STOREBEQWORD(void *p, UINT64 v)
   b[7] = (UINT8)v;
   return(v);
 }
+#endif
+
+/* checksum adapted from http://superuser.com/a/434816 */
+UINT32 vpc_calc_checksum(UINT8* buf, size_t size)
+{
+    UINT32 res = 0;
+    size_t i;
+
+    for (i = 0; i < size; i++)
+        res += buf[i];
+
+    return ~res;
+}
 
 BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 {
@@ -74,7 +95,7 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 	VPCVHD_FPOS vhdlen, readlen;
 	size_t footerlen;
 
-	UINT32 disktype, formatversion;
+	UINT32 disktype, formatversion, checksum, mychecksum;
 	UINT32 surfaces, cylinders, sectors;
 	UINT64 totals;
 
@@ -92,10 +113,19 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 	}
 	if (memcmp(footer.Cookie, CookieVPCVHDFooter, sizeof(footer.Cookie)) != 0)
 		return(FAILURE);
-	readlen = file_read(fh, (UINT8 *)(&footer) + sizeof(footer.Cookie), footerlen - sizeof(footer.Cookie));
+	readlen = file_read(fh, (UINT8 *)(&footer) + sizeof(footer.Cookie), (UINT)(footerlen - sizeof(footer.Cookie)));
 	if (readlen < (VPCVHD_FPOS)(footerlen - sizeof(footer.Cookie)))
 		return(FALSE);
-	/* todo: validate footer's checksum */
+
+	// validate footer's checksum
+	checksum = LOADBEDWORD(footer.CheckSum);
+	STOREBEDWORD(footer.CheckSum, 0);
+	mychecksum = vpc_calc_checksum((UINT8*)&footer,footerlen);
+	if (mychecksum != checksum) {
+		TRACEOUT(("vpc_vhd: bad checksum (file=%x, calc=%x)",checksum,mychecksum));
+		return(FALSE);
+	}
+
 	formatversion = LOADBEDWORD(footer.FileFormatVersion);
 	disktype = LOADBEDWORD(footer.DiskType);
 	sectors = footer.SectorsPerCylinder;
@@ -109,6 +139,12 @@ BRESULT sxsihdd_vpcvhd_mount(SXSIDEV sxsi, FILEH fh)
 	totals = (UINT64)sectors * surfaces * cylinders;
 	if (totals == 0)
 		return(FALSE);
+
+	/* QEMU hack */
+	if (!memcmp(footer.CreatorApplication, CookieVPCQEMUCreator, sizeof(footer.CreatorApplication)) && (totals * 512U + footerlen > (UINT64)vhdlen)) {
+		--cylinders;
+		totals = (UINT64)sectors * surfaces * cylinders;
+	}
 
 	if (disktype == VPCVHD_DISK_FIXED) {
 		if (totals * 512U + footerlen > (UINT64)vhdlen)
