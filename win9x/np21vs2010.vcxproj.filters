@@ -262,6 +262,12 @@
     <Filter Include="ヘッダー ファイル\sound\fmgen">
       <UniqueIdentifier>{ee0c62cc-af00-43a5-bd97-d7574c924b15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\sound\mame">
+      <UniqueIdentifier>{ee6acd1f-9c68-403d-92cf-0b23f3a65bad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\sound\mame">
+      <UniqueIdentifier>{38dcff0a-5ded-4497-916f-bd20b78b3897}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1248,6 +1254,15 @@
     <ClCompile Include="..\sound\fmgen\fmgen_psg.cpp">
       <Filter>ソース ファイル\sound\fmgen</Filter>
     </ClCompile>
+    <ClCompile Include="..\sound\mame\fmopl.c">
+      <Filter>ソース ファイル\sound\mame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sound\mame\ymdeltat.c">
+      <Filter>ソース ファイル\sound\mame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sound\mame\ymf262.c">
+      <Filter>ソース ファイル\sound\mame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2200,6 +2215,21 @@
     </ClInclude>
     <ClInclude Include="..\sound\fmgen\fmgen_types.h">
       <Filter>ヘッダー ファイル\sound\fmgen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sound\mame\driver.h">
+      <Filter>ヘッダー ファイル\sound\mame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sound\mame\fm.h">
+      <Filter>ヘッダー ファイル\sound\mame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sound\mame\fmopl.h">
+      <Filter>ヘッダー ファイル\sound\mame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sound\mame\ymdeltat.h">
+      <Filter>ヘッダー ファイル\sound\mame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sound\mame\ymf262.h">
+      <Filter>ヘッダー ファイル\sound\mame</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -126,6 +126,7 @@ COMMON_SOURCES=	$(real_topsrcdir)/x11/main.c \
 		$(real_topsrcdir)/cbus/board14.c \
 		$(real_topsrcdir)/cbus/board26k.c \
 		$(real_topsrcdir)/cbus/board86.c \
+		$(real_topsrcdir)/cbus/boardpx.c \
 		$(real_topsrcdir)/cbus/boardso.c \
 		$(real_topsrcdir)/cbus/boardspb.c \
 		$(real_topsrcdir)/cbus/boardx2.c \
@@ -139,9 +140,6 @@ COMMON_SOURCES=	$(real_topsrcdir)/x11/main.c \
 		\
 		$(real_topsrcdir)/fdd/diskdrv.c \
 		$(real_topsrcdir)/fdd/newdisk.c \
-		$(real_topsrcdir)/fdd/fddfile.c \
-		$(real_topsrcdir)/fdd/fdd_xdf.c \
-		$(real_topsrcdir)/fdd/fdd_d88.c \
 		$(real_topsrcdir)/fdd/fdd_mtr.c \
 		$(real_topsrcdir)/fdd/sxsi.c \
 		$(real_topsrcdir)/fdd/sxsihdd.c \
@@ -169,6 +167,7 @@ COMMON_SOURCES=	$(real_topsrcdir)/x11/main.c \
 		\
 		$(real_topsrcdir)/io/iocore.c \
 		$(real_topsrcdir)/io/artic.c \
+		$(real_topsrcdir)/io/bmsio.c \
 		$(real_topsrcdir)/io/cgrom.c \
 		$(real_topsrcdir)/io/cpuio.c \
 		$(real_topsrcdir)/io/crtc.c \
@@ -244,6 +243,16 @@ COMMON_SOURCES=	$(real_topsrcdir)/x11/main.c \
 		$(real_topsrcdir)/sound/vermouth/midinst.c \
 		$(real_topsrcdir)/sound/vermouth/midvoice.c \
 		$(real_topsrcdir)/sound/vermouth/midtable.c \
+		$(real_topsrcdir)/sound/fmgen/fmgen_file.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_fmgen.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_fmgwrap.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_fmtimer.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_opm.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_opna.cpp \
+		$(real_topsrcdir)/sound/fmgen/fmgen_psg.cpp \
+		$(real_topsrcdir)/sound/mame/fmopl.c \
+		$(real_topsrcdir)/sound/mame/ymdeltat.c \
+		$(real_topsrcdir)/sound/mame/ymf262.c \
 		\
 		$(real_topsrcdir)/vram/vram.c \
 		$(real_topsrcdir)/vram/scrndraw.c \
@@ -254,7 +263,25 @@ COMMON_SOURCES=	$(real_topsrcdir)/x11/main.c \
 		$(real_topsrcdir)/vram/maketgrp.c \
 		$(real_topsrcdir)/vram/makegrph.c \
 		$(real_topsrcdir)/vram/makegrex.c \
-		$(real_topsrcdir)/vram/scrnsave.c
+		$(real_topsrcdir)/vram/scrnsave.c \
+		\
+		$(real_topsrcdir)/diskimage/cd/cdd_ccd.c \
+		$(real_topsrcdir)/diskimage/cd/cdd_cue.c \
+		$(real_topsrcdir)/diskimage/cd/cdd_iso.c \
+		$(real_topsrcdir)/diskimage/cd/cdd_mds.c \
+		$(real_topsrcdir)/diskimage/cd/cdd_nrg.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_bkdsk.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_d88.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_dcp.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_nfd.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_vfdd.c \
+		$(real_topsrcdir)/diskimage/fd/fdd_xdf.c \
+		$(real_topsrcdir)/diskimage/cddfile.c \
+		$(real_topsrcdir)/diskimage/fddfile.c \
+		$(real_topsrcdir)/diskimage/img_strres.c \
+		\
+		$(real_topsrcdir)/network/lgy98.c \
+		$(real_topsrcdir)/network/net.c
 
 xnp2_SOURCES=	$(COMMON_SOURCES)
 
@@ -267,10 +294,13 @@ AM_CPPFLAGS=	-I$(real_topsrcdir) \
 		-I$(real_topsrcdir)/generic \
 		-I$(real_topsrcdir)/io \
 		-I$(real_topsrcdir)/mem \
+		-I$(real_topsrcdir)/network \
 		-I$(real_topsrcdir)/sound \
+		-I$(real_topsrcdir)/sound/fmgen \
 		-I$(real_topsrcdir)/vram \
 		$(GTK_CFLAGS) $(SDL_CFLAGS) $(LIBUSB1_CFLAGS) \
-		$(X11_CFLAGS) $(XEXT_CFLAGS)
+		$(X11_CFLAGS) $(XEXT_CFLAGS) \
+		-DSUPPORT_LARGE_HDD -DSUPPORT_VPCVHD -DSUPPORT_KAI_IMAGES -DHOOK_SYSKEY -DALLOW_MULTIRUN -DSUPPORT_NET -DSUPPORT_LGY98
 if BUILD_ALL
 AM_CPPFLAGS+=	-DX11_BUILD_ALL
 endif
@@ -334,11 +364,11 @@ IA32_SOURCES=	$(real_topsrcdir)/i386c/cpucore.c \
 		$(real_topsrcdir)/i386c/ia32/instructions/shift_rotate.c \
 		$(real_topsrcdir)/i386c/ia32/instructions/string_inst.c \
 		$(real_topsrcdir)/i386c/ia32/instructions/system_inst.c \
-		$(real_topsrcdir)/i386c/ia32/instructions/fpu/fpdummy.c \
+		$(real_topsrcdir)/i386c/ia32/instructions/fpu/fpemul_dosbox.c \
 		$(real_topsrcdir)/debugsub386.c
 
 IA32_CPPFLAGS=	-I$(real_topsrcdir)/i386c \
-		-DCPUCORE_IA32
+		-DCPUCORE_IA32 -DUSE_FPU
 
 if CPUCORE_IA32
 if BUILD_ALL

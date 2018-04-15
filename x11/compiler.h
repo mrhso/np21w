@@ -91,6 +91,7 @@ typedef	guint32		UINT;
 typedef	gint8		SINT8;
 typedef	gint16		SINT16;
 typedef	gint32		SINT32;
+typedef	gint32		INT32;
 typedef	gint64		SINT64;
 
 typedef	guint8		UINT8;
@@ -99,6 +100,12 @@ typedef	guint32		UINT32;
 typedef	guint64		UINT64;
 
 typedef	gboolean	BOOL;
+
+typedef	signed char	CHAR;
+typedef	signed char	TCHAR;
+typedef	unsigned char	BYTE;
+typedef	guint32		DWORD;
+typedef	guint16		WORD;
 
 #define	INTPTR		gintptr
 
@@ -162,6 +169,23 @@ typedef	gboolean	BOOL;
 #endif
 #endif /* __GNUC__ */
 
+#if defined(SUPPORT_LARGE_HDD)
+typedef SINT64	FILEPOS;
+typedef SINT64	FILELEN;
+#define	NHD_MAXSIZE		8000
+#define	NHD_MAXSIZE2	32000
+#else
+typedef SINT32	FILEPOS;
+typedef SINT32	FILELEN;
+#define	NHD_MAXSIZE		2000
+#define	NHD_MAXSIZE2	2000
+#endif
+
+#define _T
+#define _tcscpy strcpy
+#define	_tcsicmp	strcasecmp
+#define	_tcsnicmp	strncasecmp
+
 G_BEGIN_DECLS
 UINT32 gettick(void);
 G_END_DECLS
@@ -175,9 +199,9 @@ G_END_DECLS
 #define	OEMSPRINTF	sprintf
 #define	OEMSTRLEN	strlen
 
-#if defined(CPUCORE_IA32)
 #define	msgbox(title, msg)	toolkit_messagebox(title, msg);
 
+#if defined(CPUCORE_IA32)
 #if !defined(DISABLE_PC9821)
 #define	SUPPORT_PC9821
 #define	SUPPORT_CRT31KHZ
@@ -185,6 +209,9 @@ G_END_DECLS
 #define	SUPPORT_IDEIO
 #else
 #define	SUPPORT_CRT15KHZ
+#endif
+#if !defined(SUPPORT_PC9821)
+#define SUPPORT_BMS
 #endif
 
 #if defined(NP2_CPU_ARCH_IA32)
@@ -198,12 +225,12 @@ G_END_DECLS
 #endif	/* !DEBUG && !NP2_CPU_ARCH_AMD64 */
 #elif defined(arm) || defined (__arm__)
 #define	MEMOPTIMIZE	2
-#define	REG8		UINT
-#define	REG16		UINT
 #define	OPNGENARM
 #else
 #define	MEMOPTIMIZE	1
 #endif
+#define	REG8		UINT8
+#define	REG16		UINT16
 
 #ifndef	FASTCALL
 #define	FASTCALL
@@ -256,6 +283,10 @@ G_END_DECLS
 #define	SUPPORT_KEYDISP
 #define	SUPPORT_SOFTKBD	0
 
+#define	SUPPORT_HRTIMER
+
+#define SUPPORT_FMGEN
+
 #define	SUPPORT_SCREENSIZE
 
 #if defined(USE_SDLAUDIO) || defined(USE_SDLMIXER)
@@ -263,6 +294,11 @@ G_END_DECLS
 #define	USE_SDL_JOYSTICK
 #endif	/* USE_SDLAUDIO || USE_SDLMIXER */
 
+#define SUPPORT_PX
+#define SUPPORT_V30ORIGINAL
+#define SUPPORT_V30EXT
+#define VAEG_FIX
+//#define SUPPORT_WAVEREC
 /*
  * You could specify a complete path, e.g. "/etc/timidity.cfg", and
  * then specify the library directory in the configuration file.
@@ -277,5 +313,11 @@ extern char timidity_cfgfile_path[MAX_PATH];
 #include "lstarray.h"
 #include "trace.h"
 #include "toolkit.h"
+
+
+#define	SUPPORT_SOUND_SB16
+typedef	signed int		INT;
+typedef	signed short		INT16;
+
 
 #endif	/* NP2_X11_COMPILER_H__ */

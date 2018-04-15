@@ -182,18 +182,18 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 
 		case SOUNDID_PC_9801_118:
-			board118_reset(pConfig, nSoundID);
+			board118_reset(pConfig);
 			break;
 			
 		case SOUNDID_PC_9801_86_WSS:
 			g_nSoundID = nSoundID; // XXX: êÊÇ…ê›íË
-			board118_reset(pConfig, SOUNDID_MATE_X_PCM);
+			board118_reset(pConfig);
 			board86_reset(pConfig, FALSE);
 			break;
 			
 		case SOUNDID_MATE_X_PCM:
 			g_nSoundID = nSoundID; // XXX: êÊÇ…ê›íË
-			board118_reset(pConfig, nSoundID);
+			board118_reset(pConfig);
 			break;
 
 		case SOUNDID_PC_9801_86_ADPCM:
@@ -305,7 +305,7 @@ void fmboard_bind(void) {
 
 #if defined(SUPPORT_SOUND_SB16)
 		case SOUNDID_SB16:
-			boardsb16_bind();
+//			boardsb16_bind();
 			break;
 #endif	// defined(SUPPORT_SOUND_SB16)
 		default:

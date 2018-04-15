@@ -7,13 +7,14 @@
 #include "cs4231.h"
 
 extern	CS4231CFG	cs4231cfg;
+int  cs4231_lock = 0;
 
 static void SOUNDCALL pcm8m(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -51,10 +52,10 @@ const UINT8	*ptr2;
 
 static void SOUNDCALL pcm8s(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -95,10 +96,10 @@ const UINT8	*ptr2;
 
 static void SOUNDCALL pcm16m(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -136,10 +137,10 @@ const UINT8	*ptr2;
 
 static void SOUNDCALL pcm16s(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -180,10 +181,10 @@ const UINT8	*ptr2;
 
 static void SOUNDCALL pcm16m_ex(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -229,10 +230,10 @@ const UINT8	*ptr2;
 
 static void SOUNDCALL pcm16s_ex(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	UINT	leng;
+	UINT32	leng;
 	UINT32	pos12;
 	SINT32	fract;
-	UINT	samppos;
+	UINT32	samppos;
 const UINT8	*ptr1;
 const UINT8	*ptr2;
 	SINT32	samp1;
@@ -312,7 +313,10 @@ static const CS4231FN cs4231fn[16] = {
 void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	if ((cs->reg.iface & 1) && (count)) {
+		while(cs4231_lock) return;
+		cs4231_lock = 1;
 		(*cs4231fn[cs->reg.datafmt >> 4])(cs, pcm, count);
+		cs4231_lock = 0;
 	}
 }
 
