@@ -11,6 +11,16 @@
 #include "targetver.h"
 #define _USE_MATH_DEFINES
 #include <windows.h>
+/* workaround for VC6 (definition missing in the header) */
+#if (_MSC_VER + 0) <= 1200
+# ifdef __cplusplus
+extern "C" {
+# endif
+WINBASEAPI BOOL WINAPI SetFilePointerEx(HANDLE, LARGE_INTEGER, PLARGE_INTEGER, DWORD);
+# ifdef __cplusplus
+}
+# endif
+#endif
 #if !defined(__GNUC__)
 #include <tchar.h>
 #endif	// !defined(__GNUC__)
@@ -60,6 +70,11 @@ typedef	signed __int64		SINT64;
 #define	INLINE				inline
 #endif
 #define	FASTCALL			__fastcall
+
+#include <limits.h>
+#if !defined(LLONG_MIN)
+#  define LLONG_MIN (SINT64)(QWORD_CONST(1)<<63)
+#endif
 
 // for x86
 #define	LOADINTELDWORD(a)		(*((UINT32 *)(a)))
@@ -156,9 +171,7 @@ typedef	signed __int64		SINT64;
 #define	SUPPORT_HOSTDRV
 #define	SUPPORT_SASI
 #define	SUPPORT_SCSI
-//#if defined(TRACE)
-//#define	SUPPORT_IDEIO
-//#endif
+/* #define	SUPPORT_IDEIO */
 #define SUPPORT_ARC
 #define SUPPORT_ZLIB
 #if !defined(_WIN64)
@@ -195,7 +208,7 @@ typedef long	FILELEN;
 #endif
 
 
-#if (_MSC_VER >= 1500)
+#if (_MSC_VER >= 1400)
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #elif defined _M_IA64
@@ -205,4 +218,4 @@ typedef long	FILELEN;
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
-#endif	/* (_MSC_VER >= 1500) */
+#endif	/* (_MSC_VER >= 1400) */
