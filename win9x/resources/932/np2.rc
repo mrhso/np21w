@@ -1380,6 +1380,7 @@ BEGIN
     IDS_GD5430_CB2          "PC-9821Cb2 built-in"
     IDS_GD5430_CX2          "PC-9821Cx2 built-in"
     IDS_GD5430_WAB          "MELCO WAB-S"
+    IDS_GD5430_WSN          "MELCO WSN-A2F/A4F"
 END
 
 STRINGTABLE

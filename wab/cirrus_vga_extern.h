@@ -29,7 +29,8 @@
 
 #pragma once
 
-#define CIRRUS_VRAM_SIZE	(4096 * 1024)
+#define CIRRUS_VRAM_SIZE		(4096 * 1024)
+#define CIRRUS_VRAM_SIZE_WAB	(1024 * 1024)
 
 #define CIRRUS_98ID_Xe		0x58
 #define CIRRUS_98ID_Cb		0x59
@@ -39,6 +40,7 @@
 #define CIRRUS_98ID_Cx2		0x5D
 #define CIRRUS_98ID_WAB		0x100
 #define CIRRUS_98ID_WGN		0x101
+#define CIRRUS_98ID_WSN		0x102
 #define CIRRUS_98ID_GA98NB	0x200
 
 #define VRAMWINDOW_SIZE	0x200000UL  // VRAM マッピングサイズ
