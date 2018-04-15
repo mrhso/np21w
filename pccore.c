@@ -127,69 +127,15 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 //	BOOL	hardwarereset = FALSE;
 	
 #if defined(SUPPORT_HRTIMER)
-	LARGE_INTEGER hrtimer = {0}; 
-	LARGE_INTEGER hrtimerfreq = {0}; 
-	//UINT32 hrtimerclockcounter = 0;
 	UINT32 hrtimerdiv = 32; 
-	UINT32 hrtimerint = 0;
-	UINT32 hrtimerupd = 0;
-	UINT32 hrtimertime_hl = 0;
-	//UINT8  hrtimertime_h = 0;
-	//UINT16 hrtimertime_l = 0;
+	UINT32 hrtimerclock = 0; 
+	UINT32 hrtimerclock32 = 0; 
 
-static HANDLE pccore_hrtimerThread = 0; 
-static int pccore_hrtimerThreadExit = 0; 
-
-static DWORD WINAPI _pccore_hrtimerthread(LPVOID vdParam) {
-	LARGE_INTEGER hrtmp = {0}; 
-	SYSTEMTIME hrtimertime;
-	UINT32 hrtimertimeuint;
-	while (!pccore_hrtimerThreadExit) {
-		SINT64 times;
-		QueryPerformanceFrequency(&hrtimerfreq);
-		QueryPerformanceCounter(&hrtmp);
-		times = (hrtmp.QuadPart - hrtimer.QuadPart) * hrtimerdiv;
-		//if(hrtmp.QuadPart - hrtimer.QuadPart >= hrtimerfreq.QuadPart/hrtimerdiv){
-		if(times >= hrtimerfreq.QuadPart){
-			//hrtimerint = 1;
-			//if(hrtimerint){ // XXX: 位置てきとー
-				pic_setirq(15);
-				hrtimerint = 0;
-			//}
-			do{
-				hrtimer.QuadPart += hrtimerfreq.QuadPart/hrtimerdiv;
-				times -= hrtimerfreq.QuadPart;
-			} while(times >= hrtimerfreq.QuadPart);
-		}
-		GetLocalTime(&hrtimertime);
-		hrtimertimeuint = (((UINT32)hrtimertime.wHour*60 + (UINT32)hrtimertime.wMinute)*60 + (UINT32)hrtimertime.wSecond)*32 + ((UINT32)hrtimertime.wMilliseconds*32)/1000;
-		if(hrtimertimeuint != hrtimertime_hl){
-			hrtimertime_hl = hrtimertimeuint;
-			hrtimerupd = 1;
-			if(hrtimerupd){ // XXX: 位置てきとー
-				STOREINTELDWORD(mem+0x04F1, hrtimertime_hl); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
-				hrtimerupd = 0;
-			}
-		}
-		Sleep(8);
-	}
-	return 0;
-}
 static void pccore_hrtimer_start() {
-	DWORD dwID;
-	if(!pccore_hrtimerThread){
-		pccore_hrtimerThread = CreateThread(NULL , 0 , _pccore_hrtimerthread  , NULL , 0 , &dwID);
-	}
-	hrtimerint = 0;
+	hrtimerclock32 = pccore.realclock/32; 
 }
 static void pccore_hrtimer_stop() {
-	if(pccore_hrtimerThread){
-		pccore_hrtimerThreadExit = 1;
-		WaitForSingleObject(pccore_hrtimerThread,  INFINITE);
-		pccore_hrtimerThreadExit = 0;
-		pccore_hrtimerThread = NULL;
-		hrtimerint = 0;
-	}
+	// 廃止
 }
 
 #endif
@@ -541,11 +487,11 @@ void pccore_reset(void) {
 	timing_reset();
 	soundmng_play();
 	
-#if defined(SUPPORT_HRTIMER)
-	hrtimerdiv = 32;
-	//hrtimerclockcounter = 0;
-	QueryPerformanceCounter(&hrtimer);
-#endif
+//#if defined(SUPPORT_HRTIMER)
+//	hrtimerdiv = 32;
+//	//hrtimerclockcounter = 0;
+//	//QueryPerformanceCounter(&hrtimer);
+//#endif
 }
 
 static void drawscreen(void) {
@@ -748,7 +694,11 @@ void pccore_postevent(UINT32 event) {	// yet!
 
 void pccore_exec(BOOL draw) {
 
-	static UINT32 disptmr = 0;
+	UINT32 disptmr = 0;
+	static UINT32 clockcounter = 0;
+	static UINT32 clockcounter32 = 0;
+	UINT32 lastclock;
+	UINT32 mflag = 0;
 
 	pcstat.drawframe = (UINT8)draw;
 //	keystat_sync();
@@ -766,10 +716,11 @@ void pccore_exec(BOOL draw) {
 
 //	nevent_get1stevent();
 	
-#if defined(SUPPORT_HRTIMER)
-	disptmr = hrtimertime_hl;
-#endif
+//#if defined(SUPPORT_HRTIMER)
+//	disptmr = hrtimertime_hl;
+//#endif
 	while(pcstat.screendispflag) {
+		lastclock = CPU_REMCLOCK;
 #if defined(TRACE)
 		resetcnt++;
 #endif
@@ -806,13 +757,35 @@ void pccore_exec(BOOL draw) {
 		}
 #endif
 #if defined(SUPPORT_HRTIMER)
-		if(hrtimertime_hl - disptmr > 100){
+		if(hrtimerclock){
+			clockcounter += CPU_BASECLOCK;
+			if(clockcounter > hrtimerclock){
+				clockcounter -= hrtimerclock;
+
+				pic_setirq(15);
+			}
+		}
+		clockcounter32 += CPU_BASECLOCK;
+		if(clockcounter32 > hrtimerclock32){
+			UINT32 hrtimertimeuint;
+			clockcounter32 -= hrtimerclock32;
+			
+			hrtimertimeuint = LOADINTELDWORD(mem+0x04F1);
+			hrtimertimeuint++;
+			hrtimertimeuint &= 0xffffff;
+			STOREINTELDWORD(mem+0x04F1, hrtimertimeuint); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
+
+			disptmr++;
+		}
+#endif
+		nevent_progress();
+#if defined(SUPPORT_HRTIMER)
+		if(disptmr > 64){
 			// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
 			pcstat.screendispflag = 0;
 			nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
 		}
 #endif
-		nevent_progress();
 	}
 	artic_callback();
 	mpu98ii_callback();

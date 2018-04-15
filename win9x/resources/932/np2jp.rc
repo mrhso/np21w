@@ -873,6 +873,8 @@ BEGIN
             MENUITEM "メカニカル &CTRLキー",        IDM_XCTRL
             MENUITEM "メカニカル &GRPHキー",        IDM_XGRPH
             MENUITEM SEPARATOR
+            MENUITEM "Ctrl+Alt+Del 送信",           IDM_SENDCAD
+            MENUITEM SEPARATOR
             MENUITEM "F12 = マウスキャプチャ(&M)",  IDM_F12MOUSE
             MENUITEM "F12 = Co&py",                 IDM_F12COPY
             MENUITEM "F12 = S&top",                 IDM_F12STOP

@@ -251,6 +251,7 @@ void pccore_postevent(UINT32 event);
 
 #ifdef SUPPORT_HRTIMER
 extern UINT32 hrtimerdiv;
+extern UINT32 hrtimerclock;
 #endif
 
 #ifdef __cplusplus

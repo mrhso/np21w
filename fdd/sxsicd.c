@@ -92,7 +92,7 @@ BRESULT sxsicd_readraw(SXSIDEV sxsi, FILEPOS pos, void *buf) {
 #endif
 
 	//	pos位置のセクタサイズを取得
-	for (i = cdinfo->trks - 1; i > 0; i--) {
+	for (i = cdinfo->trks - 1; i >= 0; i--) {
 		if (cdinfo->trk[i].pos <= pos) {
 			secsize = cdinfo->trk[i].sector_size;
 			break;
@@ -125,7 +125,9 @@ BRESULT sxsicd_readraw(SXSIDEV sxsi, FILEPOS pos, void *buf) {
 		rawReadInfo.TrackMode = CDDA;
 		rawReadInfo.SectorCount = 1;
 		rawReadInfo.DiskOffset.QuadPart = fpos;
+		SetLastError(0);
 		if (!DeviceIoControl(fh,IOCTL_CDROM_RAW_READ,&rawReadInfo,sizeof(RAW_READ_INFO), buf, 2352, &BytesReturned,0)) {
+			BytesReturned = GetLastError();
 			return(FAILURE);
 		}
 		if (BytesReturned != 2352) {

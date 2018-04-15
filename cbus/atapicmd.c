@@ -991,7 +991,7 @@ static void atapi_cmd_seek(IDEDRV drv, UINT32 lba)
 	sxsi = sxsi_getptr(drv->sxsidrv);
 	trk = sxsicd_gettrk(sxsi, &tracks);
 	TRACEOUT(("atapicmd: seek LBA=%d NSEC=%d", lba, trk[tracks-1].pos + trk[tracks-1].sectors));
-	if (lba < drv->nsectors) {
+	if (lba < trk[tracks-1].pos + trk[tracks-1].sectors) {
 		drv->dacurpos = lba;
 	}
 	cmddone(drv);

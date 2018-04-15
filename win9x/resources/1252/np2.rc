@@ -881,6 +881,8 @@ BEGIN
             MENUITEM "mechanical &CTRL",            IDM_XCTRL
             MENUITEM "mechanical &GRPH",            IDM_XGRPH
             MENUITEM SEPARATOR
+            MENUITEM "Send Ctrl+Alt+Del",           IDM_SENDCAD
+            MENUITEM SEPARATOR
             MENUITEM "F12 = &Mouse",                IDM_F12MOUSE
             MENUITEM "F12 = Co&py",                 IDM_F12COPY
             MENUITEM "F12 = S&top",                 IDM_F12STOP

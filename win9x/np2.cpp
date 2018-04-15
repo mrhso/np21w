@@ -174,6 +174,9 @@ char *autokey_sendbuffer = NULL;
 int autokey_sendbufferlen = 0;
 int autokey_sendbufferpos = 0;
 
+// オートラン抑制用
+static int WM_QueryCancelAutoPlay;
+
 // ----
 
 static int messagebox(HWND hWnd, LPCTSTR lpcszText, UINT uType)
@@ -942,6 +945,15 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.XSHIFT ^= 4;
 			keystat_forcerelease(0x73);
 			update |= SYS_UPDATECFG;
+			break;
+			
+		case IDM_SENDCAD:
+			keystat_senddata(0x73);
+			keystat_senddata(0x74);
+			keystat_senddata(0x39);
+			keystat_senddata(0x73 | 0x80);
+			keystat_senddata(0x74 | 0x80);
+			keystat_senddata(0x39 | 0x80);
 			break;
 
 		case IDM_F12MOUSE:
@@ -2145,6 +2157,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #endif
 
 		default:
+#ifdef SUPPORT_IDEIO
+			if(msg == WM_QueryCancelAutoPlay){
+				int i;
+				for(i=0;i<4;i++){
+					if(sxsi_getdevtype(i)==SXSIDEV_CDROM){
+						if ((np2cfg.idecd[i][0]==_T('\0') || np2cfg.idecd[i][0]==_T('\\')) && np2cfg.idecd[i][1]==_T('\\') && np2cfg.idecd[i][2]==_T('.') && np2cfg.idecd[i][3]==_T('\\')) {
+							return 1;
+						}
+					}
+				}
+			}
+#endif
+			
 			return(DefWindowProc(hWnd, msg, wParam, lParam));
 	}
 	return(0L);
@@ -2710,6 +2735,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 
 	winloc_InitDwmFunc();
+
+	WM_QueryCancelAutoPlay = RegisterWindowMessage(_T("QueryCancelAutoPlay"));
 
 	createAsciiTo98KeyCodeList();
 	
