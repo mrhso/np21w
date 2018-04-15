@@ -1325,9 +1325,9 @@ void scrnmng_updatefsres(void) {
 
 // ウィンドウアクセラレータ画面転送
 void scrnmng_blthdc(HDC hdc) {
+#if defined(SUPPORT_WAB)
 	HRESULT	r;
 	HDC hDCDD;
-#if defined(SUPPORT_WAB)
 	mt_wabdrawing = 0;
 	if (np2wabwnd.multiwindow) return;
 	if (mt_wabpausedrawing) return;
@@ -1343,13 +1343,13 @@ void scrnmng_blthdc(HDC hdc) {
 #endif
 }
 void scrnmng_bltwab() {
+#if defined(SUPPORT_WAB)
 	RECT	*dst;
 	RECT	src;
 	RECT	dstmp;
-	DDBLTFX ddfx;
+	//DDBLTFX ddfx;
 	HRESULT	r;
 	int exmgn = 0;
-#if defined(SUPPORT_WAB)
 	if (np2wabwnd.multiwindow) return;
 	if (ddraw.backsurf != NULL) {
 		if (ddraw.scrnmode & SCRNMODE_FULLSCREEN) {

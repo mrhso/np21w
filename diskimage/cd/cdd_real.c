@@ -45,7 +45,7 @@ REG8 sec2048_read_SPTI(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 
 	CDINFO	cdinfo;
 	FILEH	fh;
-	UINT	rsize;
+	//UINT	rsize;
 
 	if (sxsi_prepare(sxsi) != SUCCESS) {
 		return(0x60);
@@ -242,7 +242,7 @@ BRESULT setsxsidev_SPTI(SXSIDEV sxsi, const OEMCHAR *path, const _CDTRK *trk, UI
 	cdinfo->trk[trks].adr_ctl	= 0x10;
 	cdinfo->trk[trks].point		= 0xaa;
 //	cdinfo->trk[trks].pos		= totals;
-	cdinfo->trk[trks].pos		= sxsi->totals;
+	cdinfo->trk[trks].pos		= (UINT32)sxsi->totals;
 
 	cdinfo->trks = trks;
 	file_cpyname(cdinfo->path, path, NELEMENTS(cdinfo->path));
@@ -313,7 +313,7 @@ sxsiope_err1:
 //	セクタ長取得用（でもREAD CAPACITYコマンドに返事してくれない場合があるような･･･）
 UINT32 readcapacity_SPTI(FILEH fh) {
 
-	CDINFO	cdinfo;
+	//CDINFO	cdinfo;
 	UINT	rsize;
 
 	{
@@ -396,7 +396,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 		goto openiso_err2;
 	}
 	
-	sector_size = dgCDROM.BytesPerSector;
+	sector_size = (UINT16)dgCDROM.BytesPerSector;
 	totals = dgCDROM.SectorsPerTrack*dgCDROM.TracksPerCylinder*dgCDROM.Cylinders.QuadPart;
 	switch(sector_size){
 	case 2048:
@@ -429,17 +429,17 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 			trk[i].adr_ctl		= TRACKTYPE_AUDIO;
 		}
 		trk[i].point			= tocCDROM.TrackData[i].TrackNumber;
-		trk[i].pos				= (msf2lba(LOADMOTOROLADWORD(tocCDROM.TrackData[i].Address)) - 150);
+		trk[i].pos				= (UINT32)(msf2lba(LOADMOTOROLADWORD(tocCDROM.TrackData[i].Address)) - 150);
 		trk[i].pos0				= trk[i].pos;
 
 		trk[i].sector_size	= sector_size;
 
 		trk[i].pregap_sector	= trk[i].pos;
-		//trk[i].start_sector		= trk[i].pos;
+		//trk[i].start_sector	= trk[i].pos;
 		if(i==trks-1){
-			trk[i].end_sector		= totals;
+			trk[i].end_sector	= (UINT32)totals;
 		}else{
-			trk[i].end_sector		= (msf2lba(LOADMOTOROLADWORD(tocCDROM.TrackData[i+1].Address)) - 150 - 1);
+			trk[i].end_sector	= (UINT32)(msf2lba(LOADMOTOROLADWORD(tocCDROM.TrackData[i+1].Address)) - 150 - 1);
 		}
 
 		trk[i].img_pregap_sec	= trk[i].pregap_sector;

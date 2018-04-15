@@ -16,6 +16,7 @@ static SINT32 cs4231_DACvolume_R = 1024;
 static UINT16 cs4231_DACvolumereg_L = 0xff;
 static UINT16 cs4231_DACvolumereg_R = 0xff;
 
+// 8bit モノラル
 static void SOUNDCALL pcm8m(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -57,6 +58,7 @@ const UINT8	*ptr2;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
+// 8bit ステレオ
 static void SOUNDCALL pcm8s(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -101,6 +103,7 @@ const UINT8	*ptr2;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
+// 16bit モノラル
 static void SOUNDCALL pcm16m(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -142,6 +145,7 @@ const UINT8	*ptr2;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
+// 16bit ステレオ
 static void SOUNDCALL pcm16s(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -186,6 +190,7 @@ const UINT8	*ptr2;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
+// 16bit モノラル(little endian)
 static void SOUNDCALL pcm16m_ex(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -227,6 +232,7 @@ const UINT8	*ptr2;
 	cs->pos12 = pos12 & ((1 << 12) - 1);
 }
 
+// 16bit ステレオ(little endian)
 static void SOUNDCALL pcm16s_ex(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	UINT32	leng;
@@ -305,6 +311,7 @@ static const CS4231FN cs4231fn[16] = {
 void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 
 	if ((cs->reg.iface & 1) && (count)) {
+		// CS4231内蔵ボリューム 
 		if(cs4231_DACvolumereg_L != cs->reg.dac_l){
 			cs4231_DACvolumereg_L = cs->reg.dac_l;
 			if(cs->reg.dac_l & 0x80){ // DAC L Mute
@@ -321,8 +328,11 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 				cs4231_DACvolume_R = (int)(pow(10, -1.5 * ((cs4231_DACvolumereg_R) & 0x3f) / 20.0) * 1024); // DAC R Volume (1bit毎に-1.5dB)
 			}
 		}
+		
+		// 再生用バッファに送る
 		(*cs4231fn[cs->reg.datafmt >> 4])(cs, pcm, count);
-		//// CS4231タイマー割り込み（手抜き）
+
+		//// CS4231タイマー割り込みTI（手抜き）
 		//if ((cs->reg.pinctrl & 2) && (cs->dmairq != 0xff) && LOADINTELWORD(cs->reg.timer)) {
 		//	static double timercount = 0;
 		//	int decval = 0;
@@ -333,7 +343,7 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 		//	if(cs->timercounter < 0){
 		//		cs->timercounter = LOADINTELWORD(cs->reg.timer);
 		//		cs->intflag |= INt;
-		//		cs->reg.featurestatus |= PI;
+		//		cs->reg.featurestatus |= TI;
 		//		pic_setirq(cs->dmairq);
 		//	}
 		//}

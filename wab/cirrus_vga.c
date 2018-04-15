@@ -28,6 +28,17 @@
  *   available at http://home.worldonline.dk/~finth/
  */
 
+/*
+	Neko Project 21/W 開発者のコメント:
+	・元はQEMU/9821のコードですが強引に移植するためにあちこち削ったりしています
+	・このファイルに関してはOS依存性は少ないはず（画面転送部分cirrusvga_drawGraphicだけOS依存・他のOS依存っぽいところは消してもたぶん害無し）
+	・MMIOとかVRAMウィンドウとかリニアVRAMとかはcpumem.cで乗っ取っているのでそちらを参照
+	・16bit/32bit I/Oはiocore.cで乗っ取っているのでそちらを参照
+	・VRAM画面はcirrusvga->vram_ptrに、パレットはcirrusvga->paletteに入ってます
+	・転送の仕方はcirrusvga_drawGraphicを参考に（自分もよく分かってないけど）
+	・細かいところはQEMU/9821の同名ファイルを参照
+*/
+
 #include	"compiler.h"
 
 #if defined(SUPPORT_CL_GD5430)
@@ -43,13 +54,11 @@
 #include	"iocore.h"
 #include	"soundmng.h"
 
-//const uint8_t sr_mask[8] = {0};
-//const uint8_t gr_mask[16] = {0};
 /* force some bits to zero */
 const uint8_t sr_mask[8] = {
     (uint8_t)~0xfc,
     (uint8_t)~0xc2,
-    (uint8_t)~0x00, // np21w ver0.86 rev29  (uint8_t)~0xf0,
+    (uint8_t)~0x00, // np21w ver0.86 rev29  (uint8_t)~0xf0, 上位ビットも残さないとWin9xで文字表示がおかしくなる
     (uint8_t)~0xc0,
     (uint8_t)~0xf1,
     (uint8_t)~0xff,
@@ -76,42 +85,32 @@ const uint8_t gr_mask[16] = {
     (uint8_t)~0xff, /* 0x0f */
 };
 
-REG8 cirrusvga_regindexA2 = 0;
-REG8 cirrusvga_regindex = 0;
-//REG8 cirrusvga_iomap = 0x0F;
-//REG8 cirrusvga_mmioenable = 0;
+
+REG8 cirrusvga_regindexA2 = 0; // I/OポートFA2hで指定されているレジスタ番号
+REG8 cirrusvga_regindex = 0; // I/OポートFAAhで指定されているレジスタ番号
 
 NP2CLVGA	np2clvga = {0};
-//NP2CLVGA2	np2clvga = {0};
-void *cirrusvga_opaque = NULL;
-UINT8	cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024];
+void *cirrusvga_opaque = NULL; // CIRRUS VGAの変数をグローバルアクセス出来るようにしておく･･･（良くない実装）
+UINT8	cirrusvga_statsavebuf[CIRRUS_VRAM_SIZE + 1024 * 1024]; // ステートセーブ用のバッファ（無駄が多いけど互換性は保ちやすいはず）
 
-int g_cirrus_linear_map_enabled = 0;
-CPUWriteMemoryFunc *g_cirrus_linear_write[3] = {0};
+int g_cirrus_linear_map_enabled = 0; // CIRRUS VGAの変数のリニアメモリアクセス(cpumem.cのmemp_*)有効フラグ
+CPUWriteMemoryFunc *g_cirrus_linear_write[3] = {0}; // CIRRUS VGAの変数のリニアメモリアクセスWRITEで呼ばれる関数（[0]=8bit, [0]=16bit, [0]=32bit）
 
-uint8_t* vramptr;
-uint8_t* cursorptr;
+uint8_t* vramptr; // CIRRUS VGAのVRAMへのポインタ（メモリサイズはCIRRUS_VRAM_SIZEで十分のはずだが念のため2倍確保されている）
+uint8_t* cursorptr; // CIRRUS VGAのカーソル画像バッファへのポインタ
 
-DisplayState ds = {0};
+DisplayState ds = {0}; // np21/wでは実質的に使われない
 
-BITMAPINFO *ga_bmpInfo;
-BITMAPINFO *ga_bmpInfo_cursor;
-HBITMAP		ga_hbmp_cursor;
-HDC			ga_hdc_cursor;
-HPALETTE	ga_hpal = NULL;
-BITMAPINFO	bmpInfo = {0};
-//UINT16		np2clvga.gd54xxtype = CIRRUS_98ID_Xe10;
+BITMAPINFO *ga_bmpInfo; // CIRRUS VGAのVRAM映像を転送する時に使うBITMAPINFO構造体
+BITMAPINFO *ga_bmpInfo_cursor; // CIRRUS VGAのカーソル画像を転送する時に使うBITMAPINFO構造体
+HBITMAP		ga_hbmp_cursor; // CIRRUS VGAのカーソルのHBITMAP
+HDC			ga_hdc_cursor; // CIRRUS VGAのカーソル画像のHDC
 
-//UINT32 np2clvga.VRAMWindowAddr = (0x0F<<24);
-//UINT32 np2clvga.VRAMWindowAddr2 = (0xf20000);
+static HCURSOR ga_hFakeCursor = NULL; // ハードウェアカーソル（仮）CIRRUS VGAのカーソル画像が上手く表示出来ない場合用
 
-static HCURSOR ga_hFakeCursor = NULL; // ハードウェアカーソル（仮）
-
+// QEMUで使われているけどよく分からなかったので無視されている関数や変数達(ｫｨ
 static void cpu_register_physical_memory(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t phys_offset){
-	//cpu_register_physical_memory_offset(start_addr, size, phys_offset, 0);
-
 }
-
 void np2vga_ds_dpy_update(struct DisplayState *s, int x, int y, int w, int h)
 {
 }
@@ -135,20 +134,15 @@ void np2vga_ds_dpy_fill(struct DisplayState *s, int x, int y,
 void np2vga_ds_dpy_text_cursor(struct DisplayState *s, int x, int y)
 {
 }
-
-
 DisplaySurface np2vga_ds_surface = {0};
 DisplayChangeListener np2vga_ds_listeners = {0, 0, np2vga_ds_dpy_update, np2vga_ds_dpy_resize, 
 											  np2vga_ds_dpy_setdata, np2vga_ds_dpy_refresh, 
 											  np2vga_ds_dpy_copy, np2vga_ds_dpy_fill, 
 											  np2vga_ds_dpy_text_cursor, NULL};
-
 void np2vga_ds_mouse_set(int x, int y, int on){
-
 }
 void np2vga_ds_cursor_define(int width, int height, int bpp, int hot_x, int hot_y,
                           uint8_t *image, uint8_t *mask){
-
 }
 
 DisplayState *graphic_console_init(vga_hw_update_ptr update,
@@ -158,12 +152,6 @@ DisplayState *graphic_console_init(vga_hw_update_ptr update,
 								   void *opaque)
 {
 	ds.opaque = opaque;
-	bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmpInfo.bmiHeader.biWidth = 1024;
-	bmpInfo.bmiHeader.biHeight = 512;
-	bmpInfo.bmiHeader.biPlanes = 1;
-	bmpInfo.bmiHeader.biBitCount = 32;
-	bmpInfo.bmiHeader.biCompression = BI_RGB;
 	np2vga_ds_surface.width = 640;
 	np2vga_ds_surface.height = 480;
 	np2vga_ds_surface.pf.bits_per_pixel = 32;
@@ -352,6 +340,7 @@ DisplayState *graphic_console_init(vga_hw_update_ptr update,
 
 #define ABS(a) ((signed)(a) > 0 ? a : -a)
 
+// XXX: WAB系をとりあえず使えるようにするために本来のVRAMサイズの2倍まで書き込み許可
 #define BLTUNSAFE(s) \
     ( \
         ( /* check dst is within bounds */ \
@@ -432,12 +421,6 @@ typedef struct CirrusVGAState {
     int device_id;
     int bustype;
 } CirrusVGAState;
-/*
-typedef struct PCICirrusVGAState {
-    PCIDevice dev;
-    CirrusVGAState cirrus_vga;
-} PCICirrusVGAState;
-*/
 
 CirrusVGAState *cirrusvga = NULL;
 
@@ -1167,9 +1150,6 @@ static void cirrus_bitblt_cputovideo_next(CirrusVGAState * s)
 
 static void cirrus_bitblt_videotocpu_next(CirrusVGAState * s)
 {
-    int copy_count;
-    uint8_t *end_ptr;
-
     if (s->cirrus_srccounter > 0) {
         if (s->cirrus_blt_mode & CIRRUS_BLTMODE_PATTERNCOPY) {
 			// XXX: not implemented
@@ -1250,7 +1230,7 @@ static int cirrus_bitblt_cputovideo(CirrusVGAState * s)
 
 static int cirrus_bitblt_videotocpu(CirrusVGAState * s)
 {
-	// bitblt (video to cpu) 暫定プログラム（cputovideoからの推測・正しいかは不明）
+	// np21/w  bitblt (video to cpu) 暫定プログラム（cputovideoからの推測・正しいかは不明）
     int w;
 	
     s->cirrus_blt_mode &= ~CIRRUS_BLTMODE_MEMSYSSRC;
@@ -1571,15 +1551,9 @@ static void cirrus_get_resolution(VGAState *s, int *pwidth, int *pheight)
     /* interlace support */
     if (s->cr[0x1a] & 0x01)
         height = height * 2;
-	if(width==320) height /= 2; // XXX: とりあえず仮
-	if(width==400) height = 300; // XXX: とりあえず仮
-	if(width==512) height = 384; // XXX: とりあえず仮
-	//if(width<320){
-	//	width = 1024; // XXX: とりあえず仮
-	//}
-	//if(height<200){
-	//	height = 768; // XXX: とりあえず仮
-	//}
+	if(width==320) height /= 2; // XXX: Win98で表示がおかしくなるのでとりあえず仮
+	if(width==400) height = 300; // XXX: Win98で表示がおかしくなるのでとりあえず仮
+	if(width==512) height = 384; // XXX: Win98で表示がおかしくなるのでとりあえず仮
 
     *pwidth = width;
     *pheight = height;
@@ -3405,28 +3379,13 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
 
 
 /* I/O ports */
+// PC-98用I/Oポート -> CL-GD54xxネイティブポート変換
 uint32_t_ vga_convert_ioport(uint32_t_ addr){
 	if(np2clvga.gd54xxtype <= 0xff){
+		// 内蔵・純正ボード用
 		if((addr & 0xFF0) == 0xCA0 || (addr & 0xFF0) == 0xC50){
 			addr = 0x3C0 | (addr & 0xf);
-			//if(addr==0xCA0) addr = 0x3C0;
-			//if(addr==0xCA1) addr = 0x3C1;
-			//if(addr==0xCA2) addr = 0x3C2;
-			//if(addr==0xCA3) addr = 0x3C3;
-			//if(addr==0xCA4) addr = 0x3C4;
-			//if(addr==0xCA5) addr = 0x3C5;
-			//if(addr==0xCA6) addr = 0x3C6;
-			//if(addr==0xCA7) addr = 0x3C7;
-			//if(addr==0xCA8) addr = 0x3C8;
-			//if(addr==0xCA9) addr = 0x3C9;
-			//if(addr==0xCAA) addr = 0x3CA;
-			//if(addr==0xCAB) addr = 0x3CB;
-			//if(addr==0xCAC) addr = 0x3CC;
-			//if(addr==0xCAD) addr = 0x3CD;
-			//if(addr==0xCAE) addr = 0x3CE;
-			//if(addr==0xCAF) addr = 0x3CF;
 		}else{
-			//if(addr==0x904 || addr==0x904) addr = 0x094;
 			if(addr==0xBA4 || addr==0xB54) addr = 0x3B4;
 			if(addr==0xBA5 || addr==0xB55) addr = 0x3B5;
 			if(addr==0xDA4 || addr==0xD54) addr = 0x3D4;
@@ -3435,24 +3394,9 @@ uint32_t_ vga_convert_ioport(uint32_t_ addr){
 			if(addr==0xDAA || addr==0xD5A) addr = 0x3DA;
 		}
 	}else{
+		// WAB用
 		if((addr & 0xF0FF) == (0x40E0 | CIRRUS_MELCOWAB_OFS)){
 			addr = 0x3C0 | ((addr >> 8) & 0xf);
-			//if(addr==0x40E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C0;
-			//if(addr==0x41E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C1;
-			//if(addr==0x42E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C2;
-			//if(addr==0x43E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C3;
-			//if(addr==0x44E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C4;
-			//if(addr==0x45E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C5;
-			//if(addr==0x46E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C6;
-			//if(addr==0x47E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C7;
-			//if(addr==0x48E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C8;
-			//if(addr==0x49E0+CIRRUS_MELCOWAB_OFS) addr = 0x3C9;
-			//if(addr==0x4AE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CA;
-			//if(addr==0x4BE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CB;
-			//if(addr==0x4CE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CC;
-			//if(addr==0x4DE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CD;
-			//if(addr==0x4EE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CE;
-			//if(addr==0x4FE0+CIRRUS_MELCOWAB_OFS) addr = 0x3CF;
 		}else{
 			if(addr==0x51E1+CIRRUS_MELCOWAB_OFS) addr = 0x3B4; // ???
 			if(addr==0x57E1+CIRRUS_MELCOWAB_OFS) addr = 0x3B5; // ???
@@ -4051,46 +3995,6 @@ void pc98_cirrus_vga_save()
 	
 	array_write(f, pos, &np2clvga.VRAMWindowAddr3, sizeof(np2clvga.VRAMWindowAddr3));
 
-    //array_write(f, pos, &s->latch, sizeof(s->latch));
-    //array_write(f, pos, &s->sr_index, sizeof(s->sr_index));
-    //array_write(f, pos, s->sr, 256);
-    //array_write(f, pos, &s->gr_index, sizeof(s->gr_index));
-    //array_write(f, pos, &s->cirrus_shadow_gr0, sizeof(s->cirrus_shadow_gr0));
-    //array_write(f, pos, &s->cirrus_shadow_gr1, sizeof(s->cirrus_shadow_gr1));
-    //array_write(f, pos, s->gr + 2, 254);
-    //array_write(f, pos, &s->ar_index, sizeof(s->ar_index));
-    //array_write(f, pos, s->ar, 21);
-    //array_write(f, pos, &s->ar_flip_flop, sizeof(s->ar_flip_flop));
-    //array_write(f, pos, &s->cr_index, sizeof(s->cr_index));
-    //array_write(f, pos, s->cr, 256);
-    //array_write(f, pos, &s->msr, sizeof(s->msr));
-    //array_write(f, pos, &s->fcr, sizeof(s->fcr));
-    //array_write(f, pos, &s->st00, sizeof(s->st00));
-    //array_write(f, pos, &s->st01, sizeof(s->st01));
-
-    //array_write(f, pos, &s->dac_state, sizeof(s->dac_state));
-    //array_write(f, pos, &s->dac_sub_index, sizeof(s->dac_sub_index));
-    //array_write(f, pos, &s->dac_read_index, sizeof(s->dac_read_index));
-    //array_write(f, pos, &s->dac_write_index, sizeof(s->dac_write_index));
-    //array_write(f, pos, s->dac_cache, 3);
-    //array_write(f, pos, s->palette, 768);
-
-    //array_write(f, pos, &s->bank_offset, sizeof(s->bank_offset));
-
-    //array_write(f, pos, &s->cirrus_hidden_dac_lockindex, sizeof(s->cirrus_hidden_dac_lockindex));
-    //array_write(f, pos, &s->cirrus_hidden_dac_data, sizeof(s->cirrus_hidden_dac_data));
-
-    //array_write(f, pos, &s->hw_cursor_x, sizeof(s->hw_cursor_x));
-    //array_write(f, pos, &s->hw_cursor_y, sizeof(s->hw_cursor_y));
-	
-    //array_write(f, pos, vramptr, CIRRUS_VRAM_SIZE);
-	
-    //array_write(f, pos, s->cirrus_hidden_palette, 48);
-
-    /* XXX: we do not save the bitblt state - we assume we do not save
-       the state when the blitter is active */
-	//sprintf(test, "CIRRUS VGA datalen=%d", pos);
-	//msgbox("CIRRUS VGA datalen", test);
 	TRACEOUT(("CIRRUS VGA datalen=%d", pos));
 }
 
@@ -4266,12 +4170,13 @@ void pc98_cirrus_vga_load()
     cirrus_update_bank_ptr(s, 0);
     cirrus_update_bank_ptr(s, 1);
 	
+	// WAB画面サイズ更新
 	if(cirrusvga->get_resolution){
 		cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
 		np2wab_setScreenSize(width, height);
 	}
 
-	np2wab.paletteChanged = 1;
+	np2wab.paletteChanged = 1; // パレット変えました
 }
 
 /***************************************
@@ -4435,34 +4340,6 @@ void cirrusvga_drawGraphic(){
 			scanpixW = width;
 		}
 	}
-	//if(width==640 && bpp==24 && ((np2clvga.VRAMWindowAddr>>24)&0xff)==0xf0){
-	//	// XXX: Win2k用やっつけ修正
-	//	scanpixW = 1024;
-	//}
-	//if((cirrusvga->cr[0x08] & 8)){
-	//	if(scanpixW<=512 ) scanpixW = 512;
-	//	else if(scanpixW<=1024) scanpixW = 1024;
-	//	else if(scanpixW<=2048) scanpixW = 2048;
-	//	else if(scanpixW<=4096) scanpixW = 4096;
-	//	else if(scanpixW<=8192) scanpixW = 8192;
-	//}
-	//if(width==640){
-	//	// XXX: 何も補正しない
-	//}else{
-	//	if(scanpixW<=256 ) scanpixW = 256;
-	//	else if(scanpixW<=512) scanpixW = 512;
-	//	else if(scanpixW<=1024) scanpixW = 1024;
-	//	else if(scanpixW<=2048) scanpixW = 2048;
-	//}
-	//if(width==800 && bpp==8 && (((np2clvga.VRAMWindowAddr>>24)&0xff)==0xf0 || np2clvga.gd54xxtype > 0xff)){
-	//	// XXX: Win2k用やっつけ修正
-	//	scanW = width*2;
-	//	scanpixW = width;
-	//}
-	//if(np2clvga.gd54xxtype == CIRRUS_98ID_Be && width==640 && bpp==8 && np2clvga.VRAMWindowAddr==0){
-	//	// XXX: SC2k用やっつけ修正
-	//	scanpixW = 1024;
-	//}
 	if(bpp==16){
 		uint32_t_* bitfleld = (uint32_t_*)(ga_bmpInfo->bmiColors);
 		scanW = width*2;
@@ -4512,7 +4389,7 @@ void cirrusvga_drawGraphic(){
 		}
 		// 256モードなら素直に転送して良し
 		if(scanshift){
-			// XXX: スキャン位置シフト
+			// XXX: WABのスキャン位置シフト無視してるけど･･･
 			ga_bmpInfo->bmiHeader.biWidth = scanpixW;
 			ga_bmpInfo->bmiHeader.biHeight = -height;
 			scanptr = vram_ptr;
@@ -4591,19 +4468,15 @@ void cirrusvga_drawGraphic(){
     if ((cirrusvga->sr[0x12] & CIRRUS_CURSOR_SHOW)){
 		int hwcur_x = cirrusvga->hw_cursor_x;
 		int hwcur_y = cirrusvga->hw_cursor_y;
-		//if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN){
-		//	// XXX: なんだこれ
-		//	if(cirrusvga->sr[0x13]==0x3E && bpp==16) hwcur_x -= 8;
-		//}
 		if(np2cfg.gd5430fakecur){
 			// ハードウェアカーソルが上手く表示できない場合用
 			DrawIcon(hdc, hwcur_x, hwcur_y, ga_hFakeCursor);
 		}else{
-			HPALETTE oldCurPalette;
+			//HPALETTE oldCurPalette;
 			int cursize = 32;
-			int x, y, tmp;
+			int x, y;
 			int x1, x2, h, w;
-			unsigned int basecolor;
+			//unsigned int basecolor;
 			unsigned int color0, color1;
 			uint8_t *d1 = cirrusvga->vram_ptr;
 			uint8_t *palette, *src, *base;
@@ -4730,8 +4603,10 @@ static void IOOUTCALL cirrusvga_ofa3(UINT port, REG8 dat) {
 	}
 	switch(cirrusvga_regindexA2){
 	case 0x00:
+		// 機種判定？
 		break;
 	case 0x01:
+		// VRAMウィンドウアドレス設定
 		switch(dat){
 		case 0x10:
 			np2clvga.VRAMWindowAddr2 = 0x0b0000;
@@ -4751,11 +4626,13 @@ static void IOOUTCALL cirrusvga_ofa3(UINT port, REG8 dat) {
 		}
 		break;
 	case 0x02:
+		// リニアVRAMアクセス用アドレス設定
 		if(np2clvga.gd54xxtype <= 0xff){
 			if(dat!=0x00 && dat!=0xff) np2clvga.VRAMWindowAddr = (dat<<24);
 		}
 		break;
 	case 0x03:
+		// 出力切替リレー制御
 		if((!!np2wab.relaystateint) != (!!(dat&0x2))){
 			np2wab.relaystateint = dat & 0x2;
 			np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext); // リレーはORで･･･（暫定やっつけ修正）
@@ -4776,6 +4653,7 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 	}
 	switch(cirrusvga_regindexA2){
 	case 0x00:
+		// 機種判定？
 		if(np2clvga.gd54xxtype == CIRRUS_98ID_96){
 			ret = (REG8)np2clvga.gd54xxtype;
 		}else{
@@ -4783,6 +4661,7 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 		}
 		break;
 	case 0x01:
+		// VRAMウィンドウアドレス設定
 		if(np2clvga.gd54xxtype <= 0xff){
 			switch(np2clvga.VRAMWindowAddr2){
 			case 0x0b0000:
@@ -4806,6 +4685,7 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 		}
 		break;
 	case 0x02:
+		// リニアVRAMアクセス用アドレス設定
 		if(np2clvga.gd54xxtype <= 0xff){
 			ret = (np2clvga.VRAMWindowAddr>>24)&0xff;
 		}else{
@@ -4813,9 +4693,11 @@ static REG8 IOINPCALL cirrusvga_ifa3(UINT port) {
 		}
 		break;
 	case 0x03:
+		// 出力切替リレー制御
 		ret = ((np2wab.relaystateint&0x2) ? 0x2 : 0x0) | np2clvga.mmioenable;
 		break;
 	case 0x04:
+		// ？
 		ret = 0x00;
 		break;
 	}
@@ -4851,8 +4733,10 @@ static void IOOUTCALL cirrusvga_ofab(UINT port, REG8 dat) {
 	}
 	switch(cirrusvga_regindex){
 	case 0x00:
+		// 機種判定
 		break;
 	case 0x01:
+		// VRAMウィンドウアドレス設定
 		switch(dat){
 		case 0x10:
 			np2clvga.VRAMWindowAddr2 = 0x0b0000;
@@ -4872,10 +4756,12 @@ static void IOOUTCALL cirrusvga_ofab(UINT port, REG8 dat) {
 		}
 		break;
 	case 0x02:
+		// リニアVRAMアクセス用アドレス設定
 		if(dat!=0x00 && dat!=0xff) np2clvga.VRAMWindowAddr = (dat<<24);
 		//cirrusvga->vram_offset = np2clvga.VRAMWindowAddr;
 		break;
 	case 0x03:
+		// 出力切替リレー制御
 		if((!!np2wab.relaystateint) != (!!(dat&0x2))){
 			np2wab.relaystateint = dat & 0x2;
 			np2wab.relaystateext = dat & 0x2; // （￣∀￣;）
@@ -4897,6 +4783,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 	}
 	switch(cirrusvga_regindex){
 	case 0x00:
+		// 機種判定
 		if(np2clvga.gd54xxtype <= 0xff){
 			ret = (REG8)np2clvga.gd54xxtype;//0x5B;
 		}else{
@@ -4904,6 +4791,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 		}
 		break;
 	case 0x01:
+		// VRAMウィンドウアドレス設定
 		if(np2clvga.gd54xxtype <= 0xff){
 			switch(np2clvga.VRAMWindowAddr2){
 			case 0x0b0000:
@@ -4927,6 +4815,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 		}
 		break;
 	case 0x02:
+		// リニアVRAMアクセス用アドレス設定
 		if(np2clvga.gd54xxtype <= 0xff){
 			ret = (np2clvga.VRAMWindowAddr>>24)&0xff;
 		}else{
@@ -4934,6 +4823,7 @@ static REG8 IOINPCALL cirrusvga_ifab(UINT port) {
 		}
 		break;
 	case 0x03:
+		// 出力切替リレー制御
 		ret = (np2wab.relay ? 0x2 : 0x0) | np2clvga.mmioenable;
 		break;
 	}
@@ -5177,6 +5067,7 @@ static void vga_dumb_update_retrace_info(VGAState *s)
     (void) s;
 }
 
+// VRAMウィンドウアドレスをデフォルト値に設定する
 void pc98_cirrus_vga_initVRAMWindowAddr(){
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_Be){
 		np2clvga.VRAMWindowAddr = 0;
@@ -5196,6 +5087,7 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 	}
 
 }
+// ボード種類からVRAMサイズを決定する
 void pc98_cirrus_vga_setvramsize(){
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK){
 		cirrusvga->real_vram_size = CIRRUS_VRAM_SIZE;
@@ -5431,8 +5323,8 @@ void pc98_cirrus_vga_init(void)
 	UINT i;
 	WORD* PalIndexes;
     CirrusVGAState *s;
-	HBITMAP hbmp;
-	BOOL b;
+	//HBITMAP hbmp;
+	//BOOL b;
 
 	ga_bmpInfo = (BITMAPINFO*)calloc(1, sizeof(BITMAPINFO)+sizeof(WORD)*256);	
 	PalIndexes = (WORD*)((char*)ga_bmpInfo + sizeof(BITMAPINFOHEADER));
@@ -5532,7 +5424,6 @@ void pc98_cirrus_vga_bind(void)
 }
 void pc98_cirrus_vga_shutdown(void)
 {
-	//DeleteObject(ga_hpal);
 	np2wabwnd.drawframe = NULL;
 	free(ga_bmpInfo_cursor);
 	free(ga_bmpInfo);

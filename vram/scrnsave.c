@@ -479,7 +479,7 @@ const PALNUM	*s;
 	}
 	ZeroMemory(work, align);
 	
-	*lplppixels = (UINT8*)_MALLOC(bmpdata_getalign(&bi) * bd.height);
+	*lplppixels = (UINT8*)malloc(bmpdata_getalign(&bi) * bd.height);
 	dstpix = *lplppixels;
 	s = sd->dat + (SURFACE_WIDTH * bd.height);
 	do {
@@ -527,8 +527,8 @@ const PALNUM	*s;
 	_MFREE(work);
 	return(SUCCESS);
 
-sswb_err3:
-	_MFREE(work);
+//sswb_err3:
+//	_MFREE(work);
 sswb_err2:
 sswb_err1:
 	return(FAILURE);

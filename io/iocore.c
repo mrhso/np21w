@@ -79,17 +79,19 @@ static	UINT8		ioterminate[0x100];
 static void IOOUTCALL defout8(UINT port, REG8 dat) {
 
 #if !defined(DISABLE_SOUND)
-	UINT	tmp;
+	if(cs4231.enable){
+		UINT	tmp;
 
-	tmp = port - cs4231.port[0];
-	if (tmp < 8) {
-		cs4231io0_w8(port, dat);
-		return;
-	}
-	tmp = port - cs4231.port[5];
-	if (tmp < 2) {
-		cs4231io5_w8(port, dat);
-		return;
+		tmp = port - cs4231.port[0];
+		if (tmp < 8) {
+			cs4231io0_w8(port, dat);
+			return;
+		}
+		tmp = port - cs4231.port[5];
+		if (tmp < 2) {
+			cs4231io5_w8(port, dat);
+			return;
+		}
 	}
 #endif
 	if ((port & 0xf0ff) == 0x801e) {
@@ -102,15 +104,17 @@ static void IOOUTCALL defout8(UINT port, REG8 dat) {
 static REG8 IOINPCALL definp8(UINT port) {
 
 #if !defined(DISABLE_SOUND)
-	UINT	tmp;
+	if(cs4231.enable){
+		UINT	tmp;
 
-	tmp = port - cs4231.port[0];
-	if (tmp < 8) {
-		return(cs4231io0_r8(port));
-	}
-	tmp = port - cs4231.port[5];
-	if (tmp < 2) {
-		return(cs4231io5_r8(port));
+		tmp = port - cs4231.port[0];
+		if (tmp < 8) {
+			return(cs4231io0_r8(port));
+		}
+		tmp = port - cs4231.port[5];
+		if (tmp < 2) {
+			return(cs4231io5_r8(port));
+		}
 	}
 #endif
 	if ((port & 0xf0ff) == 0x801e) {

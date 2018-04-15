@@ -411,13 +411,15 @@
     <ClCompile Include="..\sound\mame\fmopl.c" />
     <ClCompile Include="..\sound\mame\ymdeltat.c" />
     <ClCompile Include="..\sound\mame\ymf262.c" />
-    <ClCompile Include="..\sound\opl3.c" />
+    <ClCompile Include="..\sound\opl3.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\sound\oplgenc.c" />
     <ClCompile Include="..\sound\oplgeng.c" />
     <ClCompile Include="..\sound\opngenc.c" />
     <ClCompile Include="..\sound\opngeng.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\sound\opntimer.c" />
     <ClCompile Include="..\sound\pcm86c.c" />

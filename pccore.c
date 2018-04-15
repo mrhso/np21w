@@ -791,7 +791,6 @@ void pccore_exec(BOOL draw) {
 			nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
 		}
 #endif
-		//sound_sync2();
 	}
 	artic_callback();
 	mpu98ii_callback();
