@@ -72,15 +72,15 @@
 
 static void
 fpu_check_NM_EXCEPTION(){
-	// タスクスイッチ時にNM(デバイス使用不可例外)を発生させる
-	if (CPU_CR0 & (CPU_CR0_TS)) {
+	// タスクスイッチまたはエミュレーション時にNM(デバイス使用不可例外)を発生させる
+	if ((CPU_CR0 & (CPU_CR0_TS)) || (CPU_CR0 & CPU_CR0_EM)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 }
 static void
 fpu_check_NM_EXCEPTION2(){
-	// タスクスイッチ時かつ前に発生した例外がNM(デバイス使用不可例外)でなければNMを発生させる（根拠無し）
-	if ((CPU_CR0 & (CPU_CR0_TS)) && CPU_STAT_PREV_EXCEPTION != 7) {
+	// タスクスイッチまたはエミュレーション時にNM(デバイス使用不可例外)を発生させる
+	if ((CPU_CR0 & (CPU_CR0_TS)) || (CPU_CR0 & CPU_CR0_EM)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 }
@@ -609,12 +609,20 @@ static void FPU_FPTAN(void){
 	return;
 }
 static void FPU_FDIV(UINT st, UINT other){
+	if(FPU_STAT.reg[other].d==0){
+		FPU_STATUSWORD |= FP_ZE_FLAG;
+		return;
+	}
 	FPU_STAT.reg[st].d= FPU_STAT.reg[st].d/FPU_STAT.reg[other].d;
 	//flags and such :)
 	return;
 }
 
 static void FPU_FDIVR(UINT st, UINT other){
+	if(FPU_STAT.reg[st].d==0){
+		FPU_STATUSWORD |= FP_ZE_FLAG;
+		return;
+	}
 	FPU_STAT.reg[st].d= FPU_STAT.reg[other].d/FPU_STAT.reg[st].d;
 	// flags and such :)
 	return;
@@ -1119,6 +1127,9 @@ fpu_reg2str(void)
 
 void
 fpu_checkexception(void){
+	if((FPU_STATUSWORD & ~FPU_CTRLWORD) & 0x3F){
+		EXCEPTION(MF_EXCEPTION, 0);
+	}
 }
 
 void
@@ -1188,6 +1199,7 @@ ESC0(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	fpu_checkexception();
 	if (op >= 0xc0) {
 		/* Fxxx ST(0), ST(i) */
 		switch (idx) {
@@ -1246,6 +1258,9 @@ ESC1(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	if(!(op < 0xc0 && idx>=4)){
+		fpu_checkexception();
+	}
 	if (op >= 0xc0) 
 	{
 		switch (idx) {
@@ -1505,6 +1520,7 @@ ESC2(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	fpu_checkexception();
 	if (op >= 0xc0) {
 		/* Fxxx ST(0), ST(i) */
 		switch (idx) {
@@ -1562,6 +1578,9 @@ ESC3(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	if(!(op >= 0xc0 && idx==4)){
+		fpu_checkexception();
+	}
 	if (op >= 0xc0) 
 	{
 		/* Fxxx ST(0), ST(i) */
@@ -1680,6 +1699,7 @@ ESC4(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	fpu_checkexception();
 	if (op >= 0xc0) {
 		/* Fxxx ST(i), ST(0) */
 		switch (idx) {
@@ -1748,6 +1768,9 @@ ESC5(void)
 	//	fpu_check_NM_EXCEPTION();
 	//	_ADD_EIP(1);
 	//}
+	if(op >= 0xc0 || (idx!=4 && idx!=6 && idx!=7)){
+		fpu_checkexception();
+	}
 	if (op >= 0xc0) {
 		/* FUCOM ST(i), ST(0) */
 		/* Fxxx ST(i) */
@@ -1834,6 +1857,7 @@ ESC6(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	fpu_checkexception();
 	if (op >= 0xc0) {
 		/* Fxxx ST(i), ST(0) */
 		switch (idx) {
@@ -1868,10 +1892,16 @@ ESC6(void)
 		case 6:	/* FDIVRP */
 			TRACEOUT(("FDIVRP"));
 			FPU_FDIVR(FPU_ST(sub),FPU_STAT_TOP);
+			if((FPU_STATUSWORD & ~FPU_CTRLWORD) & FP_ZE_FLAG){
+				return; // POPしないようにする
+			}
 			break;
 		case 7:	/* FDIVP */
 			TRACEOUT(("FDIVP"));
 			FPU_FDIV(FPU_ST(sub),FPU_STAT_TOP);
+			if((FPU_STATUSWORD & ~FPU_CTRLWORD) & FP_ZE_FLAG){
+				return; // POPしないようにする
+			}
 			break;
 			/*FALLTHROUGH*/
 		default:
@@ -1899,6 +1929,10 @@ ESC7(void)
 	sub = (op & 7);
 	
 	fpu_check_NM_EXCEPTION();
+	fpu_check_NM_EXCEPTION();
+	if(!(op >= 0xc0 && idx==4 && sub==0)){
+		fpu_checkexception();
+	}
 	if (op >= 0xc0) {
 		/* Fxxx ST(0), ST(i) */
 		switch (idx) {
@@ -1993,9 +2027,12 @@ ESC7(void)
 	}
 }
 
-#else
+void NOFPU_FPU_FXSAVERSTOR(void){
+	EXCEPTION(UD_EXCEPTION, 0);
+}
+
 void
-ESC0(void)
+NOFPU_ESC0(void)
 {
 	UINT32 op, madr;
 
@@ -2010,7 +2047,7 @@ ESC0(void)
 }
 
 void
-ESC1(void)
+NOFPU_ESC1(void)
 {
 	UINT32 op, madr;
 
@@ -2039,7 +2076,7 @@ ESC1(void)
 }
 
 void
-ESC2(void)
+NOFPU_ESC2(void)
 {
 	UINT32 op, madr;
 
@@ -2054,7 +2091,7 @@ ESC2(void)
 }
 
 void
-ESC3(void)
+NOFPU_ESC3(void)
 {
 	UINT32 op, madr;
 
@@ -2073,7 +2110,7 @@ ESC3(void)
 }
 
 void
-ESC4(void)
+NOFPU_ESC4(void)
 {
 	UINT32 op, madr;
 
@@ -2088,7 +2125,7 @@ ESC4(void)
 }
 
 void
-ESC5(void)
+NOFPU_ESC5(void)
 {
 	UINT32 op, madr;
 
@@ -2108,7 +2145,7 @@ ESC5(void)
 }
 
 void
-ESC6(void)
+NOFPU_ESC6(void)
 {
 	UINT32 op, madr;
 
@@ -2123,7 +2160,7 @@ ESC6(void)
 }
 
 void
-ESC7(void)
+NOFPU_ESC7(void)
 {
 	UINT32 op, madr;
 
@@ -2141,7 +2178,5 @@ ESC7(void)
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 }
-
-
 #endif
 #endif

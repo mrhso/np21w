@@ -26,6 +26,7 @@
 #include "compiler.h"
 #include "ia32/cpu.h"
 #include "ia32/ia32.mcr"
+#include "pccore.h"
 
 #include "system_inst.h"
 
@@ -285,14 +286,18 @@ MOV_CdRd(void)
 			reg = CPU_CR0;
 			src &= CPU_CR0_ALL;
 #if defined(USE_FPU)
-			src |= CPU_CR0_ET;	/* FPU present */
-			src &= ~CPU_CR0_EM;
+			if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
+				src |= CPU_CR0_ET;	/* FPU present */
+				//src &= ~CPU_CR0_EM;
+			}else{
+				src |= CPU_CR0_EM | CPU_CR0_NE;
+				src &= ~(CPU_CR0_MP | CPU_CR0_ET);
+			}
 #else
 			src |= CPU_CR0_EM | CPU_CR0_NE;
 			src &= ~(CPU_CR0_MP | CPU_CR0_ET);
 #endif
 			CPU_CR0 = src;
-			//CPU_CR0 = src | (CPU_CR0 & CPU_CR0_TS); // XXX: FPUやMMXのレジスタ退避がおかしくなるのでCLTS以外でTSフラグは消せないようにする（根拠無し）
 			VERBOSE(("MOV_CdRd: %04x:%08x: cr0: 0x%08x <- 0x%08x(%s)", CPU_CS, CPU_PREV_EIP, reg, CPU_CR0, reg32_str[op & 7]));
 
 			if ((reg ^ CPU_CR0) & (CPU_CR0_PE|CPU_CR0_PG)) {
@@ -1061,10 +1066,10 @@ RDMSR(void)
 
 	idx = CPU_ECX;
 	switch (idx) {
-	//case 0x1b:
-	//	CPU_EDX = 0x00000000;
-	//	CPU_EAX = 0xfee00800;
-	//	break;
+	case 0x2c:
+		CPU_EDX = 0x00000000;
+		CPU_EAX = 0xfee00800;
+		break;
 	default:
 		CPU_EDX = CPU_EAX = 0;
 		//EXCEPTION(GP_EXCEPTION, 0); // XXX: とりあえず通す
@@ -1096,10 +1101,14 @@ void
 RDTSC(void)
 {
 #ifdef _WIN32
-	static LARGE_INTEGER li = {0};
+	LARGE_INTEGER li = {0};
+	LARGE_INTEGER qpf;
 	QueryPerformanceCounter(&li);
-	CPU_STATSAVE.cpu_regs.reg[CPU_EDX_INDEX].d = li.HighPart;
-	CPU_STATSAVE.cpu_regs.reg[CPU_EAX_INDEX].d = li.LowPart;
+	if (QueryPerformanceFrequency(&qpf)) {
+		li.QuadPart = li.QuadPart * pccore.realclock / qpf.QuadPart;
+	}
+	CPU_EDX = li.HighPart;
+	CPU_EAX = li.LowPart;
 #else
 	ia32_panic("RDTSC: not implemented yet!");
 #endif

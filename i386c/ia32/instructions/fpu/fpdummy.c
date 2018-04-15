@@ -12,6 +12,9 @@ void FPU_FXSAVE(void){
 void FPU_FXRSTOR(void){
 	EXCEPTION(UD_EXCEPTION, 0);
 }
+void FPU_FXSAVERSTOR(void){
+	EXCEPTION(UD_EXCEPTION, 0);
+}
 
 void
 ESC0(void)

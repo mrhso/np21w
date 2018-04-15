@@ -29,12 +29,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+	
 void fpu_init(void);
 void fpu_fwait(void);
 
 void FPU_FXSAVERSTOR(void);
-
 void FWAIT(void);
 void ESC0(void);
 void ESC1(void);
@@ -44,6 +43,17 @@ void ESC4(void);
 void ESC5(void);
 void ESC6(void);
 void ESC7(void);
+
+// for i486SX
+void NOFPU_FPU_FXSAVERSTOR(void);
+void NOFPU_ESC0(void);
+void NOFPU_ESC1(void);
+void NOFPU_ESC2(void);
+void NOFPU_ESC3(void);
+void NOFPU_ESC4(void);
+void NOFPU_ESC5(void);
+void NOFPU_ESC6(void);
+void NOFPU_ESC7(void);
 
 #ifdef __cplusplus
 }

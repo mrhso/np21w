@@ -57,6 +57,16 @@
 #if defined(SUPPORT_IDEIO)
 #include	"ideio.h"
 #endif
+#if defined(CPUCORE_IA32)
+#include	"ia32/cpu.h"
+#else
+#define	CPU_VENDOR		"GenuineIntel"
+#define	CPU_FAMILY	2
+#define	CPU_MODEL	1
+#define	CPU_STEPPING	1
+#define	CPU_FEATURES		(0)
+#define	CPU_BRAND_STRING	"Intel(R) 80286 Processor "
+#endif
 
 
 const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
@@ -124,6 +134,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				0, 0xff00, 
 				0, 0, 0,
+				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_BRAND_STRING
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -426,6 +437,37 @@ void pccore_reset(void) {
 	{
 		mem[0xa3fe2 + i*4] = np2cfg.memsw[i];
 	}
+	
+#if defined(CPUCORE_IA32)
+	if(np2cfg.cpu_family == CPU_I486SX_FAMILY && np2cfg.cpu_model == CPU_I486SX_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486SX);
+	}else if(np2cfg.cpu_family == CPU_I486DX_FAMILY && np2cfg.cpu_model == CPU_I486DX_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486DX);
+	}else if(np2cfg.cpu_family == CPU_PENTIUM_FAMILY && np2cfg.cpu_model == CPU_PENTIUM_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM);
+	}else if(np2cfg.cpu_family == CPU_MMX_PENTIUM_FAMILY && np2cfg.cpu_model == CPU_MMX_PENTIUM_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_MMX_PENTIUM);
+	}else if(np2cfg.cpu_family == CPU_PENTIUM_PRO_FAMILY && np2cfg.cpu_model == CPU_PENTIUM_PRO_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_PRO);
+	}else if(np2cfg.cpu_family == CPU_PENTIUM_II_FAMILY && np2cfg.cpu_model == CPU_PENTIUM_II_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_II);
+	}else{
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_NEKOPRO);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_NEKOPRO);
+	}
+	strcpy(i386cpuid.cpu_vendor, np2cfg.cpu_vendor);
+	i386cpuid.cpu_family = np2cfg.cpu_family;
+	i386cpuid.cpu_model = np2cfg.cpu_model;
+	i386cpuid.cpu_stepping = np2cfg.cpu_stepping;
+	i386cpuid.cpu_feature = CPU_FEATURES & np2cfg.cpu_feature;
+	strcpy(i386cpuid.cpu_brandstring, np2cfg.cpu_brandstring);
+#endif
 
 	pccore_set(&np2cfg);
 	nevent_allreset();
@@ -487,7 +529,7 @@ void pccore_reset(void) {
 	pal_change(1);
 
 	bios_initialize();
-
+	
 	CS_BASE = 0xf0000;
 	CPU_CS = 0xf000;
 	CPU_IP = 0xfff0;

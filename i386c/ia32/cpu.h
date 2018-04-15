@@ -333,7 +333,17 @@ typedef struct {
 	I386EXT		e;
 } I386CORE;
 
+typedef struct {
+	char cpu_vendor[16]; // ベンダー（12byte）
+	UINT32 cpu_family; // ファミリ
+	UINT32 cpu_model; // モデル
+	UINT32 cpu_stepping; // ステッピング
+	UINT32 cpu_feature; // 機能フラグ
+	char cpu_brandstring[64]; // ブランド名（48byte）
+} I386CPUID;
+
 extern I386CORE		i386core;
+extern I386CPUID	i386cpuid;
 
 #define	CPU_STATSAVE	i386core.s
 
@@ -359,36 +369,74 @@ extern I386CORE		i386core;
 
 extern sigjmp_buf	exec_1step_jmpbuf;
 
-
 /*
  * CPUID
  */
 /* vendor */
-#define	CPU_VENDOR_1	0x756e6547	/* "Genu" */
-#define	CPU_VENDOR_2	0x49656e69	/* "ineI" */
-#define	CPU_VENDOR_3	0x6c65746e	/* "ntel" */
+#define	CPU_VENDOR_INTEL		"GenuineIntel"
+#define	CPU_VENDOR_AMD			"AuthenticAMD"
+#define	CPU_VENDOR_AMD2			"AMDisbetter!"
+#define	CPU_VENDOR_CYRIX		"CyrixInstead"
+#define	CPU_VENDOR_NEXGEN		"NexGenDriven"
+#define	CPU_VENDOR_CENTAUR		"CentaurHauls"
+#define	CPU_VENDOR_TRANSMETA	"GenuineTMx86"
+#define	CPU_VENDOR_TRANSMETA2	"TransmetaCPU"
+#define	CPU_VENDOR_NSC			"Geode by NSC"
+#define	CPU_VENDOR_RISE			"RiseRiseRise"
+#define	CPU_VENDOR_UMC			"UMC UMC UMC "
+#define	CPU_VENDOR_SIS			"SiS SiS SiS "
+#define	CPU_VENDOR_VIA			"VIA VIA VIA "
+#define	CPU_VENDOR_NEKOPRO		"Neko Project"
+
+#define	CPU_VENDOR		CPU_VENDOR_INTEL
+
+//#define	CPU_VENDOR_1	0x756e6547	/* "Genu" */
+//#define	CPU_VENDOR_2	0x49656e69	/* "ineI" */
+//#define	CPU_VENDOR_3	0x6c65746e	/* "ntel" */
 
 /* version */
+#define	CPU_PENTIUM_II_FAMILY		6
+#define	CPU_PENTIUM_II_MODEL		3	/* Pentium II */
+#define	CPU_PENTIUM_II_STEPPING		3
+
+#define	CPU_PENTIUM_PRO_FAMILY		6
+#define	CPU_PENTIUM_PRO_MODEL		1	/* Pentium Pro */
+#define	CPU_PENTIUM_PRO_STEPPING	1
+
+#define	CPU_MMX_PENTIUM_FAMILY		5
+#define	CPU_MMX_PENTIUM_MODEL		4	/* MMX Pentium */
+#define	CPU_MMX_PENTIUM_STEPPING	4
+
+#define	CPU_PENTIUM_FAMILY			5
+#define	CPU_PENTIUM_MODEL			2	/* Pentium */
+#define	CPU_PENTIUM_STEPPING		5
+
+#define	CPU_I486DX_FAMILY			4
+#define	CPU_I486DX_MODEL			1	/* 486DX */
+#define	CPU_I486DX_STEPPING			3
+
+#define	CPU_I486SX_FAMILY			4
+#define	CPU_I486SX_MODEL			2	/* 486SX */
+#define	CPU_I486SX_STEPPING			3
+
+#define	CPU_80286_FAMILY			2
+#define	CPU_80286_MODEL				1	/* 80286 */
+#define	CPU_80286_STEPPING			1
+
 #if defined(USE_FPU)
 #if defined(USE_MMX)
-#define	CPU_FAMILY	6
-#define	CPU_MODEL	3	/* Pentium II */
-#define	CPU_STEPPING	3
-//#define	CPU_FAMILY	6
-//#define	CPU_MODEL	1	/* Pentium Pro */
-//#define	CPU_STEPPING	1
+#define	CPU_FAMILY		CPU_PENTIUM_II_FAMILY
+#define	CPU_MODEL		CPU_PENTIUM_II_MODEL	/* Pentium II */
+#define	CPU_STEPPING	CPU_PENTIUM_II_STEPPING
 #else
-#define	CPU_FAMILY	5
-#define	CPU_MODEL	2	/* Pentium */
-#define	CPU_STEPPING	5
-//#define	CPU_FAMILY	4
-//#define	CPU_MODEL	1	/* 486DX */
-//#define	CPU_STEPPING	3
+#define	CPU_FAMILY		CPU_PENTIUM_FAMILY
+#define	CPU_MODEL		CPU_PENTIUM_MODEL	/* Pentium */
+#define	CPU_STEPPING	CPU_PENTIUM_STEPPING
 #endif
 #else
-#define	CPU_FAMILY	4
-#define	CPU_MODEL	2	/* 486SX */
-#define	CPU_STEPPING	3
+#define	CPU_FAMILY		CPU_I486SX_FAMILY
+#define	CPU_MODEL		CPU_I486SX_MODEL	/* 486SX */
+#define	CPU_STEPPING	CPU_I486SX_STEPPING
 #endif
 
 /* feature */
@@ -437,13 +485,78 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_FEATURE_TSC_FLAG	0
 #endif
 
-#if defined(USE_MMX)
+#if defined(USE_MMX)&&defined(USE_FPU)
 #define	CPU_FEATURE_MMX_FLAG	CPU_FEATURE_MMX|CPU_FEATURE_FXSR
 #else
 #define	CPU_FEATURE_MMX_FLAG	0
 #endif
 
-#define	CPU_FEATURES		(CPU_FEATURE_CMOV|CPU_FEATURE_FPU_FLAG|CPU_FEATURE_TSC_FLAG|CPU_FEATURE_MMX_FLAG)
+// 使用できる機能全部
+#define	CPU_FEATURES		(CPU_FEATURE_FPU_FLAG|CPU_FEATURE_TSC_FLAG|CPU_FEATURE_CMOV|CPU_FEATURE_MMX_FLAG)
+
+#define	CPU_FEATURES_PENTIUM_II		(CPU_FEATURE_FPU|CPU_FEATURE_TSC|CPU_FEATURE_CMOV|CPU_FEATURE_FXSR|CPU_FEATURE_MMX)
+#define	CPU_FEATURES_PENTIUM_PRO	(CPU_FEATURE_FPU|CPU_FEATURE_TSC|CPU_FEATURE_CMOV|CPU_FEATURE_FXSR)
+#define	CPU_FEATURES_MMX_PENTIUM	(CPU_FEATURE_FPU|CPU_FEATURE_TSC|CPU_FEATURE_MMX)
+#define	CPU_FEATURES_PENTIUM		(CPU_FEATURE_FPU|CPU_FEATURE_TSC)
+#define	CPU_FEATURES_I486DX			(CPU_FEATURE_FPU)
+#define	CPU_FEATURES_I486SX			(0)
+#define	CPU_FEATURES_80286			(0)
+
+
+// brand string
+#define	CPU_BRAND_STRING_PENTIUM_II		"Intel(R) Pentium(R) II CPU "
+#define	CPU_BRAND_STRING_PENTIUM_PRO	"Intel(R) Pentium(R) Pro CPU "
+#define	CPU_BRAND_STRING_MMX_PENTIUM	"Intel(R) Pentium(R) with MMX "
+#define	CPU_BRAND_STRING_PENTIUM		"Intel(R) Pentium(R) Processor "
+#define	CPU_BRAND_STRING_I486DX			"Intel(R) i486DX Processor "
+#define	CPU_BRAND_STRING_I486SX			"Intel(R) i486SX Processor "
+#define	CPU_BRAND_STRING_80286			"Intel(R) 80286 Processor "
+#define	CPU_BRAND_STRING_NEKOPRO		"Neko Processor "
+
+#if defined(USE_MMX)
+#define	CPU_BRAND_STRING	CPU_BRAND_STRING_PENTIUM_II
+#elif defined(USE_FPU)
+#define	CPU_BRAND_STRING	CPU_BRAND_STRING_PENTIUM
+#else
+#define	CPU_BRAND_STRING	CPU_BRAND_STRING_I486SX
+#endif
+
+//#if defined(USE_MMX)
+//#define	CPU_BRAND_STRING_1	"Inte"
+//#define	CPU_BRAND_STRING_2	"l(R)"
+//#define	CPU_BRAND_STRING_3	" Pen"
+//#define	CPU_BRAND_STRING_4	"tium"
+//#define	CPU_BRAND_STRING_5	"(R) "
+//#define	CPU_BRAND_STRING_6	"II C"
+//#define	CPU_BRAND_STRING_7	"PU  "
+//#define	CPU_BRAND_STRING_8	"    "
+//#define	CPU_BRAND_STRING_SPC	"    "
+//
+////#define	CPU_BRAND_STRING_1	"Inte"
+////#define	CPU_BRAND_STRING_2	"l(R)"
+////#define	CPU_BRAND_STRING_3	" Pen"
+////#define	CPU_BRAND_STRING_4	"tium"
+////#define	CPU_BRAND_STRING_5	"(R) "
+////#define	CPU_BRAND_STRING_6	"Pro "
+////#define	CPU_BRAND_STRING_7	"CPU "
+////#define	CPU_BRAND_STRING_8	"    "
+////#define	CPU_BRAND_STRING_SPC	"    "
+//
+//#else
+//#define	CPU_BRAND_STRING_1	"Inte"
+//#define	CPU_BRAND_STRING_2	"l(R)"
+//#define	CPU_BRAND_STRING_3	" Pen"
+//#define	CPU_BRAND_STRING_4	"tium"
+//#define	CPU_BRAND_STRING_5	"(R) "
+//#define	CPU_BRAND_STRING_6	"Proc"
+//#define	CPU_BRAND_STRING_7	"esso"
+//#define	CPU_BRAND_STRING_8	"r   "
+//#define	CPU_BRAND_STRING_SPC	"    "
+//
+//#endif
+
+
+
 
 #define	CPU_REGS_BYTEL(n)	CPU_STATSAVE.cpu_regs.reg[(n)].b.l
 #define	CPU_REGS_BYTEH(n)	CPU_STATSAVE.cpu_regs.reg[(n)].b.h

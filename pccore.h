@@ -216,6 +216,15 @@ struct tagNP2Config
 	UINT8	memchkmx;
 	UINT8	sbeeplen;
 	UINT8	sbeepadj;
+
+	char	cpu_vendor[16]; // ベンダー（12byte）
+	UINT32	cpu_family; // ファミリ
+	UINT32	cpu_model; // モデル
+	UINT32	cpu_stepping; // ステッピング
+	UINT32	cpu_feature; // 機能フラグ
+	char	cpu_brandstring[64]; // ブランド名（48byte）
+	//OEMCHAR	cpu_vendor_o[16]; // ベンダー（12byte）OEMCHAR
+	//OEMCHAR	cpu_brandstring_o[64]; // ブランド名（48byte）OEMCHAR
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

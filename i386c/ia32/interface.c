@@ -27,6 +27,7 @@
 #include "cpu.h"
 #include "ia32.mcr"
 #if defined(USE_FPU)
+#include "inst_table.h"
 #include "instructions/fpu/fp.h"
 #endif
 
@@ -47,8 +48,13 @@ ia32_initreg(void)
 	CPU_EFLAG = 2;
 	CPU_CR0 = CPU_CR0_CD | CPU_CR0_NW;
 #if defined(USE_FPU)
-	CPU_CR0 &= ~CPU_CR0_EM;
-	CPU_CR0 |= CPU_CR0_ET;
+	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
+		CPU_CR0 |= CPU_CR0_ET;	/* FPU present */
+		//CPU_CR0 &= ~CPU_CR0_EM;
+	}else{
+		CPU_CR0 |= CPU_CR0_EM | CPU_CR0_NE;
+		CPU_CR0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
+	}
 #else
 	CPU_CR0 |= CPU_CR0_EM | CPU_CR0_NE;
 	CPU_CR0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
@@ -76,6 +82,27 @@ ia32_initreg(void)
 
 	tlb_init();
 #if defined(USE_FPU)
+	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
+		insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = FPU_FXSAVERSTOR;
+		insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = ESC0;
+		insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = ESC1;
+		insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = ESC2;
+		insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = ESC3;
+		insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = ESC4;
+		insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = ESC5;
+		insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = ESC6;
+		insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = ESC7;
+	}else{
+		insttable_2byte[0][0xae] = insttable_2byte[1][0xae] = NOFPU_FPU_FXSAVERSTOR;
+		insttable_1byte[0][0xd8] = insttable_1byte[1][0xd8] = NOFPU_ESC0;
+		insttable_1byte[0][0xd9] = insttable_1byte[1][0xd9] = NOFPU_ESC1;
+		insttable_1byte[0][0xda] = insttable_1byte[1][0xda] = NOFPU_ESC2;
+		insttable_1byte[0][0xdb] = insttable_1byte[1][0xdb] = NOFPU_ESC3;
+		insttable_1byte[0][0xdc] = insttable_1byte[1][0xdc] = NOFPU_ESC4;
+		insttable_1byte[0][0xdd] = insttable_1byte[1][0xdd] = NOFPU_ESC5;
+		insttable_1byte[0][0xde] = insttable_1byte[1][0xde] = NOFPU_ESC6;
+		insttable_1byte[0][0xdf] = insttable_1byte[1][0xdf] = NOFPU_ESC7;
+	}
 	fpu_init();
 #endif
 }

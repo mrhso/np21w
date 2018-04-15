@@ -2513,6 +2513,15 @@ void loadNP2INI(const OEMCHAR *fname){
 	Np2Arg::GetInstance()->setiniFilename(lpFilenameBuf);
 
 	initload();
+#if defined(CPUCORE_IA32)
+//#ifdef UNICODE
+//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_vendor_o, -1, np2cfg.cpu_vendor, 12+1, NULL, NULL);
+//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_brandstring_o, -1, np2cfg.cpu_brandstring, 48+1, NULL, NULL);
+//#else
+//	strcpy(np2cfg.cpu_vendor, np2cfg.cpu_vendor_o);
+//	strcpy(np2cfg.cpu_brandstring, np2cfg.cpu_brandstring_o);
+//#endif
+#endif
 	toolwin_readini();
 	kdispwin_readini();
 	skbdwin_readini();
@@ -2773,6 +2782,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	file_setcd(modulefile);
 	Np2Arg::GetInstance()->Parse();
 	initload();
+#if defined(CPUCORE_IA32)
+//#ifdef UNICODE
+//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_vendor_o, -1, np2cfg.cpu_vendor, 12+1, NULL, NULL);
+//	WideCharToMultiByte(CP_ACP, 0, np2cfg.cpu_brandstring_o, -1, np2cfg.cpu_brandstring, 48+1, NULL, NULL);
+//#else
+//	strcpy(np2cfg.cpu_vendor, np2cfg.cpu_vendor_o);
+//	strcpy(np2cfg.cpu_brandstring, np2cfg.cpu_brandstring_o);
+//#endif
+#endif
 	toolwin_readini();
 	kdispwin_readini();
 	skbdwin_readini();

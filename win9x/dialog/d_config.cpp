@@ -20,6 +20,9 @@
 #endif	// defined(SUPPORT_WASAPI)
 #include "pccore.h"
 #include "common/strres.h"
+#if defined(CPUCORE_IA32)
+#include "i386c/ia32/cpu.h"
+#endif
 
 /**
  * @brief 設定ダイアログ
@@ -38,6 +41,7 @@ protected:
 private:
 	CComboData m_baseClock;			//!< ベース クロック
 	CComboData m_multiple;			//!< 倍率
+	CComboData m_cputype;			//!< CPU種類
 	CComboData m_type;				//!< タイプ
 	CComboData m_name;				//!< デバイス名
 	CComboData m_rate;				//!< レート
@@ -48,6 +52,8 @@ private:
 	UINT16 m_21port;	//!< PC-9821 port
 	void SetClock(UINT nMultiple = 0);
 	void UpdateDeviceList();
+	int GetCpuTypeIndex();
+	int SetCpuTypeIndex(UINT index);
 };
 
 //! コンボ ボックス アイテム
@@ -55,6 +61,22 @@ static const CComboData::Entry s_baseclock[] =
 {
 	{MAKEINTRESOURCE(IDS_2_0MHZ),	PCBASECLOCK20},
 	{MAKEINTRESOURCE(IDS_2_5MHZ),	PCBASECLOCK25},
+};
+
+//! CPU種類 コンボ ボックス アイテム
+static const CComboData::Entry s_cputype[] =
+{
+	{MAKEINTRESOURCE(IDS_CPU_CUSTOM),	0},
+	{MAKEINTRESOURCE(IDS_CPU_I486SX),	1},
+	{MAKEINTRESOURCE(IDS_CPU_I486DX),	2},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUM),	3},
+	{MAKEINTRESOURCE(IDS_CPU_MMXPENTIUM),	4},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMPRO),	5},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMII),	6},
+};
+static const CComboData::Entry s_cputype_286[] =
+{
+	{MAKEINTRESOURCE(IDS_CPU_80286),	0},
 };
 
 //! 倍率リスト
@@ -82,6 +104,8 @@ CConfigureDlg::CConfigureDlg(HWND hwndParent)
  */
 BOOL CConfigureDlg::OnInitDialog()
 {
+	int i;
+
 	m_baseClock.SubclassDlgItem(IDC_BASECLOCK, this);
 	m_baseClock.Add(s_baseclock, _countof(s_baseclock));
 	const UINT32 nBaseClock = (np2cfg.baseclock == PCBASECLOCK20) ? PCBASECLOCK20 : PCBASECLOCK25;
@@ -90,6 +114,20 @@ BOOL CConfigureDlg::OnInitDialog()
 	m_multiple.SubclassDlgItem(IDC_MULTIPLE, this);
 	m_multiple.Add(s_mulval, _countof(s_mulval));
 	SetDlgItemInt(IDC_MULTIPLE, np2cfg.multiple, FALSE);
+	
+	m_cputype.SubclassDlgItem(IDC_CPU_TYPE, this);
+#if defined(CPUCORE_IA32)
+	const UINT32 cpufeaturelist[] = {0, CPU_FEATURES_I486SX, CPU_FEATURES_I486DX, CPU_FEATURES_PENTIUM, CPU_FEATURES_MMX_PENTIUM, CPU_FEATURES_PENTIUM_PRO, CPU_FEATURES_PENTIUM_II};
+	i = 0;
+	for(i=0;i<_countof(cpufeaturelist);i++){
+		if((CPU_FEATURES & cpufeaturelist[i]) != cpufeaturelist[i]) break;
+	}
+	m_cputype.Add(s_cputype, i);
+	m_cputype.SetCurItemData(GetCpuTypeIndex());
+#else
+	m_cputype.Add(s_cputype_286, _countof(s_cputype_286));
+	m_cputype.SetCurItemData(0);
+#endif
 
 	UINT nModel;
 	if (!milstr_cmp(np2cfg.model, str_VM))
@@ -260,6 +298,120 @@ void CConfigureDlg::UpdateDeviceList()
 }
 
 /**
+ * np2cfg CPUID -> CPU type index 相互変換
+ */
+int CConfigureDlg::GetCpuTypeIndex(){
+#if defined(CPUCORE_IA32)
+	if(np2cfg.cpu_family == CPU_I486SX_FAMILY && 
+	   np2cfg.cpu_model == CPU_I486SX_MODEL &&
+	   np2cfg.cpu_stepping == CPU_I486SX_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_I486SX){
+		return 1;
+	}
+	if((CPU_FEATURES & CPU_FEATURES_I486DX) != CPU_FEATURES_I486DX) return 0;
+	if(np2cfg.cpu_family == CPU_I486DX_FAMILY && 
+	   np2cfg.cpu_model == CPU_I486DX_MODEL &&
+	   np2cfg.cpu_stepping == CPU_I486DX_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_I486DX){
+		return 2;
+	}
+	if((CPU_FEATURES & CPU_FEATURES_PENTIUM) != CPU_FEATURES_PENTIUM) return 0;
+	if(np2cfg.cpu_family == CPU_PENTIUM_FAMILY && 
+	   np2cfg.cpu_model == CPU_PENTIUM_MODEL &&
+	   np2cfg.cpu_stepping == CPU_PENTIUM_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_PENTIUM){
+		return 3;
+	}
+	if((CPU_FEATURES & CPU_FEATURES_MMX_PENTIUM) != CPU_FEATURES_MMX_PENTIUM) return 0;
+	if(np2cfg.cpu_family == CPU_MMX_PENTIUM_FAMILY && 
+	   np2cfg.cpu_model == CPU_MMX_PENTIUM_MODEL &&
+	   np2cfg.cpu_stepping == CPU_MMX_PENTIUM_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_MMX_PENTIUM){
+		return 4;
+	}
+	if((CPU_FEATURES & CPU_FEATURES_PENTIUM_PRO) != CPU_FEATURES_PENTIUM_PRO) return 0;
+	if(np2cfg.cpu_family == CPU_PENTIUM_PRO_FAMILY && 
+	   np2cfg.cpu_model == CPU_PENTIUM_PRO_MODEL &&
+	   np2cfg.cpu_stepping == CPU_PENTIUM_PRO_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_PENTIUM_PRO){
+		return 5;
+	}
+	if((CPU_FEATURES & CPU_FEATURES_PENTIUM_II) != CPU_FEATURES_PENTIUM_II) return 0;
+	if(np2cfg.cpu_family == CPU_PENTIUM_II_FAMILY && 
+	   np2cfg.cpu_model == CPU_PENTIUM_II_MODEL &&
+	   np2cfg.cpu_stepping == CPU_PENTIUM_II_STEPPING &&
+	   np2cfg.cpu_feature == CPU_FEATURES_PENTIUM_II){
+		return 6;
+	}
+#endif
+	return 0;
+}
+int CConfigureDlg::SetCpuTypeIndex(UINT index){
+	switch(index){
+#if defined(CPUCORE_IA32)
+	case 1:
+		np2cfg.cpu_family = CPU_I486SX_FAMILY;
+		np2cfg.cpu_model = CPU_I486SX_MODEL;
+		np2cfg.cpu_stepping = CPU_I486SX_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_I486SX;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486SX);
+		break;
+	case 2:
+		np2cfg.cpu_family = CPU_I486DX_FAMILY;
+		np2cfg.cpu_model = CPU_I486DX_MODEL;
+		np2cfg.cpu_stepping = CPU_I486DX_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_I486DX;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486DX);
+		break;
+	case 3:
+		np2cfg.cpu_family = CPU_PENTIUM_FAMILY;
+		np2cfg.cpu_model = CPU_PENTIUM_MODEL;
+		np2cfg.cpu_stepping = CPU_PENTIUM_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_PENTIUM;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM);
+		break;
+	case 4:
+		np2cfg.cpu_family = CPU_MMX_PENTIUM_FAMILY;
+		np2cfg.cpu_model = CPU_MMX_PENTIUM_MODEL;
+		np2cfg.cpu_stepping = CPU_MMX_PENTIUM_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_MMX_PENTIUM;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_MMX_PENTIUM);
+		break;
+	case 5:
+		np2cfg.cpu_family = CPU_PENTIUM_PRO_FAMILY;
+		np2cfg.cpu_model = CPU_PENTIUM_PRO_MODEL;
+		np2cfg.cpu_stepping = CPU_PENTIUM_PRO_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_PENTIUM_PRO;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_PRO);
+		break;
+	case 6:
+		np2cfg.cpu_family = CPU_PENTIUM_II_FAMILY;
+		np2cfg.cpu_model = CPU_PENTIUM_II_MODEL;
+		np2cfg.cpu_stepping = CPU_PENTIUM_II_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_PENTIUM_II;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_II);
+		break;
+#endif
+	default:
+		return 0;
+	}
+//#ifdef UNICODE
+//	MultiByteToWideChar(CP_ACP, 0, np2cfg.cpu_vendor, -1, np2cfg.cpu_vendor_o, sizeof(np2cfg.cpu_vendor_o));
+//	MultiByteToWideChar(CP_ACP, 0, np2cfg.cpu_brandstring, -1, np2cfg.cpu_brandstring_o, sizeof(np2cfg.cpu_brandstring_o));
+//#else
+//	strcpy(np2cfg.cpu_vendor_o, np2cfg.cpu_vendor);
+//	strcpy(np2cfg.cpu_brandstring_o, np2cfg.cpu_brandstring);
+//#endif
+	return SYS_UPDATECFG;
+}
+
+/**
  * ユーザーが OK のボタン (IDOK ID がのボタン) をクリックすると呼び出されます
  */
 void CConfigureDlg::OnOK()
@@ -304,6 +456,12 @@ void CConfigureDlg::OnOK()
 	if(np2cfg.sysiomsk != m_21port){
 		np2cfg.sysiomsk = m_21port;
 		nUpdated |= SYS_UPDATECFG;
+	}
+#endif
+#if defined(CPUCORE_IA32)
+	UINT nCpuTypeIndex = m_cputype.GetCurItemData(GetCpuTypeIndex());
+	if(GetCpuTypeIndex() != nCpuTypeIndex){
+		nUpdated |= SetCpuTypeIndex(nCpuTypeIndex);
 	}
 #endif
 

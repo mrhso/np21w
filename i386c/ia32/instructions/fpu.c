@@ -34,11 +34,14 @@ void
 FWAIT(void)
 {
 #if defined(USE_FPU)
-#if 1
+	// FPUなしなら何もしない
+	if(!(i386cpuid.cpu_feature & CPU_FEATURE_FPU)){
+		return;
+	}
+	// タスクスイッチまたはMPでNM(デバイス使用不可例外)を発生させる
 	if ((CPU_CR0 & (CPU_CR0_MP|CPU_CR0_TS))==(CPU_CR0_MP|CPU_CR0_TS)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
-#endif
 
 	fpu_fwait();
 #endif

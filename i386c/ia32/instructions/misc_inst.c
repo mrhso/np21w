@@ -93,59 +93,22 @@ XLAT(void)
 	}
 }
 
-#if defined(USE_MMX)
-#define	CPU_BRAND_STRING_1	"Inte"
-#define	CPU_BRAND_STRING_2	"l(R)"
-#define	CPU_BRAND_STRING_3	" Pen"
-#define	CPU_BRAND_STRING_4	"tium"
-#define	CPU_BRAND_STRING_5	"(R) "
-#define	CPU_BRAND_STRING_6	"II C"
-#define	CPU_BRAND_STRING_7	"PU  "
-#define	CPU_BRAND_STRING_8	"    "
-#define	CPU_BRAND_STRING_SPC	"    "
-
-//#define	CPU_BRAND_STRING_1	"Inte"
-//#define	CPU_BRAND_STRING_2	"l(R)"
-//#define	CPU_BRAND_STRING_3	" Pen"
-//#define	CPU_BRAND_STRING_4	"tium"
-//#define	CPU_BRAND_STRING_5	"(R) "
-//#define	CPU_BRAND_STRING_6	"Pro "
-//#define	CPU_BRAND_STRING_7	"CPU "
-//#define	CPU_BRAND_STRING_8	"    "
-//#define	CPU_BRAND_STRING_SPC	"    "
-
-#else
-#define	CPU_BRAND_STRING_1	"Inte"
-#define	CPU_BRAND_STRING_2	"l(R)"
-#define	CPU_BRAND_STRING_3	" Pen"
-#define	CPU_BRAND_STRING_4	"tium"
-#define	CPU_BRAND_STRING_5	"(R) "
-#define	CPU_BRAND_STRING_6	"Proc"
-#define	CPU_BRAND_STRING_7	"esso"
-#define	CPU_BRAND_STRING_8	"r   "
-#define	CPU_BRAND_STRING_SPC	"    "
-
-#endif
-
 void
 _CPUID(void)
 {
-	char clkbuf[30]; // ˆÀ‘S‚Ì‚½‚ß‘½‚ß‚É¥¥¥
-	UINT32 clkMHz;
-
 	switch (CPU_EAX) {
 	case 0:
 		CPU_EAX = 1;
-		CPU_EBX = CPU_VENDOR_1;
-		CPU_EDX = CPU_VENDOR_2;
-		CPU_ECX = CPU_VENDOR_3;
+		CPU_EBX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+0)));
+		CPU_EDX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+4)));
+		CPU_ECX = LOADINTELDWORD(((UINT8*)(i386cpuid.cpu_vendor+8)));
 		break;
 
 	case 1:
-		CPU_EAX = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
+		CPU_EAX = (i386cpuid.cpu_family << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping;
 		CPU_EBX = 0;
 		CPU_ECX = 0;
-		CPU_EDX = CPU_FEATURES;
+		CPU_EDX = i386cpuid.cpu_feature & CPU_FEATURES;
 		break;
 
 	case 2:
@@ -155,7 +118,6 @@ _CPUID(void)
 		CPU_EDX = 0;
 		break;
 		
-#if defined(USE_FPU)
 	case 0x80000000:
 		CPU_EAX = 0x80000004;
 		CPU_EBX = 0;
@@ -171,51 +133,21 @@ _CPUID(void)
 		break;
 		
 	case 0x80000002:
-		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_1));
-		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_2));
-		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_3));
-		CPU_EDX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_4));
-		break;
-		
-#if defined(USE_MMX)
 	case 0x80000003:
-		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_5));
-		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_6));
-		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_7));
-		clkbuf[0] = '\0';
-		clkMHz = pccore.realclock/1000/1000;
-		sprintf(clkbuf, "%d MHz", clkMHz);
-		CPU_EDX = LOADINTELDWORD(((UINT8*)clkbuf));
-		break;
-		
 	case 0x80000004:
-		clkbuf[0] = '\0';
-		clkMHz = pccore.realclock/1000/1000;
-		sprintf(clkbuf, "%d MHz", clkMHz);
-		CPU_EAX = LOADINTELDWORD(((UINT8*)(clkbuf+4)));
-		CPU_EBX = LOADINTELDWORD(((UINT8*)(clkbuf+8)));
-		CPU_ECX = LOADINTELDWORD(((UINT8*)(clkbuf+12)));
-		CPU_EDX = 0;
+		{
+			UINT32 clkMHz;
+			char cpu_brandstringbuf[64] = {0};
+			int stroffset = (CPU_EAX - 0x80000002) * 16;
+			clkMHz = pccore.realclock/1000/1000;
+			sprintf(cpu_brandstringbuf, "%s%d MHz", i386cpuid.cpu_brandstring, clkMHz);
+			CPU_EAX = LOADINTELDWORD(((UINT8*)(cpu_brandstringbuf + stroffset + 0)));
+			CPU_EBX = LOADINTELDWORD(((UINT8*)(cpu_brandstringbuf + stroffset + 4)));
+			CPU_ECX = LOADINTELDWORD(((UINT8*)(cpu_brandstringbuf + stroffset + 8)));
+			CPU_EDX = LOADINTELDWORD(((UINT8*)(cpu_brandstringbuf + stroffset + 12)));
+		}
+
 		break;
-#else
-	case 0x80000003:
-		CPU_EAX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_5));
-		CPU_EBX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_6));
-		CPU_ECX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_7));
-		CPU_EDX = LOADINTELDWORD(((UINT8*)CPU_BRAND_STRING_8));
-		break;
-		
-	case 0x80000004:
-		clkbuf[0] = '\0';
-		clkMHz = pccore.realclock/1000/1000;
-		sprintf(clkbuf, "%d MHz", clkMHz);
-		CPU_EAX = LOADINTELDWORD(((UINT8*)clkbuf));
-		CPU_EBX = LOADINTELDWORD(((UINT8*)(clkbuf+4)));
-		CPU_ECX = LOADINTELDWORD(((UINT8*)(clkbuf+8)));
-		CPU_EDX = LOADINTELDWORD(((UINT8*)(clkbuf+12)));
-		break;
-#endif
-#endif
 	}
 }
 

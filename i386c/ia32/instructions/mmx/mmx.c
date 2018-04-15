@@ -38,8 +38,16 @@ static int mmxenable = 0; // XXX: 本当はFPU_STATあたりに入れるべき
 
 static INLINE void
 MMX_check_NM_EXCEPTION(){
+	// MMXなしならUD(無効オペコード例外)を発生させる
+	if(!(i386cpuid.cpu_feature & CPU_FEATURE_MMX)){
+		EXCEPTION(UD_EXCEPTION, 0);
+	}
+	// エミュレーションならUD(無効オペコード例外)を発生させる
+	if(CPU_CR0 & CPU_CR0_EM){
+		EXCEPTION(UD_EXCEPTION, 0);
+	}
 	// タスクスイッチ時にNM(デバイス使用不可例外)を発生させる
-	if (CPU_CR0 & (CPU_CR0_TS)) {
+	if (CPU_CR0 & CPU_CR0_TS) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 }
@@ -69,8 +77,16 @@ MMX_EMMS(void)
 {
 	int i;
 	
+	// MMXなしならUD(無効オペコード例外)を発生させる
+	if(!(i386cpuid.cpu_feature & CPU_FEATURE_MMX)){
+		EXCEPTION(UD_EXCEPTION, 0);
+	}
+	// エミュレーションならUD(無効オペコード例外)を発生させる
+	if(CPU_CR0 & CPU_CR0_EM){
+		EXCEPTION(UD_EXCEPTION, 0);
+	}
 	// タスクスイッチ時にNM(デバイス使用不可例外)を発生させる
-	if (CPU_CR0 & (CPU_CR0_TS)) {
+	if ((CPU_CR0 & (CPU_CR0_TS)) || (CPU_CR0 & CPU_CR0_EM)) {
 		EXCEPTION(NM_EXCEPTION, 0);
 	}
 

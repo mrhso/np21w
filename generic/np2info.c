@@ -51,12 +51,22 @@ static void info_cpu(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
 	UINT	family;
 
+#if defined(CPUCORE_IA32)
+#ifdef UNICODE
+	MultiByteToWideChar(CP_ACP, 0, np2cfg.cpu_brandstring, -1, str, maxlen);
+#else
+	milstr_ncpy(str, i386cpuid.cpu_brandstring, maxlen);
+#endif
+#else
 #if defined(CPU_FAMILY)
 	family = min(CPU_FAMILY, 6);
 #else
 	family = (CPU_TYPE & CPUTYPE_V30)?1:2;
 #endif
 	milstr_ncpy(str, milstr_list(str_cpu, family), maxlen);
+	
+#endif
+	
 	(void)ex;
 }
 
