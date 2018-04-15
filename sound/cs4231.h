@@ -9,8 +9,9 @@ sudo make - * @file	cs4231.h
 #include "io/dmac.h"
 
 enum {
-	CS4231_BUFFERS	= (1 << 9),
-	CS4231_BUFMASK	= (CS4231_BUFFERS - 1)
+	CS4231_BUFFERS	= (1 << 12),
+	CS4231_BUFMASK	= (CS4231_BUFFERS - 1),
+	CS4231_MAXDMAREADBYTES	= (1 << 9)
 };
 
 typedef struct {

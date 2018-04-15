@@ -68,6 +68,7 @@
 #define IDC_MODELVM                     11104
 #define IDC_MODELVX                     11105
 #define IDC_MODELEPSON                  11106
+#define IDC_MODEL21                     11107
 #define IDC_SOUND_BUFFER                11110
 #define IDC_ALLOWRESIZE                 11111
 #define IDC_DISABLEMMX                  11112

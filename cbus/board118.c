@@ -449,9 +449,9 @@ void board118_reset(const NP2CFG *pConfig)
 	
 	// OPNAリセット
 	opna_reset(&g_opna[opna_idx], OPNA_MODE_2608 | OPNA_HAS_TIMER | OPNA_S98);
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS){
-		// OPNAタイマーをIRQ3でセット
-		opna_timer(&g_opna[opna_idx], 0x10, NEVENT_FMTIMERA, NEVENT_FMTIMERB);
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
+		// OPNAタイマーをセットしない
+		//opna_timer(&g_opna[opna_idx], 0x10, NEVENT_FMTIMERA, NEVENT_FMTIMERB);
 	}else{
 		// OPNAタイマーをIRQ12でセット
 		opna_timer(&g_opna[opna_idx], 0xd0, NEVENT_FMTIMERA, NEVENT_FMTIMERB);

@@ -310,7 +310,9 @@ static const CS4231FN cs4231fn[16] = {
 
 void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 
-	if ((cs->reg.iface & 1) && (count)) {
+	static int bufdelaycounter = 0;
+
+	if (((cs->reg.iface & 1) || bufdelaycounter > 0) && (count)) {
 		// CS4231内蔵ボリューム 
 		if(cs4231_DACvolumereg_L != cs->reg.dac_l){
 			cs4231_DACvolumereg_L = cs->reg.dac_l;
@@ -347,6 +349,15 @@ void SOUNDCALL cs4231_getpcm(CS4231 cs, SINT32 *pcm, UINT count) {
 		//		pic_setirq(cs->dmairq);
 		//	}
 		//}
+
+		// Playback Enableがローになってもバッファのディレイ分は再生する
+		if((cs->reg.iface & 1)){
+			bufdelaycounter = CS4231_BUFFERS;
+		}else if(cs->bufdatas == 0){
+			bufdelaycounter = 0;
+		}else{
+			bufdelaycounter--;
+		}
 	}
 		
 }

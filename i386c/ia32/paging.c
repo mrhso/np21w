@@ -179,7 +179,6 @@ static const UINT8 page_access_bit[32] = {
  * |
  * +- CR3(•¨—ƒAƒhƒŒƒX)
  */
-
 /* TLB */
 struct tlb_entry {
 	UINT32	tag;	/* linear address */
