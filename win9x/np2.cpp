@@ -142,6 +142,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 
 						0, 8, 
 						0, 
+						0, 
 						0
 					};
 
@@ -2662,6 +2663,7 @@ void loadNP2INI(const OEMCHAR *fname){
 	mdbgwin_readini();
 #if defined(SUPPORT_WAB)
 	wabwin_readini();
+	np2wabcfg.readonly = np2oscfg.readonly;
 #endif	// defined(SUPPORT_WAB)
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_readini();
@@ -2938,6 +2940,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	mdbgwin_readini();
 #if defined(SUPPORT_WAB)
 	wabwin_readini();
+	np2wabcfg.readonly = np2oscfg.readonly;
 #endif	// defined(SUPPORT_WAB)
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_readini();

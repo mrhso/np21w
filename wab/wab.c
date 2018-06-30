@@ -91,9 +91,11 @@ void wabwin_readini()
  */
 void wabwin_writeini()
 {
-	TCHAR szPath[MAX_PATH];
-	initgetfile(szPath, _countof(szPath));
-	ini_write(szPath, g_Name, s_wabwndini, _countof(s_wabwndini));
+	if(!np2wabcfg.readonly){
+		TCHAR szPath[MAX_PATH];
+		initgetfile(szPath, _countof(szPath));
+		ini_write(szPath, g_Name, s_wabwndini, _countof(s_wabwndini));
+	}
 }
 
 /**

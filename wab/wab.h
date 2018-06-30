@@ -18,6 +18,7 @@ typedef struct {
 	int		multithread;
 	int		halftone;
 	int		forcevga;
+	int		readonly; // from np2oscfg
 } NP2WABCFG;
 
 typedef void NP2WAB_DrawFrame();

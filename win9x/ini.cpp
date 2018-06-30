@@ -725,6 +725,8 @@ static const PFTBL s_IniItems[] =
 	
 	PFVAL("CPUSTABF", PFTYPE_UINT16,	&np2oscfg.cpustabf), // クロック安定器適用限界時間（フレーム）
 	
+	PFVAL("READONLY", PFRO_BOOL,		&np2oscfg.readonly), // 変更を設定ファイルに書き込まない
+
 	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
 };
 
@@ -772,8 +774,10 @@ void initload(void)
  */
 void initsave(void)
 {
-	TCHAR szPath[MAX_PATH];
+	if(!np2oscfg.readonly){
+		TCHAR szPath[MAX_PATH];
 	
-	initgetfile(szPath, _countof(szPath));
-	ini_write(szPath, s_szIniTitle, s_IniItems, _countof(s_IniItems));
+		initgetfile(szPath, _countof(szPath));
+		ini_write(szPath, s_szIniTitle, s_IniItems, _countof(s_IniItems));
+	}
 }
