@@ -204,9 +204,11 @@ void ideioint(NEVENTITEM item) {
 
 	//BUSY解除
 	if(dev->drv[0].status != 0xFF){
+		dev->drv[0].status |= IDESTAT_DRQ;
 		dev->drv[0].status &= ~IDESTAT_BSY;
 	}
 	if(dev->drv[1].status != 0xFF){
+		dev->drv[1].status |= IDESTAT_DRQ;
 		dev->drv[1].status &= ~IDESTAT_BSY;
 	}
 
@@ -333,6 +335,7 @@ static void readsec(IDEDRV drv) {
 		drv->error = 0;
 		if(ideio.rwait > 0){
 			drv->status |= IDESTAT_BSY;
+			drv->status &= ~IDESTAT_DRQ;
 			setdintr(drv, 0, 0, ideio.rwait);
 			//mem[MEMB_DISK_INTH] &= ~0x01; 
 		}else{
@@ -383,6 +386,7 @@ static void writesec(IDEDRV drv) {
 		setintr(drv);
 		if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
 			drv->status |= IDESTAT_BSY;
+			drv->status &= ~IDESTAT_DRQ;
 			setdintr(drv, 0, 0, ideio.wwait);
 			//mem[MEMB_DISK_INTH] &= ~0x01; 
 		}else{
@@ -1094,11 +1098,11 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 		drv->bufpos += 2;
 		if (drv->bufpos >= drv->bufsize) {
 			drv->status &= ~IDESTAT_DRQ;
-			if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
-				//割り込み前にポーリングされる問題の対策
-				dev->drv[0].status |= IDESTAT_BSY;
-				dev->drv[1].status |= IDESTAT_BSY;
-			}
+			//if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
+			//	//割り込み前にポーリングされる問題の対策
+			//	dev->drv[0].status |= IDESTAT_BSY;
+			//	dev->drv[1].status |= IDESTAT_BSY;
+			//}
 			switch(drv->cmd) {
 				case 0x30:
 				case 0x31:
@@ -1118,12 +1122,12 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						writesec(drv);
 					}else{
 						// 1セクタ書き込み完了
-						if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
-							drv->status |= IDESTAT_BSY;
-							setdintr(drv, 0, 0, ideio.rwait);
-						}else{
+						//if((ideio.bios == IDETC_BIOS && ideio.mwait > 0) || ideio.wwait > 0){
+						//	drv->status |= IDESTAT_BSY;
+						//	setdintr(drv, 0, 0, ideio.rwait);
+						//}else{
 							setintr(drv);
-						}
+						//}
 					}
 					//drv->mulcnt++;
 					//drv->sc--;
