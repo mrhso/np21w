@@ -190,6 +190,7 @@ struct tagNP2Config
 	UINT8	savecdfile;	
 	UINT8	useasynccd;
 	UINT8	allowcdtraycmd;	
+	UINT8	useasynchd;
 #else
 	OEMCHAR	sasihdd[2][MAX_PATH];									// ver0.74
 #endif

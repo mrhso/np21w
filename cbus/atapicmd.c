@@ -27,6 +27,14 @@
 #define HEX2BCD(hex)	( (((hex/10)%10)<<4)|((hex)%10) )
 #define BCD2HEX(bcd)	( (((bcd>>4)&0xf)*10)+((bcd)&0xf) )
 
+#if defined(_WINDOWS)
+static int atapi_thread_initialized = 0;
+static HANDLE atapi_thread = NULL;
+static IDEDRV atapi_thread_drv = NULL;
+#else
+	// TODO: 非Windows用コードを書く
+#endif
+
 // INQUIRY
 static const UINT8 cdrom_inquiry[] = {
 #ifdef YUIDEBUG
@@ -445,9 +453,7 @@ static void atapi_cmd_read_capacity(IDEDRV drv) {
 
 // 0x28: READ(10)
 #if defined(_WINDOWS)
-void atapi_dataread_threadfunc(void* vdParam) {
-	IDEDRV drv = (IDEDRV)vdParam;
-
+void atapi_dataread_threadfunc_part(IDEDRV drv) {
 	if (sxsi_read(drv->sxsidrv, drv->sector, drv->buf, 2048) != 0) {
 		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
 		drv->asc = 0x21;
@@ -475,6 +481,19 @@ void atapi_dataread_threadfunc(void* vdParam) {
 		ideio.bank[0] = ideio.bank[1] | 0x80;			// ????
 		pic_setirq(IDE_IRQ);
 	}
+}
+unsigned int __stdcall atapi_dataread_threadfunc(void* vdParam) {
+	IDEDRV drv = NULL;
+
+	while(atapi_thread_initialized){
+		drv = atapi_thread_drv;
+		atapi_dataread_threadfunc_part(drv);
+
+		SuspendThread(atapi_thread);
+	}
+	
+    _endthreadex(0);
+	return 0;
 
 }
 void atapi_dataread(IDEDRV drv) {
@@ -493,11 +512,17 @@ void atapi_dataread(IDEDRV drv) {
 	drv->status &= ~(IDESTAT_DRQ);
 	
 	if(np2cfg.useasynccd){
-		if(_beginthread(atapi_dataread_threadfunc, 0, (void*)drv)==-1){
-			atapi_dataread_threadfunc((void*)drv);
+		if(atapi_thread){
+			atapi_thread_drv = drv;
+			ResumeThread(atapi_thread);
+		}else{
+			atapi_dataread_threadfunc_part(drv);
 		}
+		//if(_beginthread(atapi_dataread_threadfunc, 0, (void*)drv)==-1){
+			//atapi_dataread_threadfunc((void*)drv);
+		//}
 	}else{
-		atapi_dataread_threadfunc((void*)drv);
+		atapi_dataread_threadfunc_part(drv);
 	}
 }
 #else
@@ -1150,5 +1175,35 @@ static void atapi_cmd_mechanismstatus(IDEDRV drv) {
 	sendabort(drv);
 }
 
+void atapi_initialize(void) {
+#if defined(_WINDOWS)
+	UINT32 dwID = 0;
+	//if(!pic_cs_initialized){
+	//	memset(&pic_cs, 0, sizeof(pic_cs));
+	//	InitializeCriticalSection(&pic_cs);
+	//	pic_cs_initialized = 1;
+	//}
+	if(!atapi_thread_initialized){
+		atapi_thread_initialized = 1;
+		atapi_thread = (HANDLE)_beginthreadex(NULL, 0, atapi_dataread_threadfunc, NULL, CREATE_SUSPENDED, &dwID);
+	}
+#else
+	// TODO: 非Windows用コードを書く
+#endif
+}
+
+void atapi_deinitialize(void) {
+#if defined(_WINDOWS)
+	if(atapi_thread_initialized){
+		atapi_thread_initialized = 0;
+		while(((int)ResumeThread(atapi_thread)) > 0);
+		WaitForSingleObject(atapi_thread,  INFINITE);
+		CloseHandle(atapi_thread);
+		atapi_thread = NULL;
+	}
+#else
+	// TODO: 非Windows用コードを書く
+#endif
+}
 #endif	/* SUPPORT_IDEIO */
 

@@ -504,6 +504,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("CD_ASYNC", PFTYPE_BOOL,		&np2cfg.useasynccd),
 	PFVAL("CDTRAYOP", PFTYPE_BOOL,		&np2cfg.allowcdtraycmd),
 	PFVAL("SVCDFILE", PFTYPE_BOOL,		&np2cfg.savecdfile),
+	PFVAL("HD_ASYNC", PFRO_BOOL,		&np2cfg.useasynchd),
 	PFSTR("CD1_FILE", PFTYPE_STR,		np2cfg.idecd[0]),
 	PFSTR("CD2_FILE", PFTYPE_STR,		np2cfg.idecd[1]),
 	PFSTR("CD3_FILE", PFTYPE_STR,		np2cfg.idecd[2]),

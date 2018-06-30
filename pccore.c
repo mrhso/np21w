@@ -114,7 +114,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")}, 
 				{SXSIDEV_HDD, SXSIDEV_HDD, SXSIDEV_CDROM, SXSIDEV_HDD}, 
 				{OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
-				1, 1, 0, 0, 0, 0, 0, 0,
+				1, 1, 0, 0, 0, 0, 0, 0, 0,
 #else
 				{OEMTEXT(""), OEMTEXT("")},
 #endif
@@ -350,6 +350,10 @@ void pccore_init(void) {
 
 	iocore_create();
 
+#if defined(SUPPORT_IDEIO)
+	ideio_initialize();
+#endif
+
 #if defined(SUPPORT_HOSTDRV)
 	hostdrv_initialize();
 #endif
@@ -378,6 +382,10 @@ void pccore_term(void) {
 	fdd_eject(1);
 	fdd_eject(2);
 	fdd_eject(3);
+	
+#if defined(SUPPORT_IDEIO)
+	ideio_deinitialize();
+#endif
 
 	iocore_destroy();
 
