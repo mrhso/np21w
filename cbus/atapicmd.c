@@ -490,9 +490,11 @@ void atapi_dataread(IDEDRV drv) {
 	}
 
 	drv->status |= IDESTAT_BSY;
-
+	
 	if(np2cfg.useasynccd){
-		_beginthread(atapi_dataread_threadfunc, 0, (void*)drv);
+		if(_beginthread(atapi_dataread_threadfunc, 0, (void*)drv)==-1){
+			atapi_dataread_threadfunc((void*)drv);
+		}
 	}else{
 		atapi_dataread_threadfunc((void*)drv);
 	}

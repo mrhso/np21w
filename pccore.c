@@ -322,6 +322,8 @@ static void sound_term(void) {
 void pccore_init(void) {
 
 	CPU_INITIALIZE();
+	
+	pic_initialize();
 
 	pal_initlcdtable();
 	pal_makelcdpal();
@@ -384,6 +386,8 @@ void pccore_term(void) {
 	rs232c_destruct();
 
 	sxsi_alltrash();
+	
+	pic_deinitialize();
 
 	CPU_DEINITIALIZE();
 }

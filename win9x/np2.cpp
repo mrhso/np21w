@@ -2109,23 +2109,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			mousemng_toggle(MOUSEPROC_SYSTEM);
 			np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
 			sysmng_update(SYS_UPDATECFG);
-			if(!np2oscfg.mouse_nc){
-				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
-			}else if (!scrnmng_isfullscreen()) {
-				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
-				if (np2oscfg.wintype != 0) {
-					// XXX: メニューが出せなくなって詰むのを回避（暫定）
-					if (!scrnmng_isfullscreen()) {
-						WINLOCEX	wlex;
-						np2oscfg.wintype = 0;
-						wlex = np2_winlocexallwin(hWnd);
-						winlocex_setholdwnd(wlex, hWnd);
-						np2class_windowtype(hWnd, np2oscfg.wintype);
-						winlocex_move(wlex);
-						winlocex_destroy(wlex);
-						sysmng_update(SYS_UPDATEOSCFG);
+			if (!np2oscfg.MOUSE_SW) {
+				if(!np2oscfg.mouse_nc){
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
+				}else if (!scrnmng_isfullscreen()) {
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+					if (np2oscfg.wintype != 0) {
+						// XXX: メニューが出せなくなって詰むのを回避（暫定）
+						if (!scrnmng_isfullscreen()) {
+							WINLOCEX	wlex;
+							np2oscfg.wintype = 0;
+							wlex = np2_winlocexallwin(hWnd);
+							winlocex_setholdwnd(wlex, hWnd);
+							np2class_windowtype(hWnd, np2oscfg.wintype);
+							winlocex_move(wlex);
+							winlocex_destroy(wlex);
+							sysmng_update(SYS_UPDATEOSCFG);
+						}
 					}
 				}
+			}else{
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 			}
 			break;
 
@@ -2158,26 +2162,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_LBUTTONDBLCLK:
-			if(!np2oscfg.mouse_nc){
-				if (!scrnmng_isfullscreen()) {
-					np2oscfg.wintype++;
-					if (np2oscfg.wintype >= 3) {
-						np2oscfg.wintype = 0;
-					}
-					wlex = np2_winlocexallwin(hWnd);
-					winlocex_setholdwnd(wlex, hWnd);
-					np2class_windowtype(hWnd, np2oscfg.wintype);
-					winlocex_move(wlex);
-					winlocex_destroy(wlex);
-					sysmng_update(SYS_UPDATEOSCFG);
-				}
-			}else if (!scrnmng_isfullscreen()) {
-				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
-				if (np2oscfg.wintype != 0) {
-					// XXX: メニューが出せなくなって詰むのを回避（暫定）
+			if (!np2oscfg.MOUSE_SW) {
+				if(!np2oscfg.mouse_nc){
 					if (!scrnmng_isfullscreen()) {
-						WINLOCEX	wlex;
-						np2oscfg.wintype = 0;
+						np2oscfg.wintype++;
+						if (np2oscfg.wintype >= 3) {
+							np2oscfg.wintype = 0;
+						}
 						wlex = np2_winlocexallwin(hWnd);
 						winlocex_setholdwnd(wlex, hWnd);
 						np2class_windowtype(hWnd, np2oscfg.wintype);
@@ -2185,27 +2176,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						winlocex_destroy(wlex);
 						sysmng_update(SYS_UPDATEOSCFG);
 					}
+				}else if (!scrnmng_isfullscreen()) {
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+					if (np2oscfg.wintype != 0) {
+						// XXX: メニューが出せなくなって詰むのを回避（暫定）
+						if (!scrnmng_isfullscreen()) {
+							WINLOCEX	wlex;
+							np2oscfg.wintype = 0;
+							wlex = np2_winlocexallwin(hWnd);
+							winlocex_setholdwnd(wlex, hWnd);
+							np2class_windowtype(hWnd, np2oscfg.wintype);
+							winlocex_move(wlex);
+							winlocex_destroy(wlex);
+							sysmng_update(SYS_UPDATEOSCFG);
+						}
+					}
 				}
+			}else{
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 			}
 			break;
 
 		case WM_RBUTTONDBLCLK:
-			if(!np2oscfg.mouse_nc){
-			}else if (!scrnmng_isfullscreen()) {
-				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
-				if (np2oscfg.wintype != 0) {
-					// XXX: メニューが出せなくなって詰むのを回避（暫定）
-					if (!scrnmng_isfullscreen()) {
-						WINLOCEX	wlex;
-						np2oscfg.wintype = 0;
-						wlex = np2_winlocexallwin(hWnd);
-						winlocex_setholdwnd(wlex, hWnd);
-						np2class_windowtype(hWnd, np2oscfg.wintype);
-						winlocex_move(wlex);
-						winlocex_destroy(wlex);
-						sysmng_update(SYS_UPDATEOSCFG);
+			if (!np2oscfg.MOUSE_SW) {
+				if(!np2oscfg.mouse_nc){
+				}else if (!scrnmng_isfullscreen()) {
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+					if (np2oscfg.wintype != 0) {
+						// XXX: メニューが出せなくなって詰むのを回避（暫定）
+						if (!scrnmng_isfullscreen()) {
+							WINLOCEX	wlex;
+							np2oscfg.wintype = 0;
+							wlex = np2_winlocexallwin(hWnd);
+							winlocex_setholdwnd(wlex, hWnd);
+							np2class_windowtype(hWnd, np2oscfg.wintype);
+							winlocex_move(wlex);
+							winlocex_destroy(wlex);
+							sysmng_update(SYS_UPDATEOSCFG);
+						}
 					}
 				}
+			}else{
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 			}
 			break;
 
