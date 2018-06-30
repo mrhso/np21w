@@ -28,6 +28,9 @@
 #include "wab.h"
 #include "bmpdata.h"
 #include "wabbmpsave.h"
+#if defined(_WINDOWS)
+#include	<process.h>
+#endif
 
 // XXX: 1280x1024以上にならないので差し当たってはこれで十分
 #define WAB_MAX_WIDTH	1280
@@ -402,7 +405,7 @@ void np2wab_drawframe()
 /**
  * 非同期描画（ga_threadmodeが真）
  */
-DWORD WINAPI ga_ThreadFunc(LPVOID vdParam) {
+unsigned int __stdcall ga_ThreadFunc(LPVOID vdParam) {
 	DWORD time = GetTickCount();
 	int timeleft = 0;
 	while (!ga_exitThread && ga_threadmode) {
@@ -549,7 +552,7 @@ void np2wab_bind(void)
 	
 	// マルチスレッドモードならスレッド開始
 	if(ga_threadmode){
-		ga_hThread  = CreateThread(NULL , 0 , ga_ThreadFunc  , NULL , 0 , &dwID);
+		ga_hThread  = (HANDLE)_beginthreadex(NULL , 0 , ga_ThreadFunc  , NULL , 0 , &dwID);
 	}
 	
 	// パレットを更新させる

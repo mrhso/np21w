@@ -332,7 +332,6 @@
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Precise</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precise</FloatingPointModel>
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotSet</EnableEnhancedInstructionSet>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox2.c">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotSet</EnableEnhancedInstructionSet>
@@ -349,9 +348,7 @@
     <ClCompile Include="..\i386c\ia32\instructions\mmx\mmx.c" />
     <ClCompile Include="..\i386c\ia32\instructions\seg_reg.c" />
     <ClCompile Include="..\i386c\ia32\instructions\shift_rotate.c" />
-    <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c" />
     <ClCompile Include="..\i386c\ia32\instructions\string_inst.c" />
     <ClCompile Include="..\i386c\ia32\instructions\system_inst.c" />
     <ClCompile Include="..\i386c\ia32\inst_table.c" />
