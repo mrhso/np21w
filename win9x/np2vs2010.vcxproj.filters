@@ -1146,6 +1146,9 @@
     <ClCompile Include="..\diskimage\cd\cdd_real.c">
       <Filter>ソース ファイル\diskimage\cd</Filter>
     </ClCompile>
+    <ClCompile Include="..\cbus\gpibio.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -1999,6 +2002,9 @@
     </ClInclude>
     <ClInclude Include="..\diskimage\cd\cdd_real.h">
       <Filter>ヘッダー ファイル\diskimage\cd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\gpibio.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

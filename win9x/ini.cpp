@@ -601,6 +601,12 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GD5430TYPE",PFTYPE_UINT16,	&np2cfg.gd5430type),
 	PFVAL("GD5430FCUR",PFTYPE_BOOL,		&np2cfg.gd5430fakecur),
 #endif
+#if defined(SUPPORT_GPIB)
+	PFVAL("USE_GPIB", PFTYPE_BOOL,		&np2cfg.usegpib),
+	PFVAL("GPIB_IRQ", PFTYPE_UINT8,		&np2cfg.gpibirq),
+	PFVAL("GPIBMODE", PFTYPE_UINT8,		&np2cfg.gpibmode),
+	PFVAL("GPIBADDR", PFTYPE_UINT8,		&np2cfg.gpibaddr),
+#endif
 	
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
 	PFMAX("MODELNUM", PFTYPE_HEX8,		&np2cfg.modelnum,		255),

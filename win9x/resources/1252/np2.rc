@@ -925,7 +925,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Disp vsync",                 IDM_DISPSYNC
         MENUITEM "Real &palettes",              IDM_RASTER
+        MENUITEM SEPARATOR
         MENUITEM "&No wait",                    IDM_NOWAIT
+        MENUITEM "&CPU clock stabilizer",       IDM_CPUSTABILIZER
         MENUITEM SEPARATOR
         MENUITEM "&Auto frame",                 IDM_AUTOFPS
         MENUITEM "F&ull frame",                 IDM_60FPS
@@ -1584,6 +1586,12 @@ BEGIN
     IDS_CPU_MMXPENTIUM      "Intel MMX Pentium"
     IDS_CPU_PENTIUMPRO      "Intel Pentium Pro"
     IDS_CPU_PENTIUMII       "Intel Pentium II"
+    IDS_CPU_PENTIUMIII      "Intel Pentium III"
+    IDS_CPU_AMD_K6_2        "AMD K6-2"
+    IDS_CPU_AMD_K6_III      "AMD K6-III"
+    IDS_CPU_AMD_K7_ATHLON   "AMD K7 Athlon"
+    IDS_CPU_AMD_K7_ATHLONXP "AMD K7 Athlon XP"
+    IDS_CPU_NEKOPRO         "Neko Processor II"
 END
 
 STRINGTABLE

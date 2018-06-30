@@ -437,15 +437,9 @@ static const MEMFNF memfnf = {
 // ----
 REG8 MEMCALL memp_read8(UINT32 address) {
 	
-	//if(0x400 <= address && address < 0x600){
-	//	switch(address){
-	//	case 0x58a:
-	//		break;
-	//	default:
-	//		TRACEOUT(("BDA (read8): %x ret %x", address, mem[address]));
-	//	}
+	//if (0xD4000 <= address && address <= 0xD5FFF) {
+	//	printf("GP-IB BIOS memread");
 	//}
-
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);
 	}

@@ -996,7 +996,7 @@ void SSE_SHUFPS(void)
 	SSE_PART_GETDATA1DATA2_P(&data1, &data2, data2buf);
 
 	GET_PCBYTE((imm8));
-	
+
 	for(i=0;i<4;i++){
 		data1buf[i] = data1[i];
 	}

@@ -917,7 +917,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "画面同期(&D)",                IDM_DISPSYNC
         MENUITEM "擬似多色パレット再現(&P)",    IDM_RASTER
+        MENUITEM SEPARATOR
         MENUITEM "CPUウェイト無し(&N)",         IDM_NOWAIT
+        MENUITEM "CPUクロック安定化(&C)",       IDM_CPUSTABILIZER
         MENUITEM SEPARATOR
         MENUITEM "自動フレームスキップ(&A)",    IDM_AUTOFPS
         MENUITEM "フレームスキップ無し(&U)",    IDM_60FPS
@@ -1588,6 +1590,12 @@ BEGIN
     IDS_CPU_MMXPENTIUM      "Intel MMX Pentium"
     IDS_CPU_PENTIUMPRO      "Intel Pentium Pro"
     IDS_CPU_PENTIUMII       "Intel Pentium II"
+    IDS_CPU_PENTIUMIII      "Intel Pentium III"
+    IDS_CPU_AMD_K6_2        "AMD K6-2"
+    IDS_CPU_AMD_K6_III      "AMD K6-III"
+    IDS_CPU_AMD_K7_ATHLON   "AMD K7 Athlon"
+    IDS_CPU_AMD_K7_ATHLONXP "AMD K7 Athlon XP"
+    IDS_CPU_NEKOPRO         "Neko Processor II"
 END
 
 STRINGTABLE

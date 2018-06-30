@@ -105,8 +105,9 @@ _CPUID(void)
 		break;
 
 	case 1:
+		//CPU_EAX = (2 << 16) | (i386cpuid.cpu_family << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping; // Šg’£ƒ‚ƒfƒ‹
 		CPU_EAX = (i386cpuid.cpu_family << 8) | (i386cpuid.cpu_model << 4) | i386cpuid.cpu_stepping;
-		if(strncmp(i386cpuid.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_III, 27)){
+		if(strncmp(i386cpuid.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_III, 27)==0){
 			CPU_EBX = 2;
 		}else{
 			CPU_EBX = 0;

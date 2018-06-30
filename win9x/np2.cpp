@@ -1069,6 +1069,13 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winkbd_setf12(8);
 			update |= SYS_UPDATEOSCFG;
 			break;
+			
+		case IDM_F12WABRELAY:
+			np2oscfg.F12COPY = 9;
+			winkbd_resetf12();
+			winkbd_setf12(9);
+			update |= SYS_UPDATEOSCFG;
+			break;
 
 		case IDM_BEEPOFF:
 			np2cfg.BEEP_VOL = 0;
@@ -1273,7 +1280,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2oscfg.mouse_nc = !np2oscfg.mouse_nc;
 			if(np2oscfg.mouse_nc){
 				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
-				if (np2oscfg.mouse_nc && np2oscfg.wintype != 0) {
+				if (np2oscfg.wintype != 0) {
 					// XXX: メニューが出せなくなって詰むのを回避（暫定）
 					if (!scrnmng_isfullscreen()) {
 						WINLOCEX	wlex;
@@ -1947,6 +1954,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				np2oscfg.NOWAIT = !np2oscfg.NOWAIT;
 				update |= SYS_UPDATECFG;
 			}
+#if defined(SUPPORT_CL_GD5430) && defined(SUPPORT_WAB)
+			else if ((wParam == VK_F12) && (np2oscfg.F12COPY==9)) {
+				if(np2clvga.enabled && cirrusvga_opaque){
+					np2wab_setRelayState(np2wab.relay ? 0 : 1);
+				}
+			}
+#endif
 			else {
 				winkbd_keydown(wParam, lParam);
 			}
@@ -2008,7 +2022,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					scrnmng_fullscrnmenu(p.y);
 				}
 			}else{
-				if(np2oscfg.mouse_nc){
+				if(np2oscfg.mouse_nc && !scrnmng_isfullscreen()){
 					int x = LOWORD(lParam);
 					int y = HIWORD(lParam);
 					SINT16 dx, dy;
@@ -2138,6 +2152,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					winlocex_move(wlex);
 					winlocex_destroy(wlex);
 					sysmng_update(SYS_UPDATEOSCFG);
+				}
+			}else if (!scrnmng_isfullscreen()) {
+				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+				if (np2oscfg.wintype != 0) {
+					// XXX: メニューが出せなくなって詰むのを回避（暫定）
+					if (!scrnmng_isfullscreen()) {
+						WINLOCEX	wlex;
+						np2oscfg.wintype = 0;
+						wlex = np2_winlocexallwin(hWnd);
+						winlocex_setholdwnd(wlex, hWnd);
+						np2class_windowtype(hWnd, np2oscfg.wintype);
+						winlocex_move(wlex);
+						winlocex_destroy(wlex);
+						sysmng_update(SYS_UPDATEOSCFG);
+					}
 				}
 			}
 			break;
@@ -2900,7 +2929,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	np2class_initialize(hInstance);
 	if (!hPrevInst) {
-		if(np2oscfg.mouse_nc){
+		if(np2oscfg.mouse_nc && !scrnmng_isfullscreen()){
 			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW;
 		}else{
 			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;

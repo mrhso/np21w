@@ -83,10 +83,10 @@
     <IncludePath>H:\WinDDK\7600.16385.1\inc;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <IncludePath>H:\WinDDK\7600.16385.1\inc;$(IncludePath)</IncludePath>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -172,18 +172,17 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_FPU_DOSBOX;SUPPORT_FPU_DOSBOX2;SUPPORT_FPU_SOFTFLOAT;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MMX;USE_3DNOW;USE_SSE;USE_TSC;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_FPU_DOSBOX;SUPPORT_FPU_DOSBOX2;SUPPORT_FPU_SOFTFLOAT;SUPPORT_GPIB;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MMX;USE_3DNOW;USE_SSE;USE_TSC;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;.\x64;..\;..\common;..\i386c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FloatingPointExceptions>false</FloatingPointExceptions>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -199,14 +198,16 @@
       <AdditionalOptions>-I.\x64\ -I..\i386c\x64\ -I..\io\x64\ %(AdditionalOptions)</AdditionalOptions>
     </YASM>
     <ResourceCompile>
-      <PreprocessorDefinitions>_WIN64;_UNICODE;UNICODE;SUPPORT_PC9821;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_UNICODE;UNICODE;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_FPU_DOSBOX;SUPPORT_FPU_DOSBOX2;SUPPORT_FPU_SOFTFLOAT;SUPPORT_GPIB;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MMX;USE_3DNOW;USE_SSE;USE_TSC;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Manifest>
       <EnableDPIAwareness>true</EnableDPIAwareness>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\bios\bios.c" />
+    <ClCompile Include="..\bios\bios.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="..\bios\bios09.c" />
     <ClCompile Include="..\bios\bios0c.c" />
     <ClCompile Include="..\bios\bios12.c" />
@@ -234,6 +235,7 @@
     <ClCompile Include="..\cbus\cs4231io.c" />
     <ClCompile Include="..\cbus\ct1741io.c" />
     <ClCompile Include="..\cbus\ct1745io.c" />
+    <ClCompile Include="..\cbus\gpibio.c" />
     <ClCompile Include="..\cbus\ideio.c" />
     <ClCompile Include="..\cbus\mpu98ii.c" />
     <ClCompile Include="..\cbus\pc9861k.c" />
@@ -346,7 +348,9 @@
     <ClCompile Include="..\i386c\ia32\instructions\mmx\mmx.c" />
     <ClCompile Include="..\i386c\ia32\instructions\seg_reg.c" />
     <ClCompile Include="..\i386c\ia32\instructions\shift_rotate.c" />
-    <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c" />
+    <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\string_inst.c" />
     <ClCompile Include="..\i386c\ia32\instructions\system_inst.c" />
     <ClCompile Include="..\i386c\ia32\inst_table.c" />
@@ -369,7 +373,9 @@
     <ClCompile Include="..\io\gdc.c" />
     <ClCompile Include="..\io\gdc_pset.c" />
     <ClCompile Include="..\io\gdc_sub.c" />
-    <ClCompile Include="..\io\iocore.c" />
+    <ClCompile Include="..\io\iocore.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="..\io\mouseif.c" />
     <ClCompile Include="..\io\necio.c" />
     <ClCompile Include="..\io\nmiio.c" />
@@ -592,6 +598,7 @@
     <ClInclude Include="..\cbus\cs4231io.h" />
     <ClInclude Include="..\cbus\ct1741io.h" />
     <ClInclude Include="..\cbus\ct1745io.h" />
+    <ClInclude Include="..\cbus\gpibio.h" />
     <ClInclude Include="..\cbus\ideio.h" />
     <ClInclude Include="..\cbus\mpu98ii.h" />
     <ClInclude Include="..\cbus\pc9861k.h" />

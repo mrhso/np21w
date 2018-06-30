@@ -533,6 +533,11 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	winstyle = GetWindowLong(g_hWndMain, GWL_STYLE);
 	winstyleex = GetWindowLong(g_hWndMain, GWL_EXSTYLE);
 	if (scrnmode & SCRNMODE_FULLSCREEN) {
+		//if(np2oscfg.mouse_nc){
+		//	winstyle &= ~CS_DBLCLKS;
+		//}else{
+			winstyle |= CS_DBLCLKS;
+		//}
 		if(!(lastscrnmode & SCRNMODE_FULLSCREEN)){
 			GetWindowPlacement(g_hWndMain, &wp);
 		}
@@ -550,6 +555,22 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	else {
 		scrnmng.flag = SCRNFLAG_HAVEEXTEND;
 		winstyle |= WS_SYSMENU;
+		if(np2oscfg.mouse_nc){
+			winstyle &= ~CS_DBLCLKS;
+			if (np2oscfg.wintype != 0) {
+				WINLOCEX	wlex;
+				// XXX: メニューが出せなくなって詰むのを回避（暫定）
+				np2oscfg.wintype = 0;
+				np2oscfg.wintype = 0;
+				wlex = np2_winlocexallwin(g_hWndMain);
+				winlocex_setholdwnd(wlex, g_hWndMain);
+				np2class_windowtype(g_hWndMain, np2oscfg.wintype);
+				winlocex_move(wlex);
+				winlocex_destroy(wlex);
+			}
+		}else{
+			winstyle |= CS_DBLCLKS;
+		}
 		if (np2oscfg.thickframe) {
 			winstyle |= WS_THICKFRAME;
 		}

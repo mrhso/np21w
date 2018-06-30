@@ -614,6 +614,7 @@
 #define IDM_USERKEY2                    40627
 #define IDM_F12NOWAIT                   40628
 #define IDM_F12NOWAIT2                  40629
+#define IDM_F12WABRELAY                 40630
 #define IDM_BEEPOFF                     40631
 #define IDM_BEEPLOW                     40632
 #define IDM_BEEPMID                     40633

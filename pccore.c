@@ -134,6 +134,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_CL_GD5430)
 				0, 0x5B, 0,
 #endif
+#if defined(SUPPORT_GPIB)
+				0, 12, 1, 0, 
+#endif
 				0, 0xff00, 
 				0, 0, 0,
 				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_FEATURES_EX, CPU_BRAND_STRING, OEMTEXT(""), OEMTEXT(""),
@@ -861,6 +864,11 @@ void pccore_exec(BOOL draw) {
 #endif
 			CPU_SHUT();
 		}
+#if defined(USE_TSC)
+#ifndef _WIN32
+		CPU_MSR_TSC += CPU_BASECLOCK;//CPU_REMCLOCK;
+#endif
+#endif
 #if !defined(SINGLESTEPONLY)
 		if (CPU_REMCLOCK > 0) {
 			if (!(CPU_TYPE & CPUTYPE_V30)) {

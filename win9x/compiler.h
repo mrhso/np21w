@@ -161,6 +161,7 @@ typedef	signed __int64		SINT64;
 #if defined(SUPPORT_PC9821)
 #define	CPUCORE_IA32
 #define	IA32_PAGING_EACHSIZE
+#define	IA32_REBOOT_ON_PANIC
 #define	SUPPORT_CRT31KHZ
 #define	SUPPORT_PC9801_119
 #endif

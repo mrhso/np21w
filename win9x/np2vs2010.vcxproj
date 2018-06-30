@@ -202,6 +202,7 @@
     <ClCompile Include="..\cbus\boardx2.c" />
     <ClCompile Include="..\cbus\cbuscore.c" />
     <ClCompile Include="..\cbus\cs4231io.c" />
+    <ClCompile Include="..\cbus\gpibio.c" />
     <ClCompile Include="..\cbus\ideio.c" />
     <ClCompile Include="..\cbus\mpu98ii.c" />
     <ClCompile Include="..\cbus\pc9861k.c" />
@@ -584,6 +585,7 @@
     <ClInclude Include="..\cbus\boardx2.h" />
     <ClInclude Include="..\cbus\cbuscore.h" />
     <ClInclude Include="..\cbus\cs4231io.h" />
+    <ClInclude Include="..\cbus\gpibio.h" />
     <ClInclude Include="..\cbus\ideio.h" />
     <ClInclude Include="..\cbus\mpu98ii.h" />
     <ClInclude Include="..\cbus\pc9861k.h" />

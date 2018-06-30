@@ -1296,6 +1296,9 @@
     <ClCompile Include="..\i386c\ia32\instructions\sse\sse.c">
       <Filter>ソース ファイル\i386c\ia32\instructions\sse</Filter>
     </ClCompile>
+    <ClCompile Include="..\cbus\gpibio.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2287,6 +2290,9 @@
     </ClInclude>
     <ClInclude Include="..\i386c\ia32\instructions\sse\sse.h">
       <Filter>ヘッダー ファイル\i386c\ia32\instructions\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\gpibio.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
