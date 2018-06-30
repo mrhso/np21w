@@ -501,6 +501,13 @@ static const PFTBL s_IniItems[] =
 	PFVAL("IDERWAIT", PFTYPE_UINT32,	&np2cfg.iderwait),
 	PFVAL("IDEWWAIT", PFTYPE_UINT32,	&np2cfg.idewwait),
 	PFVAL("IDEMWAIT", PFTYPE_UINT32,	&np2cfg.idemwait),
+	PFVAL("CD_ASYNC", PFTYPE_BOOL,		&np2cfg.useasynccd),
+	PFVAL("CDTRAYOP", PFTYPE_BOOL,		&np2cfg.allowcdtraycmd),
+	PFVAL("SVCDFILE", PFTYPE_BOOL,		&np2cfg.savecdfile),
+	PFSTR("CD1_FILE", PFTYPE_STR,		np2cfg.idecd[0]),
+	PFSTR("CD2_FILE", PFTYPE_STR,		np2cfg.idecd[1]),
+	PFSTR("CD3_FILE", PFTYPE_STR,		np2cfg.idecd[2]),
+	PFSTR("CD4_FILE", PFTYPE_STR,		np2cfg.idecd[3]),
 #endif
 
 	PFVAL("SampleHz", PFTYPE_UINT32,	&np2cfg.samplingrate),
