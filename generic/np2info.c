@@ -26,7 +26,16 @@ static const OEMCHAR str_grcgchip[] = OEMTEXT("\0GRCG \0GRCG CG-Window \0EGC CG-
 static const OEMCHAR str_vrammode[] = OEMTEXT("Digital\0Analog\000256colors");
 static const OEMCHAR str_vrampage[] = OEMTEXT(" page-0\0 page-1\0 page-all");
 static const OEMCHAR str_chpan[] = OEMTEXT("none\0Mono-R\0Mono-L\0Stereo");
-static const OEMCHAR str_fpu[] = OEMTEXT("none\0 Berkeley SoftFloat 80bit Extended Precision FPU\0 64bit Double Precision FPU\0 64bit Double Precision FPU + INT64 Load/Store");
+static const OEMCHAR str_fpu[] = OEMTEXT("\0 Berkeley SoftFloat 80bit Extended Precision FPU\0 64bit Double Precision FPU\0 64bit Double Precision FPU + INT64 Load/Store");
+static const OEMCHAR str_simd_mmx[] = OEMTEXT("MMX ");
+static const OEMCHAR str_simd_sse[] = OEMTEXT("SSE ");
+static const OEMCHAR str_simd_sse2[] = OEMTEXT("SSE2 ");
+static const OEMCHAR str_simd_sse3[] = OEMTEXT("SSE3 ");
+static const OEMCHAR str_simd_ssse3[] = OEMTEXT("SSSE3 ");
+static const OEMCHAR str_simd_sse4_1[] = OEMTEXT("SSE4.1 ");
+static const OEMCHAR str_simd_sse4_2[] = OEMTEXT("SSE4.2 ");
+static const OEMCHAR str_simd_3dnow[] = OEMTEXT("3DNow! ");
+static const OEMCHAR str_simd_e3dnow[] = OEMTEXT("Enhanced 3DNow! ");
 
 static const OEMCHAR str_clockfmt[] = OEMTEXT("%d.%1dMHz");
 static const OEMCHAR str_memfmt[] = OEMTEXT("%3uKB");
@@ -390,6 +399,54 @@ static void info_fpu(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 	}
 }
 
+static void info_simd(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
+
+	OEMCHAR	buf[64];
+	int simdcount = 0;
+	milstr_ncpy(str, OEMTEXT(""), maxlen);
+#if defined(CPUCORE_IA32)
+	if(i386cpuid.cpu_feature & CPU_FEATURE_MMX){
+		milstr_ncat(str, str_simd_mmx, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature & CPU_FEATURE_SSE){
+		milstr_ncat(str, str_simd_sse, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature & CPU_FEATURE_SSE2){
+		milstr_ncat(str, str_simd_sse2, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ecx & CPU_FEATURE_ECX_SSE3){
+		milstr_ncat(str, str_simd_sse3, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ecx & CPU_FEATURE_ECX_SSSE3){
+		milstr_ncat(str, str_simd_ssse3, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ecx & CPU_FEATURE_ECX_SSE4_1){
+		milstr_ncat(str, str_simd_sse4_1, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ecx & CPU_FEATURE_ECX_SSE4_2){
+		milstr_ncat(str, str_simd_sse4_2, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ex & CPU_FEATURE_EX_3DNOW){
+		milstr_ncat(str, str_simd_3dnow, maxlen);
+		simdcount++;
+	}
+	if(i386cpuid.cpu_feature_ex & CPU_FEATURE_EX_E3DNOW){
+		milstr_ncat(str, str_simd_e3dnow, maxlen);
+		simdcount++;
+	}
+#endif
+	if(simdcount==0){
+		milstr_ncat(str, OEMTEXT(" none"), maxlen);
+	}
+}
+
 
 // ---- make string
 
@@ -407,6 +464,7 @@ static const INFOPROC infoproc[] = {
 			{OEMTEXT("MEM2"),	info_mem2},
 			{OEMTEXT("MEM3"),	info_mem3},
 			{OEMTEXT("FPU"),	info_fpu},
+			{OEMTEXT("SIMD"),	info_simd},
 			{OEMTEXT("GDC"),	info_gdc},
 			{OEMTEXT("GDC2"),	info_gdc2},
 			{OEMTEXT("TEXT"),	info_text},

@@ -480,6 +480,8 @@
 #define IDS_CPU_PENTIUMPRO              32025
 #define IDS_CPU_PENTIUMII               32026
 #define IDS_CPU_PENTIUMIII              32027
+#define IDS_CPU_PENTIUMM                32028
+#define IDS_CPU_PENTIUM4                32029
 #define IDS_CPU_AMD_K6_2                32035
 #define IDS_CPU_AMD_K6_III              32036
 #define IDS_CPU_AMD_K7_ATHLON           32037

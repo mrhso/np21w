@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2003 NONAKA Kimihiro
+ * Copyright (c) 2018 SimK
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,41 +23,31 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	IA32_CPU_INSTRUCTION_MISC_H__
-#define	IA32_CPU_INSTRUCTION_MISC_H__
+#ifndef	IA32_CPU_INSTRUCTION_SSE3_SSE3_H__
+#define	IA32_CPU_INSTRUCTION_SSE3_SSE3_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void LEA_GwM(void);
-void LEA_GdM(void);
-void _NOP(void);
-void UD2(void);
-void XLAT(void);
-void _CPUID(void);
+void SSE3_ADDSUBPD(void);
+void SSE3_ADDSUBPS(void);
+void SSE3_HADDPD(void);
+void SSE3_HADDPS(void);
+void SSE3_HSUBPD(void);
+void SSE3_HSUBPS(void);
 
-void SALC(void);	/* undoc 8086 */
-void LOADALL286(void);	/* undoc 286 */
-void LOADALL(void);	/* undoc 386 */
+void SSE3_MONITOR(void);
+void SSE3_MWAIT(void);
 
-void OpSize(void);
-void AddrSize(void);
-void _2byte_ESC16(void);
-void _2byte_ESC32(void);
-void Prefix_ES(void);
-void Prefix_CS(void);
-void Prefix_SS(void);
-void Prefix_DS(void);
-void Prefix_FS(void);
-void Prefix_GS(void);
-
-//void _2byte_Prefix660F_32(void);
-//void _2byte_PrefixF20F_32(void);
-//void _2byte_PrefixF30F_32(void);
+//void SSE3_FISTTP(void); // -> FPU–½—ß ESC7
+void SSE3_LDDQU(void);
+void SSE3_MOVDDUP(void);
+void SSE3_MOVSHDUP(void);
+void SSE3_MOVSLDUP(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* IA32_CPU_INSTRUCTION_MISC_H__ */
+#endif	/* IA32_CPU_INSTRUCTION_SSE3_SSE3_H__ */

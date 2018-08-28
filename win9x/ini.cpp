@@ -636,6 +636,8 @@ static const PFTBL s_IniItems[] =
 	PFVAL("cpu_feat", PFTYPE_HEX32,		&np2cfg.cpu_feature),
 	PFVAL("cpu_f_ex", PFTYPE_HEX32,		&np2cfg.cpu_feature_ex),
 	PFSTR("cpu_bran", PFRO_STR,			np2cfg.cpu_brandstring_o),
+	PFVAL("cpu_brid", PFTYPE_HEX32,		&np2cfg.cpu_brandid),
+	PFVAL("cpu_fecx", PFTYPE_HEX32,		&np2cfg.cpu_feature_ecx),
 
 	PFMAX("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type,		0), // FPUŽí—Þ
 

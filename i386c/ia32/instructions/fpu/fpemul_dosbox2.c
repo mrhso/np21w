@@ -1975,6 +1975,15 @@ DB2_ESC5(void)
 			FPU_PREP_PUSH();
 			FPU_FLD_F64(madr,FPU_STAT_TOP);
 			break;
+		case 1:	/* FISTTP (QWORD) */
+			{
+				FP_RND oldrnd = FPU_STAT.round;
+				FPU_STAT.round = ROUND_Down;
+				FPU_FST_I64(madr);
+				FPU_STAT.round = oldrnd;
+			}
+			FPU_FPOP();
+			break;
 		case 2:	/* FST (î{ê∏ìxé¿êî) */
 			TRACEOUT(("FST double real"));
 			FPU_FST_F64(madr);
@@ -2147,6 +2156,15 @@ DB2_ESC7(void)
 			TRACEOUT(("FILD SINT16"));
 			FPU_PREP_PUSH();
 			FPU_FLD_I16(madr,FPU_STAT_TOP);
+			break;
+		case 1:	/* FISTTP (WORD) */
+			{
+				FP_RND oldrnd = FPU_STAT.round;
+				FPU_STAT.round = ROUND_Down;
+				FPU_FST_I16(madr);
+				FPU_STAT.round = oldrnd;
+			}
+			FPU_FPOP();
 			break;
 		case 2:	/* FIST (WORD) */
 			TRACEOUT(("FIST SINT16"));

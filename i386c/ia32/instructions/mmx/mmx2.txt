@@ -1297,7 +1297,7 @@ void MMX_PSxxW_imm8(void)
 	switch(idx){
 	case 2: // PSRLW(imm8)
 		for(i=0;i<4;i++){
-			dstreg[i] = (shift >= 16 ? 0 : (dstreg[i] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
+			dstreg[i] = (shift >= 16 ? 0 : (dstreg[0] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 		}
 		break;
 	case 4: // PSRAW(imm8)
@@ -1312,13 +1312,13 @@ void MMX_PSxxW_imm8(void)
 			if(((INT16*)dstreg)[i] < 0){
 				dstreg[i] = (dstreg[i] >> shift) | signval;
 			}else{
-				dstreg[i] = (shift >= 16 ? 0 : (dstreg[i] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
+				dstreg[i] = (shift >= 16 ? 0 : (dstreg[0] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 			}
 		}
 		break;
 	case 6: // PSLLW(imm8)
 		for(i=0;i<4;i++){
-			dstreg[i] = (shift >= 16 ? 0 : (dstreg[i] << (UINT16)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
+			dstreg[i] = (shift >= 16 ? 0 : (dstreg[0] << (UINT16)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
 		}
 		break;
 	default:
@@ -1346,7 +1346,7 @@ void MMX_PSxxD_imm8(void)
 	switch(idx){
 	case 2: // PSRLD(imm8)
 		for(i=0;i<2;i++){
-			dstreg[i] = (shift >= 32 ? 0 : (dstreg[i] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
+			dstreg[i] = (shift >= 32 ? 0 : (dstreg[0] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 		}
 		break;
 	case 4: // PSRAD(imm8)
@@ -1361,13 +1361,13 @@ void MMX_PSxxD_imm8(void)
 			if(((INT32*)dstreg)[i] < 0){
 				dstreg[i] = (dstreg[i] >> shift) | signval;
 			}else{
-				dstreg[i] = (shift >= 32 ? 0 : (dstreg[i] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
+				dstreg[i] = (shift >= 32 ? 0 : (dstreg[0] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 			}
 		}
 		break;
 	case 6: // PSLLD(imm8)
 		for(i=0;i<2;i++){
-			dstreg[i] = (shift >= 32 ? 0 : (dstreg[i] << (UINT32)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
+			dstreg[i] = (shift >= 32 ? 0 : (dstreg[0] << (UINT32)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
 		}
 		break;
 	default:

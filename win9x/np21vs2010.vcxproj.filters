@@ -292,6 +292,12 @@
     <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\sse2">
       <UniqueIdentifier>{4a8b0df8-8b9d-4b6e-b823-0a5331188162}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\i386c\ia32\instructions\sse3">
+      <UniqueIdentifier>{66791887-180e-44d7-ab28-998e079b8812}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\i386c\ia32\instructions\sse3">
+      <UniqueIdentifier>{68b3528c-f153-43d2-a01d-1ff68a4b33c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1305,6 +1311,12 @@
     <ClCompile Include="..\cbus\gpibio.c">
       <Filter>ソース ファイル\cbus</Filter>
     </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\sse2\sse2.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\sse2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386c\ia32\instructions\sse3\sse3.c">
+      <Filter>ソース ファイル\i386c\ia32\instructions\sse3</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2299,6 +2311,12 @@
     </ClInclude>
     <ClInclude Include="..\cbus\gpibio.h">
       <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\sse2\sse2.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\sse2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386c\ia32\instructions\sse3\sse3.h">
+      <Filter>ヘッダー ファイル\i386c\ia32\instructions\sse3</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

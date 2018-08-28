@@ -1595,6 +1595,8 @@ BEGIN
     IDS_CPU_PENTIUMPRO      "Intel Pentium Pro"
     IDS_CPU_PENTIUMII       "Intel Pentium II"
     IDS_CPU_PENTIUMIII      "Intel Pentium III"
+    IDS_CPU_PENTIUMM        "Intel Pentium M"
+    IDS_CPU_PENTIUM4        "Intel Pentium 4"
     IDS_CPU_AMD_K6_2        "AMD K6-2"
     IDS_CPU_AMD_K6_III      "AMD K6-III"
     IDS_CPU_AMD_K7_ATHLON   "AMD K7 Athlon"
