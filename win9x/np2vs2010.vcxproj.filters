@@ -2043,16 +2043,16 @@
     </NASM>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="resources\1252\np2.rc">
-      <Filter>リソース ファイル</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <YASM Include="x64\makegrph.x64">
       <Filter>ソース ファイル\win9x\x64</Filter>
     </YASM>
     <YASM Include="x64\parts.x64">
       <Filter>ソース ファイル\win9x\x64</Filter>
     </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resources\932\np2.rc">
+      <Filter>リソース ファイル</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

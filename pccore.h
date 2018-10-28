@@ -238,6 +238,8 @@ struct tagNP2Config
 	UINT8	memchkmx;
 	UINT8	sbeeplen;
 	UINT8	sbeepadj;
+	
+	UINT8	biosioemu;
 
 	char	cpu_vendor[16]; // ベンダー（12byte）
 	UINT32	cpu_family; // ファミリ

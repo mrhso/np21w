@@ -144,6 +144,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				0, 0xff00, 
 				0, 0, 0,
+				1,
 				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_FEATURES_EX, CPU_BRAND_STRING, OEMTEXT(""), OEMTEXT(""), CPU_BRAND_ID_AUTO, CPU_FEATURES_ECX,
 				FPU_TYPE_SOFTFLOAT
 	};
@@ -858,6 +859,7 @@ void pccore_postevent(UINT32 event) {	// yet!
 
 void pccore_exec(BOOL draw) {
 
+	// ここでローカル変数を使うとsetjmp周りの最適化で破壊される可能性があるので注意
 	static UINT32 clockcounter = 0;
 	static UINT32 clockcounter32 = 0;
 	//UINT32 lastclock;
