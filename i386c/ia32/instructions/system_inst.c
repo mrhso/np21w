@@ -1167,6 +1167,7 @@ RDPMC(void)
 
 	idx = CPU_ECX;
 	switch (idx) {
+	default:
 		CPU_EDX = CPU_EAX = 0;
 	}
 }

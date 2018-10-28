@@ -470,7 +470,7 @@ LPDIRECTSOUNDBUFFER CSoundDeviceDSound3::CreateWaveBuffer(LPCTSTR lpFilename)
 
 		bool bValid = false;
 		Chunk chunk;
-		PCMWAVEFORMAT pcmwf;
+		PCMWAVEFORMAT pcmwf = {0};
 		while (true /*CONSTCOND*/)
 		{
 			if (extrom.Read(&chunk, sizeof(chunk)) != sizeof(chunk))

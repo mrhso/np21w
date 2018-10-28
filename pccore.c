@@ -968,6 +968,7 @@ void pccore_exec(BOOL draw) {
 	calendar_inc();
 	S98_sync();
 	sound_sync();
+	fdc_intdelay();	// FDC SEEK & RECALIBRATE, etc. np21w ver0.86 rev46
 
 	if (pcstat.hardwarereset) {
 		pcstat.hardwarereset = FALSE;

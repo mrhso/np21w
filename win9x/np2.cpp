@@ -1626,7 +1626,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 				//char *strText;
 				if(autokey_sendbuffer==NULL){
 					if (OpenClipboard(hWnd)){
-						if(hg = GetClipboardData(CF_TEXT)) {
+						if((hg = GetClipboardData(CF_TEXT))!=NULL) {
 							txtlen = (int)GlobalSize(hg);
 							autokey_sendbufferlen = 0;
 							autokey_sendbuffer = (char*)malloc(txtlen);
