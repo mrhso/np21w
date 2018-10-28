@@ -615,6 +615,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GPIB_IRQ", PFTYPE_UINT8,		&np2cfg.gpibirq),
 	PFVAL("GPIBMODE", PFTYPE_UINT8,		&np2cfg.gpibmode),
 	PFVAL("GPIBADDR", PFTYPE_UINT8,		&np2cfg.gpibaddr),
+	PFVAL("GPIBEXIO", PFTYPE_UINT8,		&np2cfg.gpibexio),
 #endif
 #if defined(SUPPORT_PCI)
 	PFVAL("USE98PCI", PFTYPE_BOOL,		&np2cfg.usepci),

@@ -225,6 +225,7 @@ struct tagNP2Config
 	UINT8	gpibirq; // GPIB IRQ
 	UINT8	gpibmode; // GPIB Master/Slave
 	UINT8	gpibaddr; // GPIB Address
+	UINT8	gpibexio; // GPIB custom I/O port base
 #endif
 #if defined(SUPPORT_PCI)
 	UINT8	usepci; // PCI Buségóp

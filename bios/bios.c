@@ -461,7 +461,6 @@ void bios_initialize(void) {
 		mem[BIOS_BASE + BIOSOFST_18 + 3] = 0xcf; // 0xcf(IRET)
 	}
 #endif
-
 }
 
 static void bios_itfcall(void) {
@@ -546,6 +545,11 @@ void biosioemu_proc(void) {
 UINT MEMCALL biosfunc(UINT32 adrs) {
 
 	UINT16	bootseg;
+	
+// np21w ver0.86 rev46 BIOS I/O emulation
+#if defined(BIOS_IO_EMULATION)
+	UINT32	oldEIP;
+#endif
 
 	if ((CPU_ITFBANK) && (adrs >= 0xf8000) && (adrs < 0x100000)) {
 		// for epson ITF
@@ -621,9 +625,17 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 
 		case BIOS_BASE + BIOSOFST_18:
 			CPU_REMCLOCK -= 200;
+#if defined(BIOS_IO_EMULATION)
+			oldEIP = CPU_EIP;
+#endif
 			bios0x18();
 #if defined(BIOS_IO_EMULATION)
-			biosioemu_begin(); // np21w ver0.86 rev46 BIOS I/O emulation
+			// np21w ver0.86 rev46 BIOS I/O emulation
+			if(oldEIP == CPU_EIP){
+				biosioemu_begin(); 
+			}else{
+				biosioemu.count = 0; 
+			}
 #endif
 			return(1);
 			

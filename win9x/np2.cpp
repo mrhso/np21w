@@ -2855,7 +2855,6 @@ void loadNP2INI(const OEMCHAR *fname){
 
 	CSoundMng::Initialize();
 	OpenSoundDevice(hWnd);
-	soundmng_setvolume(np2cfg.vol_master);
 
 	if (CSoundMng::GetInstance()->Open(static_cast<CSoundMng::DeviceType>(np2oscfg.cSoundDeviceType), np2oscfg.szSoundDeviceName, hWnd))
 	{
@@ -2924,6 +2923,7 @@ void loadNP2INI(const OEMCHAR *fname){
 		}
 	}
 #endif
+	soundmng_setvolume(np2cfg.vol_master);
 	
 	// ‰æ–Ê•\Ž¦”{—¦‚ð•œŒ³
 	if(np2oscfg.svscrmul){
@@ -3180,7 +3180,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	CSoundMng::Initialize();
 	OpenSoundDevice(hWnd);
-	soundmng_setvolume(np2cfg.vol_master);
 
 	if (CSoundMng::GetInstance()->Open(static_cast<CSoundMng::DeviceType>(np2oscfg.cSoundDeviceType), np2oscfg.szSoundDeviceName, hWnd))
 	{
@@ -3248,6 +3247,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 		}
 	}
 #endif
+	soundmng_setvolume(np2cfg.vol_master);
 	
 	// ‰æ–Ê•\Ž¦”{—¦‚ð•œŒ³
 	if(np2oscfg.svscrmul){

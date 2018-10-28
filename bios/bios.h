@@ -31,6 +31,7 @@ enum {
 	BIOSOFST_1f		= 0x00b0,					// Ext
 
 	BIOSOFST_WAIT	= 0x00b4					// FDD waiting
+	
 };
 
 #if defined(BIOS_IO_EMULATION)
