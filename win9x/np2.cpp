@@ -114,7 +114,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						OEMTEXT(PROJECTNAME) OEMTEXT(PROJECTSUBNAME),
 						OEMTEXT("NP2"),
 						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 0, 0, 1, 0, 1,
-						0, 0, KEY_UNKNOWN, 0,
+						0, 0, KEY_UNKNOWN, 0, 0,
 						0, 0, 0, {1, 2, 2, 1},
 						{5, 0, 0x3e, 19200,
 						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
@@ -1045,6 +1045,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			keystat_senddata(0x73 | 0x80);
 			keystat_senddata(0x74 | 0x80);
 			keystat_senddata(0x39 | 0x80);
+			break;
+			
+		case IDM_USENUMLOCK:
+			np2oscfg.USENUMLOCK = !np2oscfg.USENUMLOCK;
+			update |= SYS_UPDATEOSCFG;
 			break;
 
 		case IDM_F12MOUSE:

@@ -108,13 +108,12 @@ ia32a20enable(BOOL enable)
 	CPU_ADRSMASK = (enable)?0xffffffff:0x00ffffff;
 }
 
+#pragma optimize("", off)
 void
 ia32(void)
 {
-	int rv;
 
-	rv = sigsetjmp(exec_1step_jmpbuf, 1);
-	switch (rv) {
+	switch (sigsetjmp(exec_1step_jmpbuf, 1)) {
 	case 0:
 		break;
 
@@ -130,8 +129,14 @@ ia32(void)
 		VERBOSE(("ia32: return from unknown cause"));
 		break;
 	}
-
-	if (CPU_TRAP) {
+	if (!CPU_TRAP && !dmac.working) {
+		exec_allstep();
+	}else if (!CPU_TRAP) {
+		do {
+			exec_1step();
+			dmax86();
+		} while (CPU_REMCLOCK > 0);
+	}else{
 		do {
 			exec_1step();
 			if (CPU_TRAP) {
@@ -140,25 +145,15 @@ ia32(void)
 			}
 			dmax86();
 		} while (CPU_REMCLOCK > 0);
-	} else if (dmac.working) {
-		do {
-			exec_1step();
-			dmax86();
-		} while (CPU_REMCLOCK > 0);
-	} else {
-		do {
-			exec_1step();
-		} while (CPU_REMCLOCK > 0);
 	}
+
 }
 
 void
 ia32_step(void)
 {
-	int rv;
 
-	rv = sigsetjmp(exec_1step_jmpbuf, 1);
-	switch (rv) {
+	switch (sigsetjmp(exec_1step_jmpbuf, 1)) {
 	case 0:
 		break;
 
@@ -186,6 +181,7 @@ ia32_step(void)
 		}
 	} while (CPU_REMCLOCK > 0);
 }
+#pragma optimize("", on)
 
 void CPUCALL
 ia32_interrupt(int vect, int soft)

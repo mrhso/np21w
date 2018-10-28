@@ -649,6 +649,7 @@ static const PFTBL s_IniItems[] =
 
 	// OSàÀë∂ÅH
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),
+	PFVAL("usenlock", PFTYPE_BOOL,		&np2oscfg.USENUMLOCK),
 	PFVAL("F12_COPY", PFTYPE_UINT8,		&np2oscfg.F12COPY),
 	PFVAL("Joystick", PFTYPE_BOOL,		&np2oscfg.JOYPAD1),
 	PFEXT("Joy1_btn", PFTYPE_BIN,		np2oscfg.JOY1BTN,		4),

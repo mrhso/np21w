@@ -981,6 +981,8 @@ BEGIN
             MENUITEM "F12 = No wait(toggle)",       IDM_F12NOWAIT2
             MENUITEM "F12 = WAB relay SW",          IDM_F12WABRELAY
             MENUITEM SEPARATOR
+            MENUITEM "Use &NumLock key",            IDM_USENUMLOCK
+            MENUITEM SEPARATOR
             MENUITEM "&System Key Hook",            IDM_SYSKHOOK
         END
         POPUP "&Sound"
