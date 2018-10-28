@@ -1778,20 +1778,26 @@ void ideio_deinitialize(void) {
 #endif
 }
 
-void ideio_reset(const NP2CFG *pConfig) {
-	
-	OEMCHAR	path[MAX_PATH];
-	FILEH	fh;
+void ideio_basereset() {
 	REG8	i;
 	IDEDRV	drv;
-	OEMCHAR tmpbiosname[16];
-	UINT8 useidebios;
 
-	ZeroMemory(&ideio, sizeof(ideio));
 	for (i=0; i<4; i++) {
 		drv = ideio.dev[i >> 1].drv + (i & 1);
 		devinit(drv, i);
 	}
+}
+void ideio_reset(const NP2CFG *pConfig) {
+	REG8	i;
+	
+	OEMCHAR	path[MAX_PATH];
+	FILEH	fh;
+	OEMCHAR tmpbiosname[16];
+	UINT8 useidebios;
+
+	ZeroMemory(&ideio, sizeof(ideio));
+
+	ideio_basereset();
 	
 	ideio.rwait = np2cfg.iderwait;
 	ideio.wwait = np2cfg.idewwait;

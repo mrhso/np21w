@@ -58,14 +58,6 @@
 #include <gdk/gdk.h>
 #endif
 
-#define PCI_GETCFGREG_B(reg, ofs)			(*((UINT8*)((reg) + (ofs))))
-#define PCI_GETCFGREG_W(reg, ofs)			(*((UINT16*)((reg) + (ofs))))
-#define PCI_GETCFGREG_D(reg, ofs)			(*((UINT32*)((reg) + (ofs))))
-
-#define PCI_SETCFGREG_B(reg, ofs, value)	(PCI_GETCFGREG_B(reg, ofs) = value)
-#define PCI_SETCFGREG_W(reg, ofs, value)	(PCI_GETCFGREG_W(reg, ofs) = value)
-#define PCI_SETCFGREG_D(reg, ofs, value)	(PCI_GETCFGREG_D(reg, ofs) = value)
-
 /* force some bits to zero */
 const uint8_t sr_mask[8] = {
     (uint8_t)~0xfc,
@@ -1343,7 +1335,11 @@ static void cirrus_bitblt_start(CirrusVGAState * s)
     s->cirrus_blt_srcaddr = (s->gr[0x2c] | (s->gr[0x2d] << 8) | (s->gr[0x2e] << 16));
     s->cirrus_blt_mode = s->gr[0x30];
     blt_rop = s->gr[0x32];
-	s->cirrus_blt_modeext = 0; //s->gr[0x33];  // ver0.86 rev8
+	if(s->device_id == CIRRUS_ID_CLGD5446){
+		s->cirrus_blt_modeext = s->gr[0x33];
+	}else{
+		s->cirrus_blt_modeext = 0;  // ver0.86 rev8
+	}
 
 #ifdef DEBUG_BITBLT
     printf("rop=0x%02x mode=0x%02x modeext=0x%02x w=%d h=%d dpitch=%d spitch=%d daddr=0x%08x saddr=0x%08x writemask=0x%02x\n",
@@ -2901,7 +2897,7 @@ static CPUWriteMemoryFunc *cirrus_linear_write[3] = {
     cirrus_linear_writel,
 };
 
-static void cirrus_linear_mem_writeb(void *opaque, target_phys_addr_t addr,
+void cirrus_linear_mem_writeb(void *opaque, target_phys_addr_t addr,
                                      uint32_t_ val)
 {
     CirrusVGAState *s = (CirrusVGAState *) opaque;
@@ -2911,7 +2907,7 @@ static void cirrus_linear_mem_writeb(void *opaque, target_phys_addr_t addr,
     cpu_physical_memory_set_dirty(s->vram_offset + addr);
 }
 
-static void cirrus_linear_mem_writew(void *opaque, target_phys_addr_t addr,
+void cirrus_linear_mem_writew(void *opaque, target_phys_addr_t addr,
                                      uint32_t_ val)
 {
     CirrusVGAState *s = (CirrusVGAState *) opaque;
@@ -2921,7 +2917,7 @@ static void cirrus_linear_mem_writew(void *opaque, target_phys_addr_t addr,
     cpu_physical_memory_set_dirty(s->vram_offset + addr);
 }
 
-static void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr,
+void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr,
                                      uint32_t_ val)
 {
     CirrusVGAState *s = (CirrusVGAState *) opaque;
@@ -3422,6 +3418,23 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
 /* I/O ports */
 // PC-98用I/Oポート -> CL-GD54xxネイティブポート変換
 uint32_t_ vga_convert_ioport(uint32_t_ addr){
+	// PCI版はポート番号そのまま
+	if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI){
+		if((addr & 0xFF0) == 0x3C0 || (addr & 0xFF0) == 0x3B0 || (addr & 0xFF0) == 0x3D0){
+			np2clvga.gd54xxtype = CIRRUS_98ID_PCI;
+			cirrusvga->sr[0x1F] = 0x2d;		// MemClock
+			cirrusvga->gr[0x18] = 0x0f;             // fastest memory configuration
+			cirrusvga->sr[0x0f] = 0x98;
+			cirrusvga->sr[0x17] = 0x20;
+			cirrusvga->sr[0x15] = 0x04; /* memory size, 3=2MB, 4=4MB */
+			cirrusvga->device_id = CIRRUS_ID_CLGD5446;
+			cirrusvga->cr[0x27] = cirrusvga->device_id;
+			cirrusvga->bustype = CIRRUS_BUSTYPE_PCI;
+			cirrus_update_memory_access(cirrusvga);
+			pc98_cirrus_vga_setvramsize();
+			pc98_cirrus_vga_initVRAMWindowAddr();
+		}
+	}
 	if(np2clvga.gd54xxtype <= 0xff){
 		// 内蔵・純正ボード用
 		if((addr & 0xFF0) == 0xCA0 || (addr & 0xFF0) == 0xC50){
@@ -4207,6 +4220,8 @@ void pc98_cirrus_vga_load()
 	default:
 		break;
 	}
+	
+	pc98_cirrus_vga_updatePCIaddr();
 
     cirrus_update_memory_access(s);
     
@@ -5334,6 +5349,32 @@ static void vga_dumb_update_retrace_info(VGAState *s)
     (void) s;
 }
 
+void pc98_cirrus_vga_updatePCIaddr(){
+#if defined(SUPPORT_PCI)
+	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0]){
+		np2clvga.pciLFB_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0;
+		np2clvga.pciLFB_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0];
+
+		cirrusvga->map_addr = cirrusvga->map_end = 0;
+		cirrusvga->lfb_addr = np2clvga.pciLFB_Addr & TARGET_PAGE_MASK;
+		cirrusvga->lfb_end = ((np2clvga.pciLFB_Addr + cirrusvga->real_vram_size) + TARGET_PAGE_SIZE - 1) & TARGET_PAGE_MASK;
+		/* account for overflow */
+		if (cirrusvga->lfb_end < np2clvga.pciLFB_Addr + cirrusvga->real_vram_size)
+			cirrusvga->lfb_end = np2clvga.pciLFB_Addr + cirrusvga->real_vram_size;
+	}else{
+		np2clvga.pciLFB_Addr = 0;
+	}
+	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1]){
+		np2clvga.pciMMIO_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0;
+		np2clvga.pciMMIO_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1];
+	}else{
+		np2clvga.pciMMIO_Addr = 0;
+	}
+		
+	cirrus_update_memory_access(cirrusvga);
+#endif
+}
+
 // VRAMウィンドウアドレスをデフォルト値に設定する
 void pc98_cirrus_vga_initVRAMWindowAddr(){
 	np2clvga.pciLFB_Addr = 0;
@@ -5349,21 +5390,7 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0;
-#if defined(SUPPORT_PCI)
-		if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0]){
-			np2clvga.pciLFB_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0;
-			np2clvga.pciLFB_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0];
-		}else{
-			np2clvga.pciLFB_Addr = 0;
-		}
-		if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1]){
-			np2clvga.pciMMIO_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0;
-			np2clvga.pciMMIO_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1];
-		}else{
-			np2clvga.pciMMIO_Addr = 0;
-		}
-		cirrus_update_memory_access(cirrusvga);
-#endif
+		pc98_cirrus_vga_updatePCIaddr();
 	}else if(np2clvga.gd54xxtype <= 0xff){
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0xf60000;
@@ -5373,6 +5400,9 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 	}else{
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0;
+		if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI){
+			pc98_cirrus_vga_updatePCIaddr();
+		}
 	}
 
 }
@@ -5385,7 +5415,7 @@ void pc98_cirrus_vga_setvramsize(){
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_Be){
 		cirrusvga->real_vram_size = CIRRUS_VRAM_SIZE_1MB; //(cirrusvga->device_id == CIRRUS_ID_CLGD5446) ? CIRRUS_VRAM_SIZE : CIRRUS_VRAM_SIZE;
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
-		cirrusvga->real_vram_size = CIRRUS_VRAM_SIZE_4MB;
+		cirrusvga->real_vram_size = CIRRUS_VRAM_SIZE_2MB;
 	}else if(np2clvga.gd54xxtype <= 0xff){
 		cirrusvga->real_vram_size = CIRRUS_VRAM_SIZE; //(cirrusvga->device_id == CIRRUS_ID_CLGD5446) ? CIRRUS_VRAM_SIZE : CIRRUS_VRAM_SIZE;
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB){
@@ -5459,20 +5489,8 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 	
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD
-		iocore_attachout(0xfa2, cirrusvga_ofa2);
-		iocore_attachinp(0xfa2, cirrusvga_ifa2);
-	
-		iocore_attachout(0xfa3, cirrusvga_ofa3);
-		iocore_attachinp(0xfa3, cirrusvga_ifa3);
-	
-		iocore_attachout(0xfaa, cirrusvga_ofaa);
-		iocore_attachinp(0xfaa, cirrusvga_ifaa);
-	
-		iocore_attachout(0xfab, cirrusvga_ofab);
-		iocore_attachinp(0xfab, cirrusvga_ifab);
-	
 #if defined(SUPPORT_PCI)
-		if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
+		if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
 			// Cirrus CL-GD5446 PCI
 			ZeroMemory(pcidev.devices+pcidev_cirrus_deviceid, sizeof(_PCIDEVICE));
 			pcidev.devices[pcidev_cirrus_deviceid].enable = 1;
@@ -5496,8 +5514,8 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			pcidev.devices[pcidev_cirrus_deviceid].header.interruptline = 0x00;
 			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] = 0x0;
 			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] = 0x0;
-			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] = 0x08000000;
-			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] = 0x00F10000;
+			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] = 0xF0000000;
+			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] = 0xF2000000;
 			pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0] = 0x02000000-1;
 			pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1] = CIRRUS_PNPMMIO_SIZE-1;
 			//pcidev.devices[pcidev_cirrus_deviceid].header.expROMbaseaddr = 0xF4000000;
@@ -5534,12 +5552,25 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			iocore_attachout(0x3da, vga_ioport_write_wrap);
 			iocore_attachinp(0x3da, vga_ioport_read_wrap);
 			
-			pcidev_updateBIOS32data();
+			pcidev_updateRoutingTable();
 
-			s->msr = 0x23;
-		}
+			//s->msr = 0x23;
+		} 
+		if(np2clvga.gd54xxtype != CIRRUS_98ID_PCI)
 #endif
 		{
+			iocore_attachout(0xfa2, cirrusvga_ofa2);
+			iocore_attachinp(0xfa2, cirrusvga_ifa2);
+	
+			iocore_attachout(0xfa3, cirrusvga_ofa3);
+			iocore_attachinp(0xfa3, cirrusvga_ifa3);
+	
+			iocore_attachout(0xfaa, cirrusvga_ofaa);
+			iocore_attachinp(0xfaa, cirrusvga_ifaa);
+	
+			iocore_attachout(0xfab, cirrusvga_ofab);
+			iocore_attachinp(0xfab, cirrusvga_ifab);
+	
 			if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype == CIRRUS_98ID_96){
 				iocore_attachout(0x0902, cirrusvga_off82);
 				iocore_attachinp(0x0902, cirrusvga_iff82);
@@ -5689,71 +5720,91 @@ static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_
 
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD
-		iocore_detachout(0xfa2);
-		iocore_detachinp(0xfa2);
-	
-		iocore_detachout(0xfa3);
-		iocore_detachinp(0xfa3);
-	
-		iocore_detachout(0xfaa);
-		iocore_detachinp(0xfaa);
-	
-		iocore_detachout(0xfab);
-		iocore_detachinp(0xfab);
-	
-		if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype == CIRRUS_98ID_96){
-			iocore_detachout(0x0902);
-			iocore_detachinp(0x0902);
-
-			// XXX: 102Access Control Register 0904h は無視
-
+		
+#if defined(SUPPORT_PCI)
+		if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
+			// Cirrus CL-GD5446 PCI
 			for(i=0;i<16;i++){
-				iocore_detachout(0xc50 + i);	// 0x3C0 to 0x3CF
-				iocore_detachinp(0xc50 + i);	// 0x3C0 to 0x3CF
+				iocore_detachout(0x3c0 + i);
+				iocore_detachinp(0x3c0 + i);
 			}
+			iocore_detachout(0x3b4);
+			iocore_detachinp(0x3b4);
+			iocore_detachout(0x3ba);
+			iocore_detachinp(0x3ba);
+			iocore_detachout(0x3d4);
+			iocore_detachinp(0x3d4);
+			iocore_detachout(0x3da);
+			iocore_detachinp(0x3da);
+		} else
+#endif
+		{
+			iocore_detachout(0xfa2);
+			iocore_detachinp(0xfa2);
 	
-			//　この辺のマッピング本当にあってる？
-			iocore_detachout(0xb54);	// 0x3B4
-			iocore_detachinp(0xb54);	// 0x3B4
-			iocore_detachout(0xb55);	// 0x3B5
-			iocore_detachinp(0xb55);	// 0x3B5
-
-			iocore_detachout(0xd54);	// 0x3D4
-			iocore_detachinp(0xd54);	// 0x3D4
-			iocore_detachout(0xd55);	// 0x3D5
-			iocore_detachinp(0xd55);	// 0x3D5
+			iocore_detachout(0xfa3);
+			iocore_detachinp(0xfa3);
 	
-			iocore_detachout(0xb5a);	// 0x3BA
-			iocore_detachinp(0xb5a);	// 0x3BA
+			iocore_detachout(0xfaa);
+			iocore_detachinp(0xfaa);
+	
+			iocore_detachout(0xfab);
+			iocore_detachinp(0xfab);
+	
+			if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype == CIRRUS_98ID_96){
+				iocore_detachout(0x0902);
+				iocore_detachinp(0x0902);
 
-			iocore_detachout(0xd5a);	// 0x3DA
-			iocore_detachinp(0xd5a);	// 0x3DA
-		}
-		if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype != CIRRUS_98ID_96){
-			iocore_detachout(0xff82);
-			iocore_detachinp(0xff82);
+				// XXX: 102Access Control Register 0904h は無視
 
-			for(i=0;i<16;i++){
-				iocore_detachout(0xca0 + i);	// 0x3C0 to 0x3CF
-				iocore_detachinp(0xca0 + i);	// 0x3C0 to 0x3CF
+				for(i=0;i<16;i++){
+					iocore_detachout(0xc50 + i);	// 0x3C0 to 0x3CF
+					iocore_detachinp(0xc50 + i);	// 0x3C0 to 0x3CF
+				}
+	
+				//　この辺のマッピング本当にあってる？
+				iocore_detachout(0xb54);	// 0x3B4
+				iocore_detachinp(0xb54);	// 0x3B4
+				iocore_detachout(0xb55);	// 0x3B5
+				iocore_detachinp(0xb55);	// 0x3B5
+
+				iocore_detachout(0xd54);	// 0x3D4
+				iocore_detachinp(0xd54);	// 0x3D4
+				iocore_detachout(0xd55);	// 0x3D5
+				iocore_detachinp(0xd55);	// 0x3D5
+	
+				iocore_detachout(0xb5a);	// 0x3BA
+				iocore_detachinp(0xb5a);	// 0x3BA
+
+				iocore_detachout(0xd5a);	// 0x3DA
+				iocore_detachinp(0xd5a);	// 0x3DA
 			}
-	
-			//　この辺のマッピング本当にあってる？
-			iocore_detachout(0xba4);	// 0x3B4
-			iocore_detachinp(0xba4);	// 0x3B4
-			iocore_detachout(0xba5);	// 0x3B5
-			iocore_detachinp(0xba5);	// 0x3B5
+			if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype != CIRRUS_98ID_96){
+				iocore_detachout(0xff82);
+				iocore_detachinp(0xff82);
 
-			iocore_detachout(0xda4);	// 0x3D4
-			iocore_detachinp(0xda4);	// 0x3D4
-			iocore_detachout(0xda5);	// 0x3D5
-			iocore_detachinp(0xda5);	// 0x3D5
+				for(i=0;i<16;i++){
+					iocore_detachout(0xca0 + i);	// 0x3C0 to 0x3CF
+					iocore_detachinp(0xca0 + i);	// 0x3C0 to 0x3CF
+				}
 	
-			iocore_detachout(0xbaa);	// 0x3BA
-			iocore_detachinp(0xbaa);	// 0x3BA
+				//　この辺のマッピング本当にあってる？
+				iocore_detachout(0xba4);	// 0x3B4
+				iocore_detachinp(0xba4);	// 0x3B4
+				iocore_detachout(0xba5);	// 0x3B5
+				iocore_detachinp(0xba5);	// 0x3B5
 
-			iocore_detachout(0xdaa);	// 0x3DA
-			iocore_detachinp(0xdaa);	// 0x3DA
+				iocore_detachout(0xda4);	// 0x3D4
+				iocore_detachinp(0xda4);	// 0x3D4
+				iocore_detachout(0xda5);	// 0x3D5
+				iocore_detachinp(0xda5);	// 0x3D5
+	
+				iocore_detachout(0xbaa);	// 0x3BA
+				iocore_detachinp(0xbaa);	// 0x3BA
+
+				iocore_detachout(0xdaa);	// 0x3DA
+				iocore_detachinp(0xdaa);	// 0x3DA
+			}
 		}
 	}
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype > 0xff){
@@ -5957,6 +6008,19 @@ void pc98_cirrus_vga_shutdown(void)
 	DeleteObject(ga_hbmp_cursor);
 #endif
 	//free(cursorptr);
+}
+
+void pc98_cirrus_vga_resetresolution(void)
+{
+	cirrusvga->cr[0x01] = 0;
+	cirrusvga->cr[0x12] = 0;
+	cirrusvga->cr[0x07] &= ~0x42;
+	// ついでにVRAMもクリア
+	if (np2clvga.gd54xxtype == CIRRUS_98ID_GA98NB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F) {
+		memset(cirrusvga->vram_ptr, 0x00, cirrusvga->real_vram_size);
+	}else{
+		memset(cirrusvga->vram_ptr, 0xff, cirrusvga->real_vram_size);
+	}
 }
 
 // MELCO WAB系ポートならTRUE

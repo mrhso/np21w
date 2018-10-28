@@ -7,10 +7,27 @@
 
 #define PCI_DEVICES_MAX	32
 
+#define PCI_PCMC_82434LX	0
+#define PCI_PCMC_82441FX	1
+#define PCI_PCMC_WILDCAT	2
+
+#define PCI_GETCFGREG_B(reg, ofs)			(*((UINT8*)((reg) + (ofs))))
+#define PCI_GETCFGREG_W(reg, ofs)			(*((UINT16*)((reg) + (ofs))))
+#define PCI_GETCFGREG_D(reg, ofs)			(*((UINT32*)((reg) + (ofs))))
+
+#define PCI_SETCFGREG_B(reg, ofs, value)	(PCI_GETCFGREG_B(reg, ofs) = value)
+#define PCI_SETCFGREG_W(reg, ofs, value)	(PCI_GETCFGREG_W(reg, ofs) = value)
+#define PCI_SETCFGREG_D(reg, ofs, value)	(PCI_GETCFGREG_D(reg, ofs) = value)
+
+#define PCI_SETCFGREG_B_MASK(reg, ofs, value, mask)	(PCI_GETCFGREG_B(reg, ofs) = (PCI_GETCFGREG_B(reg, ofs) & mask) | (value & ~mask))
+#define PCI_SETCFGREG_W_MASK(reg, ofs, value, mask)	(PCI_GETCFGREG_W(reg, ofs) = (PCI_GETCFGREG_W(reg, ofs) & mask) | (value & ~mask))
+#define PCI_SETCFGREG_D_MASK(reg, ofs, value, mask)	(PCI_GETCFGREG_D(reg, ofs) = (PCI_GETCFGREG_D(reg, ofs) & mask) | (value & ~mask))
+
 // コンフィギュレーションレジスタ変更時に呼ばれる。
 typedef void (*PCIREGWCB)(UINT32 devNumber, UINT8 funcNumber, UINT8 cfgregOffset, UINT8 sizeinbytes, UINT32 value);
 
 #pragma pack(1)
+// PCI IRQ ルーティングテーブル エントリ
 typedef struct {
 	UINT8 busnumber;
 	UINT8 devicenumber;
@@ -27,6 +44,7 @@ typedef struct {
 } _PCIPNP_IRQTBL_ENTRY, *PCIPNP_IRQTBL_ENTRY;
 #pragma pack()
 
+// PCI IRQ ルーティングテーブル
 typedef struct {
 	UINT16 datacount;
 	union{
@@ -35,6 +53,7 @@ typedef struct {
 	};
 } _PCIPNP_IRQTBL, *PCIPNP_IRQTBL;
 
+// Configuration Space Header
 typedef struct {
 	UINT16 vendorID;
 	UINT16 deviceID;
@@ -60,6 +79,7 @@ typedef struct {
 	UINT8 max_lat;
 } _PCICSH, *PCICSH;
 
+// PCIデバイス
 typedef struct {
 	UINT8		enable;
 	PCIREGWCB	regwfn;
@@ -76,6 +96,7 @@ typedef struct {
 	};
 } _PCIDEVICE, *PCIDEVICE;
 
+// PCI
 typedef struct {
 	UINT8	enable;
 
@@ -95,6 +116,7 @@ typedef struct {
 	UINT8	biosromtmp[0x8000];
 	OEMCHAR	biosname[16];
 	
+    UINT8 usebios32;
 	UINT32	bios32svcdir;
 	UINT32	bios32entrypoint;
 	_PCIPNP_IRQTBL	biosdata;
@@ -109,13 +131,6 @@ typedef struct {
 extern "C" {
 #endif
 
-extern UINT8 PCI_INTLINE2IRQTBL[];
-
-UINT8* IOOUTCALL pci_getirqtbl(UINT port, REG8 dat);
-UINT8 IOOUTCALL pci_getslotnumber(UINT32 devNumber);
-UINT8 IOOUTCALL pci_getirq(UINT32 devNumber);
-UINT8 IOOUTCALL pci_getirq2(UINT8 intpin, UINT8 slot);
-
 void IOOUTCALL pcidev_w8_0xcfc(UINT port, UINT8 value);
 void IOOUTCALL pcidev_w16_0xcfc(UINT port, UINT16 value);
 void IOOUTCALL pcidev_w32(UINT port, UINT32 value);
@@ -123,8 +138,10 @@ UINT8 IOOUTCALL pcidev_r8_0xcfc(UINT port);
 UINT16 IOOUTCALL pcidev_r16_0xcfc(UINT port);
 UINT32 IOOUTCALL pcidev_r32(UINT port);
 
+void pcidev_basereset();
 void pcidev_reset(const NP2CFG *pConfig);
 void pcidev_bind(void);
+void pcidev_updateRoutingTable();
 void pcidev_updateBIOS32data();
 
 #ifdef __cplusplus

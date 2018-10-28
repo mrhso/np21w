@@ -767,6 +767,11 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 #ifdef SUPPORT_WAB
 		if (ddraw2->CreateSurface(&ddsd, &ddraw.wabsurf, NULL) != DD_OK) {
 			goto scre_err;
+		}else{
+			DDBLTFX	ddbf = {0};
+			ddbf.dwSize = sizeof(ddbf);
+			ddbf.dwFillColor = 0;
+			ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		}
 #endif
 		if (bitcolor == 8) {

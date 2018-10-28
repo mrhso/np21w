@@ -49,6 +49,7 @@
 #define CIRRUS_98ID_WSN		0x102
 #define CIRRUS_98ID_GA98NB	0x200
 #define CIRRUS_98ID_AUTOMSK	0xFFF0
+#define CIRRUS_98ID_AUTO_XE_WS_PCI	0xFFFC
 #define CIRRUS_98ID_AUTO_XE10_WABS	0xFFFD
 #define CIRRUS_98ID_AUTO_XE10_WSN2	0xFFFE
 #define CIRRUS_98ID_AUTO_XE10_WSN4	0xFFFF
@@ -107,6 +108,10 @@ typedef uint32_t_ CPUReadMemoryFunc(void *opaque, target_phys_addr_t addr);
 extern CPUWriteMemoryFunc *g_cirrus_linear_write[3];
 
 extern int pcidev_cirrus_deviceid;
+
+void cirrus_linear_mem_writeb(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_mem_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
+void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 
 uint32_t_ cirrus_vga_mem_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_vga_mem_readw(void *opaque, target_phys_addr_t addr);
@@ -187,6 +192,7 @@ void pc98_cirrus_vga_reset(const NP2CFG *pConfig);
 void pc98_cirrus_vga_bind(void);
 void pc98_cirrus_vga_unbind(void);
 void pc98_cirrus_vga_shutdown(void);
+void pc98_cirrus_vga_resetresolution(void);
 
 void pc98_cirrus_vga_save(void);
 void pc98_cirrus_vga_load(void);
@@ -198,6 +204,7 @@ void __fastcall cirrusvga_ioport_write_wrap32(UINT addr, UINT32 dat);
 
 int pc98_cirrus_isWABport(UINT port);
 
+void pc98_cirrus_vga_updatePCIaddr();
 void pc98_cirrus_vga_initVRAMWindowAddr();
 void pc98_cirrus_vga_setvramsize();
 

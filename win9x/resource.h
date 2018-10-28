@@ -275,6 +275,8 @@
 #define IDC_WABMULTHREAD                19016
 #define IDC_GD5430FAKECURSOR            19017
 #define IDC_PCIENABLE                   19070
+#define IDC_PCIPCMCTYPE                 19071
+#define IDC_PCIBIOS32                   19072
 #define IDC_HOSTDRVENABLE				19090
 #define IDC_HOSTDRVDIR					19091
 #define IDC_HOSTDRVREAD					19092
@@ -404,6 +406,7 @@
 #define IDS_GD5430_WSN_A2F              30611
 #define IDS_GD5430_WSN                  30612
 #define IDS_GD5430_GA98NB               30620
+#define IDS_GD5430_AUTO_XE_WS_PCI       30695
 #define IDS_GD5430_96                   30696
 #define IDS_GD5430_AUTO_XE10_WABS       30697
 #define IDS_GD5430_AUTO_XE10_WSN2       30698
@@ -412,6 +415,9 @@
 #define IDS_IDETYPE_HDD                 30701
 #define IDS_IDETYPE_CDROM               30702
 #define IDS_PHYSICALDRIVE               30710
+#define IDS_PCI_PCMC_82434LX            30800
+#define IDS_PCI_PCMC_82441FX            30801
+#define IDS_PCI_PCMC_WILDCAT            30802
 #define IDS_FONTTITLE                   31001
 #define IDS_FONTEXT                     31002
 #define IDS_FONTFILTER                  31003

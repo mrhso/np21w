@@ -140,7 +140,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 12, 1, 0, 
 #endif
 #if defined(SUPPORT_PCI)
-				0,
+				0, 0, 0,
 #endif
 				0, 0xff00, 
 				0, 0, 0,
@@ -897,12 +897,16 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_CL_GD5430)
 			np2clvga.gd54xxtype = np2clvga.defgd54xxtype; // Auto Select用
+			pc98_cirrus_vga_resetresolution();
 #endif
 #if defined(SUPPORT_IDEIO)
-			ideio_reset(&np2cfg); // XXX: Win9xの再起動で必要
+			ideio_basereset(); // XXX: Win9xの再起動で必要
 #endif
 #if defined(SUPPORT_HOSTDRV)
 			hostdrv_reset(); // XXX: Win9xの再起動で必要
+#endif
+#if defined(SUPPORT_PCI)
+			pcidev_basereset(); // XXX: Win9xの再起動で必要
 #endif
 			CPU_SHUT();
 		}

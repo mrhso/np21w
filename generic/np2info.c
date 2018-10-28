@@ -347,6 +347,14 @@ static void info_bios(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 		milstr_ncat(str, ideio.biosname, maxlen);
 	}
 #endif
+#if defined(SUPPORT_PCI)
+	if (pcidev.biosname[0]) {
+		if (str[0]) {
+			milstr_ncat(str, str_comma, maxlen);
+		}
+		milstr_ncat(str, pcidev.biosname, maxlen);
+	}
+#endif
 	if (str[0] == '\0') {
 		milstr_ncat(str, str_notexist, maxlen);
 	}

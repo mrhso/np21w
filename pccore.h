@@ -226,7 +226,9 @@ struct tagNP2Config
 	UINT8	gpibaddr; // GPIB Address
 #endif
 #if defined(SUPPORT_PCI)
-	UINT8	usepci; // PCU Bus使用
+	UINT8	usepci; // PCI Bus使用
+	UINT8	pci_bios32; // BIOS32使用
+	UINT8	pci_pcmc; // PCMC選択
 #endif
 	
 	UINT8	winntfix;

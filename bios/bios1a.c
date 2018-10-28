@@ -292,9 +292,9 @@ void bios0x1a_pci_part(int is32bit) {
 		case 0x0E: // GET IRQ ROUTING INFORMATION
 			if(CPU_BX == 0x0000){
 				UINT16 dataSize = 0;
-				UINT32 dataAddress = 0;
+				UINT32 dataAddress = 0; // seg:ofs
 				pcidev_updateBIOS32data();
-				if(CPU_AL & 0x80){
+				if(is32bit){
 					// 32bit
 					dataSize = MEMR_READ16(CPU_ES, CPU_EDI);
 					dataAddress = (UINT32)MEMR_READ16(CPU_ES, CPU_EDI+2)|(((UINT32)MEMR_READ16(CPU_ES, CPU_EDI+4)) << 16);
@@ -347,8 +347,18 @@ void bios0x1a_pci_part(int is32bit) {
 			break;
 
 		default:
-			CPU_AH = PCIBIOS_STATUS_UNSUPPORTED_FUNCTION;
-			CPU_FLAGL |= C_FLAG;
+			if(CPU_EAX==0x49435024){
+				// Find BIOS32 Service Directory Entry Point by using $PCI signature
+				CPU_EBX = (pcidev.bios32entrypoint & 0xff000);
+				CPU_ECX = 1;
+				CPU_EDX = (pcidev.bios32entrypoint & 0xfff);
+				CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+				CPU_AL = 0;
+				CPU_FLAGL &= ~C_FLAG;
+			}else{
+				CPU_AH = PCIBIOS_STATUS_UNSUPPORTED_FUNCTION;
+				CPU_FLAGL |= C_FLAG;
+			}
 			break;
 	}
 }
@@ -361,6 +371,7 @@ void bios0x1a_pci(void) {
 		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
 		CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
 
+		// 16bit PCI BIOS処理
 		bios0x1a_pci_part(0);
 
 		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む

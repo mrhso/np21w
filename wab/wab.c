@@ -118,8 +118,13 @@ void np2wab_setScreenSize(int width, int height)
 		np2wab.wndWidth = ga_lastwabwidth = width;
 		np2wab.wndHeight = ga_lastwabheight = height;
 		if(np2wab.relay & 0x3){
-			scrnmng_setwidth(0, width);
-			scrnmng_setheight(0, height);
+			if(width < 32 || height < 32){
+				scrnmng_setwidth(0, 640);
+				scrnmng_setheight(0, 480);
+			}else{
+				scrnmng_setwidth(0, width);
+				scrnmng_setheight(0, height);
+			}
 			scrnmng_updatefsres(); // フルスクリーン解像度更新
 			mousemng_updateclip(); // マウスキャプチャのクリップ範囲を修正
 		}

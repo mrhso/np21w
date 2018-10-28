@@ -43,6 +43,9 @@ extern "C" {
 
 void bios_initialize(void);
 UINT MEMCALL biosfunc(UINT32 adrs);
+#ifdef SUPPORT_PCI
+UINT MEMCALL bios32func(UINT32 adrs);
+#endif
 
 void bios0x09(void);
 void bios0x09_init(void);

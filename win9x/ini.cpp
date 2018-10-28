@@ -617,6 +617,8 @@ static const PFTBL s_IniItems[] =
 #endif
 #if defined(SUPPORT_PCI)
 	PFVAL("USE98PCI", PFTYPE_BOOL,		&np2cfg.usepci),
+	PFVAL("P_BIOS32", PFTYPE_BOOL,		&np2cfg.pci_bios32),
+	PFVAL("PCI_PCMC", PFTYPE_UINT8,		&np2cfg.pci_pcmc),
 #endif
 	
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),

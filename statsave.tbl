@@ -118,6 +118,9 @@ static const SFENTRY np2tbl[] = {
 	{"RS232C",		0,	STATFLAG_BIN,	&rs232c,		sizeof(rs232c)},
 	{"SYSTEMPORT",	0,	STATFLAG_BIN,	&sysport,		sizeof(sysport)},
 	{"uPD4990",		0,	STATFLAG_BIN,	&uPD4990,		sizeof(uPD4990)},
+#if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
+	{"PCI",			0,	STATFLAG_BIN,	&pcidev,		sizeof(pcidev)},
+#endif
 	{"VRAMCTRL",	0,	STATFLAG_BIN,	&vramop,		sizeof(vramop)},
 	{"TEXTRAM",		0,	STATFLAG_BIN,	&tramflag,		sizeof(tramflag)},
 	{"GAIJI",		0,	STATFLAG_GIJ,	NULL,			0},

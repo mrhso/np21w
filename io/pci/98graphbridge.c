@@ -13,13 +13,17 @@
 
 #include	"98graphbridge.h"
 
-#define GETCFGREG_B(reg, ofs)			(*((UINT8*)((reg) + (ofs))))
-#define GETCFGREG_W(reg, ofs)			(*((UINT16*)((reg) + (ofs))))
-#define GETCFGREG_D(reg, ofs)			(*((UINT32*)((reg) + (ofs))))
+#define GETCFGREG_B(reg, ofs)			PCI_GETCFGREG_B(reg, ofs)
+#define GETCFGREG_W(reg, ofs)			PCI_GETCFGREG_W(reg, ofs)
+#define GETCFGREG_D(reg, ofs)			PCI_GETCFGREG_D(reg, ofs)
 
-#define SETCFGREG_B(reg, ofs, value)	(GETCFGREG_B(reg, ofs) = value)
-#define SETCFGREG_W(reg, ofs, value)	(GETCFGREG_W(reg, ofs) = value)
-#define SETCFGREG_D(reg, ofs, value)	(GETCFGREG_D(reg, ofs) = value)
+#define SETCFGREG_B(reg, ofs, value)	PCI_SETCFGREG_B(reg, ofs, value)
+#define SETCFGREG_W(reg, ofs, value)	PCI_SETCFGREG_W(reg, ofs, value)
+#define SETCFGREG_D(reg, ofs, value)	PCI_SETCFGREG_D(reg, ofs, value)
+
+#define SETCFGREG_B_MASK(reg, ofs, value, mask)	PCI_SETCFGREG_B_MASK(reg, ofs, value, mask)
+#define SETCFGREG_W_MASK(reg, ofs, value, mask)	PCI_SETCFGREG_W_MASK(reg, ofs, value, mask)
+#define SETCFGREG_D_MASK(reg, ofs, value, mask)	PCI_SETCFGREG_D_MASK(reg, ofs, value, mask)
 
 int pcidev_98graphbridge_deviceid = 7;
 
