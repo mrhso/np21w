@@ -1949,6 +1949,7 @@ cirrus_hook_write_gr(CirrusVGAState * s, unsigned reg_index, int reg_value)
 		cirrus_update_bank_ptr(s, 1);
         cirrus_update_memory_access(s);
 		break;
+    case 0x0e:			// Power Management (CL-GD5446)
     case 0x10:			// BGCOLOR 0x0000ff00
     case 0x11:			// FGCOLOR 0x0000ff00
     case 0x12:			// BGCOLOR 0x00ff0000
@@ -1966,7 +1967,6 @@ cirrus_hook_write_gr(CirrusVGAState * s, unsigned reg_index, int reg_value)
     case 0x2f:          // BLT WRITEMASK
     case 0x30:			// BLT MODE
     case 0x32:			// RASTER OP
-    case 0x33:			// BLT MODEEXT
     case 0x34:			// BLT TRANSPARENT COLOR 0x00ff
     case 0x35:			// BLT TRANSPARENT COLOR 0xff00
     case 0x38:			// BLT TRANSPARENT COLOR MASK 0x00ff
@@ -1992,6 +1992,13 @@ cirrus_hook_write_gr(CirrusVGAState * s, unsigned reg_index, int reg_value)
     case 0x31:			// BLT STATUS/START
 		cirrus_write_bitblt(s, reg_value);
 		//cirrus_write_bitblt(s, reg_value);
+		break;
+    case 0x33:			// BLT MODEEXT
+		if(s->device_id != CIRRUS_ID_CLGD5446 ||
+		   ((s->gr[0x0e] & 0x20) || (s->gr[0x31] & 0x80)) && (s->cr[0x5e] & 0x20)) {
+			s->gr[reg_index] = reg_value;
+		}
+		
 		break;
 	default:
 #ifdef DEBUG_CIRRUS
@@ -2066,6 +2073,7 @@ cirrus_hook_read_cr(CirrusVGAState * s, unsigned reg_index, int *reg_value)
 		}else{
 			*reg_value = s->cr[reg_index];
 		}
+		s->cr[0x5e] |= 0x20; // XXX: Part IDを読んだらGR33を書き込み可能にする（WinNT4専用の不具合回避）
         break;
     case 0x28:			// Class ID Register
 		if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F){
@@ -2075,6 +2083,11 @@ cirrus_hook_read_cr(CirrusVGAState * s, unsigned reg_index, int *reg_value)
     case 0x26:			// Attribute Controller Index Readback (R)
 		*reg_value = s->ar_index & 0x3f;
 		break;
+    case 0x5e:			// Double Buffer Control (CL-GD5446)
+		if(s->device_id == CIRRUS_ID_CLGD5446){
+			*reg_value = s->cr[reg_index];
+		}
+        break;
     default:
 #ifdef DEBUG_CIRRUS
 	printf("cirrus: inport cr_index %02x\n", reg_index);
@@ -2121,24 +2134,29 @@ cirrus_hook_write_cr(CirrusVGAState * s, unsigned reg_index, int reg_value)
     case 0x1b:			// Extended Display Control
     case 0x1c:			// Sync Adjust and Genlock
     case 0x1d:			// Overlay Extended Control
-	s->cr[reg_index] = reg_value;
+		s->cr[reg_index] = reg_value;
 #ifdef DEBUG_CIRRUS
-	printf("cirrus: handled outport cr_index %02x, cr_value %02x\n",
-	       reg_index, reg_value);
+		printf("cirrus: handled outport cr_index %02x, cr_value %02x\n",
+		       reg_index, reg_value);
 #endif
-	break;
+		break;
     case 0x22:			// Graphics Data Latches Readback (R)
     case 0x24:			// Attribute Controller Toggle Readback (R)
     case 0x26:			// Attribute Controller Index Readback (R)
     case 0x27:			// Part ID (R)
-	break;
+		break;
+    case 0x5e:			// Double Buffer Control (CL-GD5446)
+		if(s->device_id == CIRRUS_ID_CLGD5446){
+			s->cr[reg_index] = reg_value;
+		}
+        break;
     case 0x25:			// Part Status
     default:
 #ifdef DEBUG_CIRRUS
-	printf("cirrus: outport cr_index %02x, cr_value %02x\n", reg_index,
-	       reg_value);
+		printf("cirrus: outport cr_index %02x, cr_value %02x\n", reg_index,
+		       reg_value);
 #endif
-	break;
+		break;
     }
 
     return CIRRUS_HOOK_HANDLED;
@@ -4232,6 +4250,10 @@ void pc98_cirrus_vga_load()
 	// WAB画面サイズ更新
 	if(cirrusvga->get_resolution){
 		cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
+		if((cirrusvga->cirrus_hidden_dac_data & 0xCF) == 0x4A){
+			width *= 2;
+			height *= 2;
+		}
 		np2wab_setScreenSize(width, height);
 	}
 
@@ -4310,6 +4332,14 @@ void cirrus_reset(void *opaque)
 	s->gr[0x25] = 0x06;
 	s->gr[0x26] = 0x20;
 	
+	// XXX: Win2000で動かすのに必要。理由は謎
+	if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI){
+		s->msr = 0x03;
+		s->sr[0x08] = 0xFE;
+		s->gr[0x0e] &= ~0x20; // XXX: for WinNT4.0
+		s->gr[0x33] = 0x04; // XXX: for WinNT4.0
+		s->cr[0x5e] &= ~0x20;//s->cr[0x5e] |= 0x20; // XXX: Part IDを読むまでGR33を書き込み禁止にする（WinNT4専用の不具合回避）
+	}
 	//fh = fopen("vgadump.bin", "w+");
 	//if (fh != FILEH_INVALID) {
 	//	fwrite(s, sizeof(CirrusVGAState), 1, fh);
@@ -4367,7 +4397,9 @@ void cirrusvga_drawGraphic(){
 
 	vram_ptr = cirrusvga->vram_ptr + np2wab.vramoffs;
 	
-	//	vram_ptr = mem + 640*16*memshift;
+	//// DEBUG 
+	////////	vram_ptr = mem + 640*16*memshift;
+	//vram_ptr = cirrusvga->vram_ptr + np2wab.vramoffs + 640*16*memshift;
 	//if(GetKeyState(VK_SHIFT)<0){
 	//	memshift++;
 	////	kdown = 1;
@@ -4377,6 +4409,7 @@ void cirrusvga_drawGraphic(){
 	//}
 	//if(GetKeyState(VK_CONTROL)<0){
 	//	memshift--;
+	//	if(memshift<0) memshift = 0;
 	//	//vram_ptr = mem + 1024*768*memshift;
 	////	kdownc = 1;
 	////}else if(kdownc){
@@ -4386,10 +4419,21 @@ void cirrusvga_drawGraphic(){
 	////if(GetKeyState(VK_CONTROL)<0){
 	////	vram_ptr = vram_ptr + 1024*768*2;
 	////}
+	//// DEBUG (END)
 
+	// Cirrusの色数と解像度を取得
     bpp = cirrusvga->get_bpp((VGAState*)cirrusvga);
 	//bpp = cirrusvga->cirrus_blt_pixelwidth*8;
     cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
+
+	// Palette mode > 85MHz (1280x1024)
+	if((cirrusvga->cirrus_hidden_dac_data & 0xCF) == 0x4A){
+		bpp = 8;
+		width *= 2;
+		height *= 2;
+	}
+
+	// WAB解像度セット
 	np2wab.realWidth = width;
 	np2wab.realHeight = height;
     
@@ -5381,6 +5425,9 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 	np2clvga.pciLFB_Mask = 0;
 	np2clvga.pciMMIO_Addr = 0;
 	np2clvga.pciMMIO_Mask = 0;
+#if defined(SUPPORT_PCI)
+	pcidev.devices[pcidev_cirrus_deviceid].enable = 0;
+#endif
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_Be){
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0xf00000;
@@ -5390,6 +5437,9 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0;
+#if defined(SUPPORT_PCI)
+		pcidev.devices[pcidev_cirrus_deviceid].enable = 1;
+#endif
 		pc98_cirrus_vga_updatePCIaddr();
 	}else if(np2clvga.gd54xxtype <= 0xff){
 		np2clvga.VRAMWindowAddr = 0;
@@ -5401,6 +5451,9 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 		np2clvga.VRAMWindowAddr = 0;
 		np2clvga.VRAMWindowAddr2 = 0;
 		if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI){
+#if defined(SUPPORT_PCI)
+			pcidev.devices[pcidev_cirrus_deviceid].enable = 1;
+#endif
 			pc98_cirrus_vga_updatePCIaddr();
 		}
 	}
@@ -5553,8 +5606,6 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			iocore_attachinp(0x3da, vga_ioport_read_wrap);
 			
 			pcidev_updateRoutingTable();
-
-			//s->msr = 0x23;
 		} 
 		if(np2clvga.gd54xxtype != CIRRUS_98ID_PCI)
 #endif
@@ -5720,10 +5771,10 @@ static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_
 
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype <= 0xff){
 		// ONBOARD
-		
 #if defined(SUPPORT_PCI)
-		if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
+		if(np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
 			// Cirrus CL-GD5446 PCI
+			pcidev.devices[pcidev_cirrus_deviceid].enable = 0;
 			for(i=0;i<16;i++){
 				iocore_detachout(0x3c0 + i);
 				iocore_detachinp(0x3c0 + i);
@@ -5736,7 +5787,8 @@ static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_
 			iocore_detachinp(0x3d4);
 			iocore_detachout(0x3da);
 			iocore_detachinp(0x3da);
-		} else
+		}
+		if(np2clvga.gd54xxtype != CIRRUS_98ID_PCI)
 #endif
 		{
 			iocore_detachout(0xfa2);
@@ -6021,6 +6073,13 @@ void pc98_cirrus_vga_resetresolution(void)
 	}else{
 		memset(cirrusvga->vram_ptr, 0xff, cirrusvga->real_vram_size);
 	}
+#if defined(SUPPORT_PCI)
+	// XXX: Win2000で動かすのに必要。理由は謎
+	if(np2clvga.gd54xxtype == CIRRUS_98ID_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WS_PCI){
+		cirrusvga->msr = 0x03;
+		cirrusvga->sr[0x08] = 0xFE;
+	}
+#endif
 }
 
 // MELCO WAB系ポートならTRUE

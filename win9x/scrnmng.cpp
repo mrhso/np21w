@@ -1349,9 +1349,14 @@ void scrnmng_updatefsres(void) {
 	RECT rect;
 	int width = scrnstat.width;
 	int height = scrnstat.height;
+	DDBLTFX	ddbf = {0};
+
 	rect.left = rect.top = 0;
 	rect.right = width;
 	rect.bottom = height;
+
+	ddbf.dwSize = sizeof(ddbf);
+	ddbf.dwFillColor = 0;
 
 	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		clearoutscreen();
@@ -1359,7 +1364,11 @@ void scrnmng_updatefsres(void) {
 		np2wab.lastHeight = 0;
 		return;
 	}
-	if(scrnstat.width<100 || scrnstat.height<100) return;
+	if(scrnstat.width<100 || scrnstat.height<100){
+		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		clearoutscreen();
+		return;
+	}
 	
 	if(np2wab.lastWidth!=width || np2wab.lastHeight!=height){
 		np2wab.lastWidth = width;
@@ -1388,6 +1397,7 @@ void scrnmng_updatefsres(void) {
 			}
 		}
 		clearoutscreen();
+		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 	}
 #endif
 }

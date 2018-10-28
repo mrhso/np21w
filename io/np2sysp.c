@@ -69,6 +69,7 @@ static const OEMCHAR str_mhz[] = OEMTEXT("%uMHz");
 #define NP21W_SWITCH_GD54XXTYPE	1
 #define NP21W_SWITCH_SOUNDBOARD	2
 #define NP21W_SWITCH_SYNCCLOCK	3
+#define NP21W_SWITCH_PCIENABLE	4
 
 
 static void setoutstr(const OEMCHAR *str) {
@@ -194,6 +195,11 @@ static void np2sysp_getconfig(const void *arg1, long arg2) {
 		OEMSPRINTF(str, OEMTEXT("%d"), configvalue16);
 		setoutstr(str);
 		return;
+	case NP21W_SWITCH_PCIENABLE:
+#if defined(SUPPORT_PCI)
+		configvalue = pcidev.enable ? 1 : 0;
+#endif
+		return;
 	case NP21W_SWITCH_DUMMY:
 	default:
 		break;
@@ -279,9 +285,20 @@ static void np2sysp_cngconfig(const void *arg1, long arg2) {
 		pc98_cirrus_vga_initVRAMWindowAddr();
 		np2clvga.mmioenable = 0;
 		np2wab.paletteChanged = 1;
+		pc98_cirrus_vga_resetresolution();
 #endif
 		OEMSPRINTF(str, OEMTEXT("%d"), configvalue16);
 		setoutstr(str);
+		return;
+	case NP21W_SWITCH_PCIENABLE:
+#if defined(SUPPORT_PCI)
+		if(configvalue==0){
+			pcidev.enable = configvalue;
+		}else{
+			// TODO: 無効→有効にする場合のコードを書く
+		}
+		configvalue = pcidev.enable;
+#endif
 		return;
 	case NP21W_SWITCH_DUMMY:
 	default:
