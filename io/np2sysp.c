@@ -14,6 +14,7 @@
 #include	"sound/sound.h"
 #include	"sound/beep.h"
 #include	"sound/fmboard.h"
+#include	"sound/soundrom.h"
 #include	"cbus/mpu98ii.h"
 #if defined(SUPPORT_IDEIO)
 #include	"cbus/ideio.h"
@@ -228,8 +229,36 @@ static void np2sysp_cngconfig(const void *arg1, long arg2) {
 		if(configvalue != (UINT8)g_nSoundID){
 			sound_reset();
 			fmboard_unbind();
+			if(g_nSoundID == SOUNDID_PC_9801_118){
+				iocore_detachout(cs4231.port[10]);
+				iocore_detachinp(cs4231.port[10]);
+				iocore_detachout(cs4231.port[10]+1);
+				iocore_detachinp(cs4231.port[10]+1);
+			}
+			soundrom_reset();
 			fmboard_reset(&np2cfg, (SOUNDID)configvalue);
 			fmboard_bind();
+			if (((pccore.model & PCMODELMASK) >= PCMODEL_VX) &&
+				(pccore.sound & 0x7e)) {
+				if(g_nSoundID == SOUNDID_MATE_X_PCM || ((g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118) && np2cfg.snd118irqf == np2cfg.snd118irqp) || g_nSoundID == SOUNDID_PC_9801_86_WSS){
+					iocore_out8(0x188, 0x27);
+					iocore_out8(0x18a, 0x30);
+				}else{
+					iocore_out8(0x188, 0x27);
+					iocore_out8(0x18a, 0x3f);
+				}
+			}
+			if(g_nSoundID == SOUNDID_PC_9801_118){
+				iocore_attachout(cs4231.port[10], mpu98ii_o0);
+				iocore_attachinp(cs4231.port[10], mpu98ii_i0);
+				iocore_attachout(cs4231.port[10]+1, mpu98ii_o2);
+				iocore_attachinp(cs4231.port[10]+1, mpu98ii_i2);
+				switch(np2cfg.snd118irqm){
+				case 10:
+					mpu98.irqnum = 10;
+					break;
+				}
+			}
 #if defined(SUPPORT_IDEIO)
 			ideio_bindCDDA();
 #endif	/* defined(SUPPORT_IDEIO) */

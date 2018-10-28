@@ -268,7 +268,7 @@ void cs4231io_reset(void) {
 	cs4231.reg.line_r = 0x88;//13
 	cs4231.reg.reserved1=0x80; //16 from PC-9821Nr166
 	cs4231.reg.reserved2=0x80; //17 from PC-9821Nr166
-	if(g_nSoundID==SOUNDID_PC_9801_118){
+	if(g_nSoundID==SOUNDID_PC_9801_118 || g_nSoundID==SOUNDID_PC_9801_86_118){
 		cs4231.reg.chipid	=0xa2;//19 from PC-9801-118 CS4231
 	}else{
 		cs4231.reg.chipid	=0x80;//19 from PC-9821Nr166 YMF715

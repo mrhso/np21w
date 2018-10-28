@@ -1349,11 +1349,7 @@ void scrnmng_updatefsres(void) {
 	rect.bottom = height;
 
 	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
-		DDBLTFX ddbltfx = {0};
-		ddbltfx.dwSize = sizeof(DDBLTFX);
-		//ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
-		//ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
-		DDBlt_ColorFill(ddraw.backsurf, &rect, &ddbltfx, ddraw.wabsurf);
+		clearoutscreen();
 		np2wab.lastWidth = 0;
 		np2wab.lastHeight = 0;
 		return;
@@ -1386,11 +1382,7 @@ void scrnmng_updatefsres(void) {
 				g_scrnmode = g_scrnmode | SCRNMODE_FULLSCREEN;
 			}
 		}
-		DDBLTFX ddbltfx = {0};
-		ddbltfx.dwSize = sizeof(DDBLTFX);
-		//ddraw.primsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
-		//ddraw.backsurf->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT, &ddbltfx);
-		DDBlt_ColorFill(ddraw.backsurf, &rect, &ddbltfx, ddraw.wabsurf);
+		clearoutscreen();
 	}
 #endif
 }
