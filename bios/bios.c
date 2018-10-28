@@ -33,6 +33,9 @@
 
 static const char neccheck[] = "Copyright (C) 1983 by NEC Corporation";
 
+//static const char pcibios_BIOS32SD[16] = {0x5F, 0x33, 0x32, 0x5F, 0x12, 0x56, 0x0F, 0x00, 0x00, 0x01, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00};
+static const char pcibios_BIOS32SD[16] = {0};
+
 typedef struct {
 	UINT8	port;
 	UINT8	data;
@@ -192,6 +195,10 @@ static void bios_reinitbyswitch(void) {
 	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number
 #endif
 	
+#if defined(SUPPORT_PCI)
+	mem[0xF8E80+0x0004] |= 0x20;
+#endif
+	
 #if defined(SUPPORT_HRTIMER)
 	{
 		_SYSTIME hrtimertime;
@@ -289,6 +296,20 @@ void bios_initialize(void) {
 				break;
 			}
 		}
+#if defined(SUPPORT_PCI)
+		// PCI BIOS32 Service Directory‚ð’T‚·
+		for (i=0; i<0x10000; i+=0x10) {
+			tmp = LOADINTELDWORD(mem + 0xf0000 + i);
+			if (tmp == 0x5F33325F) { // "_32_"
+				TRACEOUT(("found BIOS32 Service Directory at %.5x", 0xf0000 + i));
+				CopyMemory(mem + 0xf0000 + i, pcibios_BIOS32SD, sizeof(pcibios_BIOS32SD)); // ’×‚·
+				break;
+			}
+		}
+		if(i==0x10000){
+			TRACEOUT(("BIOS32 Service Directory not found."));
+		}
+#endif
 	}
 	else {
 		CopyMemory(mem + 0x0e8000, nosyscode, sizeof(nosyscode));
@@ -385,6 +406,7 @@ void bios_initialize(void) {
 
 	CopyMemory(mem + 0x1c0000, mem + ITF_ADRS, 0x08000);
 	CopyMemory(mem + 0x1e8000, mem + 0x0e8000, 0x10000);
+
 }
 
 static void bios_itfcall(void) {
@@ -509,7 +531,14 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 
 		case BIOS_BASE + BIOSOFST_PRT:
 			CPU_REMCLOCK -= 200;
-			bios0x1a_prt();
+#if defined(SUPPORT_PCI)
+			if(CPU_AH == 0xb1){
+				bios0x1a_pci();
+			}else
+#endif
+			{
+				bios0x1a_prt();
+			}
 			return(1);
 
 		case BIOS_BASE + BIOSOFST_1b:

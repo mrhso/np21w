@@ -43,6 +43,7 @@
 #define CIRRUS_98ID_Xe10	0x5B
 #define CIRRUS_98ID_Cb2		0x5C
 #define CIRRUS_98ID_Cx2		0x5D
+#define CIRRUS_98ID_PCI		0xA0
 #define CIRRUS_98ID_WAB		0x100
 #define CIRRUS_98ID_WSN_A2F	0x101
 #define CIRRUS_98ID_WSN		0x102
@@ -158,6 +159,10 @@ typedef struct {
 	UINT32	VRAMWindowAddr3;
 	//UINT32	VRAMWindowAddr3;
 	//UINT32	VRAMWindowAddr3size;
+	UINT32	pciLFB_Addr;
+	UINT32	pciLFB_Mask;
+	UINT32	pciMMIO_Addr;
+	UINT32	pciMMIO_Mask;
 	REG8	mmioenable;
 	UINT32	gd54xxtype;
 	UINT32	defgd54xxtype;

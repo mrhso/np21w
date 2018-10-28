@@ -675,7 +675,6 @@ static void FPU_FCMOVNU(UINT st, UINT other){
 }
 
 static void FPU_FRNDINT(void){
-	SINT64 temp;
 	
 	float_exception_flags = (FPU_STATUSWORD & 0x3f);
 	FPU_STAT.reg[FPU_STAT_TOP].d = floatx80_round_to_int(FPU_STAT.reg[FPU_STAT_TOP].d);

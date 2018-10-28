@@ -443,6 +443,9 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 	//if (0x400 <= address && address <= 0x5ff) {
 	//	printf("BDA (read8): %x ret %x", address, mem[address]);
 	//}
+	//if (address == 0xf0000) {
+	//	printf("SYS (read8): %x ret %x", address, *((UINT8*)(mem+address)));
+	//}
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);
 	}
@@ -453,6 +456,13 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 			UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 			UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 			UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+			if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+				if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+					return cirrus_linear_readb(cirrusvga_opaque, address);
+				}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+					return cirrus_mmio_readb(cirrusvga_opaque, address);
+				}
+			}
 			if(vramWndAddr){
 				if(vramWndAddr <= address){
 					if(address < vramWndAddr + VRAMWINDOW_SIZE){
@@ -527,9 +537,12 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 	//		TRACEOUT(("BDA (read16): %x ret %x", address, mem[address]));
 	//	}
 	//}
-	if (0x400 <= address && address <= 0x5ff && address != 0x58a && address != 0x58b) {
-		printf("BDA (read16): %x ret %x", address, *((UINT16*)(mem+address)));
-	}
+	//if (address == 0xf0000) {
+	//	printf("SYS (read16): %x ret %x", address, *((UINT16*)(mem+address)));
+	//}
+	//if (0x400 <= address && address <= 0x5ff && address != 0x58a && address != 0x58b) {
+	//	printf("BDA (read16): %x ret %x", address, *((UINT16*)(mem+address)));
+	//}
 	if (address < (I286_MEMREADMAX - 1)) {
 		return(LOADINTELWORD(mem + address));
 	}
@@ -540,6 +553,13 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 				UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 				UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 				UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+				if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+					if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+						return cirrus_linear_readw(cirrusvga_opaque, address);
+					}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+						return cirrus_mmio_readw(cirrusvga_opaque, address);
+					}
+				}
 				if(vramWndAddr){
 					if(vramWndAddr <= address){
 						if(address < vramWndAddr + VRAMWINDOW_SIZE){
@@ -623,6 +643,9 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 	//if (0x400 <= address && address <= 0x5ff) {
 	//	printf("BDA (read32): %x ret %x", address, *((UINT32*)(mem+address)));
 	//}
+	//if (address == 0xf0000) {
+	//	printf("SYS (read32): %x ret %x", address, *((UINT32*)(mem+address)));
+	//}
 	if (address < (I286_MEMREADMAX - 3)) {
 		return(LOADINTELDWORD(mem + address));
 	}
@@ -633,6 +656,13 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 				UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 				UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 				UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+				if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+					if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+						return cirrus_linear_readl(cirrusvga_opaque, address);
+					}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+						return cirrus_mmio_readl(cirrusvga_opaque, address);
+					}
+				}
 				if(vramWndAddr){
 					if(vramWndAddr <= address){
 						if(address < vramWndAddr + VRAMWINDOW_SIZE){
@@ -861,6 +891,15 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 			UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 			UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 			UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+			if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+				if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+					g_cirrus_linear_write[0](cirrusvga_opaque, address, value);
+					return;
+				}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+					cirrus_mmio_writeb(cirrusvga_opaque, address, value);
+					return;
+				}
+			}
 			if(vramWndAddr){
 				if(vramWndAddr <= address){
 					if(address < vramWndAddr + VRAMWINDOW_SIZE){
@@ -949,6 +988,15 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 				UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 				UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 				UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+				if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+					if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+						g_cirrus_linear_write[1](cirrusvga_opaque, address, value);
+						return;
+					}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+						cirrus_mmio_writew(cirrusvga_opaque, address, value);
+						return;
+					}
+				}
 				if(vramWndAddr){
 					if(vramWndAddr <= address){
 						if(address < vramWndAddr + VRAMWINDOW_SIZE){
@@ -1044,6 +1092,15 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 				UINT32 vramWndAddr = np2clvga.VRAMWindowAddr;
 				UINT32 vramWndAddr2 = np2clvga.VRAMWindowAddr2;
 				UINT32 vramWndAddr3 = np2clvga.VRAMWindowAddr3;
+				if(np2clvga.pciLFB_Addr && np2clvga.pciMMIO_Addr){
+					if((address & np2clvga.pciLFB_Mask) == np2clvga.pciLFB_Addr){
+						g_cirrus_linear_write[2](cirrusvga_opaque, address, value);
+						return;
+					}else if((address & np2clvga.pciMMIO_Mask) == np2clvga.pciMMIO_Addr){
+						cirrus_mmio_writel(cirrusvga_opaque, address, value);
+						return;
+					}
+				}
 				if(vramWndAddr){
 					if(vramWndAddr <= address){
 						if(address < vramWndAddr + VRAMWINDOW_SIZE){

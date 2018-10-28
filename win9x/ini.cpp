@@ -615,6 +615,9 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GPIBMODE", PFTYPE_UINT8,		&np2cfg.gpibmode),
 	PFVAL("GPIBADDR", PFTYPE_UINT8,		&np2cfg.gpibaddr),
 #endif
+#if defined(SUPPORT_PCI)
+	PFVAL("USE98PCI", PFTYPE_BOOL,		&np2cfg.usepci),
+#endif
 	
 	PFMAX("DAVOLUME", PFTYPE_UINT8,		&np2cfg.davolume,		255),
 	PFMAX("MODELNUM", PFTYPE_HEX8,		&np2cfg.modelnum,		255),

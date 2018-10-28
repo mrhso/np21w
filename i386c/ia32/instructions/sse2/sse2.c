@@ -1332,7 +1332,7 @@ void SSE2_PADDD(void)
 //}
 void SSE2_PADDSB(void)
 {
-	SINT8 data2buf[2];
+	SINT8 data2buf[16];
 	SINT8 *data1, *data2;
 	int i;
 	

@@ -225,6 +225,9 @@ struct tagNP2Config
 	UINT8	gpibmode; // GPIB Master/Slave
 	UINT8	gpibaddr; // GPIB Address
 #endif
+#if defined(SUPPORT_PCI)
+	UINT8	usepci; // PCU Buségóp
+#endif
 	
 	UINT8	winntfix;
 	UINT16	sysiomsk;

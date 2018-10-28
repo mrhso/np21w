@@ -271,7 +271,7 @@ static void FPU_FLD80(UINT32 addr, UINT reg)
 	{
 		UINT64 tmp;
 		unsigned int shift;
-		shift = (63-exp64);
+		shift = (unsigned int)(63-exp64);
 		// 1.xxxを64bit整数表現できるかチェック
 		if(exp64 >= 0 && // 1未満なったらアウト
 			exp64 <= 63 && // 値が64bit整数で表現できない場合もアウト（とりあえず符号無しで判定）

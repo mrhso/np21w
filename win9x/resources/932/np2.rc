@@ -607,6 +607,14 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,140,130,44,14
 END
 
+IDD_PCI DIALOGEX 0, 0, 184, 124
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "General"
+FONT 9, "‚l‚r ‚oƒSƒVƒbƒN", 0, 0, 0x0
+BEGIN
+    CONTROL         "Enabled (experimental)",IDC_PCIENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,8,140,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1030,6 +1038,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Window Accelerator option...",   IDM_WABOPT
         MENUITEM SEPARATOR
+        MENUITEM "&PCI option...",                  IDM_PCIOPT
+        MENUITEM SEPARATOR
         MENUITEM "&Hostdrv option...",              IDM_HOSTDRVOPT
     END
     POPUP "&Other"
@@ -1388,6 +1398,7 @@ BEGIN
     IDS_SERIALOPTION        "Serial option"
     IDS_NETWORKOPTION       "Network option"
     IDS_WABOPTION           "Window Accelerator board option"
+    IDS_PCIOPTION           "PCI option"
 END
 
 STRINGTABLE
@@ -1541,6 +1552,7 @@ BEGIN
     IDS_GD5430_XE10         "PC-9821Xe10,Xa7e,Xb10 built-in"
     IDS_GD5430_CB2          "PC-9821Cb2 built-in"
     IDS_GD5430_CX2          "PC-9821Cx2 built-in"
+    IDS_GD5430_PCI          "PC-9821 PCI CL-GD5446 built-in"
     IDS_GD5430_WAB          "MELCO WAB-S"
     IDS_GD5430_WSN_A2F      "MELCO WSN-A2F"
     IDS_GD5430_WSN          "MELCO WSN-A4F"

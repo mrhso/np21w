@@ -4,6 +4,10 @@
 #include	"iocore.h"
 #include	"bios.h"
 
+#if defined(SUPPORT_PCI)
+#include "ia32/cpu.h"
+#include "ia32/instructions/data_trans.h"
+#endif
 
 // ---- CMT
 
@@ -79,3 +83,301 @@ void bios0x1a_prt(void) {
 	}
 }
 
+
+#if defined(SUPPORT_PCI)
+
+// ---- PCI
+
+enum {
+	PCIBIOS_STATUS_SUCCESSFUL			= 0x00,
+	PCIBIOS_STATUS_UNSUPPORTED_FUNCTION	= 0x81,
+	PCIBIOS_STATUS_BAD_VENDOR_ID		= 0x83,
+	PCIBIOS_STATUS_DEVICE_NOT_FOUND		= 0x86,
+	PCIBIOS_STATUS_BAD_PCI_REG_NUMBER	= 0x87,
+	PCIBIOS_STATUS_SET_FAILED			= 0x88,
+	PCIBIOS_STATUS_BUFFER_TOO_SMALL		= 0x89,
+};
+
+void bios0x1a_pci(void) {
+
+	int i, j;
+	int idx;
+	int devnum;
+	int funcnum;
+	UINT32 oldDX;
+	oldDX = CPU_DX;
+	
+	if(pcidev.enable){
+		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
+		CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
+
+		switch(CPU_AL & 0x7f) {
+			case 0x01: // INSTALLATION CHECK
+				CPU_AH = 0x00;
+				CPU_FLAGL &= ~C_FLAG;
+				CPU_EDX = 0x20494350; // " ICP"
+				//CPU_EDI = 0; // XXX: physical address of protected-mode entry point
+				CPU_AL = 0x1; // configuration space access mechanism 1 supported
+				CPU_BH = 0x02; // PCI interface level major version (BCD)
+				CPU_BL = 0x00; // PCI interface level minor version (BCD)
+				CPU_CL = 0x0; // number of last PCI bus in system
+				break;
+
+			case 0x02: // FIND PCI DEVICE
+				// デバイスを探す
+				for(i=0;i<PCI_DEVICES_MAX;i++){
+					if(pcidev.devices[i].enable){
+						if(pcidev.devices[i].header.deviceID == CPU_CX && pcidev.devices[i].header.vendorID == CPU_DX){
+							break;
+						}
+					}
+				}
+				if(i < PCI_DEVICES_MAX){
+					// 発見
+					CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+					CPU_FLAGL &= ~C_FLAG;
+					CPU_BH = 0x0; // bus number
+					CPU_BL = (i << 3)|(0); // device/function number (bits 7-3 device, bits 2-0 func)
+				}else{
+					// 発見できず
+					CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+
+			case 0x03: // FIND PCI CLASS CODE
+				// デバイスを探す
+				idx = CPU_SI; // 同じクラスを持つデバイスのうち、idx番目に見つけたものを返す
+				for(i=0;i<PCI_DEVICES_MAX;i++){
+					if(pcidev.devices[i].enable){
+						if((*((UINT32*)pcidev.devices[i].header.classcode) & 0xffffff) == (CPU_ECX & 0xffffff)){
+							if(idx==0)
+								break;
+							idx--;
+						}
+					}
+				}
+				if(i < PCI_DEVICES_MAX){
+					// 発見
+					CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+					CPU_FLAGL &= ~C_FLAG;
+					CPU_BH = 0x0; // bus number
+					CPU_BL = (i << 3)|(0); // device/function number (bits 7-3 device, bits 2-0 func)
+				}else{
+					// 発見できず
+					CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+			
+			case 0x06: // PCI BUS-SPECIFIC OPERATIONS
+				CPU_AH = PCIBIOS_STATUS_UNSUPPORTED_FUNCTION;
+				CPU_FLAGL |= C_FLAG;
+				break;
+			
+			case 0x08: // READ CONFIGURATION BYTE
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						CPU_CL = pcidev.devices[devnum].cfgreg8[CPU_DI];
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+						CPU_CL = 0xff;
+					}
+				}else{
+					//CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					//CPU_FLAGL |= C_FLAG;
+					CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+					CPU_FLAGL &= ~C_FLAG;
+					CPU_CL = 0xff;
+				}
+				break;
+			case 0x09: // READ CONFIGURATION WORD
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						CPU_CX = *((UINT16*)(pcidev.devices[devnum].cfgreg8 + CPU_DI)); // XXX: 2の倍数のレジスタ番号でなくても読めちゃうけどまあいいかー
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+						CPU_CX = 0xffff;
+					}
+				}else{
+					//CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					//CPU_FLAGL |= C_FLAG;
+					CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+					CPU_FLAGL &= ~C_FLAG;
+					CPU_CX = 0xffff;
+				}
+				break;
+			case 0x0A: // READ CONFIGURATION DWORD
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						CPU_ECX = *((UINT32*)(pcidev.devices[devnum].cfgreg8 + CPU_DI)); // XXX: 4の倍数のレジスタ番号でなくても読めちゃうけどまあいいかー
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+						CPU_ECX = 0xffffffff;
+					}
+				}else{
+					//CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					//CPU_FLAGL |= C_FLAG;
+					CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+					CPU_FLAGL &= ~C_FLAG;
+					CPU_ECX = 0xffffffff;
+				}
+				break;
+			
+			case 0x0B: // WRITE CONFIGURATION BYTE
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						pcidev.devices[devnum].cfgreg8[CPU_DI] = CPU_CL;
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+					}
+				}else{
+					CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+			case 0x0C: // WRITE CONFIGURATION WORD
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						*((UINT16*)(pcidev.devices[devnum].cfgreg8 + CPU_DI)) = CPU_CX; // XXX: 2の倍数のレジスタ番号でなくても書けちゃうけどまあいいかー
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+					}
+				}else{
+					CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+			case 0x0D: // WRITE CONFIGURATION DWORD
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				if(CPU_BH==0 && funcnum==0 && pcidev.devices[devnum].enable){
+					if(CPU_DI <= 0xff){
+						CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+						CPU_FLAGL &= ~C_FLAG;
+						*((UINT32*)(pcidev.devices[devnum].cfgreg8 + CPU_DI)) = CPU_ECX; // XXX: 4の倍数のレジスタ番号でなくても書けちゃうけどまあいいかー
+					}else{
+						CPU_AH = PCIBIOS_STATUS_BAD_PCI_REG_NUMBER;
+						CPU_FLAGL |= C_FLAG;
+					}
+				}else{
+					CPU_AH = PCIBIOS_STATUS_DEVICE_NOT_FOUND;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+			
+			case 0x0E: // GET IRQ ROUTING INFORMATION
+				if(CPU_BX == 0x0000){
+					UINT16 dataSize = 0;
+					UINT32 dataAddress = 0;
+					_PCIPNP_IRQTBL irqtbl = {0};
+					_PCIPNP_IRQTBL irqtbl2 = {0};
+					for(i=0;i<PCI_DEVICES_MAX;i++){
+						if(pcidev.devices[i].enable){
+							int slot = pci_getslotnumber(i);
+							irqtbl.data[irqtbl.datacount].busnumber = 0;
+							irqtbl.data[irqtbl.datacount].devicenumber = (i << 3);
+							irqtbl.data[irqtbl.datacount].irqmap4intA = (1 << pci_getirq2(0, slot));
+							irqtbl.data[irqtbl.datacount].link4intA = 0;//(slot==0 ? 1 : 0);
+							irqtbl.data[irqtbl.datacount].irqmap4intB = (1 << pci_getirq2(1, slot));
+							irqtbl.data[irqtbl.datacount].link4intB = 0;//(slot==1 ? 1 : 0);
+							irqtbl.data[irqtbl.datacount].irqmap4intC = (1 << pci_getirq2(2, slot));
+							irqtbl.data[irqtbl.datacount].link4intC = 0;//(slot==2 ? 1 : 0);
+							irqtbl.data[irqtbl.datacount].irqmap4intD = (1 << pci_getirq2(3, slot));
+							irqtbl.data[irqtbl.datacount].link4intD = 0;//(slot==3 ? 1 : 0);
+							irqtbl.data[irqtbl.datacount].slot = slot;
+							irqtbl.datacount++;
+						}
+					}
+					if(CPU_AL & 0x80){
+						// 32bit
+						dataSize = MEMR_READ16(CPU_ES, CPU_EDI);
+						dataAddress = (UINT32)MEMR_READ16(CPU_ES, CPU_EDI+2)|(((UINT32)MEMR_READ16(CPU_ES, CPU_EDI+4)) << 16);
+						if(dataSize < irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY)){
+							MEMR_WRITE16(CPU_ES, CPU_EDI, irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY));
+							CPU_AH = PCIBIOS_STATUS_BUFFER_TOO_SMALL;
+							CPU_FLAGL |= C_FLAG;
+						}else{
+							dataSize = irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY);
+							MEMR_WRITE16(CPU_ES, CPU_EDI, dataSize);
+							MEMR_WRITES((dataAddress >> 16) & 0xffff, dataAddress & 0xffff, irqtbl.data, dataSize);
+							CPU_BX = 0;
+							CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+							CPU_FLAGL &= ~C_FLAG;
+						}
+					}else{
+						// 16bit
+						dataSize = MEMR_READ16(CPU_ES, CPU_DI);
+						dataAddress = (UINT32)MEMR_READ16(CPU_ES, CPU_DI+2)|(((UINT32)MEMR_READ16(CPU_ES, CPU_DI+4)) << 16);
+						if(dataSize < irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY)){
+							MEMR_WRITE16(CPU_ES, CPU_DI, irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY));
+							CPU_AH = PCIBIOS_STATUS_BUFFER_TOO_SMALL;
+							CPU_FLAGL |= C_FLAG;
+						}else{
+							dataSize = irqtbl.datacount * sizeof(_PCIPNP_IRQTBL_ENTRY);
+							MEMR_WRITE16(CPU_ES, CPU_DI, dataSize);
+							MEMR_WRITES((dataAddress >> 16) & 0xffff, dataAddress & 0xffff, irqtbl.data, dataSize);
+							CPU_BX = 0;
+							CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+							CPU_FLAGL &= ~C_FLAG;
+						}
+					}
+				}else{
+					CPU_AH = PCIBIOS_STATUS_UNSUPPORTED_FUNCTION;
+					CPU_FLAGL |= C_FLAG;
+				}
+				break;
+			
+			case 0x0F: // SET PCI IRQ
+				devnum = CPU_BL >> 3;
+				funcnum = CPU_BL & 0x7;
+				//if(CPU_BH==0 && 0x0A <= CPU_CL && CPU_CL <= 0x0D && (CPU_CH & 0xf0)==0 && pcidev.devices[devnum].enable){
+				//	UINT8 intpinidx = CPU_CL - 0x0A;
+				//	CPU_AH = PCIBIOS_STATUS_SUCCESSFUL;
+				//	CPU_FLAGL &= ~C_FLAG;
+				//}else{
+					CPU_AH = PCIBIOS_STATUS_SET_FAILED;
+					CPU_FLAGL |= C_FLAG;
+				//}
+				break;
+
+			default:
+				CPU_AH = PCIBIOS_STATUS_UNSUPPORTED_FUNCTION;
+				CPU_FLAGL |= C_FLAG;
+				break;
+		}
+
+		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む
+		cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP + 2, (UINT16)CPU_DX);
+	
+		// DXレジスタの値を元に戻す
+		CPU_DX = oldDX;
+	}
+}
+
+#endif

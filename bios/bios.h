@@ -66,6 +66,10 @@ void bios0x19(void);
 
 void bios0x1a_cmt(void);
 void bios0x1a_prt(void);
+#if defined(SUPPORT_PCI)
+void bios0x1a_pci(void);
+void bios0x1a_pci_regfix(void);
+#endif
 
 void bios0x1b(void);
 UINT bios0x1b_wait(void);

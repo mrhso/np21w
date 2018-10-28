@@ -405,7 +405,7 @@ BRESULT iocore_attachout(UINT port, IOOUT func) {
 		return(FAILURE);
 	}
 }
-BRESULT iocore_detachout(UINT port, IOOUT func) {
+BRESULT iocore_detachout(UINT port) {
 
 	IOFUNC	iof;
 
@@ -432,7 +432,7 @@ BRESULT iocore_attachinp(UINT port, IOINP func) {
 		return(FAILURE);
 	}
 }
-BRESULT iocore_detachinp(UINT port, IOINP func) {
+BRESULT iocore_detachinp(UINT port) {
 
 	IOFUNC	iof;
 
@@ -622,6 +622,12 @@ void IOOUTCALL iocore_out16(UINT port, REG16 dat) {
 
 //	TRACEOUT(("iocore_out16(%.4x, %.4x)", port, dat));
 	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
+	if (0x0cfc <= port && port <= 0x0cff) {
+		pcidev_w16_0xcfc(port, dat);
+		return;
+	}
+#endif
 #if defined(SUPPORT_IDEIO)
 	if (port == 0x0640) {
 		ideio_w16(port, dat);
@@ -684,6 +690,11 @@ REG16 IOINPCALL iocore_inp16(UINT port) {
 	REG8	ret;
 
 	CPU_REMCLOCK -= iocore.busclock;
+#if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
+	if (0x0cfc <= port && port <= 0x0cff) {
+		return(pcidev_r16_0xcfc(port));
+	}
+#endif
 #if defined(SUPPORT_IDEIO)
 	if (port == 0x0640) {
 		return(ideio_r16(port));
