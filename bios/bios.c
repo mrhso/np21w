@@ -33,8 +33,7 @@
 
 static const char neccheck[] = "Copyright (C) 1983 by NEC Corporation";
 
-//static const char pcibios_BIOS32SD[16] = {0x5F, 0x33, 0x32, 0x5F, 0x12, 0x56, 0x0F, 0x00, 0x00, 0x01, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00};
-static const char pcibios_BIOS32SD[16] = {0};
+//static char pcibios_BIOS32SD[16] = {0};
 
 typedef struct {
 	UINT8	port;
@@ -196,7 +195,7 @@ static void bios_reinitbyswitch(void) {
 #endif
 	
 #if defined(SUPPORT_PCI)
-	mem[0xF8E80+0x0004] |= 0x20;
+	mem[0xF8E80+0x0004] |= 0x2c;
 #endif
 	
 #if defined(SUPPORT_HRTIMER)
@@ -270,7 +269,7 @@ void bios_initialize(void) {
 	BOOL	biosrom;
 	OEMCHAR	path[MAX_PATH];
 	FILEH	fh;
-	UINT	i;
+	UINT	i, j;
 	UINT32	tmp;
 	UINT	pos;
 
@@ -298,12 +297,19 @@ void bios_initialize(void) {
 		}
 #if defined(SUPPORT_PCI)
 		// PCI BIOS32 Service Directory‚ð’T‚·
-		for (i=0; i<0x10000; i+=0x10) {
+		for (i=0; i<0x10000; i+=0x4) {
 			tmp = LOADINTELDWORD(mem + 0xf0000 + i);
-			if (tmp == 0x5F33325F) { // "_32_"
-				TRACEOUT(("found BIOS32 Service Directory at %.5x", 0xf0000 + i));
-				CopyMemory(mem + 0xf0000 + i, pcibios_BIOS32SD, sizeof(pcibios_BIOS32SD)); // ’×‚·
-				break;
+			if (tmp == 0x5F32335F) { // "_32_"
+				UINT8 checksum = 0;
+				for(j=0;j<16;j++){
+					checksum += mem[0xf0000 + i + j];
+				}
+				if(checksum==0){
+					TRACEOUT(("found BIOS32 Service Directory at %.5x", 0xf0000 + i));
+					pcidev.bios32svcdir = 0xf0000 + i;
+					pcidev_updateBIOS32data();
+					break;
+				}
 			}
 		}
 		if(i==0x10000){
@@ -534,6 +540,8 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 #if defined(SUPPORT_PCI)
 			if(CPU_AH == 0xb1){
 				bios0x1a_pci();
+			}else if(CPU_AH == 0xb4){
+				bios0x1a_pcipnp();
 			}else
 #endif
 			{

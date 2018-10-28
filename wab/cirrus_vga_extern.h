@@ -106,6 +106,8 @@ typedef uint32_t_ CPUReadMemoryFunc(void *opaque, target_phys_addr_t addr);
 
 extern CPUWriteMemoryFunc *g_cirrus_linear_write[3];
 
+extern int pcidev_cirrus_deviceid;
+
 uint32_t_ cirrus_vga_mem_readb(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_vga_mem_readw(void *opaque, target_phys_addr_t addr);
 uint32_t_ cirrus_vga_mem_readl(void *opaque, target_phys_addr_t addr);

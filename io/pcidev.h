@@ -10,6 +10,7 @@
 // コンフィギュレーションレジスタ変更時に呼ばれる。
 typedef void (*PCIREGWCB)(UINT32 devNumber, UINT8 funcNumber, UINT8 cfgregOffset, UINT8 sizeinbytes, UINT32 value);
 
+#pragma pack(1)
 typedef struct {
 	UINT8 busnumber;
 	UINT8 devicenumber;
@@ -24,10 +25,14 @@ typedef struct {
 	UINT8 slot;
 	UINT8 reserved;
 } _PCIPNP_IRQTBL_ENTRY, *PCIPNP_IRQTBL_ENTRY;
+#pragma pack()
 
 typedef struct {
 	UINT16 datacount;
-	_PCIPNP_IRQTBL_ENTRY data[PCI_DEVICES_MAX];
+	union{
+		_PCIPNP_IRQTBL_ENTRY data[PCI_DEVICES_MAX];
+		UINT8	data8[PCI_DEVICES_MAX * sizeof(_PCIPNP_IRQTBL_ENTRY)];
+	};
 } _PCIPNP_IRQTBL, *PCIPNP_IRQTBL;
 
 typedef struct {
@@ -58,6 +63,8 @@ typedef struct {
 typedef struct {
 	UINT8		enable;
 	PCIREGWCB	regwfn;
+	UINT8		slot; // PCIスロット番号（オンボードは0）
+	UINT8		skipirqtbl; // 0でない場合はルーティングテーブルに登録しない
 	union{
 		UINT8	cfgreg8[0x100];
 		_PCICSH header; // Type 00h Configuration Space Header
@@ -82,6 +89,20 @@ typedef struct {
 	_PCIDEVICE	devices[PCI_DEVICES_MAX]; // PCIデバイス
 
 	UINT8	membankd0;
+	UINT8	membankd8;
+
+	UINT8	biosrom[0x8000];
+	UINT8	biosromtmp[0x8000];
+	OEMCHAR	biosname[16];
+	
+	UINT32	bios32svcdir;
+	UINT32	bios32entrypoint;
+	_PCIPNP_IRQTBL	biosdata;
+	UINT16	allirqbitmap;
+	
+    UINT16 unkreg[4][256];
+    UINT8 unkreg_bank1;
+    UINT8 unkreg_bank2;
 } _PCIDEV, *PCIDEV;
 
 #ifdef __cplusplus
@@ -104,6 +125,7 @@ UINT32 IOOUTCALL pcidev_r32(UINT port);
 
 void pcidev_reset(const NP2CFG *pConfig);
 void pcidev_bind(void);
+void pcidev_updateBIOS32data();
 
 #ifdef __cplusplus
 }
