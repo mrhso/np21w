@@ -11,6 +11,9 @@
 #include "np2class.h"
 #include "np2.h"
 #include "scrnmng.h"
+#ifdef SUPPORT_SCRN_DIRECT3D
+#include "scrnmng_d3d.h"
+#endif
 #include "sysmng.h"
 #include "misc\PropProc.h"
 #include "pccore.h"
@@ -607,6 +610,12 @@ void ScrOptRendererPage::OnOK()
 	tmp = m_type.GetCurItemData(np2oscfg.drawtype);
 	if (tmp != np2oscfg.drawtype)
 	{
+		if(tmp==DRAWTYPE_DIRECT3D){
+			if(scrnmngD3D_check() != SUCCESS){
+				MessageBox(g_hWndMain, _T("Failed to initialize Direct3D."), _T("Direct3D Error"), MB_OK|MB_ICONEXCLAMATION);
+				tmp = DRAWTYPE_DIRECTDRAW_HW;
+			}
+		}
 		np2oscfg.drawtype = tmp;
 		::sysmng_update(SYS_UPDATEOSCFG);
 		resetScreen = 1;

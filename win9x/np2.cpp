@@ -2934,7 +2934,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	BOOL		xrollkey;
 	
 #if defined(SUPPORT_WIN2000HOST)
+#ifdef _WINDOWS
+#ifndef _WIN64
+#define WINVER2 0x0500
 	initialize_findacx();
+#endif
+#endif
 #endif
 
 	winloc_InitDwmFunc();

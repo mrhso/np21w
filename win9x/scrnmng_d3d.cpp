@@ -478,6 +478,64 @@ static void update_backbuffer2size(){
 
 // ----
 
+typedef IDirect3D9 * (WINAPI *TEST_DIRECT3DCREATE9)(UINT SDKVersion);
+
+BRESULT scrnmngD3D_check() {
+	// Direct3Dが使用できるかチェック
+	HMODULE hModule;
+	TEST_DIRECT3DCREATE9 fnd3dcreate9;
+	LPDIRECT3D9				test_d3d;
+	D3DPRESENT_PARAMETERS	test_d3dparam;
+	LPDIRECT3DDEVICE9		test_d3ddev;
+
+	hModule = LoadLibrary(_T("d3d9.dll"));
+	if(!hModule){
+		goto scre_err;
+	}
+
+	fnd3dcreate9 = (TEST_DIRECT3DCREATE9)GetProcAddress(hModule, "Direct3DCreate9");
+	if(!fnd3dcreate9){
+		goto scre_err2;
+	}
+	if(!(test_d3d = Direct3DCreate9(D3D_SDK_VERSION))){
+		goto scre_err2;
+	}
+	ZeroMemory(&test_d3dparam, sizeof(test_d3dparam));
+	test_d3dparam.BackBufferWidth = 640;
+	test_d3dparam.BackBufferHeight = 480;
+	test_d3dparam.BackBufferFormat = D3DFMT_X8R8G8B8;
+	test_d3dparam.BackBufferCount = 1;
+	test_d3dparam.MultiSampleType = D3DMULTISAMPLE_NONE;
+	test_d3dparam.MultiSampleQuality = 0;
+	test_d3dparam.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	test_d3dparam.hDeviceWindow = g_hWndMain;
+	test_d3dparam.Windowed = TRUE;
+	test_d3dparam.EnableAutoDepthStencil = FALSE;
+	test_d3dparam.AutoDepthStencilFormat = D3DFMT_D16;
+	test_d3dparam.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
+	test_d3dparam.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	test_d3dparam.Flags = 0;
+	if(test_d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWndMain, D3DCREATE_HARDWARE_VERTEXPROCESSING, &test_d3dparam, &test_d3ddev) != D3D_OK){
+		if(test_d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWndMain, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &test_d3dparam, &test_d3ddev) != D3D_OK){
+			if(test_d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, g_hWndMain, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &test_d3dparam, &test_d3ddev) != D3D_OK){
+				goto scre_err3;
+			}
+		}
+	}
+	// デバイス作成まで出来そうならOKとする
+	test_d3ddev->Release();
+	test_d3d->Release();
+	FreeLibrary(hModule);
+
+	return(SUCCESS);
+scre_err3:
+	test_d3d->Release();
+scre_err2:
+	FreeLibrary(hModule);
+scre_err:
+	return(FAILURE);
+}
+
 BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 
 	DWORD			winstyle;

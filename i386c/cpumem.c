@@ -900,51 +900,16 @@ UINT32 MEMCALL memp_read32_codefetch(UINT32 address) {
 // ----
 REG8 MEMCALL memp_read8_paging(UINT32 address) {
 	
-	if (address < I286_MEMREADMAX) {
-		return(mem[address]);
-	}
-	else {
-		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
-			return(CPU_EXTMEMBASE[address]);
-		}else{
-			return(0xff);
-		}
-	}
+	return memp_read8_codefetch(address);
 }
 REG16 MEMCALL memp_read16_paging(UINT32 address) {
-
-	REG16	ret;
 	
-	if (address < (I286_MEMREADMAX - 1)) {
-		return(LOADINTELWORD(mem + address));
-	}
-	else {
-		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
-			return(LOADINTELWORD(CPU_EXTMEMBASE + address));
-		}else{
-			return(0xffff);
-		}
-	}
+	return memp_read16_codefetch(address);
 }
 
 UINT32 MEMCALL memp_read32_paging(UINT32 address) {
-
-	//UINT32	pos;
-	UINT32	ret;
 	
-	if (address < (I286_MEMREADMAX - 3)) {
-		return(LOADINTELDWORD(mem + address));
-	}
-	else{
-		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
-			return(LOADINTELDWORD(CPU_EXTMEMBASE + address));
-		}else{
-			return(0xffffffff);
-		}
-	}
+	return memp_read32_codefetch(address);
 }
 
 void MEMCALL memp_write8(UINT32 address, REG8 value) {
@@ -1279,36 +1244,117 @@ void MEMCALL memp_write8_paging(UINT32 address, REG8 value) {
 	}
 	else {
 		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
+		if (address < USE_HIMEM) {
+			memfn0.wr8[address >> 15](address, value);
+		}
+		else if (address < CPU_EXTLIMIT16) {
 			CPU_EXTMEMBASE[address] = (UINT8)value;
+		}
+		else if (address < 0x00f00000) {
+		}
+		else if (address < 0x01000000) {
+			memfnf.wr8[(address >> 17) & 7](address, value);
+		}
+#if defined(CPU_EXTLIMIT)
+		else if (address < CPU_EXTLIMIT) {
+			CPU_EXTMEMBASE[address] = (UINT8)value;
+		}
+#endif	// defined(CPU_EXTLIMIT)
+#if defined(SUPPORT_PC9821)
+		else if ((address >= 0xfff00000) && (address < 0xfff80000)) {
+			memvgaf_wr8(address, value);
+		}
+#endif	// defined(SUPPORT_PC9821)
+		else {
+			TRACEOUT(("out of mem (write8): %x", address));
 		}
 	}
 }
 
 void MEMCALL memp_write16_paging(UINT32 address, REG16 value) {
-
 	
 	if (address < (I286_MEMWRITEMAX - 1)) {
 		STOREINTELWORD(mem + address, value);
 	}
 	else{
-		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
-			STOREINTELWORD(CPU_EXTMEMBASE + address, value);
+		if ((address + 1) & 0x7fff) {			// non 32kb boundary
+			address = address & CPU_ADRSMASK;
+			if (address < USE_HIMEM) {
+				memfn0.wr16[address >> 15](address, value);
+			}
+			else if (address < CPU_EXTLIMIT16) {
+				STOREINTELWORD(CPU_EXTMEMBASE + address, value);
+			}
+			else if (address < 0x00f00000) {
+			}
+			else if (address < 0x01000000) {
+				memfnf.wr16[(address >> 17) & 7](address, value);
+			}
+#if defined(CPU_EXTLIMIT)
+			else if (address < CPU_EXTLIMIT) {
+				STOREINTELWORD(CPU_EXTMEMBASE + address, value);
+			}
+#endif	// defined(CPU_EXTLIMIT)
+#if defined(SUPPORT_PC9821)
+			else if ((address >= 0xfff00000) && (address < 0xfff80000)) {
+				memvgaf_wr16(address, value);
+			}
+#endif	// defined(SUPPORT_PC9821)
+			else {
+				TRACEOUT(("out of mem (write16): %x", address));
+			}
+		}
+		else {
+			memp_write8_paging(address + 0, (UINT8)value);
+			memp_write8_paging(address + 1, (UINT8)(value >> 8));
 		}
 	}
 }
 
 void MEMCALL memp_write32_paging(UINT32 address, UINT32 value) {
-
+	
 	if (address < (I286_MEMWRITEMAX - 3)) {
 		STOREINTELDWORD(mem + address, value);
 		return;
 	}
 	else{
-		address = address & CPU_ADRSMASK;
-		if (address < CPU_EXTLIMIT) {
-			STOREINTELDWORD(CPU_EXTMEMBASE + address, value);
+		if ((address + 1) & 0x7fff) {			// non 32kb boundary
+			address = address & CPU_ADRSMASK;
+			if (address < USE_HIMEM) {
+				memfn0.wr32[address >> 15](address, value);
+			}
+			else if (address < CPU_EXTLIMIT16) {
+				STOREINTELDWORD(CPU_EXTMEMBASE + address, value);
+			}
+			else if (address < 0x00f00000) {
+			}
+			else if (address < 0x01000000) {
+				memfnf.wr32[(address >> 17) & 7](address, value);
+			}
+#if defined(CPU_EXTLIMIT)
+			else if (address < CPU_EXTLIMIT) {
+				STOREINTELDWORD(CPU_EXTMEMBASE + address, value);
+			}
+#endif	// defined(CPU_EXTLIMIT)
+#if defined(SUPPORT_PC9821)
+			else if ((address >= 0xfff00000) && (address < 0xfff80000)) {
+				memvgaf_wr32(address, value);
+			}
+#endif	// defined(SUPPORT_PC9821)
+			else {
+				TRACEOUT(("out of mem (write32): %x", address));
+			}
+		}
+		else {
+			if (!(address & 1)) {
+				memp_write16_paging(address + 0, (UINT16)value);
+				memp_write16_paging(address + 2, (UINT16)(value >> 16));
+			}
+			else {
+				memp_write8_paging(address + 0, (UINT8)value);
+				memp_write16_paging(address + 1, (UINT16)(value >> 8));
+				memp_write8_paging(address + 3, (UINT8)(value >> 24));
+			}
 		}
 	}
 }

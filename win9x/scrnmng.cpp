@@ -38,6 +38,8 @@
 SCRNMNG		scrnmng;
 SCRNSTAT	scrnstat;
 
+int d3davailable = 0;
+
 // ----
 
 UINT8 scrnmng_current_drawtype = DRAWTYPE_INVALID;
@@ -119,6 +121,13 @@ BRESULT scrnmng_create(UINT8 scrnmode) {
 	
 #ifdef SUPPORT_SCRN_DIRECT3D
 	scrnmng_current_drawtype = np2oscfg.drawtype;
+	if(scrnmng_current_drawtype==DRAWTYPE_DIRECT3D && !d3davailable){
+		if(scrnmngD3D_check() != SUCCESS){
+			np2oscfg.drawtype = scrnmng_current_drawtype = DRAWTYPE_DIRECTDRAW_HW;
+		}else{
+			d3davailable = 1;
+		}
+	}
 	if(scrnmng_current_drawtype==DRAWTYPE_DIRECT3D){
 		return scrnmngD3D_create(scrnmode);
 	}else
