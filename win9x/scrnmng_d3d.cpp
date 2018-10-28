@@ -43,6 +43,8 @@
 //! 8BPP ƒpƒŒƒbƒg”
 #define PALLETES_8BPP	NP2PAL_TEXT3
 
+int devicelostflag = 0;
+
 extern WINLOCEX np2_winlocexallwin(HWND base);
 
 typedef struct {
@@ -429,14 +431,6 @@ static void make16mask(DWORD bmask, DWORD rmask, DWORD gmask)
 {
 }
 
-static void restoresurfaces() {
-	if(d3d.d3ddev->TestCooperativeLevel()==D3DERR_DEVICENOTRESET){
-		scrnmngD3D_destroy();
-		scrnmngD3D_create(g_scrnmode);
-		scrndraw_updateallline();
-	}
-}
-
 static void update_backbuffer2size(){
 	if(current_d3d_imode == D3D_IMODE_PIXEL || current_d3d_imode == D3D_IMODE_PIXEL2 || current_d3d_imode == D3D_IMODE_PIXEL3){
 		UINT backbufwidth = d3d.d3dparam.BackBufferWidth - scrnstat.extend * 2;
@@ -473,6 +467,85 @@ static void update_backbuffer2size(){
 		}
 		d3d.backsurf2width += 2;
 		d3d.backsurf2height += 2;
+	}
+}
+
+static void restoresurfaces() {
+	HRESULT r;
+	d3d_enter_criticalsection();
+	if(d3d.d3ddev->TestCooperativeLevel()==D3DERR_DEVICENOTRESET){
+		static UINT  bufwidth, bufheight;
+		static UINT  wabwidth, wabheight;
+		D3DSURFACE_DESC d3dsdesc;
+#if defined(SUPPORT_DCLOCK)
+		if (d3d.clocksurf) {
+			d3d.clocksurf->Release();
+			d3d.clocksurf = NULL;
+		}
+#endif
+#if defined(SUPPORT_WAB)
+		if (d3d.wabsurf) {
+			mt_wabpausedrawing = 1; // MultiThread‘Îô
+			while(mt_wabdrawing) 
+				Sleep(10);
+			d3d.wabsurf->GetDesc(&d3dsdesc);
+			wabwidth = d3dsdesc.Width;
+			wabheight = d3dsdesc.Height;
+			d3d.wabsurf->Release();
+			d3d.wabsurf = NULL;
+		}
+#endif
+		if (d3d.backsurf2) {
+			d3d.backsurf2->Release();
+			d3d.backsurf2 = NULL;
+		}
+		if (d3d.backsurf) {
+			d3d.backsurf->GetDesc(&d3dsdesc);
+			bufwidth = d3dsdesc.Width;
+			bufheight = d3dsdesc.Height;
+			d3d.backsurf->Release();
+			d3d.backsurf = NULL;
+		}
+		if (d3d.d3dbacksurf) {
+			d3d.d3dbacksurf->Release();
+			d3d.d3dbacksurf = NULL;
+		}
+		r = d3d.d3ddev->Reset(&d3d.d3dparam);
+		if(r==D3D_OK){
+			//d3d.d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, 0xffff00ff, 0, 0);  
+			if (g_scrnmode & SCRNMODE_FULLSCREEN) {
+				d3d.d3ddev->CreateOffscreenPlainSurface(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.backsurf, NULL);
+				//d3d.d3ddev->CreateRenderTarget(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &d3d.backsurf, NULL);
+#ifdef SUPPORT_WAB
+				d3d.d3ddev->CreateOffscreenPlainSurface(wabwidth, wabheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.wabsurf, NULL);
+#endif
+
+#if defined(SUPPORT_DCLOCK)
+				d3d.d3ddev->CreateOffscreenPlainSurface(DCLOCK_WIDTH, DCLOCK_HEIGHT, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.clocksurf, NULL);
+#endif
+			}else{
+				d3d.d3ddev->CreateOffscreenPlainSurface(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.backsurf, NULL);
+				//d3d.d3ddev->CreateRenderTarget(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &d3d.backsurf, NULL);
+#ifdef SUPPORT_WAB
+				d3d.d3ddev->CreateOffscreenPlainSurface(wabwidth, wabheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.wabsurf, NULL);
+#endif
+			}
+			update_backbuffer2size();
+			d3d.d3ddev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &d3d.d3dbacksurf);
+			//scrnmngD3D_destroy();
+			//scrnmngD3D_create(g_scrnmode);
+			devicelostflag = 0;
+			mt_wabpausedrawing = 0;
+			d3d_leave_criticalsection();
+			scrnmngD3D_updatefsres();
+			scrndraw_updateallline();
+		}else{
+			devicelostflag = 1;
+			d3d_leave_criticalsection();
+		}
+	}else{
+		devicelostflag = 1;
+		d3d_leave_criticalsection();
 	}
 }
 
@@ -550,6 +623,8 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 	DEVMODE			devmode;
 	GUID			devguid = {0};
 	int				bufwidth, bufheight;
+
+	if(devicelostflag) return(FAILURE);
 	
 	if(!d3d_cs_initialized){
 		memset(&d3d_cs, 0, sizeof(d3d_cs));
@@ -785,7 +860,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 	update_backbuffer2size();
 
 	d3d.d3ddev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &d3d.d3dbacksurf);
-
+	
 	d3d_leave_criticalsection();
 	
 	scrnmng.bpp = (UINT8)bitcolor;
@@ -813,6 +888,8 @@ scre_err:
 
 void scrnmngD3D_destroy(void) {
 	BOOL oldwindowed;
+
+	if(devicelostflag) return;
 	
 	d3d_enter_criticalsection();
 	if (scrnmng.flag & SCRNFLAG_FULLSCREEN) {
@@ -860,10 +937,10 @@ void scrnmngD3D_destroy(void) {
 	ZeroMemory(&d3d, sizeof(d3d));
 	d3d_leave_criticalsection();
 	
-	if(d3d_cs_initialized){
-		DeleteCriticalSection(&d3d_cs);
-		d3d_cs_initialized = 0;
-	}
+	//if(d3d_cs_initialized){
+	//	DeleteCriticalSection(&d3d_cs);
+	//	d3d_cs_initialized = 0;
+	//}
 }
 
 void scrnmngD3D_querypalette(void) {
@@ -877,10 +954,12 @@ RGB16 scrnmngD3D_makepal16(RGB32 pal32) {
 void scrnmngD3D_fullscrnmenu(int y) {
 
 	UINT8	menudisp;
+
+	if(devicelostflag) return;
 	
 	d3d_enter_criticalsection();
 	if (scrnmng.flag & SCRNFLAG_FULLSCREEN) {
-		menudisp = ((y >= 0) && (y < d3d.menusize))?1:0;
+		menudisp = ((y >= 0) && (y < d3d.menusize)) ? 1 : 0;
 		if (d3d.menudisp != menudisp) {
 			d3d.menudisp = menudisp;
 			if (menudisp == 1) {
@@ -902,6 +981,8 @@ void scrnmngD3D_fullscrnmenu(int y) {
 
 void scrnmngD3D_topwinui(void) {
 
+	if(devicelostflag) return;
+
 	mousemng_disable(MOUSEPROC_WINUI);
 	d3d_enter_criticalsection();
 	if (!d3d.cliping++) {
@@ -914,6 +995,8 @@ void scrnmngD3D_topwinui(void) {
 }
 
 void scrnmngD3D_clearwinui(void) {
+
+	if(devicelostflag) return;
 	
 	d3d_enter_criticalsection();
 	if ((d3d.cliping > 0) && (!(--d3d.cliping))) {
@@ -1019,6 +1102,7 @@ const SCRNSURF *scrnmngD3D_surflock(void) {
 	d3d_enter_criticalsection();
 	r = d3d.backsurf->LockRect(&destrect, NULL, 0);
 	if (r != D3D_OK) {
+		d3d_leave_criticalsection();
 //		TRACEOUT(("backsurf lock error: %d (%d)", r));
 		return(NULL);
 	}
@@ -1043,7 +1127,7 @@ const SCRNSURF *scrnmngD3D_surflock(void) {
 }
 
 void scrnmngD3D_surfunlock(const SCRNSURF *surf) {
-
+	
 	d3d.backsurf->UnlockRect();
 	d3d_leave_criticalsection();
 	scrnmngD3D_update();
@@ -1051,6 +1135,11 @@ void scrnmngD3D_surfunlock(const SCRNSURF *surf) {
 }
 
 void scrnmngD3D_update(void) {
+	
+	if(devicelostflag){
+		restoresurfaces();
+		return;
+	}
 
 	POINT	clip;
 	RECT	dst;
@@ -1262,6 +1351,8 @@ BOOL scrnmngD3D_isdispclockclick(const POINT *pt) {
 
 void scrnmngD3D_dispclock(void)
 {
+	if(devicelostflag) return;
+
 	if (!d3d.clocksurf)
 	{
 		return;
@@ -1433,6 +1524,8 @@ void scrnmngD3D_updatefsres(void) {
 	int width = scrnstat.width;
 	int height = scrnstat.height;
 
+	if(devicelostflag) return;
+
 	rect.left = rect.top = 0;
 	rect.right = width;
 	rect.bottom = height;
@@ -1495,6 +1588,7 @@ void scrnmngD3D_blthdc(HDC hdc) {
 	HRESULT	r;
 	HDC hDCDD;
 	mt_wabdrawing = 0;
+	if(devicelostflag) return;
 	if (np2wabwnd.multiwindow) return;
 	if (mt_wabpausedrawing) return;
 	if (np2wab.wndWidth < 32 || np2wab.wndHeight < 32) return;
@@ -1520,6 +1614,7 @@ void scrnmngD3D_bltwab() {
 	RECT	dstmp;
 	//DDBLTFX ddfx;
 	int exmgn = 0;
+	if(devicelostflag) return;
 	if (np2wabwnd.multiwindow) return;
 	if (d3d.backsurf != NULL) {
 		if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {

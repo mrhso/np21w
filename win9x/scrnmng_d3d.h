@@ -3,7 +3,7 @@
 extern "C" {
 #endif
 	
-BRESULT scrnmngD3D_check();
+BRESULT scrnmngD3D_check(void);
 
 BRESULT scrnmngD3D_create(UINT8 scrnmode);
 void scrnmngD3D_destroy(void);

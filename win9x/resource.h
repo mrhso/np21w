@@ -520,6 +520,7 @@
 #define IDM_MEMORYDUMP                  40010
 #define IDM_DEBUGUTY                    40011
 #define IDM_VIEWER                      40012
+#define IDM_RESTOREBORDER               40013
 #define IDM_SCRNMUL                     40050
 #define IDM_SCRNMUL4                    40054
 #define IDM_SCRNMUL6                    40056
