@@ -103,7 +103,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0xd2, 3, 5,
 #endif	/* SUPPORT_FMGEN */
 
-				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 64, 64, 64, 64, 64,
+				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 100, 64, 64, 64, 64, 64,
 				1, 0x82, 0,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 #if defined(SUPPORT_FMGEN)
@@ -858,11 +858,10 @@ void pccore_postevent(UINT32 event) {	// yet!
 
 void pccore_exec(BOOL draw) {
 
-	UINT32 disptmr = 0;
 	static UINT32 clockcounter = 0;
 	static UINT32 clockcounter32 = 0;
-	UINT32 lastclock;
-	UINT32 mflag = 0;
+	//UINT32 lastclock;
+	//UINT32 mflag = 0;
 
 	pcstat.drawframe = (UINT8)draw;
 //	keystat_sync();
@@ -883,8 +882,10 @@ void pccore_exec(BOOL draw) {
 //#if defined(SUPPORT_HRTIMER)
 //	disptmr = hrtimertime_hl;
 //#endif
+	//disptmr = 0;
+
 	while(pcstat.screendispflag) {
-		lastclock = CPU_REMCLOCK;
+		//lastclock = CPU_REMCLOCK;
 #if defined(TRACE)
 		resetcnt++;
 #endif
@@ -950,17 +951,15 @@ void pccore_exec(BOOL draw) {
 			}
 			STOREINTELDWORD(mem+0x04F1, hrtimertimeuint); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
 
-			disptmr++;
+			//disptmr++;
+			//if(disptmr > 64){
+			//	// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
+			//	pcstat.screendispflag = 0;
+			//	nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
+			//}
 		}
 #endif
 		nevent_progress();
-#if defined(SUPPORT_HRTIMER)
-		if(disptmr > 64){
-			// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
-			pcstat.screendispflag = 0;
-			nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
-		}
-#endif
 	}
 	artic_callback();
 	mpu98ii_callback();

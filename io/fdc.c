@@ -503,14 +503,17 @@ static void FDC_Recalibrate(void) {						// cmd: 07
 					fdc.int_stat[fdc.us] |= FDCRLT_EC;
 				}
 			}
-			/* 170107 modified to work on Windows 9x/2000 from ...*/
-//			else if (fdc.ctrlreg & 0x40) {
-//				fdc.treg[fdc.us] = fdc.ncn;
-//			}
-			/* 170107 modified to work on Windows 9x/2000 ... to */
-//			else if (!fddfile[fdc.us].fname[0]) {
-//				fdc.stat[fdc.us] |= FDCRLT_NR;
-//			}
+			else if (!fdd_diskready(fdc.us)) {
+				// Win95, 98—p
+				fdc.ncn = 0;
+				fdc.R = 1;						/* 170107 for Windows95 */
+				fdc.crcn = fdc.R;				/* 170107 for Windows95 */
+				if (fdc.ctrlreg & 0x40) {
+					fdc.treg[fdc.us] = fdc.ncn;
+				}else{
+					fdc.int_stat[fdc.us] |= FDCRLT_NR;
+				}
+			}
 			else {
 				fdc.ncn = 0;
 				fdc.treg[fdc.us] = fdc.ncn;
@@ -720,14 +723,14 @@ static void FDC_Seek(void) {							// cmd: 0f
 				fdc.R = 1;
 				fdc.crcn = fdc.R;				/* 170107 for Windows95 */
 				/* 170107 for Windows95 form ... */
-//				if (fdd_seek()) {
-//					fdc.stat[fdc.us] |= FDCRLT_IC0;
-//				}
+				//if (fdd_seek()) {
+				//	fdc.stat[fdc.us] |= FDCRLT_IC0;
 #if defined(SUPPORT_SWSEEKSND)
-				if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
+					if(np2cfg.MOTOR) fddmtrsnd_play(1, TRUE);
 #else
-				if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK1, FALSE);
+					if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK1, FALSE);
 #endif
+				//}
 				/* 170107 for Windows95 ... to */
 			}
 			fdc.int_timer[fdc.us] = FDC_INT_DELAY;

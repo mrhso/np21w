@@ -150,6 +150,7 @@ struct tagNP2Config
 
 	UINT8	BEEP_VOL;
 	UINT8	vol14[6];
+	UINT8	vol_master;
 	UINT8	vol_fm;
 	UINT8	vol_ssg;
 	UINT8	vol_adpcm;
