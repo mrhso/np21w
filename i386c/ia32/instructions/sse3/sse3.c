@@ -160,8 +160,8 @@ static INLINE void SSE_PART_GETDATA1DATA2_PDm64(double **data1, float **data2, f
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
-		*((UINT32*)(data2buf+ 1)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 4);
+		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT32*)(data2buf+ 1)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 4);
 		*data2 = data2buf;
 	}
 }
@@ -181,7 +181,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SDm64(double **data1, float **data2, f
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
 		*data2 = data2buf;
 	}
 }
@@ -321,7 +321,6 @@ void SSE3_ADDSUBPD(void)
 {
 	double data2buf[2];
 	double *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD(&data1, &data2, data2buf);
 	data1[0] = data1[0] - data2[0];
@@ -331,7 +330,6 @@ void SSE3_ADDSUBPS(void)
 {
 	float data2buf[4];
 	float *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD((double**)(&data1), (double**)(&data2), (double*)data2buf);
 	data1[0] = data1[0] - data2[0];
@@ -343,7 +341,6 @@ void SSE3_HADDPD(void)
 {
 	double data2buf[2];
 	double *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD(&data1, &data2, data2buf);
 	data1[0] = data1[0] + data1[1];
@@ -353,7 +350,6 @@ void SSE3_HADDPS(void)
 {
 	float data2buf[4];
 	float *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD((double**)(&data1), (double**)(&data2), (double*)data2buf);
 	data1[0] = data1[0] + data1[1];
@@ -365,7 +361,6 @@ void SSE3_HSUBPD(void)
 {
 	double data2buf[2];
 	double *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD(&data1, &data2, data2buf);
 	data1[0] = data1[0] - data1[1];
@@ -375,7 +370,6 @@ void SSE3_HSUBPS(void)
 {
 	float data2buf[4];
 	float *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD((double**)(&data1), (double**)(&data2), (double*)data2buf);
 	data1[0] = data1[0] - data1[1];
@@ -425,7 +419,6 @@ void SSE3_MOVSHDUP(void)
 {
 	float data2buf[4];
 	float *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD((double**)(&data1), (double**)(&data2), (double*)data2buf);
 	data1[0] = data2[1];
@@ -437,7 +430,6 @@ void SSE3_MOVSLDUP(void)
 {
 	float data2buf[4];
 	float *data1, *data2;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD((double**)(&data1), (double**)(&data2), (double*)data2buf);
 	data1[0] = data2[0];

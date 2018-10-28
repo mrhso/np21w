@@ -34,8 +34,6 @@
 
 static const char neccheck[] = "Copyright (C) 1983 by NEC Corporation";
 
-//static char pcibios_BIOS32SD[16] = {0};
-
 typedef struct {
 	UINT8	port;
 	UINT8	data;

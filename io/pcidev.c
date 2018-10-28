@@ -581,19 +581,19 @@ void pcidev_updateRoutingTable(){
 				pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC |
 				pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD; // PCIで使用できる全IRQのマップ？ bit0=IRQ0, bit1=IRQ1, ... , bit15=IRQ15に対応 
 			pcidev.biosdata.datacount++;
-		}else if(i==13 || i==14 || i==15){
-			// 13, 14, 15はPCIスロットとする
+		}else if(i==12 || i==13 || i==14 || i==15){
+			// 12, 13, 14, 15はPCIスロットとする
 			pcidev.biosdata.data[pcidev.biosdata.datacount].busnumber = 0; // バス番号
 			pcidev.biosdata.data[pcidev.biosdata.datacount].devicenumber = (i << 3); // デバイス番号
-			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intA = ((i-13) & 0x3)+1; // このデバイスのINT#A(PCI仕様上はデバイス毎に独立)の接続先。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intA = ((i-12) & 0x3)+1; // このデバイスのINT#A(PCI仕様上はデバイス毎に独立)の接続先。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA = allpciirq; // このデバイスのINT#Aで使用できるIRQ(PIRQではない)のマップ。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intB = ((i-13+1) & 0x3)+1; // このデバイスのINT#B(PCI仕様上はデバイス毎に独立)の接続先。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intB = ((i-12+1) & 0x3)+1; // このデバイスのINT#B(PCI仕様上はデバイス毎に独立)の接続先。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intB = allpciirq; // このデバイスのINT#Bで使用できるIRQ(PIRQではない)のマップ。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intC = ((i-13+2) & 0x3)+1; // このデバイスのINT#C(PCI仕様上はデバイス毎に独立)の接続先。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intC = ((i-12+2) & 0x3)+1; // このデバイスのINT#C(PCI仕様上はデバイス毎に独立)の接続先。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC = allpciirq; // このデバイスのINT#Cで使用できるIRQ(PIRQではない)のマップ。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intD = ((i-13+3) & 0x3)+1; // このデバイスのINT#D(PCI仕様上はデバイス毎に独立)の接続先。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intD = ((i-12+3) & 0x3)+1; // このデバイスのINT#D(PCI仕様上はデバイス毎に独立)の接続先。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD = allpciirq; // このデバイスのINT#Dで使用できるIRQ(PIRQではない)のマップ。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].slot = (i-13)+1; // PCIスロット番号（0はオンボード）
+			pcidev.biosdata.data[pcidev.biosdata.datacount].slot = (i-12)+1; // PCIスロット番号（0はオンボード）
 			pcidev.biosdata.datacount++;
 		}
 	}

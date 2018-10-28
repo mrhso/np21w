@@ -641,7 +641,7 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 
 UINT32 MEMCALL memp_read32(UINT32 address) {
 
-	UINT32	pos;
+	//UINT32	pos;
 	UINT32	ret;
 	
 	//if(0x400 <= address && address < 0x600){
@@ -840,7 +840,7 @@ REG16 MEMCALL memp_read16_codefetch(UINT32 address) {
 
 UINT32 MEMCALL memp_read32_codefetch(UINT32 address) {
 
-	UINT32	pos;
+	//UINT32	pos;
 	UINT32	ret;
 	
 	if (address < (I286_MEMREADMAX - 3)) {
@@ -1097,7 +1097,7 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 
 void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 
-	UINT32	pos;
+	//UINT32	pos;
 	
 	//if(0x400 <= address && address < 0x600){
 	//	switch(address){

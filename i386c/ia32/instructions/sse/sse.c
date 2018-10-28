@@ -977,7 +977,7 @@ void SSE_RSQRTSS(void)
 	float *data1, *data2;
 	
 	SSE_PART_GETDATA1DATA2_S(&data1, &data2, data2buf);
-	data1[0] = 1.0f / sqrt(data2[0]);
+	data1[0] = (float)(1.0f / sqrt(data2[0]));
 }
 void SSE_SHUFPS(void)
 {

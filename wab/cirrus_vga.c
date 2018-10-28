@@ -4063,9 +4063,9 @@ void pc98_cirrus_vga_save()
 	array_write(f, pos, &s->cirrus_blt_mode, sizeof(s->cirrus_blt_mode));
 	array_write(f, pos, &s->cirrus_blt_modeext, sizeof(s->cirrus_blt_modeext));
 	array_write(f, pos, s->cirrus_bltbuf, sizeof(s->cirrus_bltbuf));
-	intbuf = s->cirrus_srcptr - s->cirrus_bltbuf;
+	intbuf = (UINT32)(s->cirrus_srcptr - s->cirrus_bltbuf);
 	array_write(f, pos, &intbuf, sizeof(intbuf));
-	intbuf = s->cirrus_srcptr_end - s->cirrus_bltbuf;
+	intbuf = (UINT32)(s->cirrus_srcptr_end - s->cirrus_bltbuf);
 	array_write(f, pos, &intbuf, sizeof(intbuf));
 	array_write(f, pos, &s->cirrus_srccounter, sizeof(s->cirrus_srccounter));
 	array_write(f, pos, &s->last_hw_cursor_size, sizeof(s->last_hw_cursor_size));

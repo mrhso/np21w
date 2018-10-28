@@ -37,13 +37,13 @@ protected:
 
 private:
 	UINT8 m_enable;				//!< 有効
-	UINT16 m_pcmctype;			//!< PCMC種類設定
-	UINT16 m_bios32;			//!< BIOS32有効
+	UINT8 m_pcmctype;			//!< PCMC種類設定
+	UINT8 m_bios32;			//!< BIOS32有効
 	CWndProc m_chkenable;		//!< PCI ENABLE
 	CComboData m_cmbpcmctype;	//!< PCMC TYPE
 	CWndProc m_chkbios32;		//!< BIOS32 ENABLE
 	void SetPCMCType(UINT16 cValue);
-	UINT16 GetPCMCType() const;
+	UINT8 GetPCMCType() const;
 };
 
 /**
@@ -171,7 +171,7 @@ void CPCIPage::SetPCMCType(UINT16 cValue)
  * 機種を取得
  * @return I/O
  */
-UINT16 CPCIPage::GetPCMCType() const
+UINT8 CPCIPage::GetPCMCType() const
 {
 	return m_cmbpcmctype.GetCurItemData(PCI_PCMC_82434LX);
 }

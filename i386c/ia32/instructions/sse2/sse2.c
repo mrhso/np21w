@@ -196,8 +196,8 @@ static INLINE void SSE_PART_GETDATA1DATA2_PDm64(double **data1, float **data2, f
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
-		*((UINT32*)(data2buf+ 1)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 4);
+		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT32*)(data2buf+ 1)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 4);
 		*data2 = data2buf;
 	}
 }
@@ -217,7 +217,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SDm64(double **data1, float **data2, f
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
 		*data2 = data2buf;
 	}
 }
@@ -1572,7 +1572,6 @@ void SSE2_PMADD(void)
 	SINT16 *data1, *data2;
 	SINT32 data1dbuf[4];
 	SINT32 *data1d;
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD_UINT64((UINT64**)(&data1), (UINT64**)(&data2), (UINT64*)data2buf);
 	data1d = (SINT32*)data1;
@@ -1879,7 +1878,6 @@ void SSE2_PSHUFD(void)
 //}
 void SSE2_PSLLW(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT16 *data1;
 	UINT32 *data2;
@@ -1896,7 +1894,6 @@ void SSE2_PSLLW(void)
 }
 void SSE2_PSLLD(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT32 *data1;
 	UINT32 *data2;
@@ -1913,7 +1910,6 @@ void SSE2_PSLLD(void)
 }
 void SSE2_PSLLQ(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT64 *data1;
 	UINT32 *data2;
@@ -1950,7 +1946,6 @@ void SSE2_PSLLQ(void)
 //}
 void SSE2_PSRAW(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT16 *data1;
 	UINT32 *data2;
@@ -1979,12 +1974,11 @@ void SSE2_PSRAW(void)
 }
 void SSE2_PSRAD(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT32 *data1;
 	UINT32 *data2;
 	UINT32 shift;
-	UINT16 signval;
+	UINT32 signval;
 	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD_UINT64((UINT64**)(&data1), (UINT64**)(&data2), (UINT64*)data2buf);
@@ -2036,7 +2030,6 @@ void SSE2_PSRAD(void)
 //}
 void SSE2_PSRLW(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT16 *data1;
 	UINT32 *data2;
@@ -2053,7 +2046,6 @@ void SSE2_PSRLW(void)
 }
 void SSE2_PSRLD(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT32 *data1;
 	UINT32 *data2;
@@ -2070,7 +2062,6 @@ void SSE2_PSRLD(void)
 }
 void SSE2_PSRLQ(void)
 {
-	UINT32 imm8;
 	UINT32 data2buf[4];
 	UINT64 *data1;
 	UINT32 *data2;
@@ -2205,7 +2196,6 @@ void SSE2_PSxxQimm(void)
 	UINT idx, sub;
 	UINT32 shift;
 	UINT64 *dstreg;
-	UINT32 signval;
 	int i;
 	
 	SSE2_check_NM_EXCEPTION();
@@ -2485,7 +2475,6 @@ void SSE2_PUNPCKHQDQ(void)
 	UINT64 *data1;
 	UINT64 *data2;
 	UINT64 dstregbuf[2];
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD_UINT64((UINT64**)(&data1), (UINT64**)(&data2), (UINT64*)data2buf);
 	
@@ -2554,7 +2543,6 @@ void SSE2_PUNPCKLQDQ(void)
 	UINT64 *data1;
 	UINT64 *data2;
 	UINT64 dstregbuf[2];
-	int i;
 	
 	SSE_PART_GETDATA1DATA2_PD_UINT64((UINT64**)(&data1), (UINT64**)(&data2), (UINT64*)data2buf);
 	
@@ -2609,7 +2597,7 @@ void SSE2_MOVNTDQ(void)
 }
 void SSE2_MOVNTI(void)
 {
-	UINT32 op, src;
+	UINT32 op;
 	UINT idx, sub;
 	UINT32 *data1;
 	

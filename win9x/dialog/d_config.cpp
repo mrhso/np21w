@@ -112,7 +112,6 @@ CConfigureDlg::CConfigureDlg(HWND hwndParent)
  */
 BOOL CConfigureDlg::OnInitDialog()
 {
-	int i;
 
 	m_baseClock.SubclassDlgItem(IDC_BASECLOCK, this);
 	m_baseClock.Add(s_baseclock, _countof(s_baseclock));

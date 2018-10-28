@@ -122,7 +122,7 @@ typedef struct {
 	_PCIPNP_IRQTBL	biosdata;
 	UINT16	allirqbitmap;
 	
-    UINT16 unkreg[4][256];
+    UINT8 unkreg[4][256];
     UINT8 unkreg_bank1;
     UINT8 unkreg_bank2;
 } _PCIDEV, *PCIDEV;

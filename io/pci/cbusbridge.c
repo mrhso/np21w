@@ -96,7 +96,7 @@ void pcidev_cbusbridge_bind(void) {
 	pcidev.devices[devid].cfgreg8[0x60] = 0x03;//0x80;//0x03;
 	pcidev.devices[devid].cfgreg8[0x61] = 0x05;//0x80;//0x05;
 	pcidev.devices[devid].cfgreg8[0x62] = 0x06;//0x80;//0x06;
-	pcidev.devices[devid].cfgreg8[0x63] = 0x80;//0x0c;//0x80;//0x0c;
+	pcidev.devices[devid].cfgreg8[0x63] = 0x0c;//0x80;//0x0c;
 
 	//// PCI-Cバスブリッジ（違うバージョン）
 	//ZeroMemory(pcidev.devices+devid, sizeof(_PCIDEVICE));

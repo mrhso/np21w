@@ -123,41 +123,6 @@ exec_1step(void)
 
 		/* prefix */
 		if (insttable_info[op] & INST_PREFIX) {
-#ifdef USE_SSE
-			// XXX: 無駄に命令フェッチするので効率悪い気がする･･･
-			if(op==0x66 || op==0xf2 || op==0xf3){
-				if((i386cpuid.cpu_feature & CPU_FEATURE_SSE)){
-					UINT8 opnext;
-					UINT32 oldeip = CPU_EIP;
-					GET_PCBYTE(opnext);
-					if(opnext==0x0f){
-						// SSE, SSE2, SSE3等
-						GET_PCBYTE(opnext);
-						switch(op){
-						case 0x66:
-							if(insttable_2byte660F_32[opnext]){
-								(*insttable_2byte660F_32[opnext])();
-								return;
-							}
-							break;
-						case 0xf2:
-							if(insttable_2byteF20F_32[opnext]){
-								(*insttable_2byteF20F_32[opnext])();
-								return;
-							}
-							break;
-						case 0xf3:
-							if(insttable_2byteF30F_32[opnext]){
-								(*insttable_2byteF30F_32[opnext])();
-								return;
-							}
-							break;
-						}
-					}
-					CPU_EIP = oldeip; // 戻す
-				}
-			}
-#endif
 			(*insttable_1byte[0][op])();
 			continue;
 		}
@@ -176,7 +141,7 @@ exec_1step(void)
 	}
 	ctx_index = (ctx_index + 1) % NELEMENTS(ctx);
 #endif
-
+	
 	/* normal / rep, but not use */
 	if (!(insttable_info[op] & INST_STRING) || !CPU_INST_REPUSE) {
 #if defined(DEBUG)

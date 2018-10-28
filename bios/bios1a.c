@@ -100,7 +100,7 @@ enum {
 
 void bios0x1a_pci_part(int is32bit) {
 
-	int i, j;
+	int i;
 	int idx;
 	int devnum;
 	int funcnum;

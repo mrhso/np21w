@@ -1278,7 +1278,6 @@ void ideio_threadfuncW_part(IDEDRV drv) {
 }
 unsigned int __stdcall ideio_threadfuncW(void* vdParam) {
 	IDEDRV drv = NULL;
-	FILEPOS	sec;
 
 	while(ideio_thread_initialized){
 		drv = ideio_thread_drv;
@@ -1297,7 +1296,7 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 	IDEDEV  dev;
 	IDEDRV	drv;
 	UINT8	*p;
-	FILEPOS	sec;
+	//FILEPOS	sec;
 
 	dev = getidedev();
 	drv = getidedrv();

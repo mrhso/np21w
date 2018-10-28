@@ -1041,7 +1041,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Window Accelerator option...",   IDM_WABOPT
         MENUITEM SEPARATOR
-        MENUITEM "&PCI option...",                  IDM_PCIOPT
+        MENUITEM "P&CI option...",                  IDM_PCIOPT
         MENUITEM SEPARATOR
         MENUITEM "&Hostdrv option...",              IDM_HOSTDRVOPT
     END

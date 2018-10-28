@@ -1380,7 +1380,6 @@ void MMX_PSxxQ_imm8(void)
 	UINT idx, sub;
 	UINT32 shift;
 	UINT64 *dstreg;
-	UINT32 signval;
 	
 	MMX_check_NM_EXCEPTION();
 	MMX_setTag();

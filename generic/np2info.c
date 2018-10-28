@@ -391,8 +391,6 @@ static void info_display(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
 static void info_fpu(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
-	OEMCHAR	buf[64];
-	
 #if defined(CPUCORE_IA32)
 	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
 		if(i386cpuid.fpu_type < 3){
@@ -409,7 +407,6 @@ static void info_fpu(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
 static void info_simd(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
-	OEMCHAR	buf[64];
 	int simdcount = 0;
 	milstr_ncpy(str, OEMTEXT(" "), maxlen);
 #if defined(CPUCORE_IA32)

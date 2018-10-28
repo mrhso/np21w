@@ -215,6 +215,18 @@ _2byte_ESC16(void)
 	UINT32 op;
 
 	GET_PCBYTE(op);
+#ifdef USE_SSE
+	if(insttable_2byte660F_32[op] && CPU_INST_OP32 == !CPU_STATSAVE.cpu_inst_default.op_32){
+		(*insttable_2byte660F_32[op])();
+		return;
+	}else if(insttable_2byteF20F_32[op] && CPU_INST_REPUSE == 0xf2){
+		(*insttable_2byteF20F_32[op])();
+		return;
+	}else if(insttable_2byteF30F_32[op] && CPU_INST_REPUSE == 0xf3){
+		(*insttable_2byteF30F_32[op])();
+		return;
+	}
+#endif
 	(*insttable_2byte[0][op])();
 }
 
@@ -224,6 +236,18 @@ _2byte_ESC32(void)
 	UINT32 op;
 
 	GET_PCBYTE(op);
+#ifdef USE_SSE
+	if(insttable_2byte660F_32[op] && CPU_INST_OP32 == !CPU_STATSAVE.cpu_inst_default.op_32){
+		(*insttable_2byte660F_32[op])();
+		return;
+	}else if(insttable_2byteF20F_32[op] && CPU_INST_REPUSE == 0xf2){
+		(*insttable_2byteF20F_32[op])();
+		return;
+	}else if(insttable_2byteF30F_32[op] && CPU_INST_REPUSE == 0xf3){
+		(*insttable_2byteF30F_32[op])();
+		return;
+	}
+#endif
 	(*insttable_2byte[1][op])();
 }
 

@@ -183,7 +183,7 @@ protected:
 private:
 	UINT8 m_enabled;			//!< 有効フラグ
 	UINT16 m_type;				//!< 機種設定
-	UINT16 m_fakecur;			//!< 仮ハードウェアカーソル
+	UINT8 m_fakecur;			//!< 仮ハードウェアカーソル
 	CWndProc m_chkenabled;		//!< ENABLED
 	CComboData m_cmbtype;		//!< 機種
 	CWndProc m_chkfakecur;		//!< FAKE HARDWARE CURSOR
