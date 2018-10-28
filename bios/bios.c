@@ -186,7 +186,7 @@ static void bios_reinitbyswitch(void) {
 					  (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
 	}
 
-	mem[0x45B] |= 0x80; // XXX: TEST
+	mem[0x45B] |= 0x80; // XXX: TEST OUT 5Fh,AL wait
 #endif
 	mem[0xF8E80+0x0011] = mem[0xF8E80+0x0011] & ~0x20; // 0x20のビットがONだとWin2000でマウスがカクカクする？
 	if(np2cfg.modelnum) mem[0xF8E80+0x003F] = np2cfg.modelnum; // PC-9821 Model Number
@@ -199,7 +199,7 @@ static void bios_reinitbyswitch(void) {
 
 		timemng_gettime(&hrtimertime);
 		hrtimertimeuint = (((UINT32)hrtimertime.hour*60 + (UINT32)hrtimertime.minute)*60 + (UINT32)hrtimertime.second)*32 + ((UINT32)hrtimertime.milli*32)/1000;
-		hrtimertimeuint |= 0x400000;
+		hrtimertimeuint |= 0x400000; // こうしないとWin98の時計が1日ずれる?
 		STOREINTELDWORD(mem+0x04F1, hrtimertimeuint); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
 	}
 #endif	/* defined(SUPPORT_HRTIMER) */

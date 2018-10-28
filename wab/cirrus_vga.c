@@ -5555,6 +5555,116 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 	//	//s->sr[0x06] = 0x12; // Unlock Cirrus extensions by default
 	//}
 }
+static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_pci)
+{
+    int i;
+
+	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype <= 0xff){
+		// ONBOARD
+		iocore_detachout(0xfa2);
+		iocore_detachinp(0xfa2);
+	
+		iocore_detachout(0xfa3);
+		iocore_detachinp(0xfa3);
+	
+		iocore_detachout(0xfaa);
+		iocore_detachinp(0xfaa);
+	
+		iocore_detachout(0xfab);
+		iocore_detachinp(0xfab);
+	
+		if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype == CIRRUS_98ID_96){
+			iocore_detachout(0x0902);
+			iocore_detachinp(0x0902);
+
+			// XXX: 102Access Control Register 0904h は無視
+
+			for(i=0;i<16;i++){
+				iocore_detachout(0xc50 + i);	// 0x3C0 to 0x3CF
+				iocore_detachinp(0xc50 + i);	// 0x3C0 to 0x3CF
+			}
+	
+			//　この辺のマッピング本当にあってる？
+			iocore_detachout(0xb54);	// 0x3B4
+			iocore_detachinp(0xb54);	// 0x3B4
+			iocore_detachout(0xb55);	// 0x3B5
+			iocore_detachinp(0xb55);	// 0x3B5
+
+			iocore_detachout(0xd54);	// 0x3D4
+			iocore_detachinp(0xd54);	// 0x3D4
+			iocore_detachout(0xd55);	// 0x3D5
+			iocore_detachinp(0xd55);	// 0x3D5
+	
+			iocore_detachout(0xb5a);	// 0x3BA
+			iocore_detachinp(0xb5a);	// 0x3BA
+
+			iocore_detachout(0xd5a);	// 0x3DA
+			iocore_detachinp(0xd5a);	// 0x3DA
+		}
+		if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype != CIRRUS_98ID_96){
+			iocore_detachout(0xff82);
+			iocore_detachinp(0xff82);
+
+			for(i=0;i<16;i++){
+				iocore_detachout(0xca0 + i);	// 0x3C0 to 0x3CF
+				iocore_detachinp(0xca0 + i);	// 0x3C0 to 0x3CF
+			}
+	
+			//　この辺のマッピング本当にあってる？
+			iocore_detachout(0xba4);	// 0x3B4
+			iocore_detachinp(0xba4);	// 0x3B4
+			iocore_detachout(0xba5);	// 0x3B5
+			iocore_detachinp(0xba5);	// 0x3B5
+
+			iocore_detachout(0xda4);	// 0x3D4
+			iocore_detachinp(0xda4);	// 0x3D4
+			iocore_detachout(0xda5);	// 0x3D5
+			iocore_detachinp(0xda5);	// 0x3D5
+	
+			iocore_detachout(0xbaa);	// 0x3BA
+			iocore_detachinp(0xbaa);	// 0x3BA
+
+			iocore_detachout(0xdaa);	// 0x3DA
+			iocore_detachinp(0xdaa);	// 0x3DA
+		}
+	}
+	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype > 0xff){
+		// WAB, WSN, GA-98NB
+		for(i=0;i<0x1000;i+=0x100){
+			iocore_detachout(0x40E0 + CIRRUS_MELCOWAB_OFS + i);	// 0x3C0 to 0x3CF
+			iocore_detachinp(0x40E0 + CIRRUS_MELCOWAB_OFS + i);	// 0x3C0 to 0x3CF
+		}
+	
+		//　この辺のマッピング本当にあってる？
+		iocore_detachout(0x5AE0 + CIRRUS_MELCOWAB_OFS);	// 0x3B4
+		iocore_detachinp(0x5AE0 + CIRRUS_MELCOWAB_OFS);		// 0x3B4
+		iocore_detachout(0x5BE1 + CIRRUS_MELCOWAB_OFS);	// 0x3B5
+		iocore_detachinp(0x5BE1 + CIRRUS_MELCOWAB_OFS);		// 0x3B5
+
+		iocore_detachout(0x54E0 + CIRRUS_MELCOWAB_OFS);	// 0x3D4
+		iocore_detachinp(0x54E0 + CIRRUS_MELCOWAB_OFS);		// 0x3D4
+		iocore_detachout(0x55E0 + CIRRUS_MELCOWAB_OFS);	// 0x3D5
+		iocore_detachinp(0x55E0 + CIRRUS_MELCOWAB_OFS);		// 0x3D5
+	
+		iocore_detachout(0x5BE1 + CIRRUS_MELCOWAB_OFS);	// 0x3BA
+		iocore_detachinp(0x5BE1 + CIRRUS_MELCOWAB_OFS);		// 0x3BA
+
+		iocore_detachout(0x5AE0 + CIRRUS_MELCOWAB_OFS);	// 0x3DA
+		iocore_detachinp(0x5AE0 + CIRRUS_MELCOWAB_OFS);		// 0x3DA
+
+		iocore_detachout(0x51E1 + CIRRUS_MELCOWAB_OFS);	// 0x3BA
+		iocore_detachinp(0x51E1 + CIRRUS_MELCOWAB_OFS);		// 0x3BA
+
+		iocore_detachout(0x57E1 + CIRRUS_MELCOWAB_OFS);	// 0x3DA
+		iocore_detachinp(0x57E1 + CIRRUS_MELCOWAB_OFS);		// 0x3DA
+	
+		iocore_detachout(0x40E1 + CIRRUS_MELCOWAB_OFS);
+		iocore_detachinp(0x40E1 + CIRRUS_MELCOWAB_OFS);
+	
+		iocore_detachout(0x46E8);
+		iocore_detachinp(0x46E8);
+	}
+}
 
 
 void pc98_cirrus_vga_init(void)
@@ -5676,6 +5786,28 @@ void pc98_cirrus_vga_bind(void)
 
 	TRACEOUT(("CL-GD54xx: Window Accelerator Enabled"));
 }
+void pc98_cirrus_vga_unbind(void)
+{
+    CirrusVGAState *s;
+
+	s = cirrusvga;
+	if(np2clvga.gd54xxtype <= 0x57){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5428, 0);
+	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_96){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5428, 0);
+	}else if(np2clvga.gd54xxtype <= 0xff){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5430, 0);
+	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5426, 0);
+	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5434, 0);
+	}else if(np2clvga.gd54xxtype == CIRRUS_98ID_GA98NB){
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5434, 0);
+	}else{
+		pc98_cirrus_deinit_common(s, CIRRUS_ID_CLGD5430, 0);
+	}
+}
+
 void pc98_cirrus_vga_shutdown(void)
 {
 	np2wabwnd.drawframe = NULL;

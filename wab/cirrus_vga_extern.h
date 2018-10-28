@@ -178,6 +178,7 @@ void cirrusvga_drawGraphic();
 void pc98_cirrus_vga_init(void);
 void pc98_cirrus_vga_reset(const NP2CFG *pConfig);
 void pc98_cirrus_vga_bind(void);
+void pc98_cirrus_vga_unbind(void);
 void pc98_cirrus_vga_shutdown(void);
 
 void pc98_cirrus_vga_save(void);
@@ -189,6 +190,9 @@ void __fastcall cirrusvga_ioport_write_wrap16(UINT addr, UINT16 dat);
 void __fastcall cirrusvga_ioport_write_wrap32(UINT addr, UINT32 dat);
 
 int pc98_cirrus_isWABport(UINT port);
+
+void pc98_cirrus_vga_initVRAMWindowAddr();
+void pc98_cirrus_vga_setvramsize();
 
 #ifdef __cplusplus
 }

@@ -561,6 +561,11 @@ void np2wab_bind(void)
 	// •`‰æÄŠJ
 	np2wabwnd.ready = 1;
 }
+void np2wab_unbind(void)
+{
+	iocore_detachout(0xfac);
+	iocore_detachinp(0xfac);
+}
 // NP2I—¹‚Ìˆ—
 void np2wab_shutdown()
 {

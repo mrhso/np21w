@@ -106,11 +106,11 @@ static void IOOUTCALL upd4990_o128(UINT port, REG8 dat) {
 	switch(dattmp){
 	case 0:
 		hrtimerdiv = 64;
-		hrtimerclock = pccore.realclock/hrtimerdiv;
+		hrtimerclock = pccore.baseclock/hrtimerdiv;
 		break;
 	case 1:
 		hrtimerdiv = 32;
-		hrtimerclock = pccore.realclock/hrtimerdiv;
+		hrtimerclock = pccore.baseclock/hrtimerdiv;
 		break;
 	case 2:
 		hrtimerdiv = 0;
@@ -118,7 +118,7 @@ static void IOOUTCALL upd4990_o128(UINT port, REG8 dat) {
 		break;
 	case 3:
 		hrtimerdiv = 16;
-		hrtimerclock = pccore.realclock/hrtimerdiv;
+		hrtimerclock = pccore.baseclock/hrtimerdiv;
 		break;
 	}
 	(void)port;
@@ -161,7 +161,7 @@ void uPD4990_bind(void) {
 	iocore_attachinp(0x0128, upd4990_i128);
 
 	hrtimerdiv = 32;
-	hrtimerclock = pccore.realclock/hrtimerdiv;
+	hrtimerclock = pccore.baseclock/hrtimerdiv;
 #endif
 }
 

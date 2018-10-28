@@ -1295,7 +1295,7 @@ void SSE2_PADDQxmm(void)
 }
 void SSE2_PADDB(void)
 {
-	UINT8 data2buf[2];
+	UINT8 data2buf[16];
 	UINT8 *data1, *data2;
 	int i;
 	
@@ -1306,7 +1306,7 @@ void SSE2_PADDB(void)
 }
 void SSE2_PADDW(void)
 {
-	UINT16 data2buf[2];
+	UINT16 data2buf[8];
 	UINT16 *data1, *data2;
 	int i;
 	
@@ -1317,7 +1317,7 @@ void SSE2_PADDW(void)
 }
 void SSE2_PADDD(void)
 {
-	UINT32 data2buf[2];
+	UINT32 data2buf[4];
 	UINT32 *data1, *data2;
 	int i;
 	
@@ -1350,7 +1350,7 @@ void SSE2_PADDSB(void)
 }
 void SSE2_PADDSW(void)
 {
-	SINT16 data2buf[2];
+	SINT16 data2buf[8];
 	SINT16 *data1, *data2;
 	int i;
 	
@@ -1376,7 +1376,7 @@ void SSE2_PADDSW(void)
 //}
 void SSE2_PADDUSB(void)
 {
-	UINT8 data2buf[2];
+	UINT8 data2buf[16];
 	UINT8 *data1, *data2;
 	int i;
 	
@@ -1392,7 +1392,7 @@ void SSE2_PADDUSB(void)
 }
 void SSE2_PADDUSW(void)
 {
-	UINT16 data2buf[2];
+	UINT16 data2buf[8];
 	UINT16 *data1, *data2;
 	int i;
 	

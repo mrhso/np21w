@@ -107,7 +107,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				1, 0x82, 0,
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 #if defined(SUPPORT_FMGEN)
-				0,
+				1,
 #endif	/* SUPPORT_FMGEN */
 				3, 0, 80, 0, 0, 1,
 
@@ -164,7 +164,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 	UINT32 hrtimerclock32 = 0; 
 
 static void pccore_hrtimer_start() {
-	hrtimerclock32 = pccore.realclock/32; 
+	hrtimerclock32 = pccore.baseclock/32; 
 }
 static void pccore_hrtimer_stop() {
 	// ”p~
@@ -925,20 +925,22 @@ void pccore_exec(BOOL draw) {
 #if defined(SUPPORT_HRTIMER)
 		if(hrtimerclock){
 			clockcounter += CPU_BASECLOCK;
-			if(clockcounter > hrtimerclock){
-				clockcounter -= hrtimerclock;
+			if(clockcounter > hrtimerclock*pccore.multiple){
+				clockcounter -= hrtimerclock*pccore.multiple;
 
 				pic_setirq(15);
 			}
 		}
 		clockcounter32 += CPU_BASECLOCK;
-		if(clockcounter32 > hrtimerclock32){
+		if(clockcounter32 > hrtimerclock32*pccore.multiple){
 			UINT32 hrtimertimeuint;
-			clockcounter32 -= hrtimerclock32;
+			clockcounter32 -= hrtimerclock32*pccore.multiple;
 			
 			hrtimertimeuint = LOADINTELDWORD(mem+0x04F1);
 			hrtimertimeuint++;
-			hrtimertimeuint &= 0xffffff;
+			if((hrtimertimeuint & 0x3fffff) >= 24*60*60*32){
+				hrtimertimeuint = ((hrtimertimeuint & ~0x3fffff) + 0x400000) & 0xffffff; // “ú•t•Ï‚í‚Á‚½
+			}
 			STOREINTELDWORD(mem+0x04F1, hrtimertimeuint); // XXX: 04F4‚É‚à‘‚¢‚¿‚á‚Á‚Ä‚é‚¯‚Ç·‚µ“–‚½‚Á‚Ä‚Í–â‘è‚È‚³‚»‚¤‚È‚Ì‚Å¥¥¥
 
 			disptmr++;

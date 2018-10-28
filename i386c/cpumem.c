@@ -440,6 +440,9 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 	//if (0xD4000 <= address && address <= 0xD5FFF) {
 	//	printf("GP-IB BIOS memread");
 	//}
+	//if (0x400 <= address && address <= 0x5ff) {
+	//	printf("BDA (read8): %x ret %x", address, mem[address]);
+	//}
 	if (address < I286_MEMREADMAX) {
 		return(mem[address]);
 	}
@@ -524,6 +527,9 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 	//		TRACEOUT(("BDA (read16): %x ret %x", address, mem[address]));
 	//	}
 	//}
+	if (0x400 <= address && address <= 0x5ff && address != 0x58a && address != 0x58b) {
+		printf("BDA (read16): %x ret %x", address, *((UINT16*)(mem+address)));
+	}
 	if (address < (I286_MEMREADMAX - 1)) {
 		return(LOADINTELWORD(mem + address));
 	}
@@ -613,6 +619,9 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 	//	default:
 	//		TRACEOUT(("BDA (read32): %x ret %x", address, mem[address]));
 	//	}
+	//}
+	//if (0x400 <= address && address <= 0x5ff) {
+	//	printf("BDA (read32): %x ret %x", address, *((UINT32*)(mem+address)));
 	//}
 	if (address < (I286_MEMREADMAX - 3)) {
 		return(LOADINTELDWORD(mem + address));

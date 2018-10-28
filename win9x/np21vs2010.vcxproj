@@ -205,9 +205,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\bios\bios.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\bios\bios.c" />
     <ClCompile Include="..\bios\bios09.c" />
     <ClCompile Include="..\bios\bios0c.c" />
     <ClCompile Include="..\bios\bios12.c" />
@@ -373,9 +371,7 @@
     <ClCompile Include="..\io\gdc.c" />
     <ClCompile Include="..\io\gdc_pset.c" />
     <ClCompile Include="..\io\gdc_sub.c" />
-    <ClCompile Include="..\io\iocore.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\io\iocore.c" />
     <ClCompile Include="..\io\mouseif.c" />
     <ClCompile Include="..\io\necio.c" />
     <ClCompile Include="..\io\nmiio.c" />

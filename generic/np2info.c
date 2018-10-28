@@ -26,7 +26,7 @@ static const OEMCHAR str_grcgchip[] = OEMTEXT("\0GRCG \0GRCG CG-Window \0EGC CG-
 static const OEMCHAR str_vrammode[] = OEMTEXT("Digital\0Analog\000256colors");
 static const OEMCHAR str_vrampage[] = OEMTEXT(" page-0\0 page-1\0 page-all");
 static const OEMCHAR str_chpan[] = OEMTEXT("none\0Mono-R\0Mono-L\0Stereo");
-static const OEMCHAR str_fpu[] = OEMTEXT("\0 Berkeley SoftFloat 80bit Extended Precision FPU\0 64bit Double Precision FPU\0 64bit Double Precision FPU + INT64 Load/Store");
+static const OEMCHAR str_fpu[] = OEMTEXT(" none\0 Berkeley SoftFloat 80bit Extended Precision FPU\0 64bit Double Precision FPU\0 64bit Double Precision FPU + INT64 Load/Store");
 static const OEMCHAR str_simd_mmx[] = OEMTEXT("MMX ");
 static const OEMCHAR str_simd_sse[] = OEMTEXT("SSE ");
 static const OEMCHAR str_simd_sse2[] = OEMTEXT("SSE2 ");
@@ -262,7 +262,7 @@ static void info_sound(OEMCHAR *str, int maxlen, const NP2INFOEX *ex)
 			break;
 			
 		case SOUNDID_PC_9801_86_ADPCM:
-			lpBoard = OEMTEXT("C-9801-86 + Chibi-oto");
+			lpBoard = OEMTEXT("PC-9801-86 + Chibi-oto");
 			break;
 
 		case SOUNDID_SPEAKBOARD:
@@ -403,7 +403,7 @@ static void info_simd(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 
 	OEMCHAR	buf[64];
 	int simdcount = 0;
-	milstr_ncpy(str, OEMTEXT(""), maxlen);
+	milstr_ncpy(str, OEMTEXT(" "), maxlen);
 #if defined(CPUCORE_IA32)
 	if(i386cpuid.cpu_feature & CPU_FEATURE_MMX){
 		milstr_ncat(str, str_simd_mmx, maxlen);
@@ -443,7 +443,7 @@ static void info_simd(OEMCHAR *str, int maxlen, const NP2INFOEX *ex) {
 	}
 #endif
 	if(simdcount==0){
-		milstr_ncat(str, OEMTEXT(" none"), maxlen);
+		milstr_ncat(str, OEMTEXT("none"), maxlen);
 	}
 }
 
