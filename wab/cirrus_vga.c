@@ -115,6 +115,8 @@ HDC			ga_hdc_cursor; // CIRRUS VGAのカーソル画像のHDC
 static HCURSOR ga_hFakeCursor = NULL; // ハードウェアカーソル（仮）CIRRUS VGAのカーソル画像が上手く表示出来ない場合用
 #endif
 
+void pcidev_cirrus_cfgreg_w(UINT32 devNumber, UINT8 funcNumber, UINT8 cfgregOffset, UINT8 sizeinbytes, UINT32 value);
+
 // QEMUで使われているけどよく分からなかったので無視されている関数や変数達(ｫｨ
 static void cpu_register_physical_memory(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t phys_offset){
 }
@@ -1475,7 +1477,14 @@ static void cirrus_write_bitblt(CirrusVGAState * s, unsigned reg_value)
     if (((old_value & CIRRUS_BLT_RESET) != 0) &&
 		((reg_value & CIRRUS_BLT_RESET) == 0)) {
 		cirrus_bitblt_start(s);// XXX: Win2000のハードウェアアクセラレーションを正常に動かすのに必要。根拠無し。
-		cirrus_bitblt_reset(s);
+		if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F){
+			// XXX: Win3.1の最初のBitBltが無視される問題の回避策
+			if(!(old_value & 0x04)){
+				cirrus_bitblt_reset(s);
+			}
+		}else{
+			cirrus_bitblt_reset(s);
+		}
     } else if (((old_value & CIRRUS_BLT_START) == 0) &&
 			   ((reg_value & CIRRUS_BLT_START) != 0)) {
 		cirrus_bitblt_start(s);
@@ -4239,6 +4248,11 @@ void pc98_cirrus_vga_load()
 		break;
 	}
 	
+#ifdef SUPPORT_PCI
+	// 関数アドレス入れ直し
+	pcidev.devices[pcidev_cirrus_deviceid].regwfn = &pcidev_cirrus_cfgreg_w;
+#endif
+		
 	pc98_cirrus_vga_updatePCIaddr();
 
     cirrus_update_memory_access(s);
@@ -5414,7 +5428,7 @@ void pc98_cirrus_vga_updatePCIaddr(){
 	}else{
 		np2clvga.pciMMIO_Addr = 0;
 	}
-		
+
 	cirrus_update_memory_access(cirrusvga);
 #endif
 }

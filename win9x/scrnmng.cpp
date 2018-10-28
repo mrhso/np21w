@@ -1359,6 +1359,8 @@ void scrnmng_updatefsres(void) {
 	ddbf.dwFillColor = 0;
 
 	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
+		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		ddraw.backsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		clearoutscreen();
 		np2wab.lastWidth = 0;
 		np2wab.lastHeight = 0;
@@ -1366,6 +1368,7 @@ void scrnmng_updatefsres(void) {
 	}
 	if(scrnstat.width<100 || scrnstat.height<100){
 		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		ddraw.backsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		clearoutscreen();
 		return;
 	}
@@ -1398,6 +1401,7 @@ void scrnmng_updatefsres(void) {
 		}
 		clearoutscreen();
 		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		ddraw.backsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 	}
 #endif
 }
@@ -1409,6 +1413,8 @@ void scrnmng_blthdc(HDC hdc) {
 	HDC hDCDD;
 	mt_wabdrawing = 0;
 	if (np2wabwnd.multiwindow) return;
+	if (mt_wabpausedrawing) return;
+	if (np2wab.wndWidth < 32 || np2wab.wndHeight < 32) return;
 	if (mt_wabpausedrawing) return;
 	if (ddraw.wabsurf != NULL) {
 		mt_wabdrawing = 1;

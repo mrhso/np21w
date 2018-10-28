@@ -23,6 +23,7 @@
 #include "biosfd80.res"
 #if defined(SUPPORT_IDEIO)
 #include	"fdd/sxsi.h"
+#include	"cbus/ideio.h"
 #endif
 #if defined(SUPPORT_HRTIMER)
 #include	"timemng.h"
@@ -226,6 +227,7 @@ static void bios_reinitbyswitch(void) {
 		mem[MEMB_SYS_TYPE] |= 0x80;		// IDE
 		CPU_AX = 0x8300;
 		sasibios_operate();
+		//mem[0x457] = 0x97; // 10010111
 	}
 }
 

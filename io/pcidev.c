@@ -30,6 +30,8 @@
 #define SETCFGREG_W_MASK(reg, ofs, value, mask)	PCI_SETCFGREG_W_MASK(reg, ofs, value, mask)
 #define SETCFGREG_D_MASK(reg, ofs, value, mask)	PCI_SETCFGREG_D_MASK(reg, ofs, value, mask)
 
+int pcidev_pcmc_deviceid = 0;
+
 //UINT8 PCI_INTLINE2IRQTBL[] = {
 ////  INTA INTB INTC INTD
 //	0,   1,   2,   3, // slot #0
@@ -259,24 +261,24 @@ UINT32 IOOUTCALL pcidev_r32(UINT port) {
 static void IOOUTCALL pci_o063c(UINT port, REG8 dat) {
 
 	// とりあえずバンク切り替えらしきが出来るように･･･（手抜きなので頻繁に切り替えられると困る）
-	//switch(dat & 0x3) {
-	//	case 0x01:
-	//		if((pcidev.membankd8 & 0x3) != 0x01){
-	//			memcpy(pcidev.biosromtmp, mem + 0x0d8000, 0x8000);
-	//			memcpy(mem + 0x0d8000, pcidev.biosrom, 0x8000);
-	//		}
-	//		break;
+	switch(dat & 0x3) {
+		case 0x01:
+			if((pcidev.membankd8 & 0x3) != 0x01){
+				memcpy(pcidev.biosromtmp, mem + 0x0d8000, 0x8000);
+				memcpy(mem + 0x0d8000, pcidev.biosrom, 0x8000);
+			}
+			break;
 
-	//	case 0x10:
-	//	case 0x11:
-	//	case 0x00:
-	//	default:
-	//		if((pcidev.membankd8 & 0x3) == 0x01){
-	//			memcpy(pcidev.biosrom, mem + 0x0d8000, 0x8000);
-	//			memcpy(mem + 0x0d8000, pcidev.biosromtmp, 0x8000);
-	//		}
-	//		break;
-	//}
+		case 0x10:
+		case 0x11:
+		case 0x00:
+		default:
+			if((pcidev.membankd8 & 0x3) == 0x01){
+				memcpy(pcidev.biosrom, mem + 0x0d8000, 0x8000);
+				memcpy(mem + 0x0d8000, pcidev.biosromtmp, 0x8000);
+			}
+			break;
+	}
 	pcidev.membankd8 = dat;
 	(void)port;
 }
@@ -337,8 +339,6 @@ void pcidev_basereset() {
 	FILEH	fh;
 	OEMCHAR tmpbiosname[16];
 	
-	pcidev.membankd8 = 0xFE; // IDE bank にしておく
-	
 	// 実機PCI BIOSがあれば配置
 	_tcscpy(pcidev.biosname, OEMTEXT(""));
 	_tcscpy(tmpbiosname, OEMTEXT("pci.rom"));
@@ -372,13 +372,15 @@ void pcidev_basereset() {
 void pcidev_reset(const NP2CFG *pConfig) {
 
 	int i;
-	int devid = 0;
+	int devid = pcidev_pcmc_deviceid;
 	
 	ZeroMemory(&pcidev, sizeof(pcidev));
 
 	pcidev.enable = np2cfg.usepci;
 	pcidev.usebios32 = np2cfg.pci_bios32;
-
+	
+	pcidev.membankd8 = 0xFE; // IDE bank にしておく
+	
 	pcidev_basereset();
 	
 	memset(pcidev.devices, 0xff, sizeof(_PCIDEVICE)*PCI_DEVICES_MAX);
@@ -472,7 +474,7 @@ void pcidev_reset(const NP2CFG *pConfig) {
 
 		TRACEOUT(("PCI: Peripheral Component Interconnect Enabled"));
 	}
-
+	
 	(void)pConfig;
 }
 
@@ -517,6 +519,9 @@ void pcidev_bind(void) {
 	iocore_attachinp(0xA59, pnp_iA59);
 	
 	if(pcidev.enable){
+		// 関数アドレス入れ直し（ステートセーブ用）
+		pcidev.devices[pcidev_pcmc_deviceid].regwfn = &pcidev_pcmc_cfgreg_w;
+
 		// PCI PC-9821標準デバイスbind
 		pcidev_cbusbridge_bind();
 		pcidev_98graphbridge_bind();
@@ -550,6 +555,7 @@ void pcidev_bind(void) {
 
 void pcidev_updateRoutingTable(){
 	UINT16 i;
+	UINT16 allpciirq = (1<<12)|(1<<6)|(1<<5)|(1<<3);
 	
 	ZeroMemory(pcidev.biosdata.data, sizeof(pcidev.biosdata.data));
 
@@ -561,13 +567,13 @@ void pcidev_updateRoutingTable(){
 			pcidev.biosdata.data[pcidev.biosdata.datacount].busnumber = 0; // バス番号
 			pcidev.biosdata.data[pcidev.biosdata.datacount].devicenumber = (i << 3); // デバイス番号
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intA = (pcidev.devices[i].header.interruptpin == 1 ? pcidev.devices[i].header.interruptline : 0); // このデバイスのINT#A(PCI仕様上はデバイス毎に独立)の接続先。0=接続無し, 1=PIRQ#0, 2=PIRQ#1, 3=PIRQ#2, 4=PIRQ#3, 5以上:その他接続（同じ番号同士が接続）
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Aで使用できるIRQ(PIRQではない)のマップ。bit0=IRQ0, bit1=IRQ1, ... , bit15=IRQ15に対応 
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA = allpciirq; // このデバイスのINT#Aで使用できるIRQ(PIRQではない)のマップ。bit0=IRQ0, bit1=IRQ1, ... , bit15=IRQ15に対応 
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intB = (pcidev.devices[i].header.interruptpin == 2 ? pcidev.devices[i].header.interruptline : 0); // このデバイスのINT#B(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intB = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Bで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intB = allpciirq; // このデバイスのINT#Bで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intC = (pcidev.devices[i].header.interruptpin == 3 ? pcidev.devices[i].header.interruptline : 0); // このデバイスのINT#C(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Cで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC = allpciirq; // このデバイスのINT#Cで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intD = (pcidev.devices[i].header.interruptpin == 4 ? pcidev.devices[i].header.interruptline : 0); // このデバイスのINT#D(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Dで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD = allpciirq; // このデバイスのINT#Dで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].slot = pcidev.devices[i].slot; // PCIスロット番号（0はオンボード）
 			pcidev.allirqbitmap |= 
 				pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA | 
@@ -580,13 +586,13 @@ void pcidev_updateRoutingTable(){
 			pcidev.biosdata.data[pcidev.biosdata.datacount].busnumber = 0; // バス番号
 			pcidev.biosdata.data[pcidev.biosdata.datacount].devicenumber = (i << 3); // デバイス番号
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intA = ((i-13) & 0x3)+1; // このデバイスのINT#A(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Aで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intA = allpciirq; // このデバイスのINT#Aで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intB = ((i-13+1) & 0x3)+1; // このデバイスのINT#B(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intB = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Bで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intB = allpciirq; // このデバイスのINT#Bで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intC = ((i-13+2) & 0x3)+1; // このデバイスのINT#C(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Cで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intC = allpciirq; // このデバイスのINT#Cで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].link4intD = ((i-13+3) & 0x3)+1; // このデバイスのINT#D(PCI仕様上はデバイス毎に独立)の接続先。
-			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD = (1<<12)|(1<<6)|(1<<5)|(1<<3); // このデバイスのINT#Dで使用できるIRQ(PIRQではない)のマップ。
+			pcidev.biosdata.data[pcidev.biosdata.datacount].irqmap4intD = allpciirq; // このデバイスのINT#Dで使用できるIRQ(PIRQではない)のマップ。
 			pcidev.biosdata.data[pcidev.biosdata.datacount].slot = (i-13)+1; // PCIスロット番号（0はオンボード）
 			pcidev.biosdata.datacount++;
 		}

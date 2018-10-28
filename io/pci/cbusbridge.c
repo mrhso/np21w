@@ -37,7 +37,6 @@ void pcidev_cbusbridge_reset(const NP2CFG *pConfig) {
 }
 
 void pcidev_cbusbridge_bind(void) {
-	
 	int devid = pcidev_cbusbridge_deviceid;
 
 	// PCI-Cバスブリッジ
@@ -86,10 +85,10 @@ void pcidev_cbusbridge_bind(void) {
 	//pcidev.devices[devid].cfgreg8[0x48] = 0x3f;
 	//pcidev.devices[devid].cfgreg8[0x4C] = 0x3e;
 	//pcidev.devices[devid].cfgreg8[0x4E] = 0x03;
-	//pcidev.devices[devid].cfgreg8[0x59] = 9;
-	//pcidev.devices[devid].cfgreg8[0x5a] = 10;
-	//pcidev.devices[devid].cfgreg8[0x5b] = 11;
-	//pcidev.devices[devid].cfgreg8[0x5d] = 13;
+	pcidev.devices[devid].cfgreg8[0x59] = 9;
+	pcidev.devices[devid].cfgreg8[0x5a] = 10;
+	pcidev.devices[devid].cfgreg8[0x5b] = 11;
+	pcidev.devices[devid].cfgreg8[0x5d] = 13;
 	//SETCFGREG_D(pcidev.devices[devid].cfgreg8, 0x50, 0x00EF0010);
 	//SETCFGREG_D(pcidev.devices[devid].cfgreg8, 0x54, 0xFFFBFFFA);
 	//SETCFGREG_D(pcidev.devices[devid].cfgreg8, 0x58, 0xFFFEFFFE);

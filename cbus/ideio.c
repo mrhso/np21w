@@ -567,8 +567,31 @@ static REG8 IOINPCALL ideio_i430(UINT port) {
 	ideio.bank[bank] = ret & (~0x80);
 	TRACEOUT(("ideio getbank%d %.2x [%.4x:%.8x]",
 									(port >> 1) & 1, ret, CPU_CS, CPU_EIP));
-	return(ret & 0x01);
+	return(ret & 0x7f);
 }
+
+
+
+// ----
+
+static void IOOUTCALL ideio_o433(UINT port, REG8 dat) {
+
+}
+
+static REG8 IOINPCALL ideio_i433(UINT port) {
+
+	return(0x00);
+}
+
+static void IOOUTCALL ideio_o435(UINT port, REG8 dat) {
+
+}
+
+static REG8 IOINPCALL ideio_i435(UINT port) {
+
+	return(0x00);
+}
+
 
 
 // ----
@@ -1929,6 +1952,11 @@ void ideio_bind(void) {
 
 		iocore_attachout(0x1e8e, ideio_o1e8e); // 一部IDE BIOSはこれがないと起動時にフリーズしたりシリンダ数が0になる
 		iocore_attachinp(0x1e8e, ideio_i1e8e); // 一部IDE BIOSはこれがないと起動時にフリーズしたりシリンダ数が0になる
+		
+		iocore_attachout(0x0433, ideio_o433);
+		iocore_attachinp(0x0433, ideio_i433);
+		iocore_attachout(0x0435, ideio_o435);
+		iocore_attachinp(0x0435, ideio_i435);
 	}
 }
 
