@@ -228,7 +228,7 @@ void mousemng_sync(void) {
 
 BOOL mousemng_buttonevent(UINT event) {
 
-	if (!mousemng.flag || (np2oscfg.mouse_nc && !scrnmng_isfullscreen() && mousemng.flag)) {
+	if (!mousemng.flag || (np2oscfg.mouse_nc/* && !scrnmng_isfullscreen()*/ && mousemng.flag)) {
 		switch(event) {
 			case MOUSEMNG_LEFTDOWN:
 				mousemng.btn &= ~(uPD8255A_LEFTBIT);

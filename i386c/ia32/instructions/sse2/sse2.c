@@ -222,7 +222,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SDm64(double **data1, float **data2, f
 	}
 }
 
-// mm/m64 -> xmm
+// mm/m128 -> xmm
 static INLINE void SSE_PART_GETDATA1DATA2_PD_MMX2XMM(double **data1, SINT32 **data2, SINT32 *data2buf){
 	UINT32 op;
 	UINT idx, sub;
@@ -266,7 +266,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SD_MMX2XMM(double **data1, SINT32 **da
 		*data2 = data2buf;
 	}
 }
-// xmm/m64 -> mm
+// xmm/m128 -> mm
 static INLINE void SSE_PART_GETDATA1DATA2_PD_XMM2MMX(SINT32 **data1, double **data2, double *data2buf){
 	UINT32 op;
 	UINT idx, sub;
@@ -284,8 +284,8 @@ static INLINE void SSE_PART_GETDATA1DATA2_PD_XMM2MMX(SINT32 **data1, double **da
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
-		*((UINT32*)(data2buf+ 1)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 4);
+		*((UINT64*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT64*)(data2buf+ 1)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 8);
 		*data2 = data2buf;
 	}
 }
@@ -306,7 +306,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SD_XMM2MMX(SINT32 **data1, double **da
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT64*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
 		*data2 = data2buf;
 	}
 }
@@ -348,7 +348,7 @@ static INLINE void SSE_PART_GETDATA1DATA2_SD_XMM2REG(SINT32 **data1, double **da
 	} else {
 		UINT32 maddr;
 		maddr = calc_ea_dst((op));
-		*((UINT32*)(data2buf+ 0)) = cpu_vmemoryread_d(CPU_INST_SEGREG_INDEX, maddr+ 0);
+		*((UINT64*)(data2buf+ 0)) = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, maddr+ 0);
 		*data2 = data2buf;
 	}
 }

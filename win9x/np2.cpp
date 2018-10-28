@@ -133,12 +133,17 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						FSCRNMOD_SAMEBPP | FSCRNMOD_SAMERES | FSCRNMOD_ASPECTFIX8,
 
+#if defined(SUPPORT_SCRN_DIRECT3D)
+						0, 
+#endif
+
 						CSoundMng::kDSound3, TEXT(""),
 
 #if defined(SUPPORT_VSTi)
 						TEXT("%ProgramFiles%\\Roland\\Sound Canvas VA\\SOUND Canvas VA.dll"),
 #endif	// defined(SUPPORT_VSTi)
-						0, 0, 0, 1, 0, 1, 1, 
+						0, 0, 
+						0, 0, 1, 0, 1, 1, 
 						0, 0, 
 						0, 8, 
 						0, 
@@ -304,6 +309,15 @@ static void changescreen(UINT8 newmode) {
 		soundmng_stop();
 		mousemng_disable(MOUSEPROC_WINUI);
 		scrnmng_destroy();
+		if((newmode & SCRNMODE_FULLSCREEN)==0){
+			DEVMODE devmode;
+			if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode)) {
+				while (((scrnstat.width * scrnstat.multiple) >> 3) >= devmode.dmPelsWidth-64 || ((scrnstat.height * scrnstat.multiple) >> 3) >= devmode.dmPelsHeight-64){
+					scrnstat.multiple--;
+					if(scrnstat.multiple==1) break;
+				}
+			}
+		}
 		if (scrnmng_create(newmode) == SUCCESS) {
 			g_scrnmode = newmode;
 			if(np2oscfg.scrnmode != g_scrnmode){
@@ -2029,8 +2043,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				if (GetCursorPos(&p)) {
 					scrnmng_fullscrnmenu(p.y);
 				}
-			}else{
-				if(np2oscfg.mouse_nc && !scrnmng_isfullscreen()){
+			}/*else*/{
+				if(np2oscfg.mouse_nc/* && !scrnmng_isfullscreen()*/){
 					int x = LOWORD(lParam);
 					int y = HIWORD(lParam);
 					SINT16 dx, dy;
@@ -2120,7 +2134,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (!np2oscfg.MOUSE_SW) {
 				if(!np2oscfg.mouse_nc){
 					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
-				}else if (!scrnmng_isfullscreen()) {
+				}else/* if (!scrnmng_isfullscreen())*/ {
 					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 					if (np2oscfg.wintype != 0) {
 						// XXX: メニューが出せなくなって詰むのを回避（暫定）
@@ -2172,7 +2186,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_LBUTTONDBLCLK:
 			if (!np2oscfg.MOUSE_SW) {
 				if(!np2oscfg.mouse_nc){
-					if (!scrnmng_isfullscreen()) {
+					//if (!scrnmng_isfullscreen()) {
 						np2oscfg.wintype++;
 						if (np2oscfg.wintype >= 3) {
 							np2oscfg.wintype = 0;
@@ -2183,7 +2197,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						winlocex_move(wlex);
 						winlocex_destroy(wlex);
 						sysmng_update(SYS_UPDATEOSCFG);
-					}
+					//}
 				}else if (!scrnmng_isfullscreen()) {
 					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 					if (np2oscfg.wintype != 0) {
@@ -2208,7 +2222,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_RBUTTONDBLCLK:
 			if (!np2oscfg.MOUSE_SW) {
 				if(!np2oscfg.mouse_nc){
-				}else if (!scrnmng_isfullscreen()) {
+				}else/* if (!scrnmng_isfullscreen())*/ {
 					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
 					if (np2oscfg.wintype != 0) {
 						// XXX: メニューが出せなくなって詰むのを回避（暫定）
@@ -3005,7 +3019,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	np2class_initialize(hInstance);
 	if (!hPrevInst) {
-		if(np2oscfg.mouse_nc && !scrnmng_isfullscreen()){
+		if(np2oscfg.mouse_nc/* && !scrnmng_isfullscreen()*/){
 			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW;
 		}else{
 			wc.style = CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
