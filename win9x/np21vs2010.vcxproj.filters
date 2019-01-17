@@ -2379,4 +2379,7 @@
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+  </ItemGroup>
 </Project>

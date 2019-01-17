@@ -510,6 +510,8 @@ void biosioemu_begin(void) {
 
 	if(biosioemu.count==0){
 		// データが無いのでI/Oポート出力をスキップ
+		biosioemu.oldEAX = 0;
+		biosioemu.oldEDX = 0;
 		CPU_EIP += 2;
 	}else{
 		int idx = biosioemu.count-1;
@@ -530,6 +532,8 @@ void biosioemu_proc(void) {
 		// レジスタ戻す
 		CPU_EAX = biosioemu.oldEAX;
 		CPU_EDX = biosioemu.oldEDX;
+		biosioemu.oldEAX = 0;
+		biosioemu.oldEDX = 0;
 	}else{
 		int idx = biosioemu.count-1;
 		// I/O出力データ設定

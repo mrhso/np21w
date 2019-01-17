@@ -87,7 +87,6 @@ void bios0x12(void);
 void bios0x13(void);
 
 void bios0x18(void);
-void bios0x18_regrestore(void);
 void bios0x18_0a(REG8 mode);
 void bios0x18_0c(void);
 void bios0x18_10(REG8 curdel);

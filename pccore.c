@@ -57,6 +57,9 @@
 #if defined(SUPPORT_IDEIO)
 #include	"ideio.h"
 #endif
+#if defined(SUPPORT_GPIB)
+#include	"cbus/gpibio.h"
+#endif
 #if defined(CPUCORE_IA32)
 #include	"ia32/cpu.h"
 #include	"ia32/instructions/fpu/fp.h"
@@ -367,9 +370,17 @@ void pccore_init(void) {
 #if defined(SUPPORT_HRTIMER)
 	pccore_hrtimer_start();
 #endif
+
+#if defined(SUPPORT_GPIB)
+	gpibio_initialize();
+#endif
 }
 
 void pccore_term(void) {
+	
+#if defined(SUPPORT_GPIB)
+	gpibio_shutdown();
+#endif
 
 #if defined(SUPPORT_HRTIMER)
 	pccore_hrtimer_stop();
