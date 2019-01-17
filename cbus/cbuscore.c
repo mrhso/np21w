@@ -49,8 +49,11 @@ static const FNIORESET resetfn[] = {
 #if defined(SUPPORT_PC9861K)
 			pc9861k_reset,
 #endif
-#ifdef SUPPORT_GPIB
+#if defined(SUPPORT_GPIB)
 			gpibio_reset,
+#endif
+#if defined(SUPPORT_PEGC)
+			pegc_reset,
 #endif
 			mpu98ii_reset,
 	};
@@ -80,8 +83,11 @@ static const FNIOBIND bindfn[] = {
 #if defined(SUPPORT_PC9861K)
 			pc9861k_bind,
 #endif
-#ifdef SUPPORT_GPIB
+#if defined(SUPPORT_GPIB)
 			gpibio_bind,
+#endif
+#if defined(SUPPORT_PEGC)
+			pegc_bind,
 #endif
 			mpu98ii_bind,
 	};

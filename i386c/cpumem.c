@@ -504,7 +504,6 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 			}
 		}
 #endif
-
 		address = address & CPU_ADRSMASK;
 		if (address < USE_HIMEM) {
 			return(memfn0.rd8[address >> 15](address));
@@ -992,7 +991,7 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 				}
 			}
 		}
-#endif	
+#endif
 		address = address & CPU_ADRSMASK;
 		if (address < USE_HIMEM) {
 			memfn0.wr8[address >> 15](address, value);
