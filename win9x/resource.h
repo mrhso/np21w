@@ -411,6 +411,8 @@
 #define IDS_GD5430_WSN_A2F              30611
 #define IDS_GD5430_WSN                  30612
 #define IDS_GD5430_GA98NB               30620
+#define IDS_GD5430_AUTO_XE_WA_PCI       30693
+#define IDS_GD5430_AUTO_XE_W4_PCI       30694
 #define IDS_GD5430_AUTO_XE_WS_PCI       30695
 #define IDS_GD5430_96                   30696
 #define IDS_GD5430_AUTO_XE10_WABS       30697
