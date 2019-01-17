@@ -215,6 +215,12 @@ typedef long	FILELEN;
 #define	NHD_MAXSIZE2	2000
 #endif
 
+#if defined(SUPPORT_LARGE_MEMORY)
+#define	MEMORY_MAXSIZE		4000
+#else
+#define	MEMORY_MAXSIZE		230
+#endif
+
 
 #if (_MSC_VER >= 1400)
 #if defined _M_IX86

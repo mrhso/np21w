@@ -388,7 +388,7 @@ void xmenu_update(HMENU hMenu)
 	CheckMenuItem(hMenu, IDM_SEEKSND, MF_BYCOMMAND | MFCHECK(np2cfg.MOTOR));
 
 	// Device-Memory
-	const UINT8 EXTMEM = np2cfg.EXTMEM;
+	const UINT16 EXTMEM = np2cfg.EXTMEM;
 	CheckMenuItem(hMenu, IDM_MEM640, MF_BYCOMMAND | MFCHECK(EXTMEM == 0));
 	CheckMenuItem(hMenu, IDM_MEM16,  MF_BYCOMMAND | MFCHECK(EXTMEM == 1));
 	CheckMenuItem(hMenu, IDM_MEM36,  MF_BYCOMMAND | MFCHECK(EXTMEM == 3));

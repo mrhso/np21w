@@ -91,8 +91,18 @@ const uint8_t gr_mask[16] = {
 
 int pcidev_cirrus_deviceid = 10;
 
+// 内蔵アクセラレータ用
 REG8 cirrusvga_regindexA2 = 0; // I/OポートFA2hで指定されているレジスタ番号
 REG8 cirrusvga_regindex = 0; // I/OポートFAAhで指定されているレジスタ番号
+
+// WAB, WSN用
+int cirrusvga_wab_59e1 = 0x06;	// この値じゃないとWSN Win95ドライバがNGを返す
+int cirrusvga_wab_51e1 = 0xC2;	// WSN CHECK IO RETURN VALUE
+int cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
+int cirrusvga_wab_40e1 = 0x7b;
+//int cirrusvga_wab_0fe1 = 0xC2;
+int cirrusvga_wab_46e8 = 0x18;
+int cirrusvga_melcowab_ofs = CIRRUS_MELCOWAB_OFS_DEFAULT;
 
 NP2CLVGA	np2clvga = {0};
 void *cirrusvga_opaque = NULL; // CIRRUS VGAの変数をグローバルアクセス出来るようにしておく･･･（良くない実装）
@@ -3535,21 +3545,21 @@ uint32_t_ vga_convert_ioport(uint32_t_ addr){
 		}
 	}else{
 		// WAB用
-		if((addr & 0xF0FF) == (0x40E0 | CIRRUS_MELCOWAB_OFS)){
+		if((addr & 0xF0FF) == (0x40E0 | cirrusvga_melcowab_ofs)){
 			addr = 0x3C0 | ((addr >> 8) & 0xf);
 		}else{
-			//if(addr==0x51E1+CIRRUS_MELCOWAB_OFS) addr = 0x3B4; // ???
-			//if(addr==0x57E1+CIRRUS_MELCOWAB_OFS) addr = 0x3B5; // ???
-			//if(addr==0x54E0+CIRRUS_MELCOWAB_OFS) addr = 0x3D4;
-			//if(addr==0x55E0+CIRRUS_MELCOWAB_OFS) addr = 0x3D5;
-			//if(addr==0x5BE1+CIRRUS_MELCOWAB_OFS) addr = 0x3BA; // ???
-			//if(addr==0x5AE0+CIRRUS_MELCOWAB_OFS) addr = 0x3DA;
-			if (addr == 0x58E0 + CIRRUS_MELCOWAB_OFS) addr = 0x3B4;
- 			if (addr == 0x59E0 + CIRRUS_MELCOWAB_OFS) addr = 0x3B5;
- 			////if (addr == 0x3AE0 + CIRRUS_MELCOWAB_OFS) addr = 0x3BA;
- 			if (addr == 0x54E0 + CIRRUS_MELCOWAB_OFS) addr = 0x3D4;
- 			if (addr == 0x55E0 + CIRRUS_MELCOWAB_OFS) addr = 0x3D5;
- 			if (addr == 0x5AE0 + CIRRUS_MELCOWAB_OFS) addr = 0x3DA;
+			//if(addr==0x51E1+cirrusvga_melcowab_ofs) addr = 0x3B4; // ???
+			//if(addr==0x57E1+cirrusvga_melcowab_ofs) addr = 0x3B5; // ???
+			//if(addr==0x54E0+cirrusvga_melcowab_ofs) addr = 0x3D4;
+			//if(addr==0x55E0+cirrusvga_melcowab_ofs) addr = 0x3D5;
+			//if(addr==0x5BE1+cirrusvga_melcowab_ofs) addr = 0x3BA; // ???
+			//if(addr==0x5AE0+cirrusvga_melcowab_ofs) addr = 0x3DA;
+			if (addr == 0x58E0 + cirrusvga_melcowab_ofs) addr = 0x3B4;
+ 			if (addr == 0x59E0 + cirrusvga_melcowab_ofs) addr = 0x3B5;
+ 			////if (addr == 0x3AE0 + cirrusvga_melcowab_ofs) addr = 0x3BA;
+ 			if (addr == 0x54E0 + cirrusvga_melcowab_ofs) addr = 0x3D4;
+ 			if (addr == 0x55E0 + cirrusvga_melcowab_ofs) addr = 0x3D5;
+ 			if (addr == 0x5AE0 + cirrusvga_melcowab_ofs) addr = 0x3DA;
 		}
 	}
 	return addr;
@@ -4031,7 +4041,7 @@ void pc98_cirrus_vga_save()
     int pos = 0;
 	UINT8 *f = cirrusvga_statsavebuf; 
 	//char test[500] = {0};
-	uint32_t_ state_ver = 3;
+	uint32_t_ state_ver = 4;
 	uint32_t_ intbuf;
 	
     array_write(f, pos, &state_ver, sizeof(state_ver)); // ステートセーブ バージョン番号
@@ -4146,8 +4156,21 @@ void pc98_cirrus_vga_save()
 	
 	array_write(f, pos, &s->videowindow_dblbuf_index, sizeof(s->videowindow_dblbuf_index));
 	array_write(f, pos, &s->graphics_dblbuf_index, sizeof(s->graphics_dblbuf_index));
-
-	TRACEOUT(("CIRRUS VGA datalen=%d", pos));
+	
+	array_write(f, pos, &cirrusvga_wab_59e1, sizeof(cirrusvga_wab_59e1))
+	array_write(f, pos, &cirrusvga_wab_51e1, sizeof(cirrusvga_wab_51e1));
+	array_write(f, pos, &cirrusvga_wab_5be1, sizeof(cirrusvga_wab_5be1));
+	array_write(f, pos, &cirrusvga_wab_40e1, sizeof(cirrusvga_wab_40e1));
+	array_write(f, pos, &cirrusvga_wab_46e8, sizeof(cirrusvga_wab_46e8));
+	array_write(f, pos, &cirrusvga_melcowab_ofs, sizeof(cirrusvga_melcowab_ofs));
+	
+	TRACEOUT(("CIRRUS VGA datalen=%d, (max %d bytes)", pos, sizeof(cirrusvga_statsavebuf)));
+#if defined(_WIN32)
+	// テスト用
+	if(pos > sizeof(cirrusvga_statsavebuf)){
+		MessageBox(NULL, _T("State save: Buffer Full"), _T("Warning"), 0);
+	}
+#endif
 }
 
 void pc98_cirrus_vga_load()
@@ -4202,6 +4225,7 @@ void pc98_cirrus_vga_load()
 	case 1:
 	case 2:
 	case 3:
+	case 4:
 		// この際全部保存
 		array_read(f, pos, vramptr, CIRRUS_VRAM_SIZE);
 		array_read(f, pos, &s->vram_offset, sizeof(s->vram_offset));
@@ -4314,6 +4338,14 @@ void pc98_cirrus_vga_load()
 		if(state_ver >= 3){
 			array_read(f, pos, &s->videowindow_dblbuf_index, sizeof(s->videowindow_dblbuf_index));
 			array_read(f, pos, &s->graphics_dblbuf_index, sizeof(s->graphics_dblbuf_index));
+		}
+		if(state_ver >= 4){
+			array_read(f, pos, &cirrusvga_wab_59e1, sizeof(cirrusvga_wab_59e1));
+			array_read(f, pos, &cirrusvga_wab_51e1, sizeof(cirrusvga_wab_51e1));
+			array_read(f, pos, &cirrusvga_wab_5be1, sizeof(cirrusvga_wab_5be1));
+			array_read(f, pos, &cirrusvga_wab_40e1, sizeof(cirrusvga_wab_40e1));
+			array_read(f, pos, &cirrusvga_wab_46e8, sizeof(cirrusvga_wab_46e8));
+			array_read(f, pos, &cirrusvga_melcowab_ofs, sizeof(cirrusvga_melcowab_ofs));
 		}
 
 		break;
@@ -5266,13 +5298,6 @@ static REG8 IOINPCALL cirrusvga_iff82(UINT port) {
 }
 
 // WAB, WSN用
-int cirrusvga_wab_59e1 = 0x06;	// この値じゃないとWSN Win95ドライバがNGを返す
-
-int cirrusvga_wab_51e1 = 0xC2;	// WSN CHECK IO RETURN VALUE
-int cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
-int cirrusvga_wab_40e1 = 0x7b;
-//int cirrusvga_wab_0fe1 = 0xC2;
-int cirrusvga_wab_46e8 = 0x18;
 static REG8 IOINPCALL cirrusvga_i59e1(UINT port) {
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK){
 		switch(np2clvga.gd54xxtype){
@@ -5831,8 +5856,8 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype > 0xff){
 		// WAB, WSN, GA-98NB
 		for(i=0;i<0x1000;i+=0x100){
-			iocore_attachout(0x40E0 + CIRRUS_MELCOWAB_OFS + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF
-			iocore_attachinp(0x40E0 + CIRRUS_MELCOWAB_OFS + i, vga_ioport_read_wrap);	// 0x3C0 to 0x3CF
+			iocore_attachout(0x40E0 + cirrusvga_melcowab_ofs + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF
+			iocore_attachinp(0x40E0 + cirrusvga_melcowab_ofs + i, vga_ioport_read_wrap);	// 0x3C0 to 0x3CF
 		}
 	
 		//　この辺のマッピング本当にあってる？
@@ -5848,33 +5873,33 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 		//	port |= 0xE0;
 		//******************************************************
 
-		iocore_attachout(0x58E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3B4	これは使っている
-		iocore_attachinp(0x58E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3B4	これは使っている
-		iocore_attachout(0x59E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3B5	これは使っている
-		iocore_attachinp(0x59E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3B5	これは使っている
-		////iocore_attachout(0x3AE0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3BA	使ってないからいいや
-		////iocore_attachinp(0x3AE0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3BA	使ってないからいいや
+		iocore_attachout(0x58E0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3B4	これは使っている
+		iocore_attachinp(0x58E0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3B4	これは使っている
+		iocore_attachout(0x59E0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3B5	これは使っている
+		iocore_attachinp(0x59E0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3B5	これは使っている
+		////iocore_attachout(0x3AE0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3BA	使ってないからいいや
+		////iocore_attachinp(0x3AE0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3BA	使ってないからいいや
 
-		iocore_attachout(0x54E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3D4
-		iocore_attachinp(0x54E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3D4
-		iocore_attachout(0x55E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3D5
-		iocore_attachinp(0x55E0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3D5
-		iocore_attachout(0x5AE0 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3DA
-		iocore_attachinp(0x5AE0 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);	// 0x3DA
+		iocore_attachout(0x54E0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3D4
+		iocore_attachinp(0x54E0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3D4
+		iocore_attachout(0x55E0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3D5
+		iocore_attachinp(0x55E0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3D5
+		iocore_attachout(0x5AE0 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3DA
+		iocore_attachinp(0x5AE0 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);	// 0x3DA
 		
 		//if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN){
 		//	iocore_attachout(0x5BE3, cirrusvga_o5be3);
 		//	iocore_attachinp(0x5BE3, cirrusvga_i5be3);
 		//}
 
-//		iocore_attachout(0x51E1 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3BA
-//		iocore_attachinp(0x51E1 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);		// 0x3BA
+//		iocore_attachout(0x51E1 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3BA
+//		iocore_attachinp(0x51E1 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);		// 0x3BA
 
-//		iocore_attachout(0x57E1 + CIRRUS_MELCOWAB_OFS, vga_ioport_write_wrap);	// 0x3DA
-//		iocore_attachinp(0x57E1 + CIRRUS_MELCOWAB_OFS, vga_ioport_read_wrap);		// 0x3DA
+//		iocore_attachout(0x57E1 + cirrusvga_melcowab_ofs, vga_ioport_write_wrap);	// 0x3DA
+//		iocore_attachinp(0x57E1 + cirrusvga_melcowab_ofs, vga_ioport_read_wrap);		// 0x3DA
 	
-		iocore_attachout(0x40E1 + CIRRUS_MELCOWAB_OFS, cirrusvga_o40e1);
-		iocore_attachinp(0x40E1 + CIRRUS_MELCOWAB_OFS, cirrusvga_i40e1);
+		iocore_attachout(0x40E1 + cirrusvga_melcowab_ofs, cirrusvga_o40e1);
+		iocore_attachinp(0x40E1 + cirrusvga_melcowab_ofs, cirrusvga_i40e1);
 	
 		iocore_attachout(0x46E8, cirrusvga_o46e8);
 		iocore_attachinp(0x46E8, cirrusvga_i46e8);
@@ -5886,9 +5911,9 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			iocore_attachout(0x51E3, cirrusvga_o51e1); // CHECK IO
 			iocore_attachinp(0x51E3, cirrusvga_i51e1);
 
-			////iocore_attachinp(0x59E0 + CIRRUS_MELCOWAB_OFS, cirrusvga_i59e0);
-			iocore_attachinp(0x59E1 + CIRRUS_MELCOWAB_OFS, cirrusvga_i59e1);	// これがないとドライバがNGを返す
-			iocore_attachinp(0x5BE1 + CIRRUS_MELCOWAB_OFS, cirrusvga_i5be1);
+			////iocore_attachinp(0x59E0 + cirrusvga_melcowab_ofs, cirrusvga_i59e0);
+			iocore_attachinp(0x59E1 + cirrusvga_melcowab_ofs, cirrusvga_i59e1);	// これがないとドライバがNGを返す
+			iocore_attachinp(0x5BE1 + cirrusvga_melcowab_ofs, cirrusvga_i5be1);
 		}
 
 		if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) != CIRRUS_98ID_AUTOMSK){
@@ -5900,7 +5925,12 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			np2clvga.VRAMWindowAddr2 = 0xf00000;
 		}
 		
-
+		cirrusvga_wab_59e1 = 0x06;	// この値じゃないとWSN Win95ドライバがNGを返す
+		cirrusvga_wab_51e1 = 0xC2;	// WSN CHECK IO RETURN VALUE
+		cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
+		cirrusvga_wab_40e1 = 0x7b;
+		cirrusvga_wab_46e8 = 0x18;
+		
 		//np2clvga.VRAMWindowAddr3 = 0xF00000; // XXX
 		//np2clvga.VRAMWindowAddr3size = 256*1024;
 		
@@ -6039,33 +6069,33 @@ static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_
 	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype > 0xff){
 		// WAB, WSN, GA-98NB
 		for(i=0;i<0x1000;i+=0x100){
-			iocore_detachout(0x40E0 + CIRRUS_MELCOWAB_OFS + i);	// 0x3C0 to 0x3CF
-			iocore_detachinp(0x40E0 + CIRRUS_MELCOWAB_OFS + i);	// 0x3C0 to 0x3CF
+			iocore_detachout(0x40E0 + cirrusvga_melcowab_ofs + i);	// 0x3C0 to 0x3CF
+			iocore_detachinp(0x40E0 + cirrusvga_melcowab_ofs + i);	// 0x3C0 to 0x3CF
 		}
 	
 		//　この辺のマッピング本当にあってる？
-		iocore_detachout(0x58E0 + CIRRUS_MELCOWAB_OFS);	// 0x3B4
-		iocore_detachinp(0x58E0 + CIRRUS_MELCOWAB_OFS);		// 0x3B4
-		iocore_detachout(0x59E0 + CIRRUS_MELCOWAB_OFS);	// 0x3B5
-		iocore_detachinp(0x59E0 + CIRRUS_MELCOWAB_OFS);		// 0x3B5
-		////iocore_detachout(0x3AE0 + CIRRUS_MELCOWAB_OFS);	// 0x3BA
-		////iocore_detachinp(0x3AE0 + CIRRUS_MELCOWAB_OFS);		// 0x3BA
+		iocore_detachout(0x58E0 + cirrusvga_melcowab_ofs);	// 0x3B4
+		iocore_detachinp(0x58E0 + cirrusvga_melcowab_ofs);		// 0x3B4
+		iocore_detachout(0x59E0 + cirrusvga_melcowab_ofs);	// 0x3B5
+		iocore_detachinp(0x59E0 + cirrusvga_melcowab_ofs);		// 0x3B5
+		////iocore_detachout(0x3AE0 + cirrusvga_melcowab_ofs);	// 0x3BA
+		////iocore_detachinp(0x3AE0 + cirrusvga_melcowab_ofs);		// 0x3BA
 
-		iocore_detachout(0x54E0 + CIRRUS_MELCOWAB_OFS);	// 0x3D4
-		iocore_detachinp(0x54E0 + CIRRUS_MELCOWAB_OFS);		// 0x3D4
-		iocore_detachout(0x55E0 + CIRRUS_MELCOWAB_OFS);	// 0x3D5
-		iocore_detachinp(0x55E0 + CIRRUS_MELCOWAB_OFS);		// 0x3D5
-		iocore_detachout(0x5AE0 + CIRRUS_MELCOWAB_OFS);	// 0x3DA
-		iocore_detachinp(0x5AE0 + CIRRUS_MELCOWAB_OFS);		// 0x3DA
+		iocore_detachout(0x54E0 + cirrusvga_melcowab_ofs);	// 0x3D4
+		iocore_detachinp(0x54E0 + cirrusvga_melcowab_ofs);		// 0x3D4
+		iocore_detachout(0x55E0 + cirrusvga_melcowab_ofs);	// 0x3D5
+		iocore_detachinp(0x55E0 + cirrusvga_melcowab_ofs);		// 0x3D5
+		iocore_detachout(0x5AE0 + cirrusvga_melcowab_ofs);	// 0x3DA
+		iocore_detachinp(0x5AE0 + cirrusvga_melcowab_ofs);		// 0x3DA
 
-//		iocore_detachout(0x51E1 + CIRRUS_MELCOWAB_OFS);	// 0x3BA
-//		iocore_detachinp(0x51E1 + CIRRUS_MELCOWAB_OFS);		// 0x3BA
+//		iocore_detachout(0x51E1 + cirrusvga_melcowab_ofs);	// 0x3BA
+//		iocore_detachinp(0x51E1 + cirrusvga_melcowab_ofs);		// 0x3BA
 
-//		iocore_detachout(0x57E1 + CIRRUS_MELCOWAB_OFS);	// 0x3DA
-//		iocore_detachinp(0x57E1 + CIRRUS_MELCOWAB_OFS);		// 0x3DA
+//		iocore_detachout(0x57E1 + cirrusvga_melcowab_ofs);	// 0x3DA
+//		iocore_detachinp(0x57E1 + cirrusvga_melcowab_ofs);		// 0x3DA
 	
-		iocore_detachout(0x40E1 + CIRRUS_MELCOWAB_OFS);
-		iocore_detachinp(0x40E1 + CIRRUS_MELCOWAB_OFS);
+		iocore_detachout(0x40E1 + cirrusvga_melcowab_ofs);
+		iocore_detachinp(0x40E1 + cirrusvga_melcowab_ofs);
 	
 		iocore_detachout(0x46E8);
 		iocore_detachinp(0x46E8);
@@ -6075,9 +6105,9 @@ static void pc98_cirrus_deinit_common(CirrusVGAState * s, int device_id, int is_
 		iocore_detachout(0x51E3);
 		iocore_detachinp(0x51E3);
 
-		////iocore_detachinp(0x59E0 + CIRRUS_MELCOWAB_OFS);
-		iocore_detachinp(0x59E1 + CIRRUS_MELCOWAB_OFS);
-		iocore_detachinp(0x5BE1 + CIRRUS_MELCOWAB_OFS);
+		////iocore_detachinp(0x59E0 + cirrusvga_melcowab_ofs);
+		iocore_detachinp(0x59E1 + cirrusvga_melcowab_ofs);
+		iocore_detachinp(0x5BE1 + cirrusvga_melcowab_ofs);
 	}
 }
 
@@ -6176,6 +6206,11 @@ void pc98_cirrus_vga_bind(void)
 		return;
 	}
 	//np2clvga.defgd54xxtype = np2cfg.gd5430type;
+	if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE10_WABS || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_WA_PCI){
+		cirrusvga_melcowab_ofs = np2cfg.gd5430melofs;
+	}else{
+		cirrusvga_melcowab_ofs = 0x2; // WAB-S以外は2で固定
+	}
 	
 	s = cirrusvga;
 	//memset(s, 0, sizeof(CirrusVGAState));
@@ -6256,6 +6291,11 @@ void pc98_cirrus_vga_resetresolution(void)
 	// ついでにVRAMもクリア
 	if (np2clvga.gd54xxtype == CIRRUS_98ID_GA98NB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F) {
 		memset(cirrusvga->vram_ptr, 0x00, cirrusvga->real_vram_size);
+		cirrusvga_wab_59e1 = 0x06;	// この値じゃないとWSN Win95ドライバがNGを返す
+		cirrusvga_wab_51e1 = 0xC2;	// WSN CHECK IO RETURN VALUE
+		cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
+		cirrusvga_wab_40e1 = 0x7b;
+		cirrusvga_wab_46e8 = 0x18;
 	}else{
 		memset(cirrusvga->vram_ptr, 0xff, cirrusvga->real_vram_size);
 	}
@@ -6270,13 +6310,13 @@ void pc98_cirrus_vga_resetresolution(void)
 
 // MELCO WAB系ポートならTRUE
 int pc98_cirrus_isWABport(UINT port){
-	if((port & 0xF0FF) == (0x40E0 + CIRRUS_MELCOWAB_OFS)) return 1;
- 	if (port == 0x58E0 + CIRRUS_MELCOWAB_OFS) return 1;
- 	if (port == 0x59E0 + CIRRUS_MELCOWAB_OFS) return 1;
- 	////if (port == 0x3AE0 + CIRRUS_MELCOWAB_OFS) return 1;
- 	if (port == 0x54E0 + CIRRUS_MELCOWAB_OFS) return 1;
- 	if (port == 0x55E0 + CIRRUS_MELCOWAB_OFS) return 1;
- 	if (port == 0x5AE0 + CIRRUS_MELCOWAB_OFS) return 1;
+	if((port & 0xF0FF) == (0x40E0 + cirrusvga_melcowab_ofs)) return 1;
+ 	if (port == 0x58E0 + cirrusvga_melcowab_ofs) return 1;
+ 	if (port == 0x59E0 + cirrusvga_melcowab_ofs) return 1;
+ 	////if (port == 0x3AE0 + cirrusvga_melcowab_ofs) return 1;
+ 	if (port == 0x54E0 + cirrusvga_melcowab_ofs) return 1;
+ 	if (port == 0x55E0 + cirrusvga_melcowab_ofs) return 1;
+ 	if (port == 0x5AE0 + cirrusvga_melcowab_ofs) return 1;
 	return 0;
 }
 

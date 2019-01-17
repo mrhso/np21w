@@ -100,7 +100,7 @@ static void bios_reinitbyswitch(void) {
 	UINT8	prxcrt;
 	UINT8	prxdupd;
 	UINT8	biosflag;
-	UINT8	extmem; // LARGE_MEM //UINT16	extmem;
+	UINT16	extmem; // LARGE_MEM //UINT16	extmem;
 	UINT8	boot;
 	//FILEH	fh;
 	//OEMCHAR	path[MAX_PATH];
@@ -154,7 +154,8 @@ static void bios_reinitbyswitch(void) {
 	extmem = min(extmem, 14);
 	mem[MEMB_EXPMMSZ] = (UINT8)(extmem << 3);
 	if (pccore.extmem >= 15) {
-		mem[0x0594] = pccore.extmem - 15;
+		//mem[0x0594] = pccore.extmem - 15;
+		STOREINTELWORD((mem+0x0594), (pccore.extmem - 15));
 	}
 	mem[MEMB_CRT_RASTER] = 0x0f;
 
@@ -370,8 +371,29 @@ void bios_initialize(void) {
 	//	TRACEOUT(("write emuitf.rom"));
 	//}
 	CopyMemory(mem + ITF_ADRS, itfrom, sizeof(itfrom)+1);
+#if defined(SUPPORT_FAST_MEMORYCHECK)
+	// 高速メモリチェック
+	if(np2cfg.memcheckspeed > 1){
+		// 猫メモリチェックのDEC r/m16 を強制フック(実行時はアドレスが変わるので注意)
+		STOREINTELWORD((mem + ITF_ADRS + 5886), 128 * np2cfg.memcheckspeed);
+		mem[ITF_ADRS + 5924] = 0x90;
+	}
+#endif
 	if(np2cfg.memchkmx){ // メモリカウント最大値変更
 		mem[ITF_ADRS + 6057] = mem[ITF_ADRS + 6061] = (UINT8)max((int)np2cfg.memchkmx-14, 1); // XXX: 場所決め打ち
+	}else{
+#if defined(SUPPORT_LARGE_MEMORY)
+		if(np2cfg.EXTMEM >= 256){ // 大容量メモリカウント
+			// XXX: 場所決め打ち注意
+			for(i=ITF_ADRS + 6066; i >= ITF_ADRS + 6058; i--){
+				mem[i] = mem[i-1]; // 1byteずらし
+			}
+			mem[ITF_ADRS + 6067] = mem[ITF_ADRS + 6068] = 0x90; // call	WAITVSYNC を NOP化
+			mem[ITF_ADRS + 6055] = 0x81; // CMP r/m16, imm8 を CMP r/m16, imm16 に変える
+			STOREINTELWORD((mem + ITF_ADRS + 6057), (MEMORY_MAXSIZE-14)); // cmp　bx, (EXTMEMORYMAX - 16)の部分をいじる
+			STOREINTELWORD((mem + ITF_ADRS + 6061+1), (MEMORY_MAXSIZE-14)); // mov　bx, (EXTMEMORYMAX - 16)の部分をいじる（1byteずらしたのでオフセット注意）
+		}
+#endif
 	}
 	if(np2cfg.sbeeplen || np2cfg.sbeepadj){ // ピポ音長さ変更
 		UINT16 beeplen = (np2cfg.sbeeplen ? np2cfg.sbeeplen : mem[ITF_ADRS + 5553]); // XXX: 場所決め打ち
@@ -573,6 +595,28 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 #if defined(BIOS_IO_EMULATION)
 	UINT32	oldEIP;
 #endif
+	
+#if defined(SUPPORT_FAST_MEMORYCHECK)
+	// 高速メモリチェック
+	if (CPU_ITFBANK && adrs == 0xf9724) {
+		UINT16 subvalue = LOADINTELWORD((mem + ITF_ADRS + 5886)) / 128;
+		UINT16 memaddr = cpu_codefetch_w(CPU_EIP);
+		UINT16 counter = MEMR_READ16(CPU_SS, CPU_EBP + 6);
+		if(subvalue == 0) subvalue = 1;
+		if(counter >= subvalue){
+			counter -= subvalue;
+		}else{
+			counter = 0;
+		}
+		if(counter == 0){
+			CPU_FLAG |= Z_FLAG;
+		}else{
+			CPU_FLAG &= ~Z_FLAG;
+		}
+		MEMR_WRITE16(CPU_SS, CPU_EBP + 6, counter);
+		CPU_IP += 2;
+	}
+#endif
 
 	if ((CPU_ITFBANK) && (adrs >= 0xf8000) && (adrs < 0x100000)) {
 		// for epson ITF
@@ -740,6 +784,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			return(1);
 		}
 	}
+	
 	return(0);
 }
 

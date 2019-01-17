@@ -470,7 +470,11 @@ static const PFTBL s_IniItems[] =
 
 	PFEXT("DIPswtch", PFTYPE_BIN,		np2cfg.dipsw,			3),
 	PFEXT("MEMswtch", PFTYPE_BIN,		np2cfg.memsw,			8),
-	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			244),
+#if defined(SUPPORT_LARGE_MEMORY)
+	PFMAX("ExMemory", PFTYPE_UINT16,	&np2cfg.EXTMEM,			MEMORY_MAXSIZE),
+#else
+	PFMAX("ExMemory", PFTYPE_UINT8,		&np2cfg.EXTMEM,			MEMORY_MAXSIZE),
+#endif
 	PFVAL("ITF_WORK", PFTYPE_BOOL,		&np2cfg.ITF_WORK),
 	
 	PFVAL("USE_BIOS", PFTYPE_BOOL,		&np2cfg.usebios),  // 実機BIOS使用
@@ -609,6 +613,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USEGD5430", PFTYPE_BOOL,		&np2cfg.usegd5430),
 	PFVAL("GD5430TYPE",PFTYPE_UINT16,	&np2cfg.gd5430type),
 	PFVAL("GD5430FCUR",PFTYPE_BOOL,		&np2cfg.gd5430fakecur),
+	PFVAL("GDMELOFS", PFTYPE_UINT8,		&np2cfg.gd5430melofs),
 #endif
 #if defined(SUPPORT_GPIB)
 	PFVAL("USE_GPIB", PFTYPE_BOOL,		&np2cfg.usegpib),
@@ -649,6 +654,10 @@ static const PFTBL s_IniItems[] =
 	PFVAL("cpu_fecx", PFTYPE_HEX32,		&np2cfg.cpu_feature_ecx),
 
 	PFMAX("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type,		0), // FPU種類
+	
+#if defined(SUPPORT_FAST_MEMORYCHECK)
+	PFVAL("memckspd", PFRO_UINT8,		&np2cfg.memcheckspeed),
+#endif
 
 
 	// OS依存？

@@ -962,15 +962,6 @@ scre_err:
 	return(FAILURE);
 }
 
-static void scrnmngD3D_DoEvents()
-{
-    MSG msg;
-    while (GetMessage(&msg, NULL, NULL, NULL))
-    {
-		DispatchMessage(&msg);
-    }
-}
-
 void scrnmngD3D_destroy(void) {
 	BOOL oldwindowed;
 
@@ -1010,7 +1001,6 @@ void scrnmngD3D_destroy(void) {
 		d3d.d3dparam.Windowed = TRUE;
 		d3d.d3ddev->Reset(&d3d.d3dparam);
 		d3d.d3dparam.Windowed = oldwindowed;
-		//scrnmngD3D_DoEvents();
 	}
 	if (d3d.d3ddev) {
 		d3d.d3ddev->Release();
@@ -1132,7 +1122,7 @@ void scrnmngD3D_setwidth(int posx, int width) {
 			}else{
 				DEVMODE devmode;
 				if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode)) {
-					while (((width * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsWidth-64){
+					while (((width * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsWidth-32){
 						scrnstat.multiple--;
 						if(scrnstat.multiple==1) break;
 					}
@@ -1178,7 +1168,7 @@ void scrnmngD3D_setheight(int posy, int height) {
 			}else{
 				DEVMODE devmode;
 				if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode)) {
-					while (((height * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsHeight-64){
+					while (((height * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsHeight-32){
 						scrnstat.multiple--;
 						if(scrnstat.multiple==1) break;
 					}
@@ -1421,7 +1411,7 @@ void scrnmngD3D_setmultiple(int multiple)
 			}else{
 				DEVMODE devmode;
 				if (EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode)) {
-					while (((scrnstat.width * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsWidth-64 || ((scrnstat.height * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsHeight-64){
+					while (((scrnstat.width * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsWidth-32 || ((scrnstat.height * scrnstat.multiple) >> 3) >= (int)devmode.dmPelsHeight-32){
 						scrnstat.multiple--;
 						if(scrnstat.multiple==1) break;
 					}
