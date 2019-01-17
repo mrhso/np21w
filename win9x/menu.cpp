@@ -459,4 +459,22 @@ void xmenu_update(HMENU hMenu)
 #if defined(SUPPORT_FAST_MEMORYCHECK)
 	CheckMenuItem(hMenu, IDM_FASTMEMCHK, MF_BYCOMMAND | MFCHECK(np2cfg.memcheckspeed != 1));
 #endif
+	
+#if !defined(USE_FPU)
+	EnableMenuItem(hMenu, IDM_FPU80, MF_GRAYED);
+	EnableMenuItem(hMenu, IDM_FPU64, MF_GRAYED);
+	EnableMenuItem(hMenu, IDM_FPU64INT, MF_GRAYED);
+#endif
+#if !defined(SUPPORT_NET)
+	EnableMenuItem(hMenu, IDM_NETOPT, MF_GRAYED);
+#endif
+#if !defined(SUPPORT_WAB)
+	EnableMenuItem(hMenu, IDM_WABOPT, MF_GRAYED);
+#endif
+#if !defined(SUPPORT_PCI)
+	EnableMenuItem(hMenu, IDM_PCIOPT, MF_GRAYED);
+#endif
+#if !defined(SUPPORT_HOSTDRV)
+	EnableMenuItem(hMenu, IDM_HOSTDRVOPT, MF_GRAYED);
+#endif
 }

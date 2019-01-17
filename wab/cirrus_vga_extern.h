@@ -118,6 +118,8 @@ extern CPUWriteMemoryFunc *g_cirrus_linear_write[3];
 
 extern int pcidev_cirrus_deviceid;
 
+extern int cirrusvga_wab_46e8;
+
 void cirrus_linear_mem_writeb(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 void cirrus_linear_mem_writew(void *opaque, target_phys_addr_t addr, uint32_t_ val);
 void cirrus_linear_mem_writel(void *opaque, target_phys_addr_t addr, uint32_t_ val);
