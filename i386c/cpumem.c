@@ -971,7 +971,7 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 							return;
 					}
 				}
-				if(vramWndAddr2){
+				if(vramWndAddr2 && (vramWndAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E))))){
 					UINT32 addr2 = address;
 					if((vramWndAddr2 & 0xfff00000UL) == 0){
 						UINT32 addrtmp = addr2 & 0xfff80000UL;
@@ -1076,7 +1076,7 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 								return;
 						}
 					}
-					if(vramWndAddr2){
+					if(vramWndAddr2 && (vramWndAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E))))){
 						UINT32 addr2 = address;
 						if((vramWndAddr2 & 0xfff00000UL) == 0){
 							UINT32 addrtmp = addr2 & 0xfff80000UL;
@@ -1188,7 +1188,7 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 								return;
 						}
 					}
-					if(vramWndAddr2){
+					if(vramWndAddr2 && (vramWndAddr2 != 0xE0000 || !(gdc.analog & ((1 << GDCANALOG_16) | (1 << GDCANALOG_256) | (1 << GDCANALOG_256E))))){
 						UINT32 addr2 = address;
 						if((vramWndAddr2 & 0xfff00000UL) == 0){
 							UINT32 addrtmp = addr2 & 0xfff80000UL;
