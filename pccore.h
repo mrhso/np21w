@@ -224,6 +224,7 @@ struct tagNP2Config
 	UINT16	gd5430type;
 	UINT8	gd5430fakecur;
 	UINT8	gd5430melofs;
+	UINT8	ga98nb_bigscrn_ex;
 #endif
 #if defined(SUPPORT_GPIB)
 	UINT8	usegpib; // GPIBŽg—p

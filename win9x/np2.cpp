@@ -191,23 +191,31 @@ static int WM_QueryCancelAutoPlay;
 // システムキーフック用
 #ifdef HOOK_SYSKEY
 static HANDLE	np2_hThreadKeyHook = NULL; // キーフック用スレッド
-//static int		np2_hThreadKeyHookexit = 0; // スレッド終了フラグ
+static int		np2_hThreadKeyHookexit = 0; // スレッド終了フラグ
 static HWND		np2_hThreadKeyHookhWnd = 0;
 LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam);
 HHOOK hHook = NULL;
-LRESULT CALLBACK np2_ThreadFuncKeyHook_WndProc(HWND hWnd, UINT mes, WPARAM wParam, LPARAM lParam){
-   if(mes == WM_DESTROY) {PostQuitMessage(0); return 0;}
-   return DefWindowProc(hWnd, mes, wParam, lParam);
+LRESULT CALLBACK np2_ThreadFuncKeyHook_WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
+	switch(msg){
+	case WM_CLOSE:
+		if(!np2_hThreadKeyHookexit) return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 static unsigned int __stdcall np2_ThreadFuncKeyHook(LPVOID vdParam) 
 {
 	MSG msg;
+	LPCTSTR wndclassname = _T("NP2 Key Hook");
 
-	WNDCLASSEX wcex ={sizeof(WNDCLASSEX), CS_HREDRAW | CS_VREDRAW, np2_ThreadFuncKeyHook_WndProc, 0, 0, g_hInstance, NULL, NULL, (HBRUSH)(COLOR_WINDOW), NULL, _T("NP2 Key Hook"), NULL};
+	WNDCLASSEX wcex ={sizeof(WNDCLASSEX), CS_HREDRAW | CS_VREDRAW, np2_ThreadFuncKeyHook_WndProc, 0, 0, g_hInstance, NULL, NULL, (HBRUSH)(COLOR_WINDOW), NULL, wndclassname, NULL};
 
 	if(!RegisterClassEx(&wcex)) return 0;
 
-	if(!(np2_hThreadKeyHookhWnd = CreateWindow(_T("NP2 Key Hook"), _T("NP2 Key Hook"), WS_POPUPWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, g_hInstance, NULL))) return 0;
+	if(!(np2_hThreadKeyHookhWnd = CreateWindow(wndclassname, _T("NP2 Key Hook"), WS_POPUPWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, g_hInstance, NULL))) return 0;
 
 	ShowWindow( np2_hThreadKeyHookhWnd, SW_HIDE ); // 念のため
 
@@ -224,6 +232,8 @@ static unsigned int __stdcall np2_ThreadFuncKeyHook(LPVOID vdParam)
 		hHook = NULL;
 	}
 	np2_hThreadKeyHookhWnd = NULL;
+	np2_hThreadKeyHook = NULL;
+	UnregisterClass(wndclassname, g_hInstance);
 	return 0;
 }
 static void start_hook_systemkey()
@@ -239,9 +249,11 @@ static void start_hook_systemkey()
 static void stop_hook_systemkey()
 {
 	if(np2_hThreadKeyHook && np2_hThreadKeyHookhWnd){
+		np2_hThreadKeyHookexit = 1;
 		SendMessage(np2_hThreadKeyHookhWnd , WM_CLOSE , 0 , 0);
 		WaitForSingleObject(np2_hThreadKeyHook,  INFINITE);
 		np2_hThreadKeyHook = NULL;
+		np2_hThreadKeyHookexit = 0;
 	}
 	//if(hHook){
 	//	UnhookWindowsHookEx(hHook);

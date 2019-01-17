@@ -614,6 +614,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GD5430TYPE",PFTYPE_UINT16,	&np2cfg.gd5430type),
 	PFVAL("GD5430FCUR",PFTYPE_BOOL,		&np2cfg.gd5430fakecur),
 	PFVAL("GDMELOFS", PFTYPE_UINT8,		&np2cfg.gd5430melofs),
+	PFVAL("GANBBSEX", PFTYPE_BOOL,		&np2cfg.ga98nb_bigscrn_ex),
 #endif
 #if defined(SUPPORT_GPIB)
 	PFVAL("USE_GPIB", PFTYPE_BOOL,		&np2cfg.usegpib),
