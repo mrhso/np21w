@@ -1079,8 +1079,9 @@ BEGIN
         MENUITEM "ジョイスティックボタン連打(&R)",  IDM_RAPID
         MENUITEM "マウスボタン連打(&M)",        IDM_MSRAPID
         MENUITEM "&ITFエミュレーション",        IDM_ITFWORK
-        MENUITEM "タイマー不具合修正(&T)",      IDM_TIMERFIX
-        MENUITEM "16MB超メモリチェック省略(&S)",    IDM_SKIP16MEMCHK
+        // MENUITEM "タイマー不具合修正(&T)",      IDM_TIMERFIX
+        MENUITEM "16MB超メモリチェック省略(&S)",IDM_SKIP16MEMCHK
+        MENUITEM "高速メモリチェック(&E)",      IDM_FASTMEMCHK
         MENUITEM SEPARATOR
         MENUITEM "ヘルプ(&H)...",               IDM_HELP
         MENUITEM "バージョン情報(&A)...",       IDM_ABOUT

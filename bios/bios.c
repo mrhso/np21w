@@ -476,11 +476,14 @@ void bios_initialize(void) {
 	
 // np21w ver0.86 rev46 BIOS I/O emulation
 #if defined(BIOS_IO_EMULATION)
-	// エミュレーション用に書き換え。とりあえずINT 18Hのみ対応
+	// エミュレーション用に書き換え。とりあえずINT 18HとINT 1CHのみ対応
 	if(biosioemu.enable){
 		mem[BIOS_BASE + BIOSOFST_18 + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
 		mem[BIOS_BASE + BIOSOFST_18 + 2] = 0x90; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_18 + 3] = 0xcf; // 0xcf(IRET)
+		mem[BIOS_BASE + BIOSOFST_1c + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
+		mem[BIOS_BASE + BIOSOFST_1c + 2] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_1c + 3] = 0xcf; // 0xcf(IRET)
 	}
 #endif
 }
@@ -744,8 +747,25 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 
 		case BIOS_BASE + BIOSOFST_1c:
 			CPU_REMCLOCK -= 200;
+#if defined(BIOS_IO_EMULATION)
+			oldEIP = CPU_EIP;
+#endif
 			bios0x1c();
+#if defined(BIOS_IO_EMULATION)
+			// np21w ver0.86 rev47 BIOS I/O emulation
+			if(oldEIP == CPU_EIP){
+				biosioemu_begin(); 
+			}else{
+				biosioemu.count = 0; 
+			}
+#endif
 			return(1);
+			
+#if defined(BIOS_IO_EMULATION)
+		case BIOS_BASE + BIOSOFST_1c + 2: // np21w ver0.86 rev47 BIOS I/O emulation
+			biosioemu_proc();
+			return(1);
+#endif
 
 		case BIOS_BASE + BIOSOFST_1f:
 			CPU_REMCLOCK -= 200;

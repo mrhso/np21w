@@ -240,7 +240,7 @@ void cdchange_timeoutproc(NEVENTITEM item) {
 #if defined(SUPPORT_IDEIO)
 	ideio_mediachange(cdchange_drv);
 #endif
-	sysmng_updatecaption(1);
+	sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
 }
 static void cdchange_timeoutset(void) {
 
@@ -290,7 +290,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 				file_cpyname(sxsi->fname, _T("\0\0\0\0"), 1);
 				sxsi->flag = 0;
 				file_cpyname(np2cfg.idecd[num], _T("\0\0\0\0"), 1);
-				sysmng_updatecaption(1);
+				sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
 				return(SUCCESS);
 			}
 			else {
@@ -318,7 +318,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 					int num = drv & 0x0f;
 					file_cpyname(np2cfg.idecd[num], _T("\0\0\0\0"), 1);
 				}
-				sysmng_updatecaption(1);
+				sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
 				ideio_mediachange(cdchange_drv);
 			}
 #endif

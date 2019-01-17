@@ -954,9 +954,6 @@
   <ItemGroup>
     <ResourceCompile Include="resources\932\np2.rc" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="x86\vs2010\x86.targets" />

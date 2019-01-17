@@ -656,7 +656,7 @@ static const PFTBL s_IniItems[] =
 	PFMAX("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type,		0), // FPU種類
 	
 #if defined(SUPPORT_FAST_MEMORYCHECK)
-	PFVAL("memckspd", PFRO_UINT8,		&np2cfg.memcheckspeed),
+	PFVAL("memckspd", PFTYPE_UINT8,		&np2cfg.memcheckspeed),
 #endif
 
 
@@ -711,6 +711,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("toolwind", PFTYPE_BOOL,		&np2oscfg.toolwin),
 	PFVAL("keydispl", PFTYPE_BOOL,		&np2oscfg.keydisp),
 	PFVAL("skbdwind", PFTYPE_BOOL,		&np2oscfg.skbdwin),
+	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE),
 	PFVAL("jast_snd", PFTYPE_BOOL,		&np2oscfg.jastsnd),
 	PFVAL("useromeo", PFTYPE_BOOL,		&np2oscfg.useromeo),
 	PFVAL("thickfrm", PFTYPE_BOOL,		&np2oscfg.thickframe),
@@ -721,7 +722,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("fscrnmod", PFTYPE_HEX8,		&np2oscfg.fscrnmod),
 
 #if defined(SUPPORT_SCRN_DIRECT3D)
-	PFVAL("D3D_IMODE", PFTYPE_UINT8,	&np2oscfg.d3d_imode),
+	PFVAL("D3D_IMODE", PFTYPE_UINT8,	&np2oscfg.d3d_imode), // Direct3D 拡大縮小補間モード
 #endif
 
 	PFVAL("snddev_t", PFTYPE_UINT8,		&np2oscfg.cSoundDeviceType),
@@ -732,7 +733,7 @@ static const PFTBL s_IniItems[] =
 #endif	// defined(SUPPORT_VSTi)
 	
 	PFVAL("EMUDDRAW", PFTYPE_BOOL,		&np2oscfg.emuddraw), // 最近はEMULATIONONLYにした方速かったりする（特にピクセル操作する場合とか）
-	PFVAL("DRAWTYPE", PFTYPE_UINT8,		&np2oscfg.drawtype),
+	PFVAL("DRAWTYPE", PFTYPE_UINT8,		&np2oscfg.drawtype), // 画面レンダラ (0: DirectDraw, 1: reserved(DirecrDraw), 2: Direct3D)
 	
 	PFVAL("DRAGDROP", PFRO_BOOL,		&np2oscfg.dragdrop), // ドラッグアンドドロップサポート
 	PFVAL("MAKELHDD", PFRO_BOOL,		&np2oscfg.makelhdd), // 巨大HDDイメージ作成サポート
@@ -748,12 +749,10 @@ static const PFTBL s_IniItems[] =
 	PFVAL("SCRN_MUL", PFTYPE_UINT8,		&np2oscfg.scrn_mul), // 画面表示倍率（8が等倍）
 	
 	PFVAL("MOUSE_NC", PFTYPE_BOOL,		&np2oscfg.mouse_nc), // マウスキャプチャ無しコントロール
-	
 	PFVAL("CPUSTABF", PFTYPE_UINT16,	&np2oscfg.cpustabf), // クロック安定器適用限界時間（フレーム）
-	
 	PFVAL("READONLY", PFRO_BOOL,		&np2oscfg.readonly), // 変更を設定ファイルに書き込まない
-
-	PFVAL("I286SAVE", PFRO_BOOL,		&np2oscfg.I286SAVE)
+	PFVAL("TICKMODE", PFRO_UINT8,		&np2oscfg.tickmode), // Tickカウンタのモードを強制的に設定する
+	PFVAL("USEWHEEL", PFRO_BOOL,		&np2oscfg.usewheel), // マウスホイールによる音量・マウス速度設定を使用する
 };
 
 //! .ini 拡張子

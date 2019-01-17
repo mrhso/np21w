@@ -5941,33 +5941,7 @@ static void vga_dumb_update_retrace_info(VGAState *s)
     (void) s;
 }
 
-void pc98_cirrus_vga_updatePCIaddr(){
-#if defined(SUPPORT_PCI)
-	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0]){
-		np2clvga.pciLFB_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0;
-		np2clvga.pciLFB_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0];
-
-		cirrusvga->map_addr = cirrusvga->map_end = 0;
-		cirrusvga->lfb_addr = np2clvga.pciLFB_Addr & TARGET_PAGE_MASK;
-		cirrusvga->lfb_end = ((np2clvga.pciLFB_Addr + cirrusvga->real_vram_size) + TARGET_PAGE_SIZE - 1) & TARGET_PAGE_MASK;
-		/* account for overflow */
-		if (cirrusvga->lfb_end < np2clvga.pciLFB_Addr + cirrusvga->real_vram_size)
-			cirrusvga->lfb_end = np2clvga.pciLFB_Addr + cirrusvga->real_vram_size;
-	}else{
-		np2clvga.pciLFB_Addr = 0;
-	}
-	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1]){
-		np2clvga.pciMMIO_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0;
-		np2clvga.pciMMIO_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1];
-	}else{
-		np2clvga.pciMMIO_Addr = 0;
-	}
-
-	cirrus_update_memory_access(cirrusvga);
-#endif
-}
-
-// VRAMウィンドウアドレスをデフォルト値に設定する
+// MMIOウィンドウを設定する
 void pc98_cirrus_setMMIOWindowAddr(){
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F){
 		cirrus_mmio_read[0] = cirrus_mmio_readb_wab;
@@ -5991,6 +5965,36 @@ void pc98_cirrus_setMMIOWindowAddr(){
 		cirrus_mmio_write[1] = cirrus_mmio_writew;
 		cirrus_mmio_write[2] = cirrus_mmio_writel;
 	}
+}
+
+void pc98_cirrus_vga_updatePCIaddr(){
+	if((np2clvga.gd54xxtype & CIRRUS_98ID_WABMASK) == CIRRUS_98ID_WAB || (np2clvga.gd54xxtype & CIRRUS_98ID_GA98NBMASK) == CIRRUS_98ID_GA98NBIC){
+		pc98_cirrus_setMMIOWindowAddr();
+		return;
+	}
+#if defined(SUPPORT_PCI)
+	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0]){
+		np2clvga.pciLFB_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] & 0xfffffff0;
+		np2clvga.pciLFB_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0];
+
+		cirrusvga->map_addr = cirrusvga->map_end = 0;
+		cirrusvga->lfb_addr = np2clvga.pciLFB_Addr & TARGET_PAGE_MASK;
+		cirrusvga->lfb_end = ((np2clvga.pciLFB_Addr + cirrusvga->real_vram_size) + TARGET_PAGE_SIZE - 1) & TARGET_PAGE_MASK;
+		/* account for overflow */
+		if (cirrusvga->lfb_end < np2clvga.pciLFB_Addr + cirrusvga->real_vram_size)
+			cirrusvga->lfb_end = np2clvga.pciLFB_Addr + cirrusvga->real_vram_size;
+	}else{
+		np2clvga.pciLFB_Addr = 0;
+	}
+	if((pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0) != ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1]){
+		np2clvga.pciMMIO_Addr = pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] & 0xfffffff0;
+		np2clvga.pciMMIO_Mask = ~pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1];
+	}else{
+		np2clvga.pciMMIO_Addr = 0;
+	}
+
+	cirrus_update_memory_access(cirrusvga);
+#endif
 }
 
 // VRAMウィンドウアドレスをデフォルト値に設定する
