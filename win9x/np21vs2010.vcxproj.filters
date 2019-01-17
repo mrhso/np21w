@@ -8,9 +8,6 @@
     <Filter Include="ソース ファイル\bios">
       <UniqueIdentifier>{1b4ea5f2-aa56-4f87-9386-90cedfeecc8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\cbus">
-      <UniqueIdentifier>{f9d27abb-5546-4f61-8a11-8fda1402859e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\codecnv">
       <UniqueIdentifier>{6c9fde9a-3e05-4391-b480-2c6e62b0e849}</UniqueIdentifier>
     </Filter>
@@ -303,6 +300,9 @@
     </Filter>
     <Filter Include="ヘッダー ファイル\io\pci">
       <UniqueIdentifier>{e9dfe4b3-4815-4ed5-8a40-70b850af9129}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\cbus">
+      <UniqueIdentifier>{f9d27abb-5546-4f61-8a11-8fda1402859e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
