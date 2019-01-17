@@ -2,6 +2,9 @@
 
 // PEGC 256 color mode 
 
+// è⁄ÇµÇ≠Ç‡Ç»Ç¢ÇÃÇ…çÏÇ¡ÇΩÇÃÇ≈Ç©Ç»ÇËÇ¢Ç¢â¡å∏Ç≈Ç∑ÅB
+// â¸ó«Ç∑ÇÈÇÃÇ≈Ç†ÇÍÇŒëSïîéÃÇƒÇƒçÏÇËíºÇµÇΩï˚Ç™ó«Ç¢Ç©Ç‡ÇµÇÍÇ‹ÇπÇÒ
+
 #if defined(SUPPORT_PC9821)
 
 #include	"cpucore.h"
@@ -258,6 +261,78 @@ REG8 MEMCALL memvgaio_rd8(UINT32 address) {
 
 	UINT	pos;
 	
+	if(address > 0xe0000 + 0x0100){
+		UINT	pos;
+		REG8 ret;
+		pos = address - 0xe0000 - 0x0100;
+	
+		if(PEGC_REG_PATTERN <= pos){
+			ret = 0;
+			// vramop.mio2[PEGC_REG_PATTERN + ofs] PATTERN DATA (16bit)
+			//         pix15 pix14 ...                                          pix1 pix0
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane0   |<---   ofs = 01h           --->|<---   ofs = 00h           --->|
+			//  (bit0)  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane1   |<---   ofs = 05h           --->|<---   ofs = 04h           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane2   |<---   ofs = 09h           --->|<---   ofs = 08h           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane3   |<---   ofs = 0Dh           --->|<---   ofs = 0Ch           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane4   |<---   ofs = 11h           --->|<---   ofs = 10h           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane5   |<---   ofs = 15h           --->|<---   ofs = 14h           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane6   |<---   ofs = 19h           --->|<---   ofs = 18h           --->|
+			//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			// plane7   |<---   ofs = 1Dh           --->|<---   ofs = 1Ch           --->|
+			//  (bit7)  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+			if(vramop.mio2[PEGC_REG_PLANE_ROP] & 0x8000){
+				// 1 palette x 16 pixels
+				//      bit8     Å`     bit0
+				// pix0 <-- E0120h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit0)
+				// pix1 <-- E0124h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit1)
+				// pix2 <-- E0128h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit2)
+				// pix3 <-- E012Ch(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit3)
+				// pix4 <-- E0130h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit4)
+				// pix5 <-- E0134h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit5)
+				// pix6 <-- E0138h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit6)
+				// pix7 <-- E013Ch(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit7)
+				// pix8 <-- E0140h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit8)
+				// pix9 <-- E0144h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit9)
+				// pix10<-- E0148h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit10)
+				// pix11<-- E014Ch(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit11)
+				// pix12<-- E0150h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit12)
+				// pix13<-- E0154h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit13)
+				// pix14<-- E0158h(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit14)
+				// pix15<-- E015Ch(8bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C], vramop.mio2[PEGC_REG_PATTERN + 0x18], ... , vramop.mio2[PEGC_REG_PATTERN + 0x00] (bit15)
+				if((pos & 0x3)==0 && pos < 0x60){
+					int i;
+					int bit = pos / 4;
+					for(i=7;i>=0;i--){
+						ret |= (vramop.mio2[PEGC_REG_PATTERN + i*4] >> bit) & 0x1;
+						ret <<= 1;
+					}
+				}
+			}else{
+				// 16 pixels x 8 planes
+				//      pix15     Å`     pix0
+				// bit0 <-- E0120h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x00]
+				// bit1 <-- E0124h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x04]
+				// bit2 <-- E0128h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x08]
+				// bit3 <-- E012Ch(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x0C]
+				// bit4 <-- E0130h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x10]
+				// bit5 <-- E0134h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x14]
+				// bit6 <-- E0138h(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x18]
+				// bit7 <-- E013Ch(16bit) -->     LOADINTELWORD vramop.mio2[PEGC_REG_PATTERN + 0x1C]
+				if((pos & 0x3)==0 && pos < 0x40){
+					ret = vramop.mio2[pos];
+				}
+			}
+			return ret;
+		}
+	}
+
 	address -= 0xe0000;
 	pos = address - 0x0004;
 	if (pos < 4) {
@@ -274,9 +349,38 @@ void MEMCALL memvgaio_wr8(UINT32 address, REG8 value) {
 
 	UINT	pos;
 	
-	//if(address == 0xE0110 || address == 0xE0108){
-		pegc.remain = 0;
-	//}
+	if(address > 0xe0000 + 0x0100){
+		UINT	pos;
+		pos = address - 0xe0000 - 0x0100;
+	
+		if(PEGC_REG_PATTERN <= pos){
+			if(vramop.mio2[PEGC_REG_PLANE_ROP] & 0x8000){
+				// 1 palette x 8 pixels
+				if((pos & 0x3)==0 && pos < 0x60){
+					int i;
+					int bit = pos / 4;
+					for(i=0;i<7;i++){
+						UINT8 tmp = vramop.mio2[PEGC_REG_PATTERN + i*4];
+						tmp = (tmp & ~(1 << bit)) | ((value & 1) << bit);
+						vramop.mio2[PEGC_REG_PATTERN + i*4] = tmp;
+						value >>= 1;
+					}
+				}
+			}else{
+				// 8 pixels x 8 planes
+				if((pos & 0x3)==0 && pos < 0x40){
+					vramop.mio2[pos] = value;
+				}
+			}
+			return;
+		}
+	}
+
+	////if(address == 0xE0110 || address == 0xE0108){
+	//	pegc.remain = 0;
+	//	//pegc.lastdatalen = 0;
+	//	pegc.lastdatalen = -(SINT32)((LOADINTELWORD(vramop.mio2+PEGC_REG_SHIFT)) & 0x1f);
+	////}
 	address -= 0xe0000;
 	pos = address - 0x0004;
 	if (pos < 4) {
@@ -372,14 +476,11 @@ REG16 MEMCALL memvgaio_rd16(UINT32 address) {
 
 void MEMCALL memvgaio_wr16(UINT32 address, REG16 value) {
 	
-	REG16	ret;
-	
 	if(address > 0xe0000 + 0x0100){
 		UINT	pos;
 		pos = address - 0xe0000 - 0x0100;
 	
 		if(PEGC_REG_PATTERN <= pos){
-			ret = 0;
 			if(vramop.mio2[PEGC_REG_PLANE_ROP] & 0x8000){
 				// 1 palette x 16 pixels
 				if((pos & 0x3)==0 && pos < 0x60){
@@ -500,13 +601,11 @@ UINT32 MEMCALL memvgaio_rd32(UINT32 address){
 }
 void MEMCALL memvgaio_wr32(UINT32 address, UINT32 value){
 	
-	UINT32	ret;
 	UINT	pos;
 
 	pos = address - 0xe0000 - 0x0100;
 	
 	if(PEGC_REG_PATTERN <= pos){
-		ret = 0;
 		if(vramop.mio2[PEGC_REG_PLANE_ROP] & 0x8000){
 			// 1 palette x 32 pixels
 			if((pos & 0x3)==0 && pos < 0x100){

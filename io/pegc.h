@@ -22,7 +22,8 @@
 typedef struct {
 	UINT8 enable; // PEGCプレーンモード使用可能
 	
-	UINT8 lastdata[32]; // PEGCプレーンモード 最後にVRAMから読み取ったデータ
+	UINT8 lastdata[64]; // PEGCプレーンモード 最後にVRAMから読み取ったデータ
+	SINT32 lastdatalen; // PEGCプレーンモード 読み取り済みデータ長さ
 	UINT32 remain; // PEGCプレーンモード 転送データ残り？
 } _PEGC, *PEGC;
 

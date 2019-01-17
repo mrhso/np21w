@@ -8,6 +8,9 @@
 // PEGC プレーンモード
 // 関連: vram.c, vram.h, memvga.c, memvga.h
 
+// 詳しくもないのに作ったのでかなりいい加減です。
+// 改良するのであれば全部捨てて作り直した方が良いかもしれません
+
 #ifdef SUPPORT_PEGC
 
 // 
@@ -95,6 +98,7 @@ REG16 MEMCALL pegc_memvgaplane_rd16(UINT32 address){
 			}
 		}
 	}
+	pegc.lastdatalen += 16;
 	return ret;
 }
 void MEMCALL pegc_memvgaplane_wr16(UINT32 address, REG16 value){
@@ -133,6 +137,10 @@ void MEMCALL pegc_memvgaplane_wr16(UINT32 address, REG16 value){
 
 	// ???
 	bit = (addr & 0x40000)?2:1;
+	
+	//if(!srccpu && pegc.remain!=0 && pegc.lastdatalen < 16){
+	//	return; // 書き込み無視
+	//}
 	
 	if(pegc.remain == 0){
 		// データ数戻す?
@@ -301,6 +309,7 @@ void MEMCALL pegc_memvgaplane_wr16(UINT32 address, REG16 value){
 	}
 endloop:
 	gdcs.grphdisp |= bit;
+	pegc.lastdatalen -= 16;
 }
 UINT32 MEMCALL pegc_memvgaplane_rd32(UINT32 address){
 	// TODO: 作る
