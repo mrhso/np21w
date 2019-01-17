@@ -3239,7 +3239,10 @@ uint32_t_ cirrus_linear_memwnd_readb(void *opaque, target_phys_addr_t addr)
 		return cirrus_linear_readb(opaque, addr);
 	}else{
 		int r = cirrus_linear_memwnd_addr_convert_iodata(opaque, &addr);
-		if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		//if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		if ((cirrusvga_wab_40e1 & 0x02) == 0 ) { 
+			return 0xff;	//DRAM REFRESH Mode
+		}else if(r == 0) {
 			return cirrus_linear_readb(opaque, addr);
 		}else{
 			return cirrus_mmio_readb_iodata(opaque, addr);
@@ -3257,7 +3260,10 @@ uint32_t_ cirrus_linear_memwnd_readw(void *opaque, target_phys_addr_t addr)
 		return cirrus_linear_readw(opaque, addr);
 	}else{
 		int r = cirrus_linear_memwnd_addr_convert_iodata(opaque, &addr);
-		if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		//if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		if ((cirrusvga_wab_40e1 & 0x02) == 0 ) { 
+			return 0xff;	//DRAM REFRESH Mode
+		}else if (r == 0) {
 			return cirrus_linear_readw(opaque, addr);
 		}else{
 			return cirrus_mmio_readw_iodata(opaque, addr);
@@ -3275,7 +3281,10 @@ uint32_t_ cirrus_linear_memwnd_readl(void *opaque, target_phys_addr_t addr)
 		return cirrus_linear_readl(opaque, addr);
 	}else{
 		int r = cirrus_linear_memwnd_addr_convert_iodata(opaque, &addr);
-		if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		//if (r == 0 && (s->gr[0x31] & CIRRUS_BLT_RESET)!=0 || (s->cirrus_blt_mode & CIRRUS_BLTMODE_MEMSYSDEST)!=0) { // XXX: ñæÇÁÇ©Ç…ê≥ÇµÇ≠Ç»Ç¢ÇØÇ«Ç∆ÇËÇ†Ç¶Ç∏ìÆÇ≠ÇÊÇ§Ç…í≤êÆ
+		if ((cirrusvga_wab_40e1 & 0x02) == 0 ) { 
+			return 0xff;	//DRAM REFRESH Mode
+		}else if (r == 0) {
 			return cirrus_linear_readl(opaque, addr);
 		}else{
 			return cirrus_mmio_readl_iodata(opaque, addr);
