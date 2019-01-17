@@ -417,6 +417,7 @@ void pccore_term(void) {
 	
 	pic_deinitialize();
 
+	CPU_SETEXTSIZE(0); // ƒƒ‚ƒŠ‰ğ•ú
 	CPU_DEINITIALIZE();
 }
 

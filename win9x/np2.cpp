@@ -96,6 +96,8 @@
 #include "Dbt.h"
 #endif
 
+#include	<process.h>
+
 #ifdef BETA_RELEASE
 #define		OPENING_WAIT		1500
 #endif
@@ -188,20 +190,63 @@ static int WM_QueryCancelAutoPlay;
 
 // システムキーフック用
 #ifdef HOOK_SYSKEY
+static HANDLE	np2_hThreadKeyHook = NULL; // キーフック用スレッド
+//static int		np2_hThreadKeyHookexit = 0; // スレッド終了フラグ
+static HWND		np2_hThreadKeyHookhWnd = 0;
 LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam);
 HHOOK hHook = NULL;
-static void start_hook_systemey()
+LRESULT CALLBACK np2_ThreadFuncKeyHook_WndProc(HWND hWnd, UINT mes, WPARAM wParam, LPARAM lParam){
+   if(mes == WM_DESTROY) {PostQuitMessage(0); return 0;}
+   return DefWindowProc(hWnd, mes, wParam, lParam);
+}
+static unsigned int __stdcall np2_ThreadFuncKeyHook(LPVOID vdParam) 
 {
+	MSG msg;
+
+	WNDCLASSEX wcex ={sizeof(WNDCLASSEX), CS_HREDRAW | CS_VREDRAW, np2_ThreadFuncKeyHook_WndProc, 0, 0, g_hInstance, NULL, NULL, (HBRUSH)(COLOR_WINDOW), NULL, _T("NP2 Key Hook"), NULL};
+
+	if(!RegisterClassEx(&wcex)) return 0;
+
+	if(!(np2_hThreadKeyHookhWnd = CreateWindow(_T("NP2 Key Hook"), _T("NP2 Key Hook"), WS_POPUPWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, g_hInstance, NULL))) return 0;
+
+	ShowWindow( np2_hThreadKeyHookhWnd, SW_HIDE ); // 念のため
+
 	if(!hHook){
 		hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, g_hInstance, 0);
 	}
-}
-static void stop_hook_systemey()
-{
+	// メイン メッセージ ループ
+	while( GetMessage(&msg, NULL, 0, 0) > 0 ) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 	if(hHook){
 		UnhookWindowsHookEx(hHook);
 		hHook = NULL;
 	}
+	np2_hThreadKeyHookhWnd = NULL;
+	return 0;
+}
+static void start_hook_systemkey()
+{
+	unsigned int dwID;
+	if(!np2_hThreadKeyHook){
+		np2_hThreadKeyHook = (HANDLE)_beginthreadex(NULL, 0, np2_ThreadFuncKeyHook, NULL, 0, &dwID);
+	}
+	//if(!hHook){
+	//	hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, g_hInstance, 0);
+	//}
+}
+static void stop_hook_systemkey()
+{
+	if(np2_hThreadKeyHook && np2_hThreadKeyHookhWnd){
+		SendMessage(np2_hThreadKeyHookhWnd , WM_CLOSE , 0 , 0);
+		WaitForSingleObject(np2_hThreadKeyHook,  INFINITE);
+		np2_hThreadKeyHook = NULL;
+	}
+	//if(hHook){
+	//	UnhookWindowsHookEx(hHook);
+	//	hHook = NULL;
+	//}
 }
 #endif
 
@@ -663,7 +708,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 					OpenSoundDevice(hWnd);
 				}
 #ifdef HOOK_SYSKEY
-				stop_hook_systemey();
+				stop_hook_systemkey();
 #endif
 				pccore_cfgupdate();
 				pccore_reset();
@@ -672,7 +717,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 				np2updatemenu();
 #endif
 #ifdef HOOK_SYSKEY
-				start_hook_systemey();
+				start_hook_systemkey();
 #endif
 			}
 			break;
@@ -1487,10 +1532,17 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			update |= SYS_UPDATECFG;
 			break;
 			
+#ifdef HOOK_SYSKEY
 		case IDM_SYSKHOOK:
 			np2oscfg.syskhook = !np2oscfg.syskhook;
+			if(np2oscfg.syskhook){
+				start_hook_systemkey();
+			}else{
+				stop_hook_systemkey();
+			}
 			update |= SYS_UPDATECFG;
 			break;
+#endif
 
 		case IDM_DISPCLOCK:
 			np2oscfg.DISPCLK ^= 1;
@@ -1785,11 +1837,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					//	Shiftキーが押下されていればリセット
 					pccore_cfgupdate();
 #ifdef HOOK_SYSKEY
-					stop_hook_systemey();
+					stop_hook_systemkey();
 #endif
 					pccore_reset();
 #ifdef HOOK_SYSKEY
-					start_hook_systemey();
+					start_hook_systemkey();
 #endif
 				}
 			}
@@ -2439,11 +2491,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				case NP2CMD_RESET:
 					pccore_cfgupdate();
 #ifdef HOOK_SYSKEY
-					stop_hook_systemey();
+					stop_hook_systemkey();
 #endif
 					pccore_reset();
 #ifdef HOOK_SYSKEY
-					start_hook_systemey();
+					start_hook_systemkey();
 #endif
 					break;
 			}
@@ -2828,7 +2880,7 @@ void loadNP2INI(const OEMCHAR *fname){
 #endif
 	
 #ifdef HOOK_SYSKEY
-	stop_hook_systemey();
+	stop_hook_systemkey();
 #endif
 
 	LPTSTR lpFilenameBuf = (LPTSTR)malloc((_tcslen(fname)+1)*sizeof(TCHAR));
@@ -3080,7 +3132,7 @@ void loadNP2INI(const OEMCHAR *fname){
 	sysmng_updatecaption(SYS_UPDATECAPTION_ALL);
 	
 #ifdef HOOK_SYSKEY
-	start_hook_systemey();
+	start_hook_systemkey();
 #endif
 }
 
@@ -3394,7 +3446,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	sysmng_updatecaption(SYS_UPDATECAPTION_ALL);
 	
 #ifdef HOOK_SYSKEY
-	start_hook_systemey();
+	start_hook_systemkey();
 #endif
 
 	lateframecount = 0;
@@ -3485,7 +3537,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	}
 	
 #ifdef HOOK_SYSKEY
-	stop_hook_systemey();
+	stop_hook_systemkey();
 #endif
 
 	// 画面表示倍率を保存

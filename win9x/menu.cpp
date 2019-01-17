@@ -286,8 +286,8 @@ void xmenu_initialize(HMENU hMenu)
 	EnableMenuItem(hMenu, IDM_WABOPT, MF_BYCOMMAND|MFS_GRAYED);
 #endif
 	
-#ifndef SUPPORT_PHYSICAL_CDDRV
-	EnableMenuItem(hMenu, IDM_WABOPT, MF_BYCOMMAND|MFS_GRAYED);
+#ifndef SUPPORT_PCI
+	EnableMenuItem(hMenu, IDM_PCIOPT, MF_BYCOMMAND|MFS_GRAYED);
 #endif
 
 	if (np2oscfg.I286SAVE)
