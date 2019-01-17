@@ -260,6 +260,10 @@ static void info_sound(OEMCHAR *str, int maxlen, const NP2INFOEX *ex)
 			lpBoard = OEMTEXT("PC-9801-86 + Mate-X PCM");
 			break;
 			
+		case SOUNDID_PC_9801_86_118:
+			lpBoard = OEMTEXT("PC-9801-86 + PC-9801-118");
+			break;
+			
 		case SOUNDID_MATE_X_PCM:
 			lpBoard = OEMTEXT("Mate-X PCM");
 			break;

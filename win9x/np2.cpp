@@ -148,7 +148,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 1, 0, 1, 1, 
 						0, 0, 
 						0, 8, 
-						0, 0, 0, TCMODE_DEFAULT, 0
+						0, 0, 0, TCMODE_DEFAULT, 0, 1
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -575,6 +575,7 @@ static void OpenSoundDevice(HWND hWnd)
 		pSoundMng->SetPCMVolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
 		pSoundMng->SetPCMVolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
 		pSoundMng->SetPCMVolume(SOUND_RELAY1, np2cfg.MOTORVOL);
+		pSoundMng->SetMasterVolume(np2cfg.vol_master);
 	}
 }
 
@@ -2446,18 +2447,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					sysmng_updatecaption(SYS_UPDATECAPTION_MISC);
 					tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
 				}else{
-					int cMaster = np2cfg.vol_master;
-					cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 2;
-					if(cMaster < 0) cMaster = 0;
-					if(cMaster > 100) cMaster = 100;
-					if (np2cfg.vol_master != cMaster)
-					{
-						np2cfg.vol_master = cMaster;
-						soundmng_setvolume(cMaster);
+					if(np2oscfg.usemastervolume){
+						int cMaster = np2cfg.vol_master;
+						cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 2;
+						if(cMaster < 0) cMaster = 0;
+						if(cMaster > 100) cMaster = 100;
+						if (np2cfg.vol_master != cMaster)
+						{
+							np2cfg.vol_master = cMaster;
+							soundmng_setvolume(cMaster);
+						}
+						sys_miscinfo.showvolume = 1;
+						sysmng_updatecaption(SYS_UPDATECAPTION_MISC);
+						tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
 					}
-					sys_miscinfo.showvolume = 1;
-					sysmng_updatecaption(SYS_UPDATECAPTION_MISC);
-					tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
 				}
 			}
 			break;

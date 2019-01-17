@@ -827,7 +827,9 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 			
 		case SOUNDID_PC_9801_86_WSS:
 			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_CS4231;
-			break;
+			
+		case SOUNDID_PC_9801_86_118:
+			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_PCM86 | FLAG_CS4231;
 			
 		case SOUNDID_MATE_X_PCM:
 			return FLAG_OPNA1 | FLAG_CS4231;
