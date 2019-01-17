@@ -659,7 +659,9 @@ static const PFTBL s_IniItems[] =
 #if defined(SUPPORT_FAST_MEMORYCHECK)
 	PFVAL("memckspd", PFTYPE_UINT8,		&np2cfg.memcheckspeed),
 #endif
-
+	
+	PFMAX("USERAM_D", PFTYPE_BOOL,		&np2cfg.useram_d,		0), // EPSON‚Å‚È‚­‚Ä‚àD0000h-DFFFFh‚ğRAM‚Éi‚½‚¾‚µIDE BIOS D8000h-DBFFFh‚Í‘Ê–Új
+	
 
 	// OSˆË‘¶H
 	PFVAL("keyboard", PFRO_KB,			&np2oscfg.KEYBOARD),

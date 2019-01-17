@@ -20,7 +20,7 @@
 #define DSBVOLUME_MIN		(-10000)					/*!< ヴォリューム最小値 */
 #endif
 
-#define NP2VOLUME2DSDB(a)	((LONG)(10*log10((a)/100.0f)*100))
+#define NP2VOLUME2DSDB(a)	((LONG)(10*log((a)/100.0f)/log(2.0)*100))
 
 //! デバイス リスト
 std::vector<DSound3Device> CSoundDeviceDSound3::sm_devices;

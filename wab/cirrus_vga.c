@@ -6377,8 +6377,9 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
 			cirrusvga_wab_40e1 = 0x7b;
 			cirrusvga_wab_42e1 = 0x00;
-			cirrusvga_wab_46e8 = 0x10;
-		}else if ((np2clvga.gd54xxtype & CIRRUS_98ID_GA98NBMASK) == CIRRUS_98ID_GA98NBIC) {
+			cirrusvga_wab_46e8 = 0x18; // Å‰‚©‚çON
+		}else if ((np2clvga.gd54xxtype & CIRRUS_98ID_GA98NBMASK) == CIRRUS_98ID_GA98NBIC ||
+			np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_G1_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_G2_PCI || np2clvga.gd54xxtype == CIRRUS_98ID_AUTO_XE_G4_PCI) {
 			memset(cirrusvga->vram_ptr, 0x00, cirrusvga->real_vram_size);
 			cirrusvga_wab_59e1 = 0x06;	// d.c.
 			cirrusvga_wab_51e1 = 0xC2;	// d.c.
@@ -6761,7 +6762,7 @@ void pc98_cirrus_vga_resetresolution(void)
 		cirrusvga_wab_5be1 = 0xf7;	// bit3:0=4M,1=2M ??????
 		cirrusvga_wab_40e1 = 0x7b;
 		cirrusvga_wab_42e1 = 0x00;
-		cirrusvga_wab_46e8 = 0x10;
+		cirrusvga_wab_46e8 = 0x18; // Å‰‚©‚çON
 	}else if ((np2clvga.gd54xxtype & CIRRUS_98ID_GA98NBMASK) == CIRRUS_98ID_GA98NBIC) {
 		memset(cirrusvga->vram_ptr, 0x00, cirrusvga->real_vram_size);
 		cirrusvga_wab_59e1 = 0x06;	// d.c.

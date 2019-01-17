@@ -153,6 +153,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_FAST_MEMORYCHECK)
 				1,
 #endif
+				0,
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -604,7 +605,7 @@ void pccore_reset(void) {
 	}
 
 	epson = (pccore.model & PCMODEL_EPSON) ? TRUE : FALSE;
-	if (epson) {
+	if (epson || np2cfg.useram_d) {
 		/* enable RAM (D0000-DFFFF) */
 		CPU_RAM_D000 = 0xffff;
 	}

@@ -2447,7 +2447,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
 				}else{
 					int cMaster = np2cfg.vol_master;
-					cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 5;
+					cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 2;
 					if(cMaster < 0) cMaster = 0;
 					if(cMaster > 100) cMaster = 100;
 					if (np2cfg.vol_master != cMaster)
