@@ -6150,6 +6150,8 @@ void pc98_cirrus_vga_shutdown(void)
 
 void pc98_cirrus_vga_resetresolution(void)
 {
+	if(!np2clvga.enabled) return;
+
 	cirrusvga->cr[0x01] = 0;
 	cirrusvga->cr[0x12] = 0;
 	cirrusvga->cr[0x07] &= ~0x42;

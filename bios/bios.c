@@ -493,6 +493,7 @@ static void bios_itfcall(void) {
 
 // np21w ver0.86 rev46 BIOS I/O emulation
 #if defined(BIOS_IO_EMULATION)
+// LIFO
 void biosioemu_push8(UINT16 port, UINT8 data) {
 	
 	if(!biosioemu.enable) return;
@@ -501,6 +502,24 @@ void biosioemu_push8(UINT16 port, UINT8 data) {
 		biosioemu.data[biosioemu.count].flag = BIOSIOEMU_FLAG_NONE;
 		biosioemu.data[biosioemu.count].port = port;
 		biosioemu.data[biosioemu.count].data = data;
+		biosioemu.count++;
+	}
+}
+// FIFO
+void biosioemu_enq8(UINT16 port, UINT8 data) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		int i;
+		for(i=biosioemu.count-1;i>=0;i--){
+			biosioemu.data[i+1].flag = biosioemu.data[i].flag;
+			biosioemu.data[i+1].port = biosioemu.data[i].port;
+			biosioemu.data[i+1].data = biosioemu.data[i].data;
+		}
+		biosioemu.data[0].flag = BIOSIOEMU_FLAG_NONE;
+		biosioemu.data[0].port = port;
+		biosioemu.data[0].data = data;
 		biosioemu.count++;
 	}
 }

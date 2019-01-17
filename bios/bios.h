@@ -119,6 +119,7 @@ void bios0x1f(void);
 #if defined(BIOS_IO_EMULATION)
 // np21w ver0.86 rev46 BIOS I/O emulation
 void biosioemu_push8(UINT16 port, UINT8 data);
+void biosioemu_enq8(UINT16 port, UINT8 data);
 #endif
 
 #ifdef __cplusplus
