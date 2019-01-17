@@ -38,9 +38,6 @@
     <Filter Include="ソース ファイル\io">
       <UniqueIdentifier>{9d73e98b-7a0a-4020-bc6c-7aaa04a461b6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\lio">
-      <UniqueIdentifier>{7d11f730-6a89-4d86-ac7d-e77ea77f94c3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\mem">
       <UniqueIdentifier>{01579648-5982-43cb-833c-6b7a4a7bcb08}</UniqueIdentifier>
     </Filter>
@@ -303,6 +300,9 @@
     </Filter>
     <Filter Include="ソース ファイル\cbus">
       <UniqueIdentifier>{f9d27abb-5546-4f61-8a11-8fda1402859e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\lio">
+      <UniqueIdentifier>{7d11f730-6a89-4d86-ac7d-e77ea77f94c3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

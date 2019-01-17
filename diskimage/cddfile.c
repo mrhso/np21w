@@ -377,6 +377,10 @@ REG8 sec2352_read(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 		if (file_read(fh, buf, rsize) != rsize) {
 			return(0xd0);
 		}
+		//if(pos==7569){
+		//	sxsi->cdflag_ecc = 2;
+		//	return(0xd0);
+		//}
 		buf += rsize;
 		size -= rsize;
 		pos++;

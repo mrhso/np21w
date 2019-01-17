@@ -57,13 +57,14 @@ REG8 sec2048_read_SPTI(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 	cdinfo = (CDINFO)sxsi->hdl;
 	fh = cdinfo->fh;
 
-	{
+	size /= 2048;
+
+	if(1 || size!=2048) {
 		DWORD sptisize=0;
 		struct sptdinfo sptd = {0};
 		//UCHAR ucDataBuf[2048*8];
 
-		size /= 2048;
-		// READ CD command
+		// READ command
 		sptd.info.Cdb[0] = 0x28;//0xBE;//0x3C;//0xBE;
 		// Don't care about sector type.
 		//sptd.info.Cdb[1] = 0;
@@ -97,6 +98,8 @@ REG8 sec2048_read_SPTI(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 		sptd.info.SenseInfoOffset = offsetof(struct sptdinfo, sense_buffer);
 		sptd.info.TimeOutValue = 5;
 		
+		if(sptd.info.DataTransferLength > sizeof(sptd.ucDataBuf)) return 0xd0;
+
 		//memset(buf, 0, 2048 * size);
 		//memset(ucDataBuf, 0, 16384);
 		//SetLastError(0);
@@ -108,6 +111,62 @@ REG8 sec2048_read_SPTI(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 			}
 		}
 	}
+	
+	//{
+	//	DWORD sptisize=0;
+	//	struct sptdinfo sptd = {0};
+	//	//UCHAR ucDataBuf[2048*8];
+
+	//	//size /= 2048;
+	//	// READ CD command
+	//	sptd.info.Cdb[0] = 0xBE;//0x3C;//0xBE;
+	//	// Don't care about sector type.
+	//	//sptd.info.Cdb[1] = 0;
+	//	//sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
+	//	//sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
+	//	//sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
+	//	//sptd.info.Cdb[5] = pos & 0xFF;
+	//	//sptd.info.Cdb[6] = (size >> 16) & 0xFF;
+	//	//sptd.info.Cdb[7] = (size >> 8) & 0xFF;
+	//	//sptd.info.Cdb[8] = size & 0xFF;
+	//	//// Sync + all headers + user data + EDC/ECC. Excludes C2 + subchannel
+	//	sptd.info.Cdb[1] = 2;                         // Data mode
+	//	sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
+	//	sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
+	//	sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
+	//	sptd.info.Cdb[5] = pos & 0xFF;
+	//	sptd.info.Cdb[6] = (size >> 16) & 0xFF;
+	//	sptd.info.Cdb[7] = (size >> 8) & 0xFF;
+	//	sptd.info.Cdb[8] = size & 0xFF;
+	//	sptd.info.Cdb[9] = 0xF8;
+	//	sptd.info.Cdb[10] = 0;
+	//	sptd.info.Cdb[11] = 0;
+
+	//	sptd.info.CdbLength = 12;
+	//	sptd.info.Length = sizeof(SCSI_PASS_THROUGH);
+	//	sptd.info.DataIn = SCSI_IOCTL_DATA_IN;
+	//	sptd.info.DataTransferLength = 2352;
+	//	sptd.info.DataBufferOffset = offsetof(struct sptdinfo, ucDataBuf);
+	//	//sptd.info.DataBuffer = ucDataBuf;
+	//	sptd.info.SenseInfoLength = sizeof(sptd.sense_buffer);
+	//	sptd.info.SenseInfoOffset = offsetof(struct sptdinfo, sense_buffer);
+	//	sptd.info.TimeOutValue = 5;
+	//	
+	//	if(sptd.info.DataTransferLength > sizeof(sptd.ucDataBuf)) return 0xd0;
+
+	//	//memset(buf, 0, 2048 * size);
+	//	//memset(ucDataBuf, 0, 16384);
+	//	//SetLastError(0);
+	//	if (DeviceIoControl(fh, IOCTL_SCSI_PASS_THROUGH, &sptd, offsetof(struct sptdinfo, sense_buffer)+sizeof(sptd.sense_buffer), &sptd, offsetof(struct sptdinfo, ucDataBuf)+2352, &sptisize, FALSE))
+	//	{
+	//		//if (sptd.info.DataTransferLength != 0){
+	//			//memcpy(buf, sptd.ucDataBuf + 16, sptd.info.DataTransferLength);
+	//			sxsi->cdflag_ecc = 2;
+	//			return(0xd0);
+	//			//return(0x00);
+	//		//}
+	//	}
+	//}
 
 
 	//if (file_seek(fh, pos, FSEEK_SET) != pos) {

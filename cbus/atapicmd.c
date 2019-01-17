@@ -473,9 +473,24 @@ static void atapi_cmd_read_capacity(IDEDRV drv) {
 // 0x28: READ(10)
 #if defined(_WINDOWS)
 void atapi_dataread_threadfunc_part(IDEDRV drv) {
+
+	SXSIDEV	sxsi;
+	sxsi = sxsi_getptr(drv->sxsidrv);
+	sxsi->cdflag_ecc = 0;
+
 	if (sxsi_read(drv->sxsidrv, drv->sector, drv->buf, 2048) != 0) {
-		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
-		drv->asc = 0x21;
+		if(sxsi->cdflag_ecc==2){
+			ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_MEDIUM_ERROR);
+			drv->sk = 0x03;
+			drv->asc = 0x11;
+			drv->status |= IDESTAT_ERR;
+			drv->error |= IDEERR_UNC;
+		}else{
+			ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
+			drv->asc = 0x21;
+			senderror(drv);
+		}
+		sxsi->cdflag_ecc = 0;
 		senderror(drv);
 		return;
 	}
@@ -493,6 +508,13 @@ void atapi_dataread_threadfunc_part(IDEDRV drv) {
 	drv->buftc = (drv->nsectors)?IDETC_ATAPIREAD:IDETC_TRANSFEREND;
 	drv->bufpos = 0;
 	drv->bufsize = 2048;
+
+	if(sxsi->cdflag_ecc==1){
+		drv->status |= IDESTAT_CORR;
+		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_RECOVERED_ERROR);
+		drv->asc = 0x18;
+	}
+	sxsi->cdflag_ecc = 0;
 
 	drv->status &= ~(IDESTAT_BSY); // ”O‚Ì‚½‚ß’¼‘O‚Å‰ðœ
 	if (!(drv->ctrl & IDECTRL_NIEN)) {
