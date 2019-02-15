@@ -901,11 +901,6 @@ void pccore_exec(BOOL draw) {
 
 //	nevent_get1stevent();
 	
-//#if defined(SUPPORT_HRTIMER)
-//	disptmr = hrtimertime_hl;
-//#endif
-	//disptmr = 0;
-
 	while(pcstat.screendispflag) {
 		//lastclock = CPU_REMCLOCK;
 #if defined(TRACE)
@@ -972,34 +967,7 @@ void pccore_exec(BOOL draw) {
 				hrtimertimeuint = ((hrtimertimeuint & ~0x3fffff) + 0x400000) & 0xffffff; // 日付変わった
 			}
 			STOREINTELDWORD(mem+0x04F1, hrtimertimeuint); // XXX: 04F4にも書いちゃってるけど差し当たっては問題なさそうなので･･･
-
-			//disptmr++;
-			//if(disptmr > 64){
-			//	// XXX: 数秒もこの中にいるのは変なので抜けさせる（操作を受け付けなくなる現象の暫定回避）
-			//	pcstat.screendispflag = 0;
-			//	nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
-			//}
 		}
-#endif
-#if defined(SUPPORT_ASYNC_CPU)
-		//if(timing_getcount_baseclock()!=0){
-		//	nevent_reset(NEVENT_FLAMES);
-		//	MEMWAIT_TRAM = np2cfg.wait[1];
-		//	MEMWAIT_VRAM = np2cfg.wait[3];
-		//	MEMWAIT_GRCG = np2cfg.wait[5];
-		//	gdc_work(GDCWORK_MASTER);
-		//	gdc.vsync = 0x20;
-		//	if (gdc.vsyncint) {
-		//		gdc.vsyncint = 0;
-		//		pic_setirq(2);
-		//	}
-		//	nevent_set(NEVENT_FLAMES, 0, screendisp, NEVENT_ABSOLUTE);
-
-		//	// drawscreenで pccore.vsyncclockが変更される可能性があります
-		//	if (np2cfg.DISPSYNC) {
-		//		drawscreen();
-		//	}
-		//}
 #endif
 		nevent_progress();
 	}

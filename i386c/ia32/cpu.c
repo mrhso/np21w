@@ -293,7 +293,7 @@ exec_allstep(void)
 			clkcnt++;
 			if(clkcnt >= clkstep) clkstep -= clkstep;
 			// ŽžŠÔ‚É—]—T‚ª‚ ‚ê‚ÎCPU‚ð“®‚©‚µ‘±‚¯‚é
-			if(CPU_REMCLOCK <= 10000 && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
+			if(CPU_REMCLOCK <= 10000 && (g_nevent.item[NEVENT_FLAMES].flag & NEVENT_ENABLE) && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
 				if(timing_getcount_baseclock()==0){
 					CPU_REMCLOCK = 10000;
 					clkstep = 1;
