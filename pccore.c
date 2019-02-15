@@ -91,6 +91,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				{0x3e, 0x73, 0x7b}, 0,
 				0, 0, {1, 1, 6, 1, 8, 1},
 				128, 0x00, 1, 
+#if defined(SUPPORT_ASYNC_CPU)
+				0,
+#endif
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE, 1,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},
@@ -977,6 +980,26 @@ void pccore_exec(BOOL draw) {
 			//	nevent_set(NEVENT_FLAMES, 0, screenvsync, NEVENT_RELATIVE);
 			//}
 		}
+#endif
+#if defined(SUPPORT_ASYNC_CPU)
+		//if(timing_getcount_baseclock()!=0){
+		//	nevent_reset(NEVENT_FLAMES);
+		//	MEMWAIT_TRAM = np2cfg.wait[1];
+		//	MEMWAIT_VRAM = np2cfg.wait[3];
+		//	MEMWAIT_GRCG = np2cfg.wait[5];
+		//	gdc_work(GDCWORK_MASTER);
+		//	gdc.vsync = 0x20;
+		//	if (gdc.vsyncint) {
+		//		gdc.vsyncint = 0;
+		//		pic_setirq(2);
+		//	}
+		//	nevent_set(NEVENT_FLAMES, 0, screendisp, NEVENT_ABSOLUTE);
+
+		//	// drawscreenÇ≈ pccore.vsyncclockÇ™ïœçXÇ≥ÇÍÇÈâ¬î\ê´Ç™Ç†ÇËÇ‹Ç∑
+		//	if (np2cfg.DISPSYNC) {
+		//		drawscreen();
+		//	}
+		//}
 #endif
 		nevent_progress();
 	}
