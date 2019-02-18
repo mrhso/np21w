@@ -147,8 +147,9 @@ const SDRAWFN	*sdrawfn;
 		redrawpending = 0;
 	}
 #if defined(SUPPORT_IA32_HAXM)
-	updateallline(0x80808080);
-	redrawpending = 0;
+	gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
+	//updateallline(0x80808080);
+	//redrawpending = 0;
 #endif
 
 	ret = 0;

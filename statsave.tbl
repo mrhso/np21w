@@ -94,7 +94,11 @@ static const SFENTRY np2tbl[] = {
 	{"MEMORY",		0,	STATFLAG_MEM,	NULL,			0x130000},
 	{"EXTMEM",		0,	STATFLAG_EXT,	NULL,			0},
 #if defined(SUPPORT_PC9821)
+#if defined(SUPPORT_IA32_HAXM)
+	{"VRAMEX",		0,	STATFLAG_BIN,	vramex_base,	sizeof(vramex_base)},
+#else
 	{"VRAMEX",		0,	STATFLAG_BIN,	vramex,			sizeof(vramex)},
+#endif
 #endif
 
 	{"ARTIC",		0,	STATFLAG_BIN,	&artic,			sizeof(artic)},

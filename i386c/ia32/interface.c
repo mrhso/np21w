@@ -232,15 +232,11 @@ ia32_interrupt(int vect, int soft)
 		if(!soft){
 			HAX_TUNNEL *tunnel;
 			tunnel = (HAX_TUNNEL*)np2hax.tunnel.va;
-			i386hax_enter_criticalsection();
 			if(np2hax.irq_reqidx_end - np2hax.irq_reqidx_cur < 250){
 				np2hax.irq_req[np2hax.irq_reqidx_end] = vect;
 				np2hax.irq_reqidx_end++;
-			}else{
-				printf("overflow!!");
 			}
 			//i386haxfunc_vcpu_interrupt(vect);
-			i386hax_leave_criticalsection();
 		}
 	}else
 #endif

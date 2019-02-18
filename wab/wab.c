@@ -613,6 +613,8 @@ void np2wab_setRelayState(REG8 state)
 			}else{
 				// “‡ƒ‚[ƒh‚È‚ç‰æ–Ê‚ğæ‚Áæ‚é
 				np2wab_setScreenSize(ga_lastwabwidth, ga_lastwabheight);
+				BitBlt(np2wabwnd.hDCBuf , 0 , 0 , WAB_MAX_WIDTH , WAB_MAX_HEIGHT , NULL , 0 , 0 , BLACKNESS);
+				scrnmng_blthdc(np2wabwnd.hDCBuf);
 			}
 		}else{
 			// ƒŠƒŒ[‚ªOFF

@@ -5,6 +5,10 @@
 #include	"bios.h"
 #include	"biosmem.h"
 
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#endif
 
 static REG8 bios0x1f_90(void) {
 

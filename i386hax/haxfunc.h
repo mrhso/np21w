@@ -1,3 +1,4 @@
+
 #ifndef	NP2_I386HAX_HAXFUNC_H__
 #define	NP2_I386HAX_HAXFUNC_H__
 
@@ -69,7 +70,7 @@ extern "C" {
 #if defined(_WIN32)
 #pragma pack(1)
 typedef struct {
-    UINT32 compat_version; // 互換バージョン？
+    UINT32 compat_version; // 互換性のあるバージョン？
     UINT32 current_version; // 現在のバージョン？
 } HAX_MODULE_VERSION;
 
@@ -107,17 +108,15 @@ typedef struct hax_set_ram_info {
 } HAX_SET_RAM_INFO;
 
 typedef struct hax_tunnel_info {
-    UINT64 va; // struct hax_tunnelのアドレス？
-    UINT64 io_va; // struct hax_fastmmioのアドレス？
-    UINT16 size; // struct hax_tunnelのサイズ？
+    UINT64 va; // struct hax_tunnelのアドレス（キャストして使う）
+    UINT64 io_va; // データやりとり用。exit_statusによって内容が変わる
+    UINT16 size; // struct hax_tunnelのサイズ
     UINT16 pad[3]; // 無視
 } HAX_TUNNEL_INFO;
 
 typedef struct hax_qemu_version {
-    /* Current API version in QEMU*/
-    UINT32 cur_version;
-    /* The least API version supported by QEMU */
-    UINT32 least_version;
+    UINT32 cur_version; // 実行中のQEMUバージョン？
+    UINT32 least_version; // 最低限必要なQEMU APIバージョン？
 } HAX_QEMU_VERSION;
 
 #define HAX_IO_OUT 0
@@ -133,7 +132,7 @@ enum exit_status {
     HAX_EXIT_HLT, // HLT命令が実行された
     HAX_EXIT_STATECHANGE, // シャットダウンやCPUパニックなどでリセット以外の選択肢が無いとき
     HAX_EXIT_PAUSED, // 一時停止？
-    HAX_EXIT_FAST_MMIO, // メモリマップドIOアクセス（HAX_EXIT_MMIOを高速にしたものらしい）
+    HAX_EXIT_FAST_MMIO, // メモリマップドIOアクセス（HAX_EXIT_MMIOを高速にしたものらしい）tunnelのio_vaはhax_fastmmio構造体のアドレス
     HAX_EXIT_PAGEFAULT, // ページフォールト発生？
     HAX_EXIT_DEBUG // デバッグ
 };
@@ -147,8 +146,8 @@ typedef struct hax_tunnel {
     UINT32 pad0; // 無視
     UINT32 _exit_status; // HAX_EXIT_なんたら
     UINT32 user_event_pending; // ???
-    int ready_for_interrupt_injection; // ???
-    int request_interrupt_window; // ???
+    int ready_for_interrupt_injection; // i386haxfunc_vcpu_interruptで割り込みを受け入れる準備が出来た
+    int request_interrupt_window; // 割り込みしたいので準備して下さいフラグ（必要なときに自分で1に設定する）
 
     union {
         struct {
@@ -167,10 +166,10 @@ typedef struct hax_tunnel {
             UINT64 _vaddr; // ホスト仮想アドレス？
         } io;
         struct {
-            UINT64 gla;
+            UINT64 gla; // ゲストリニアアドレスの略？もう使われていないようなので分からない
         } mmio;
         struct {
-            UINT64 gpa;
+            UINT64 gpa; // ゲスト物理アドレス？
 #define HAX_PAGEFAULT_ACC_R  (1 << 0)
 #define HAX_PAGEFAULT_ACC_W  (1 << 1)
 #define HAX_PAGEFAULT_ACC_X  (1 << 2)
@@ -193,19 +192,19 @@ typedef struct hax_tunnel {
 	UINT64 apic_base;
 } HAX_TUNNEL;
 typedef struct hax_fastmmio {
-    UINT64 gpa;
+    UINT64 gpa; // ゲスト物理アドレス
     union {
-        UINT64 value;
+        UINT64 value; // 書き込み時は出力する値、読み取り時は値の格納先変数
         UINT64 gpa2;  /* since API v4 */
     };
-    UINT8 size;
-    UINT8 direction;
+    UINT8 size; // データバイト数（1, 2, 4 byteのいずれか）
+    UINT8 direction; // READ=0、WRITE=1、READ&WRITE=2 (I/Oポートの時と何故か逆なので注意。参考: I/OポートではREAD=1, WRITE=0)
     UINT16 reg_index;  /* obsolete */
-    UINT32 pad0;
-    UINT64 _cr0;
-    UINT64 _cr2;
-    UINT64 _cr3;
-    UINT64 _cr4;
+    UINT32 pad0; // 無視
+    UINT64 _cr0; // CR0レジスタ？
+    UINT64 _cr2; // CR2レジスタ？
+    UINT64 _cr3; // CR3レジスタ？
+    UINT64 _cr4; // CR4レジスタ？
 } HAX_FASTMMIO;
 
 
@@ -293,6 +292,7 @@ typedef struct segment_desc_t {
     UINT32 ipad;
 } SEGMENT_DESC;
 
+// CPUレジスタ
 typedef struct vcpu_state_t {
     union {
         UINT64 _regs[16];
@@ -452,24 +452,24 @@ UINT8 i386haxfunc_setmemlimit(HAX_SET_MEMLIMIT *memlimit); // HAXMのメモリ容量制
 UINT8 i386haxfunc_createVM(UINT32 *vm_id); // HAXMの仮想マシンを作成して仮想マシンIDを返す
 
 // HAXM VM IOCTL
-UINT8 i386haxfunc_notifyQEMUversion(HAX_QEMU_VERSION *hax_qemu_ver); // QEMUバージョンの通知（Fast MMIOの挙動が変わる？）
+UINT8 i386haxfunc_notifyQEMUversion(HAX_QEMU_VERSION *hax_qemu_ver); // QEMUバージョンの通知（Fast MMIOの挙動が変わる？通知しなくても問題はなさそう）
 UINT8 i386haxfunc_VCPUcreate(UINT32 vcpu_id); // HAXM仮想マシンに指定したIDの仮想CPUを作成する（CPU IDは0～15で指定）
 UINT8 i386haxfunc_allocRAM(HAX_ALLOC_RAM_INFO *allocraminfo); // HAXM仮想マシンで使用するホストのメモリ範囲を登録
 UINT8 i386haxfunc_addRAMblock(HAX_RAMBLOCK_INFO *ramblkinfo); // HAXM仮想マシンで使用するホストのメモリ範囲を登録
 UINT8 i386haxfunc_setRAM(HAX_SET_RAM_INFO *setraminfo); // HAXM仮想マシンの物理アドレスにホストのメモリを割り当て（メモリは事前にi386haxfunc_allocRAMで登録が必要）。未割り当てのアドレスはMMIO扱いになる。
 
 // HAXM VCPU IOCTL
-UINT8 i386haxfunc_vcpu_run(); // 
-UINT8 i386haxfunc_vcpu_setup_tunnel(HAX_TUNNEL_INFO *info); // 
-UINT8 i386haxfunc_vcpu_setMSRs(HAX_MSR_DATA *inbuf, HAX_MSR_DATA *outbuf); // 
-UINT8 i386haxfunc_vcpu_getMSRs(HAX_MSR_DATA *outbuf); // 
-UINT8 i386haxfunc_vcpu_setFPU(HAX_FX_LAYOUT *inbuf); // 
-UINT8 i386haxfunc_vcpu_getFPU(HAX_FX_LAYOUT *outbuf); // 
-UINT8 i386haxfunc_vcpu_setREGs(HAX_VCPU_STATE *inbuf); // 
-UINT8 i386haxfunc_vcpu_getREGs(HAX_VCPU_STATE *outbuf); // 
-UINT8 i386haxfunc_vcpu_interrupt(UINT32 vector); // 
-UINT8 i386haxfunc_vcpu_kickoff(); // 
-UINT8 i386haxfunc_vcpu_debug(HAX_DEBUG *inbuf); // 
+UINT8 i386haxfunc_vcpu_run(); // 仮想マシン実行開始。I/Oポートアクセス・割り込み発生等で実行継続できなくなったら実行中断する
+UINT8 i386haxfunc_vcpu_setup_tunnel(HAX_TUNNEL_INFO *info); // 仮想マシンとデータをやりとりするためのメモリ領域(tunnel)を確保
+UINT8 i386haxfunc_vcpu_setMSRs(HAX_MSR_DATA *inbuf, HAX_MSR_DATA *outbuf); // モデル固有レジスタ（Model Specific Register; MSR）を設定
+UINT8 i386haxfunc_vcpu_getMSRs(HAX_MSR_DATA *outbuf); // モデル固有レジスタを取得
+UINT8 i386haxfunc_vcpu_setFPU(HAX_FX_LAYOUT *inbuf); // FPUレジスタを設定
+UINT8 i386haxfunc_vcpu_getFPU(HAX_FX_LAYOUT *outbuf); // FPUレジスタを取得
+UINT8 i386haxfunc_vcpu_setREGs(HAX_VCPU_STATE *inbuf); // レジスタを設定
+UINT8 i386haxfunc_vcpu_getREGs(HAX_VCPU_STATE *outbuf); // レジスタを取得
+UINT8 i386haxfunc_vcpu_interrupt(UINT32 vector); // 指定したベクタの割り込みを発生させる
+UINT8 i386haxfunc_vcpu_kickoff(); // 謎
+UINT8 i386haxfunc_vcpu_debug(HAX_DEBUG *inbuf); // デバッグの有効/無効やデバッグ方法を設定する
 
 #endif
 

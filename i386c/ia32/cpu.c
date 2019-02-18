@@ -399,9 +399,9 @@ exec_allstep(void)
 			//if(0x0000==CPU_PREV_EIP && 0x1fc0==CPU_CS){
 			//	printf("debug!!!");
 			//}
-			if(0x0080==CPU_PREV_EIP && 0xd800==CPU_CS){
-				printf("debug!!!");
-			}
+			//if(0xa013bc9f <= CPU_PREV_EIP && CPU_PREV_EIP <= 0xa013dc9f){
+			//	printf("debug!!!");
+			//}
 			(*insttable_1byte[CPU_INST_OP32][op])();
 			continue;
 		}

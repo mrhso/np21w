@@ -311,7 +311,14 @@ void bios_initialize(void) {
 	UINT32	tmp;
 	UINT	pos;
 	
-	bioshookinfo.hookinst = 0xCC;//0xF4;//;0xCC;//HOOKINST_DEFAULT; // BIOSフックに使う命令（デフォルトはNOP命令をフック）
+#if defined(SUPPORT_IA32_HAXM)
+	if (np2hax.enable) {
+		bioshookinfo.hookinst = 0xCC;//0xF4;//;0xCC;//HOOKINST_DEFAULT; // BIOSフックに使う命令（デフォルトはNOP命令をフック）
+	}else
+#endif
+	{
+		bioshookinfo.hookinst = HOOKINST_DEFAULT; // BIOSフックに使う命令（デフォルトはNOP命令をフック）
+	}
 
 #if defined(BIOS_IO_EMULATION)
 	// np21w ver0.86 rev46 BIOS I/O emulation

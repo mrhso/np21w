@@ -1,3 +1,4 @@
+
 #ifndef	NP2_I386HAX_HAXCORE_H__
 #define	NP2_I386HAX_HAXCORE_H__
 
@@ -9,73 +10,48 @@ extern "C" {
 	
 #if defined(_WIN32)
 typedef struct {
-	UINT8	available;
-	UINT8	enable;
-	HANDLE	hDevice;
-	HANDLE	hVMDevice;
-	HANDLE	hVCPUDevice;
-	UINT32	vm_id;
-	HAX_TUNNEL_INFO	tunnel;
-	HAX_VCPU_STATE	state;
-	HAX_FX_LAYOUT	fpustate;
-	HAX_VCPU_STATE	default_state;
-	HAX_FX_LAYOUT	default_fpustate;
-	UINT8 update_regs;
-	UINT8 update_segment_regs;
-	UINT8 update_fpu;
+	UINT8	available; // HAXM使用可能
+	UINT8	enable; // HAXM有効
+	HANDLE	hDevice; // HAXMデバイスのハンドル
+	HANDLE	hVMDevice; // HAXM仮想マシンデバイスのハンドル
+	HANDLE	hVCPUDevice; // HAXM仮想CPUデバイスのハンドル
+	UINT32	vm_id; // HAXM仮想マシンID
+	HAX_TUNNEL_INFO	tunnel; // HAXM仮想マシンとのデータやりとり用tunnel
+	HAX_VCPU_STATE	state; // HAXM仮想CPUのレジスタ
+	HAX_FX_LAYOUT	fpustate; // HAXM仮想CPUのFPUレジスタ
+	HAX_VCPU_STATE	default_state; // HAXM仮想CPUのレジスタ（デフォルト値）
+	HAX_FX_LAYOUT	default_fpustate; // HAXM仮想CPUのFPUレジスタ（デフォルト値）
+	UINT8 update_regs; // 要レジスタ更新
+	UINT8 update_segment_regs; // 要セグメントレジスタ更新
+	UINT8 update_fpu; // 要FPUレジスタ更新
 
-	UINT8 irq_req[256];
-	UINT8 irq_reqidx_cur;
-	UINT8 irq_reqidx_end;
+	UINT8 irq_req[256]; // 割り込み待機バッファ。大気中の割り込みベクタが格納される
+	UINT8 irq_reqidx_cur; // 割り込み待機バッファの読み取り位置
+	UINT8 irq_reqidx_end; // 割り込み待機バッファの書き込み位置
 
-	union{
-		struct {
-			UINT8 A0;
-			UINT8 A4;
-			UINT8 A8;
-			UINT8 AC;
-			UINT8 B0;
-			UINT8 B4;
-			UINT8 B8;
-			UINT8 BC;
-			UINT8 C0;
-			UINT8 C4;
-			UINT8 C8;
-			UINT8 CC;
-			UINT8 D0;
-			UINT8 D4;
-			UINT8 D8;
-			UINT8 DC;
-			UINT8 E0;
-			UINT8 E4;
-			UINT8 E8;
-			UINT8 EC;
-			UINT8 F0;
-			UINT8 F4;
-			UINT8 reserved1; // F8 reserved
-			UINT8 reserved2; // FC reserved
-		} bank;
-		UINT8 banks[6*4];
-	} bankmem;
+	UINT8 bioshookenable; // デバッグレジスタによるエミュレーションBIOSフック有効
 } NP2_HAX;
 typedef struct {
-	HANDLE	hThreadCPU;
-	UINT8	exitflag;
-	UINT8	reqsuspend;
-	UINT8	suspended;
-	UINT8	running;
+	UINT8 running; // HAXM CPU実行中フラグ
 
-	LARGE_INTEGER lastclock;
-	LARGE_INTEGER clockpersec;
-	LARGE_INTEGER clockcount;
+	// タイミング調整用（performance counter使用）
+	LARGE_INTEGER lastclock; // 前回のクロック
+	LARGE_INTEGER clockpersec; // 1秒あたりクロック数
+	LARGE_INTEGER clockcount; // 現在のクロック
 
-	UINT32 lastA20en;
-	UINT32 lastITFbank;
+	UINT32 lastA20en; // 前回A20ラインが有効だったか
+	UINT32 lastITFbank; // 前回ITFバンクを使用していたか
+	UINT32 lastVGA256linear; // 前回256色モードのリニアアドレスを使用していたか
 	
-} NP2_HAX_THREAD;
+	UINT8 hurryup; // タイミングが遅れているので急ぐべし
+
+	UINT8 hltflag; // HLT命令で停止中フラグ
+} NP2_HAX_CORE;
+
+#define NP2HAX_I_RATIO_MAX	1024
 
 extern	NP2_HAX	np2hax;
-extern	NP2_HAX_THREAD	np2haxthread;
+extern	NP2_HAX_CORE	np2haxcore;
 
 #endif
 
@@ -83,29 +59,31 @@ extern	NP2_HAX_THREAD	np2haxthread;
 }
 #endif
 
-BOOL i386hax_tryenter_criticalsection(void);
-void i386hax_enter_criticalsection(void);
-void i386hax_leave_criticalsection(void);
+UINT8 i386hax_check(void); // HAXM使用可能チェック
+void i386hax_initialize(void); // HAXM初期化
+void i386hax_createVM(void); // HAXM仮想マシン作成
+void i386hax_resetVMMem(void); // HAXM仮想マシンリセット（メモリ周り）
+void i386hax_resetVMCPU(void); // HAXM仮想マシンリセット（CPU周り）
+void i386hax_disposeVM(void); // HAXM仮想マシン破棄
+void i386hax_deinitialize(void); // HAXM解放
 
-UINT8 i386hax_check(void);
-void i386hax_initialize(void);
-void i386hax_createVM(void);
-void i386hax_createVMThread(void);
-void i386hax_resumeVMThread(void);
-void i386hax_suspendVMThread(void);
-void i386hax_disposeVMThread(void);
-void i386hax_disposeVM(void);
-void i386hax_deinitialize(void);
-void i386hax_resetVM(void);
+void i386hax_vm_exec(void); // HAXM仮想CPUの実行
 
-void i386hax_vm_exec(void);
+void i386hax_vm_allocmemory(void); // メモリ領域を登録（基本領域）
+void i386hax_vm_allocmemoryex(UINT8 *vramptr, UINT32 size); // メモリ領域を登録（汎用）
 
-void i386hax_vm_allocmemory(void); // メモリ領域を登録
+// ゲスト物理アドレス(Guest Physical Address; GPA)にホストの仮想アドレス(Host Virtual Address; HVA)を割り当て
 void i386hax_vm_setmemory(void); // 00000h～BFFFFhまで
 void i386hax_vm_setbankmemory(void); // A0000h～F7FFFhまで
 void i386hax_vm_setitfmemory(UINT8 isitfbank); // F8000h～FFFFFhまで
 void i386hax_vm_sethmemory(UINT8 a20en); // 100000h～10FFFFhまで
 void i386hax_vm_setextmemory(void); // 110000h以降
+void i386hax_vm_setvga256linearmemory(void); // 0xF00000～0xF80000
+//void i386hax_vm_setwabmemory(UINT8 *vramptr, UINT32 addr, UINT32 size);
+
+// 汎用 メモリ領域割り当て
+void i386hax_vm_setmemoryarea(UINT8 *vramptr, UINT32 addr, UINT32 size);
+void i386hax_vm_removememoryarea(UINT8 *vramptr, UINT32 addr, UINT32 size);
 
 #endif
 

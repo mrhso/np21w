@@ -1247,6 +1247,10 @@ const SFENTRY	*tblterm;
 #if defined(SUPPORT_CL_GD5430)
 	pc98_cirrus_vga_save();
 #endif
+	
+#if defined(SUPPORT_IA32_HAXM)
+	memcpy(vramex_base, vramex, sizeof(vramex_base));
+#endif
 
 	ret = STATFLAG_SUCCESS;
 	tbl = np2tbl;
@@ -1515,6 +1519,10 @@ const SFENTRY	*tblterm;
 		}
 	}
 	statflag_close(sffh);
+
+#if defined(SUPPORT_IA32_HAXM)
+	memcpy(vramex, vramex_base, sizeof(vramex_base));
+#endif
 
 	// I/OçÏÇËíºÇµ
 	MEMM_ARCH((pccore.model & PCMODEL_EPSON)?1:0);

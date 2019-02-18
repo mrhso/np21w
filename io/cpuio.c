@@ -3,6 +3,11 @@
 #include	"pccore.h"
 #include	"iocore.h"
 
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#endif
+
 //#ifdef SUPPORT_IDEIO
 //#include	"fdd/sxsi.h"
 //int ide_f0portread = 0;

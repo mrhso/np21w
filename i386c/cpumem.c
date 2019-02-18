@@ -28,7 +28,7 @@
 #endif
 
 #if defined(SUPPORT_IA32_HAXM)
-	UINT8	*mem = NULL; // Alloc in pccore_malloc()
+	UINT8	*mem = NULL; // Alloc in pccore_mem_malloc()
 #else
 	UINT8	mem[0x200000];
 #endif
