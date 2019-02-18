@@ -368,17 +368,17 @@ void bios0x1a_pci(void) {
 	oldDX = CPU_DX;
 	
 	if(pcidev.enable){
-		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
-		CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
+		//// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
+		//CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
 
 		// 16bit PCI BIOS処理
 		bios0x1a_pci_part(0);
 
-		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む
-		cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP + 2, (UINT16)CPU_DX);
+		//// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む
+		//cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP + 2, (UINT16)CPU_DX);
 	
-		// DXレジスタの値を元に戻す
-		CPU_DX = oldDX;
+		//// DXレジスタの値を元に戻す
+		//CPU_DX = oldDX;
 	}
 }
 void bios0x1a_pcipnp(void) {
@@ -387,8 +387,8 @@ void bios0x1a_pcipnp(void) {
 	oldDX = CPU_DX;
 	
 	if(pcidev.enable){
-		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
-		CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
+		//// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックから強引に拾ってくる
+		//CPU_DX = cpu_vmemoryread_w(CPU_SS_INDEX, CPU_SP + 2);
 		
 		switch(CPU_AL & 0x7f) {
 			case 0x00: // Intel Plug-and-Play AUTO-CONFIGURATION - INSTALLATION CHECK
@@ -453,11 +453,11 @@ void bios0x1a_pcipnp(void) {
 				break;
 		}
 
-		// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む
-		cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP + 2, (UINT16)CPU_DX);
+		//// XXX: np2 BIOSがDXレジスタをPUSH/POPしてしまうので、DXレジスタの内容をスタックに強引に書き込む
+		//cpu_vmemorywrite_w(CPU_SS_INDEX, CPU_SP + 2, (UINT16)CPU_DX);
 	
-		// DXレジスタの値を元に戻す
-		CPU_DX = oldDX;
+		//// DXレジスタの値を元に戻す
+		//CPU_DX = oldDX;
 	}
 }
 

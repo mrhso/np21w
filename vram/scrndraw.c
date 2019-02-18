@@ -146,6 +146,10 @@ const SDRAWFN	*sdrawfn;
 		updateallline(0x80808080);
 		redrawpending = 0;
 	}
+#if defined(SUPPORT_IA32_HAXM)
+	updateallline(0x80808080);
+	redrawpending = 0;
+#endif
 
 	ret = 0;
 #ifdef SUPPORT_WAB

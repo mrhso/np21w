@@ -34,6 +34,11 @@
 
 #include "ia32/instructions/fpu/fp.h"
 
+#if defined(SUPPORT_IA32_HAXM)
+#include "i386hax/haxfunc.h"
+#include "i386hax/haxcore.h"
+#endif
+
 void
 ia32_initreg(void)
 {
@@ -83,6 +88,42 @@ ia32_initreg(void)
 
 	tlb_init();
 	fpu_initialize();
+	
+//#if defined(SUPPORT_IA32_HAXM)
+//	np2hax.state._edx = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
+//	np2hax.state._eflags = 2;
+//	np2hax.state._cr0 = CPU_CR0_CD | CPU_CR0_NW;
+//#if defined(USE_FPU)
+//	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
+//		np2hax.state._cr0 |= CPU_CR0_ET;
+//		np2hax.state._cr0 &= ~CPU_CR0_EM;
+//	}else{
+//		np2hax.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
+//		np2hax.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
+//	}
+//#else
+//	np2hax.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
+//	np2hax.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
+//#endif
+//	np2hax.state._gdt.base = 0x0;
+//	np2hax.state._gdt.limit = 0xffff;
+//	np2hax.state._idt.base = 0x0;
+//	np2hax.state._idt.limit = 0xffff;
+//	np2hax.state._ldt.base = 0x0;
+//	np2hax.state._ldt.limit = 0xffff;
+//	np2hax.state._tr.base = 0x0;
+//	np2hax.state._tr.limit = 0xffff;
+//	
+//	np2hax.state._dr6 = 0xffff1ff0;
+//
+//	//for (i = 0; i < CPU_SEGREG_NUM; ++i) {
+//	//	segdesc_init(i, 0, &CPU_STAT_SREG(i));
+//	//}
+//	//LOAD_SEGREG(CPU_CS_INDEX, 0xf000);
+//	np2hax.state._cs.base = 0xffff0000;
+//	np2hax.state._eip = 0xfff0;
+//	//CPU_ADRSMASK = 0x000fffff;
+//#endif
 }
 
 void
@@ -186,14 +227,33 @@ ia32_interrupt(int vect, int soft)
 {
 
 //	TRACEOUT(("int (%x, %x) PE=%d VM=%d",  vect, soft, CPU_STAT_PM, CPU_STAT_VM86));
-	if (!soft) {
-		INTERRUPT(vect, INTR_TYPE_EXTINTR);
-	} else {
-		if (CPU_STAT_PM && CPU_STAT_VM86 && CPU_STAT_IOPL < CPU_IOPL3) {
-			VERBOSE(("ia32_interrupt: VM86 && IOPL < 3 && INTn"));
-			EXCEPTION(GP_EXCEPTION, 0);
+#if defined(SUPPORT_IA32_HAXM)
+	if(np2hax.enable&&np2hax.hVCPUDevice){
+		if(!soft){
+			HAX_TUNNEL *tunnel;
+			tunnel = (HAX_TUNNEL*)np2hax.tunnel.va;
+			i386hax_enter_criticalsection();
+			if(np2hax.irq_reqidx_end - np2hax.irq_reqidx_cur < 250){
+				np2hax.irq_req[np2hax.irq_reqidx_end] = vect;
+				np2hax.irq_reqidx_end++;
+			}else{
+				printf("overflow!!");
+			}
+			//i386haxfunc_vcpu_interrupt(vect);
+			i386hax_leave_criticalsection();
 		}
-		INTERRUPT(vect, INTR_TYPE_SOFTINTR);
+	}else
+#endif
+	{
+		if (!soft) {
+			INTERRUPT(vect, INTR_TYPE_EXTINTR);
+		} else {
+			if (CPU_STAT_PM && CPU_STAT_VM86 && CPU_STAT_IOPL < CPU_IOPL3) {
+				VERBOSE(("ia32_interrupt: VM86 && IOPL < 3 && INTn"));
+				EXCEPTION(GP_EXCEPTION, 0);
+			}
+			INTERRUPT(vect, INTR_TYPE_SOFTINTR);
+		}
 	}
 }
 

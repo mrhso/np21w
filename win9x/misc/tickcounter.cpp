@@ -14,7 +14,8 @@ class TickCounter
 public:
 	TickCounter();
 	DWORD Get();
-	DWORD Get_usec();
+	LARGE_INTEGER Get_rawclock();
+	LARGE_INTEGER Get_clockpersec();
 	void SetMode(int mode);
 
 private:
@@ -78,6 +79,51 @@ DWORD TickCounter::Get()
 	return ::GetTickCount();
 }
 
+LARGE_INTEGER TickCounter::Get_rawclock()
+{
+	LARGE_INTEGER nNow = {0};
+	switch(m_mode)
+	{
+	case TCMODE_GETTICKCOUNT:
+		nNow.LowPart = ::GetTickCount();
+		return nNow;
+
+	case TCMODE_TIMEGETTIME:
+		nNow.LowPart = ::timeGetTime();
+		return nNow;
+
+	case TCMODE_PERFORMANCECOUNTER:
+		{
+			::QueryPerformanceCounter(&nNow);
+			return nNow;
+		}
+	}
+	nNow.LowPart = ::GetTickCount();
+	return nNow;
+}
+LARGE_INTEGER TickCounter::Get_clockpersec()
+{
+	LARGE_INTEGER nClk = {0};
+	switch(m_mode)
+	{
+	case TCMODE_GETTICKCOUNT:
+		nClk.LowPart = 1000;
+		return nClk;
+
+	case TCMODE_TIMEGETTIME:
+		nClk.LowPart = 1000;
+		return nClk;
+
+	case TCMODE_PERFORMANCECOUNTER:
+		{
+			::QueryPerformanceFrequency(&nClk);
+			return nClk;
+		}
+	}
+	nClk.LowPart = 1000;
+	return nClk;
+}
+
 /**
  * モード強制設定
  */
@@ -126,10 +172,26 @@ DWORD GetTickCounter()
 }
 
 /**
- * カウンタを得る
- * @return TICK
+ * カウンタモード設定
  */
 void SetTickCounterMode(int mode)
 {
 	s_tick.SetMode(mode);
+}
+
+/**
+ * クロックを得る
+ * @return TICK
+ */
+LARGE_INTEGER GetTickCounter_Clock()
+{
+	return s_tick.Get_rawclock();
+}
+
+/**
+ * 1秒あたりのクロックを得る
+ */
+LARGE_INTEGER GetTickCounter_ClockPerSec()
+{
+	return s_tick.Get_clockpersec();
 }

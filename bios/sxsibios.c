@@ -11,6 +11,10 @@
 #include	"scsicmd.h"
 #include	"fdd/sxsi.h"
 #include	"timing.h"
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#endif
 
 
 typedef REG8 (*SXSIFUNC)(UINT type, SXSIDEV sxsi);

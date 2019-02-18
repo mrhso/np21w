@@ -304,6 +304,12 @@
     <Filter Include="ソース ファイル\lio">
       <UniqueIdentifier>{7d11f730-6a89-4d86-ac7d-e77ea77f94c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\i386hax">
+      <UniqueIdentifier>{b5959c25-ee63-45ba-997c-9e64ae32efdd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\i386hax">
+      <UniqueIdentifier>{907a6a54-748d-4cd0-b467-9daf662d3d22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1341,6 +1347,12 @@
     <ClCompile Include="..\io\pegc.c">
       <Filter>ソース ファイル\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\i386hax\haxcore.c">
+      <Filter>ソース ファイル\i386hax</Filter>
+    </ClCompile>
+    <ClCompile Include="..\i386hax\haxfunc.c">
+      <Filter>ソース ファイル\i386hax</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2356,6 +2368,12 @@
     </ClInclude>
     <ClInclude Include="..\io\pegc.h">
       <Filter>ヘッダー ファイル\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386hax\haxcore.h">
+      <Filter>ヘッダー ファイル\i386hax</Filter>
+    </ClInclude>
+    <ClInclude Include="..\i386hax\haxfunc.h">
+      <Filter>ヘッダー ファイル\i386hax</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

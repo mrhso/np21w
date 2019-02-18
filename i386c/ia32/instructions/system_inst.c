@@ -29,6 +29,10 @@
 #include "pccore.h"
 
 #include "system_inst.h"
+//
+//#ifdef SUPPORT_IA32_HAXM
+//#include "bios/bios.h"
+//#endif
 
 
 void CPUCALL
@@ -1042,12 +1046,11 @@ _LOCK(void)
 void
 HLT(void)
 {
-
 	if (CPU_STAT_PM && CPU_STAT_CPL != 0) {
 		VERBOSE(("HLT: CPL(%d) != 0", CPU_STAT_CPL));
 		EXCEPTION(GP_EXCEPTION, 0);
 	}
-
+	
 	VERBOSE(("HLT: do HLT."));
 	CPU_HALT();
 	CPU_EIP = CPU_PREV_EIP;

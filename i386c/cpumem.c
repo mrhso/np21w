@@ -27,8 +27,11 @@
 #include	"bios/bios.h"
 #endif
 
-
+#if defined(SUPPORT_IA32_HAXM)
+	UINT8	*mem = NULL; // Alloc in pccore_malloc()
+#else
 	UINT8	mem[0x200000];
+#endif
 
 
 typedef void (MEMCALL * MEM8WRITE)(UINT32 address, REG8 value);
@@ -773,7 +776,9 @@ REG8 MEMCALL memp_read8_codefetch(UINT32 address) {
 		//	printf("BIOS32 (read8): %x");
 		//}
 		address = address & CPU_ADRSMASK;
-		if (address < USE_HIMEM) {
+		if (address < 0xB0000) {
+			return(0xff);
+		}else if (address < USE_HIMEM) {
 			return(memfn0.rd8[address >> 15](address));
 		}
 		else if (address < CPU_EXTLIMIT16) {
@@ -811,7 +816,9 @@ REG16 MEMCALL memp_read16_codefetch(UINT32 address) {
 	else {
 		if ((address + 1) & 0x7fff) {			// non 32kb boundary
 			address = address & CPU_ADRSMASK;
-			if (address < USE_HIMEM) {
+			if (address < 0xB0000) {
+				return(0xff);
+			}else if (address < USE_HIMEM) {
 				return(memfn0.rd16[address >> 15](address));
 			}
 			else if (address < CPU_EXTLIMIT16) {
@@ -857,7 +864,9 @@ UINT32 MEMCALL memp_read32_codefetch(UINT32 address) {
 	else{
 		if ((address + 1) & 0x7fff) {			// non 32kb boundary
 			address = address & CPU_ADRSMASK;
-			if (address < USE_HIMEM) {
+			if (address < 0xB0000) {
+				return(0xff);
+			}else if (address < USE_HIMEM) {
 				return(memfn0.rd32[address >> 15](address));
 			}
 			else if (address < CPU_EXTLIMIT16) {

@@ -3185,7 +3185,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 #endif
 #endif
-
+	
 	winloc_InitDwmFunc();
 
 	WM_QueryCancelAutoPlay = RegisterWindowMessage(_T("QueryCancelAutoPlay"));
@@ -3492,7 +3492,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 				}
 				DispatchMessage(&msg);
 			}
-			else {
+			/*else */{
 				if (np2oscfg.NOWAIT) {
 					ExecuteOneFrame(framecnt == 0);
 					if (np2oscfg.DRAW_SKIP) {		// nowait frame skip
@@ -3632,6 +3632,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	TRACETERM();
 	_MEM_USED(TEXT("report.txt"));
 	dosio_term();
-
+	
 	return((int)msg.wParam);
 }

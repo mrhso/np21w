@@ -384,6 +384,24 @@ exec_allstep(void)
 	#if defined(DEBUG)
 			cpu_debug_rep_cont = 0;
 	#endif
+			//if(0x16f8==CPU_PREV_EIP){
+			//	printf("debug!!!");
+			//}
+			//if(0x173f==CPU_PREV_EIP){
+			//	printf("debug!!!");
+			//}
+			//if(0x1747==CPU_PREV_EIP){
+			//	printf("debug!!!");
+			//}
+			//if(0x00b4==CPU_PREV_EIP && 0xfd80==CPU_CS){
+			//	printf("debug!!!");
+			//}
+			//if(0x0000==CPU_PREV_EIP && 0x1fc0==CPU_CS){
+			//	printf("debug!!!");
+			//}
+			if(0x0080==CPU_PREV_EIP && 0xd800==CPU_CS){
+				printf("debug!!!");
+			}
 			(*insttable_1byte[CPU_INST_OP32][op])();
 			continue;
 		}
