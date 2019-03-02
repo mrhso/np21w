@@ -344,6 +344,12 @@ extern UINT32 hrtimerdiv;
 extern UINT32 hrtimerclock;
 #endif
 
+#ifdef SUPPORT_ASYNC_CPU
+extern LARGE_INTEGER asynccpu_lastclock;
+extern LARGE_INTEGER asynccpu_clockpersec;
+extern LARGE_INTEGER asynccpu_clockcount;
+#endif
+
 #ifdef __cplusplus
 }
 #endif

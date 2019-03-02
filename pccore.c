@@ -187,6 +187,12 @@ static void pccore_hrtimer_stop() {
 
 #endif
 
+#ifdef SUPPORT_ASYNC_CPU
+LARGE_INTEGER asynccpu_lastclock = {0};
+LARGE_INTEGER asynccpu_clockpersec = {0};
+LARGE_INTEGER asynccpu_clockcount = {0};
+#endif
+
 // ---------------------------------------------------------------------------
 
 void getbiospath(OEMCHAR *path, const OEMCHAR *fname, int maxlen) {
@@ -671,6 +677,16 @@ void pccore_reset(void) {
 
 	timing_reset();
 	soundmng_play();
+
+#ifdef SUPPORT_ASYNC_CPU
+	if(GetTickCounterMode()==TCMODE_PERFORMANCECOUNTER){
+		asynccpu_clockpersec = GetTickCounter_ClockPerSec();
+		asynccpu_lastclock = GetTickCounter_Clock();
+		asynccpu_clockcount = GetTickCounter_Clock();
+	}else{
+		asynccpu_clockpersec.QuadPart = 0;
+	}
+#endif
 	
 //#if defined(SUPPORT_HRTIMER)
 //	hrtimerdiv = 32;
