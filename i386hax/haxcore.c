@@ -1,13 +1,3 @@
-#include	"compiler.h"
-#include	"cpucore.h"
-#include	"pccore.h"
-#include	"iocore.h"
-#include	"bios/bios.h"
-#include	"vram/vram.h"
-#include	"wab/cirrus_vga_extern.h"
-
-#if defined(SUPPORT_IA32_HAXM)
-
 /*
  * Copyright (c) 2019 SimK
  * All rights reserved.
@@ -33,6 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include	"compiler.h"
+#include	"cpucore.h"
+#include	"pccore.h"
+#include	"iocore.h"
+#include	"bios/bios.h"
+#include	"vram/vram.h"
+#include	"wab/cirrus_vga_extern.h"
+
+#if defined(SUPPORT_IA32_HAXM)
+
 #include	"haxfunc.h"
 #include	"haxcore.h"
 
@@ -40,7 +40,8 @@
 #include	<process.h>
 #endif
 
-NP2_HAX	np2hax = {0};
+NP2_HAX			np2hax = {0};
+NP2_HAX_STAT	np2haxstat = {0};
 NP2_HAX_CORE	np2haxcore = {0};
 
 static void make_vm_str(OEMCHAR* buf, UINT32 vm_id){
@@ -245,10 +246,10 @@ void i386hax_createVM(void) {
 	memset(&np2haxcore, 0, sizeof(np2haxcore));
 	
 	// デフォルトのレジスタ設定を覚えておく
-	i386haxfunc_vcpu_getREGs(&np2hax.state);
-	i386haxfunc_vcpu_getFPU(&np2hax.fpustate);
-	memcpy(&np2hax.default_state, &np2hax.state, sizeof(np2hax.state));
-	memcpy(&np2hax.default_fpustate, &np2hax.fpustate, sizeof(np2hax.fpustate));
+	i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+	i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+	memcpy(&np2haxstat.default_state, &np2haxstat.state, sizeof(np2haxstat.state));
+	memcpy(&np2haxstat.default_fpustate, &np2haxstat.fpustate, sizeof(np2haxstat.fpustate));
 
 	return;
 	
@@ -272,6 +273,7 @@ void i386hax_resetVMMem(void) {
 	i386hax_vm_setitfmemory(np2haxcore.lastITFbank);
 	np2haxcore.lastVGA256linear = (vramop.mio2[0x2]==0x1);
 	i386hax_vm_setvga256linearmemory();
+	np2haxcore.lastVRAMMMIO = 0;
 	
 	i386hax_vm_setmemoryarea(mem+0xA5000, 0xA5000, 0x3000);
 	//i386hax_vm_setmemoryarea(mem+0xA8000, 0xA8000, 0x8000);
@@ -286,13 +288,13 @@ void i386hax_resetVMMem(void) {
 void i386hax_resetVMCPU(void) {
 	
 	// CPU周りの初期設定
-	np2hax.irq_reqidx_cur = np2hax.irq_reqidx_end = 0;
+	np2haxstat.irq_reqidx_cur = np2haxstat.irq_reqidx_end = 0;
 	
-	memcpy(&np2hax.state, &np2hax.default_state, sizeof(np2hax.state));
-	memcpy(&np2hax.fpustate, &np2hax.default_fpustate, sizeof(np2hax.fpustate));
+	memcpy(&np2haxstat.state, &np2haxstat.default_state, sizeof(np2haxstat.state));
+	memcpy(&np2haxstat.fpustate, &np2haxstat.default_fpustate, sizeof(np2haxstat.fpustate));
 	
-	np2hax.update_regs = np2hax.update_fpu = 1;
-	np2hax.update_segment_regs = 1;
+	np2haxstat.update_regs = np2haxstat.update_fpu = 1;
+	np2haxstat.update_segment_regs = 1;
 	
 	np2haxcore.clockpersec = GetTickCounter_ClockPerSec();
 	np2haxcore.lastclock = GetTickCounter_Clock();
@@ -332,248 +334,248 @@ ia32hax_bioscall(void)
 static void
 ia32hax_copyregHAXtoNP2(void)
 {
-	CPU_EAX = np2hax.state._eax;
-	CPU_EBX = np2hax.state._ebx;
-	CPU_ECX = np2hax.state._ecx;
-	CPU_EDX = np2hax.state._edx;
+	CPU_EAX = np2haxstat.state._eax;
+	CPU_EBX = np2haxstat.state._ebx;
+	CPU_ECX = np2haxstat.state._ecx;
+	CPU_EDX = np2haxstat.state._edx;
 
-	CPU_ESI = np2hax.state._esi;
-	CPU_EDI = np2hax.state._edi;
+	CPU_ESI = np2haxstat.state._esi;
+	CPU_EDI = np2haxstat.state._edi;
 
-	CPU_CS = np2hax.state._cs.selector;
-	CPU_DS = np2hax.state._ds.selector;
-	CPU_ES = np2hax.state._es.selector;
-	CPU_SS = np2hax.state._ss.selector;
-	CPU_FS = np2hax.state._fs.selector;
-	CPU_GS = np2hax.state._gs.selector;
-	CS_BASE = np2hax.state._cs.base;
-	DS_BASE = np2hax.state._ds.base;
-	ES_BASE = np2hax.state._es.base;
-	SS_BASE = np2hax.state._ss.base;
-	FS_BASE = np2hax.state._fs.base;
-	GS_BASE = np2hax.state._gs.base;
+	CPU_CS = np2haxstat.state._cs.selector;
+	CPU_DS = np2haxstat.state._ds.selector;
+	CPU_ES = np2haxstat.state._es.selector;
+	CPU_SS = np2haxstat.state._ss.selector;
+	CPU_FS = np2haxstat.state._fs.selector;
+	CPU_GS = np2haxstat.state._gs.selector;
+	CS_BASE = np2haxstat.state._cs.base;
+	DS_BASE = np2haxstat.state._ds.base;
+	ES_BASE = np2haxstat.state._es.base;
+	SS_BASE = np2haxstat.state._ss.base;
+	FS_BASE = np2haxstat.state._fs.base;
+	GS_BASE = np2haxstat.state._gs.base;
 
-	CPU_CS_DESC.u.seg.segbase = np2hax.state._cs.base;//(UINT32)np2hax.state._cs.selector << 4;
-	CPU_CS_DESC.u.seg.limit = np2hax.state._cs.limit;
-	CPU_CS_DESC.type = np2hax.state._cs.type;
-	CPU_CS_DESC.s = np2hax.state._cs.desc;
-	CPU_CS_DESC.dpl = np2hax.state._cs.dpl;
-	CPU_CS_DESC.p = np2hax.state._cs.present;
-	CPU_CS_DESC.valid = np2hax.state._cs.available;
-	CPU_CS_DESC.d = np2hax.state._cs.operand_size;
-	CPU_CS_DESC.u.seg.g = np2hax.state._cs.granularity;
+	CPU_CS_DESC.u.seg.segbase = np2haxstat.state._cs.base;//(UINT32)np2haxstat.state._cs.selector << 4;
+	CPU_CS_DESC.u.seg.limit = np2haxstat.state._cs.limit;
+	CPU_CS_DESC.type = np2haxstat.state._cs.type;
+	CPU_CS_DESC.s = np2haxstat.state._cs.desc;
+	CPU_CS_DESC.dpl = np2haxstat.state._cs.dpl;
+	CPU_CS_DESC.p = np2haxstat.state._cs.present;
+	CPU_CS_DESC.valid = np2haxstat.state._cs.available;
+	CPU_CS_DESC.d = np2haxstat.state._cs.operand_size;
+	CPU_CS_DESC.u.seg.g = np2haxstat.state._cs.granularity;
 	
-	CPU_DS_DESC.u.seg.segbase = np2hax.state._ds.base;//(UINT32)np2hax.state._ds.selector << 4;
-	CPU_DS_DESC.u.seg.limit = np2hax.state._ds.limit;
-	CPU_DS_DESC.type = np2hax.state._ds.type;
-	CPU_DS_DESC.s = np2hax.state._ds.desc;
-	CPU_DS_DESC.dpl = np2hax.state._ds.dpl;
-	CPU_DS_DESC.p = np2hax.state._ds.present;
-	CPU_DS_DESC.valid = np2hax.state._ds.available;
-	CPU_DS_DESC.d = np2hax.state._ds.operand_size;
-	CPU_DS_DESC.u.seg.g = np2hax.state._ds.granularity;
+	CPU_DS_DESC.u.seg.segbase = np2haxstat.state._ds.base;//(UINT32)np2haxstat.state._ds.selector << 4;
+	CPU_DS_DESC.u.seg.limit = np2haxstat.state._ds.limit;
+	CPU_DS_DESC.type = np2haxstat.state._ds.type;
+	CPU_DS_DESC.s = np2haxstat.state._ds.desc;
+	CPU_DS_DESC.dpl = np2haxstat.state._ds.dpl;
+	CPU_DS_DESC.p = np2haxstat.state._ds.present;
+	CPU_DS_DESC.valid = np2haxstat.state._ds.available;
+	CPU_DS_DESC.d = np2haxstat.state._ds.operand_size;
+	CPU_DS_DESC.u.seg.g = np2haxstat.state._ds.granularity;
 	
-	CPU_ES_DESC.u.seg.segbase = np2hax.state._es.base;//(UINT32)np2hax.state._es.selector << 4;
-	CPU_ES_DESC.u.seg.limit = np2hax.state._es.limit;
-	CPU_ES_DESC.type = np2hax.state._es.type;
-	CPU_ES_DESC.s = np2hax.state._es.desc;
-	CPU_ES_DESC.dpl = np2hax.state._es.dpl;
-	CPU_ES_DESC.p = np2hax.state._es.present;
-	CPU_ES_DESC.valid = np2hax.state._es.available;
-	CPU_ES_DESC.d = np2hax.state._es.operand_size;
-	CPU_ES_DESC.u.seg.g = np2hax.state._es.granularity;
+	CPU_ES_DESC.u.seg.segbase = np2haxstat.state._es.base;//(UINT32)np2haxstat.state._es.selector << 4;
+	CPU_ES_DESC.u.seg.limit = np2haxstat.state._es.limit;
+	CPU_ES_DESC.type = np2haxstat.state._es.type;
+	CPU_ES_DESC.s = np2haxstat.state._es.desc;
+	CPU_ES_DESC.dpl = np2haxstat.state._es.dpl;
+	CPU_ES_DESC.p = np2haxstat.state._es.present;
+	CPU_ES_DESC.valid = np2haxstat.state._es.available;
+	CPU_ES_DESC.d = np2haxstat.state._es.operand_size;
+	CPU_ES_DESC.u.seg.g = np2haxstat.state._es.granularity;
 	
-	CPU_SS_DESC.u.seg.segbase = np2hax.state._ss.base;//(UINT32)np2hax.state._ss.selector << 4;
-	CPU_SS_DESC.u.seg.limit = np2hax.state._ss.limit;
-	CPU_SS_DESC.type = np2hax.state._ss.type;
-	CPU_SS_DESC.s = np2hax.state._ss.desc;
-	CPU_SS_DESC.dpl = np2hax.state._ss.dpl;
-	CPU_SS_DESC.p = np2hax.state._ss.present;
-	CPU_SS_DESC.valid = np2hax.state._ss.available;
-	CPU_SS_DESC.d = np2hax.state._ss.operand_size;
-	CPU_SS_DESC.u.seg.g = np2hax.state._ss.granularity;
+	CPU_SS_DESC.u.seg.segbase = np2haxstat.state._ss.base;//(UINT32)np2haxstat.state._ss.selector << 4;
+	CPU_SS_DESC.u.seg.limit = np2haxstat.state._ss.limit;
+	CPU_SS_DESC.type = np2haxstat.state._ss.type;
+	CPU_SS_DESC.s = np2haxstat.state._ss.desc;
+	CPU_SS_DESC.dpl = np2haxstat.state._ss.dpl;
+	CPU_SS_DESC.p = np2haxstat.state._ss.present;
+	CPU_SS_DESC.valid = np2haxstat.state._ss.available;
+	CPU_SS_DESC.d = np2haxstat.state._ss.operand_size;
+	CPU_SS_DESC.u.seg.g = np2haxstat.state._ss.granularity;
 	
-	CPU_FS_DESC.u.seg.segbase = np2hax.state._fs.base;//(UINT32)np2hax.state._fs.selector << 4;
-	CPU_FS_DESC.u.seg.limit = np2hax.state._fs.limit;
-	CPU_FS_DESC.type = np2hax.state._fs.type;
-	CPU_FS_DESC.s = np2hax.state._fs.desc;
-	CPU_FS_DESC.dpl = np2hax.state._fs.dpl;
-	CPU_FS_DESC.p = np2hax.state._fs.present;
-	CPU_FS_DESC.valid = np2hax.state._fs.available;
-	CPU_FS_DESC.d = np2hax.state._fs.operand_size;
-	CPU_FS_DESC.u.seg.g = np2hax.state._fs.granularity;
+	CPU_FS_DESC.u.seg.segbase = np2haxstat.state._fs.base;//(UINT32)np2haxstat.state._fs.selector << 4;
+	CPU_FS_DESC.u.seg.limit = np2haxstat.state._fs.limit;
+	CPU_FS_DESC.type = np2haxstat.state._fs.type;
+	CPU_FS_DESC.s = np2haxstat.state._fs.desc;
+	CPU_FS_DESC.dpl = np2haxstat.state._fs.dpl;
+	CPU_FS_DESC.p = np2haxstat.state._fs.present;
+	CPU_FS_DESC.valid = np2haxstat.state._fs.available;
+	CPU_FS_DESC.d = np2haxstat.state._fs.operand_size;
+	CPU_FS_DESC.u.seg.g = np2haxstat.state._fs.granularity;
 	
-	CPU_GS_DESC.u.seg.segbase = np2hax.state._gs.base;//(UINT32)np2hax.state._gs.selector << 4;
-	CPU_GS_DESC.u.seg.limit = np2hax.state._gs.limit;
-	CPU_GS_DESC.type = np2hax.state._gs.type;
-	CPU_GS_DESC.s = np2hax.state._gs.desc;
-	CPU_GS_DESC.dpl = np2hax.state._gs.dpl;
-	CPU_GS_DESC.p = np2hax.state._gs.present;
-	CPU_GS_DESC.valid = np2hax.state._gs.available;
-	CPU_GS_DESC.d = np2hax.state._gs.operand_size;
-	CPU_GS_DESC.u.seg.g = np2hax.state._gs.granularity;
+	CPU_GS_DESC.u.seg.segbase = np2haxstat.state._gs.base;//(UINT32)np2haxstat.state._gs.selector << 4;
+	CPU_GS_DESC.u.seg.limit = np2haxstat.state._gs.limit;
+	CPU_GS_DESC.type = np2haxstat.state._gs.type;
+	CPU_GS_DESC.s = np2haxstat.state._gs.desc;
+	CPU_GS_DESC.dpl = np2haxstat.state._gs.dpl;
+	CPU_GS_DESC.p = np2haxstat.state._gs.present;
+	CPU_GS_DESC.valid = np2haxstat.state._gs.available;
+	CPU_GS_DESC.d = np2haxstat.state._gs.operand_size;
+	CPU_GS_DESC.u.seg.g = np2haxstat.state._gs.granularity;
 	
-	CPU_EBP = np2hax.state._ebp;
-	CPU_ESP = np2hax.state._esp;
-	CPU_EIP = np2hax.state._eip;
-	CPU_PREV_EIP = np2hax.state._eip; // XXX: あんまり良くない
+	CPU_EBP = np2haxstat.state._ebp;
+	CPU_ESP = np2haxstat.state._esp;
+	CPU_EIP = np2haxstat.state._eip;
+	CPU_PREV_EIP = np2haxstat.state._eip; // XXX: あんまり良くない
 	
-	CPU_EFLAG = np2hax.state._eflags;
+	CPU_EFLAG = np2haxstat.state._eflags;
 	
-	CPU_CR0 = np2hax.state._cr0;
-	//CPU_CR1 = np2hax.state._cr1;
-	CPU_CR2 = np2hax.state._cr2;
-	CPU_CR3 = np2hax.state._cr3;
-	CPU_CR4 = np2hax.state._cr4;
+	CPU_CR0 = np2haxstat.state._cr0;
+	//CPU_CR1 = np2haxstat.state._cr1;
+	CPU_CR2 = np2haxstat.state._cr2;
+	CPU_CR3 = np2haxstat.state._cr3;
+	CPU_CR4 = np2haxstat.state._cr4;
 	
-	CPU_GDTR_BASE = np2hax.state._gdt.base;
-	CPU_GDTR_LIMIT = np2hax.state._gdt.limit;
-	CPU_IDTR_BASE = np2hax.state._idt.base;
-	CPU_IDTR_LIMIT = np2hax.state._idt.limit;
-	CPU_LDTR = np2hax.state._ldt.selector;
-	CPU_LDTR_BASE = np2hax.state._ldt.base;
-	CPU_LDTR_LIMIT = np2hax.state._ldt.limit;
-	CPU_TR = np2hax.state._tr.selector;
-	CPU_TR_BASE = np2hax.state._tr.base;
-	CPU_TR_LIMIT = np2hax.state._tr.limit;
+	CPU_GDTR_BASE = np2haxstat.state._gdt.base;
+	CPU_GDTR_LIMIT = np2haxstat.state._gdt.limit;
+	CPU_IDTR_BASE = np2haxstat.state._idt.base;
+	CPU_IDTR_LIMIT = np2haxstat.state._idt.limit;
+	CPU_LDTR = np2haxstat.state._ldt.selector;
+	CPU_LDTR_BASE = np2haxstat.state._ldt.base;
+	CPU_LDTR_LIMIT = np2haxstat.state._ldt.limit;
+	CPU_TR = np2haxstat.state._tr.selector;
+	CPU_TR_BASE = np2haxstat.state._tr.base;
+	CPU_TR_LIMIT = np2haxstat.state._tr.limit;
 
-	CPU_DR(0) = np2hax.state._dr0;
-	CPU_DR(1) = np2hax.state._dr1;
-	CPU_DR(2) = np2hax.state._dr2;
-	CPU_DR(3) = np2hax.state._dr3;
-	//CPU_DR(4) = np2hax.state._dr4;
-	//CPU_DR(5) = np2hax.state._dr5;
-	CPU_DR(6) = np2hax.state._dr6;
-	CPU_DR(7) = np2hax.state._dr7;
+	CPU_DR(0) = np2haxstat.state._dr0;
+	CPU_DR(1) = np2haxstat.state._dr1;
+	CPU_DR(2) = np2haxstat.state._dr2;
+	CPU_DR(3) = np2haxstat.state._dr3;
+	//CPU_DR(4) = np2haxstat.state._dr4;
+	//CPU_DR(5) = np2haxstat.state._dr5;
+	CPU_DR(6) = np2haxstat.state._dr6;
+	CPU_DR(7) = np2haxstat.state._dr7;
 	
 	CPU_STAT_PDE_BASE = CPU_CR3 & CPU_CR3_PD_MASK;
-	//CPU_STAT_PDE_BASE = np2hax.state._pde;
-	CPU_STAT_PM = (np2hax.state._cr0 & 0x1)!=0;
-	CPU_STAT_VM86 = (np2hax.state._eflags & VM_FLAG)!=0;
+	//CPU_STAT_PDE_BASE = np2haxstat.state._pde;
+	CPU_STAT_PM = (np2haxstat.state._cr0 & 0x1)!=0;
+	CPU_STAT_VM86 = (np2haxstat.state._eflags & VM_FLAG)!=0;
 	CPU_STAT_PAGING = (CPU_CR0 & CPU_CR0_PG)!=0;
 }
 // NP2 IA-32 レジスタ → HAXレジスタ
 static void
 ia32hax_copyregNP2toHAX(void)
 {
-	np2hax.state._eax = CPU_EAX;
-	np2hax.state._ebx = CPU_EBX;
-	np2hax.state._ecx = CPU_ECX;
-	np2hax.state._edx = CPU_EDX;
+	np2haxstat.state._eax = CPU_EAX;
+	np2haxstat.state._ebx = CPU_EBX;
+	np2haxstat.state._ecx = CPU_ECX;
+	np2haxstat.state._edx = CPU_EDX;
 	
-	np2hax.state._esi = CPU_ESI;
-	np2hax.state._edi = CPU_EDI;
+	np2haxstat.state._esi = CPU_ESI;
+	np2haxstat.state._edi = CPU_EDI;
 	
-	if(1||np2hax.update_segment_regs){
-		np2hax.state._cs.selector = CPU_CS;
-		np2hax.state._ds.selector = CPU_DS;
-		np2hax.state._es.selector = CPU_ES;
-		np2hax.state._ss.selector = CPU_SS;
-		np2hax.state._fs.selector = CPU_FS;
-		np2hax.state._gs.selector = CPU_GS;
-		np2hax.state._cs.base = CS_BASE;
-		np2hax.state._ds.base = DS_BASE;
-		np2hax.state._es.base = ES_BASE;
-		np2hax.state._ss.base = SS_BASE;
-		np2hax.state._fs.base = FS_BASE;
-		np2hax.state._gs.base = GS_BASE;
+	if(1||np2haxstat.update_segment_regs){
+		np2haxstat.state._cs.selector = CPU_CS;
+		np2haxstat.state._ds.selector = CPU_DS;
+		np2haxstat.state._es.selector = CPU_ES;
+		np2haxstat.state._ss.selector = CPU_SS;
+		np2haxstat.state._fs.selector = CPU_FS;
+		np2haxstat.state._gs.selector = CPU_GS;
+		np2haxstat.state._cs.base = CS_BASE;
+		np2haxstat.state._ds.base = DS_BASE;
+		np2haxstat.state._es.base = ES_BASE;
+		np2haxstat.state._ss.base = SS_BASE;
+		np2haxstat.state._fs.base = FS_BASE;
+		np2haxstat.state._gs.base = GS_BASE;
 
-		np2hax.state._cs.base = CPU_CS_DESC.u.seg.segbase;
-		np2hax.state._cs.limit = CPU_CS_DESC.u.seg.limit;
-		//np2hax.state._cs.type = CPU_CS_DESC.type;
-		np2hax.state._cs.desc = CPU_CS_DESC.s;
-		np2hax.state._cs.dpl = CPU_CS_DESC.dpl;
-		np2hax.state._cs.present = CPU_CS_DESC.p;
-		np2hax.state._cs.available = CPU_CS_DESC.valid;
-		np2hax.state._cs.operand_size = CPU_CS_DESC.d;
-		np2hax.state._cs.granularity = CPU_CS_DESC.u.seg.g;
+		np2haxstat.state._cs.base = CPU_CS_DESC.u.seg.segbase;
+		np2haxstat.state._cs.limit = CPU_CS_DESC.u.seg.limit;
+		//np2haxstat.state._cs.type = CPU_CS_DESC.type;
+		np2haxstat.state._cs.desc = CPU_CS_DESC.s;
+		np2haxstat.state._cs.dpl = CPU_CS_DESC.dpl;
+		np2haxstat.state._cs.present = CPU_CS_DESC.p;
+		np2haxstat.state._cs.available = CPU_CS_DESC.valid;
+		np2haxstat.state._cs.operand_size = CPU_CS_DESC.d;
+		np2haxstat.state._cs.granularity = CPU_CS_DESC.u.seg.g;
 	
-		np2hax.state._ds.base = CPU_DS_DESC.u.seg.segbase;
-		np2hax.state._ds.limit = CPU_DS_DESC.u.seg.limit;
-		//np2hax.state._ds.type = CPU_DS_DESC.type;
-		np2hax.state._ds.desc = CPU_DS_DESC.s;
-		np2hax.state._ds.dpl = CPU_DS_DESC.dpl;
-		np2hax.state._ds.present = CPU_DS_DESC.p;
-		np2hax.state._ds.available = CPU_DS_DESC.valid;
-		np2hax.state._ds.operand_size = CPU_DS_DESC.d;
-		np2hax.state._ds.granularity = CPU_DS_DESC.u.seg.g;
+		np2haxstat.state._ds.base = CPU_DS_DESC.u.seg.segbase;
+		np2haxstat.state._ds.limit = CPU_DS_DESC.u.seg.limit;
+		//np2haxstat.state._ds.type = CPU_DS_DESC.type;
+		np2haxstat.state._ds.desc = CPU_DS_DESC.s;
+		np2haxstat.state._ds.dpl = CPU_DS_DESC.dpl;
+		np2haxstat.state._ds.present = CPU_DS_DESC.p;
+		np2haxstat.state._ds.available = CPU_DS_DESC.valid;
+		np2haxstat.state._ds.operand_size = CPU_DS_DESC.d;
+		np2haxstat.state._ds.granularity = CPU_DS_DESC.u.seg.g;
 	
-		np2hax.state._es.base = CPU_ES_DESC.u.seg.segbase;
-		np2hax.state._es.limit = CPU_ES_DESC.u.seg.limit;
-		//np2hax.state._es.type = CPU_ES_DESC.type;
-		np2hax.state._es.desc = CPU_ES_DESC.s;
-		np2hax.state._es.dpl = CPU_ES_DESC.dpl;
-		np2hax.state._es.present = CPU_ES_DESC.p;
-		np2hax.state._es.available = CPU_ES_DESC.valid;
-		np2hax.state._es.operand_size = CPU_ES_DESC.d;
-		np2hax.state._es.granularity = CPU_ES_DESC.u.seg.g;
+		np2haxstat.state._es.base = CPU_ES_DESC.u.seg.segbase;
+		np2haxstat.state._es.limit = CPU_ES_DESC.u.seg.limit;
+		//np2haxstat.state._es.type = CPU_ES_DESC.type;
+		np2haxstat.state._es.desc = CPU_ES_DESC.s;
+		np2haxstat.state._es.dpl = CPU_ES_DESC.dpl;
+		np2haxstat.state._es.present = CPU_ES_DESC.p;
+		np2haxstat.state._es.available = CPU_ES_DESC.valid;
+		np2haxstat.state._es.operand_size = CPU_ES_DESC.d;
+		np2haxstat.state._es.granularity = CPU_ES_DESC.u.seg.g;
 	
-		np2hax.state._ss.base = CPU_SS_DESC.u.seg.segbase;
-		np2hax.state._ss.limit = CPU_SS_DESC.u.seg.limit;
-		//np2hax.state._ss.type = CPU_SS_DESC.type;
-		np2hax.state._ss.desc = CPU_SS_DESC.s;
-		np2hax.state._ss.dpl = CPU_SS_DESC.dpl;
-		np2hax.state._ss.present = CPU_SS_DESC.p;
-		np2hax.state._ss.available = CPU_SS_DESC.valid;
-		np2hax.state._ss.operand_size = CPU_SS_DESC.d;
-		np2hax.state._ss.granularity = CPU_SS_DESC.u.seg.g;
+		np2haxstat.state._ss.base = CPU_SS_DESC.u.seg.segbase;
+		np2haxstat.state._ss.limit = CPU_SS_DESC.u.seg.limit;
+		//np2haxstat.state._ss.type = CPU_SS_DESC.type;
+		np2haxstat.state._ss.desc = CPU_SS_DESC.s;
+		np2haxstat.state._ss.dpl = CPU_SS_DESC.dpl;
+		np2haxstat.state._ss.present = CPU_SS_DESC.p;
+		np2haxstat.state._ss.available = CPU_SS_DESC.valid;
+		np2haxstat.state._ss.operand_size = CPU_SS_DESC.d;
+		np2haxstat.state._ss.granularity = CPU_SS_DESC.u.seg.g;
 	
-		np2hax.state._fs.base = CPU_FS_DESC.u.seg.segbase;
-		np2hax.state._fs.limit = CPU_FS_DESC.u.seg.limit;
-		//np2hax.state._fs.type = CPU_FS_DESC.type;
-		np2hax.state._fs.desc = CPU_FS_DESC.s;
-		np2hax.state._fs.dpl = CPU_FS_DESC.dpl;
-		np2hax.state._fs.present = CPU_FS_DESC.p;
-		np2hax.state._fs.available = CPU_FS_DESC.valid;
-		np2hax.state._fs.operand_size = CPU_FS_DESC.d;
-		np2hax.state._fs.granularity = CPU_FS_DESC.u.seg.g;
+		np2haxstat.state._fs.base = CPU_FS_DESC.u.seg.segbase;
+		np2haxstat.state._fs.limit = CPU_FS_DESC.u.seg.limit;
+		//np2haxstat.state._fs.type = CPU_FS_DESC.type;
+		np2haxstat.state._fs.desc = CPU_FS_DESC.s;
+		np2haxstat.state._fs.dpl = CPU_FS_DESC.dpl;
+		np2haxstat.state._fs.present = CPU_FS_DESC.p;
+		np2haxstat.state._fs.available = CPU_FS_DESC.valid;
+		np2haxstat.state._fs.operand_size = CPU_FS_DESC.d;
+		np2haxstat.state._fs.granularity = CPU_FS_DESC.u.seg.g;
 	
-		np2hax.state._gs.base = CPU_GS_DESC.u.seg.segbase;
-		np2hax.state._gs.limit = CPU_GS_DESC.u.seg.limit;
-		//np2hax.state._gs.type = CPU_GS_DESC.type;
-		np2hax.state._gs.desc = CPU_GS_DESC.s;
-		np2hax.state._gs.dpl = CPU_GS_DESC.dpl;
-		np2hax.state._gs.present = CPU_GS_DESC.p;
-		np2hax.state._gs.available = CPU_GS_DESC.valid;
-		np2hax.state._gs.operand_size = CPU_GS_DESC.d;
-		np2hax.state._gs.granularity = CPU_GS_DESC.u.seg.g;
+		np2haxstat.state._gs.base = CPU_GS_DESC.u.seg.segbase;
+		np2haxstat.state._gs.limit = CPU_GS_DESC.u.seg.limit;
+		//np2haxstat.state._gs.type = CPU_GS_DESC.type;
+		np2haxstat.state._gs.desc = CPU_GS_DESC.s;
+		np2haxstat.state._gs.dpl = CPU_GS_DESC.dpl;
+		np2haxstat.state._gs.present = CPU_GS_DESC.p;
+		np2haxstat.state._gs.available = CPU_GS_DESC.valid;
+		np2haxstat.state._gs.operand_size = CPU_GS_DESC.d;
+		np2haxstat.state._gs.granularity = CPU_GS_DESC.u.seg.g;
 
-		np2hax.update_segment_regs = 0;
+		np2haxstat.update_segment_regs = 0;
 	}
 	
-	np2hax.state._ebp = CPU_EBP;
-	np2hax.state._esp = CPU_ESP;
-	np2hax.state._eip = CPU_EIP;
+	np2haxstat.state._ebp = CPU_EBP;
+	np2haxstat.state._esp = CPU_ESP;
+	np2haxstat.state._eip = CPU_EIP;
 	
-	np2hax.state._eflags = CPU_EFLAG;
+	np2haxstat.state._eflags = CPU_EFLAG;
 	
-	np2hax.state._cr0 = CPU_CR0;
-	//np2hax.state._cr1 = CPU_CR1;
-	np2hax.state._cr2 = CPU_CR2;
-	np2hax.state._cr3 = CPU_CR3;
-	np2hax.state._cr4 = CPU_CR4;
+	np2haxstat.state._cr0 = CPU_CR0;
+	//np2haxstat.state._cr1 = CPU_CR1;
+	np2haxstat.state._cr2 = CPU_CR2;
+	np2haxstat.state._cr3 = CPU_CR3;
+	np2haxstat.state._cr4 = CPU_CR4;
 	
-	np2hax.state._gdt.base = CPU_GDTR_BASE;
-	np2hax.state._gdt.limit = CPU_GDTR_LIMIT;
-	np2hax.state._idt.base = CPU_IDTR_BASE;
-	np2hax.state._idt.limit = CPU_IDTR_LIMIT;
-	np2hax.state._ldt.selector = CPU_LDTR;
-	np2hax.state._ldt.base = CPU_LDTR_BASE;
-	np2hax.state._ldt.limit = CPU_LDTR_LIMIT;
-	np2hax.state._tr.selector = CPU_TR;
-	np2hax.state._tr.base = CPU_TR_BASE;
-	np2hax.state._tr.limit = CPU_TR_LIMIT;
+	np2haxstat.state._gdt.base = CPU_GDTR_BASE;
+	np2haxstat.state._gdt.limit = CPU_GDTR_LIMIT;
+	np2haxstat.state._idt.base = CPU_IDTR_BASE;
+	np2haxstat.state._idt.limit = CPU_IDTR_LIMIT;
+	np2haxstat.state._ldt.selector = CPU_LDTR;
+	np2haxstat.state._ldt.base = CPU_LDTR_BASE;
+	np2haxstat.state._ldt.limit = CPU_LDTR_LIMIT;
+	np2haxstat.state._tr.selector = CPU_TR;
+	np2haxstat.state._tr.base = CPU_TR_BASE;
+	np2haxstat.state._tr.limit = CPU_TR_LIMIT;
 
-	//np2hax.state._dr0 = CPU_DR(0);
-	//np2hax.state._dr1 = CPU_DR(1);
-	//np2hax.state._dr2 = CPU_DR(2);
-	//np2hax.state._dr3 = CPU_DR(3);
-	////np2hax.state._dr4 = CPU_DR(4);
-	////np2hax.state._dr5 = CPU_DR(5);
-	//np2hax.state._dr6 = CPU_DR(6);
-	//np2hax.state._dr7 = CPU_DR(7);
+	//np2haxstat.state._dr0 = CPU_DR(0);
+	//np2haxstat.state._dr1 = CPU_DR(1);
+	//np2haxstat.state._dr2 = CPU_DR(2);
+	//np2haxstat.state._dr3 = CPU_DR(3);
+	////np2haxstat.state._dr4 = CPU_DR(4);
+	////np2haxstat.state._dr5 = CPU_DR(5);
+	//np2haxstat.state._dr6 = CPU_DR(6);
+	//np2haxstat.state._dr7 = CPU_DR(7);
 	
-	//np2hax.state._pde = CPU_STAT_PDE_BASE;
+	//np2haxstat.state._pde = CPU_STAT_PDE_BASE;
 }
 
 // 仮想マシン実行
@@ -595,8 +597,8 @@ void i386hax_vm_exec(void) {
 	ia32hax_copyregNP2toHAX();
 	
 	// 必要ならHAXレジスタを更新
-	if(np2hax.update_regs) i386haxfunc_vcpu_setREGs(&np2hax.state);
-	if(np2hax.update_fpu) i386haxfunc_vcpu_setFPU(&np2hax.fpustate);
+	if(np2haxstat.update_regs) i386haxfunc_vcpu_setREGs(&np2haxstat.state);
+	if(np2haxstat.update_fpu) i386haxfunc_vcpu_setFPU(&np2haxstat.fpustate);
 	
 	np2haxcore.hltflag = 0;
 
@@ -645,13 +647,13 @@ coutinue_cpu:
 	}
 
 	// 割り込みを処理
-	if(np2hax.irq_reqidx_cur != np2hax.irq_reqidx_end){
+	if(np2haxstat.irq_reqidx_cur != np2haxstat.irq_reqidx_end){
 		if (tunnel->ready_for_interrupt_injection) { // 割り込み準備OK？
-			i386haxfunc_vcpu_interrupt(np2hax.irq_req[np2hax.irq_reqidx_cur]);
-			np2hax.irq_reqidx_cur++;
+			i386haxfunc_vcpu_interrupt(np2haxstat.irq_req[np2haxstat.irq_reqidx_cur]);
+			np2haxstat.irq_reqidx_cur++;
 		}
 	}
-	if(np2hax.irq_reqidx_cur != np2hax.irq_reqidx_end){ // 割り込みが必要ならrequest_interrupt_windowを1にする
+	if(np2haxstat.irq_reqidx_cur != np2haxstat.irq_reqidx_end){ // 割り込みが必要ならrequest_interrupt_windowを1にする
 		tunnel->request_interrupt_window = 1;
 	}else{
 		tunnel->request_interrupt_window = 0;
@@ -731,7 +733,7 @@ coutinue_cpu:
 		}
 		// 時間切れなら抜ける
 		np2haxcore.clockcount = GetTickCounter_Clock();
-		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
+		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
 			break;
 		}
 		// 高速化のために一部のI/Oポートの処理を簡略化
@@ -740,14 +742,14 @@ coutinue_cpu:
 			(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF) || 
 			(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF)){
 			pic_irq();
-			i386haxfunc_vcpu_getREGs(&np2hax.state);
-			i386haxfunc_vcpu_getFPU(&np2hax.fpustate);
-			np2hax.update_regs = np2hax.update_fpu = 0;
+			i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+			i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+			np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 	
 			ia32hax_copyregHAXtoNP2();
 			goto coutinue_cpu;
 		}
-		//np2hax.update_regs = 1;
+		//np2haxstat.update_regs = 1;
 		break;
 	case HAX_EXIT_FAST_MMIO: // メモリマップドI/Oへのアクセス
 		//printf("HAX_EXIT_FAST_MMIO\n");
@@ -786,12 +788,12 @@ coutinue_cpu:
 		}
 		// 時間切れなら抜ける
 		np2haxcore.clockcount = GetTickCounter_Clock();
-		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
+		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
 			break;
 		}
-		i386haxfunc_vcpu_getREGs(&np2hax.state);
-		i386haxfunc_vcpu_getFPU(&np2hax.fpustate);
-		np2hax.update_regs = np2hax.update_fpu = 0;
+		i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+		i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+		np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 	
 		ia32hax_copyregHAXtoNP2();
 		pic_irq();
@@ -800,9 +802,9 @@ coutinue_cpu:
 	}
 	
 	// HAXMレジスタを読み取り
-	i386haxfunc_vcpu_getREGs(&np2hax.state);
-	i386haxfunc_vcpu_getFPU(&np2hax.fpustate);
-	np2hax.update_regs = np2hax.update_fpu = 0;
+	i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+	i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+	np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 	
 	// HAXMレジスタ→猫レジスタにコピー
 	ia32hax_copyregHAXtoNP2();
@@ -859,8 +861,10 @@ coutinue_cpu:
 				CPU_EIP++;
 				if(ia32hax_bioscall()){
 				}
-				np2hax.update_regs = 1;
-				np2hax.update_segment_regs = 1;
+				np2haxstat.update_regs = 1;
+				np2haxstat.update_segment_regs = 1;
+				// カウンタリセット
+				pmcounter = 0;
 			}
 		}
 		break;
@@ -883,7 +887,7 @@ void i386hax_disposeVM(void) {
 	np2hax.hVCPUDevice = NULL;
 	CloseHandle(np2hax.hVMDevice);
 	np2hax.hVMDevice = NULL;
-	
+
 	TRACEOUT(("HAXM: HAX VM disposed."));
     //msgbox("HAXM deinit", "HAX VM disposed.");
 #endif

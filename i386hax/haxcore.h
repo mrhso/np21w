@@ -17,10 +17,16 @@ typedef struct {
 	HANDLE	hVCPUDevice; // HAXM仮想CPUデバイスのハンドル
 	UINT32	vm_id; // HAXM仮想マシンID
 	HAX_TUNNEL_INFO	tunnel; // HAXM仮想マシンとのデータやりとり用tunnel
+
+	UINT8 bioshookenable; // デバッグレジスタによるエミュレーションBIOSフック有効
+} NP2_HAX;
+typedef struct {
 	HAX_VCPU_STATE	state; // HAXM仮想CPUのレジスタ
 	HAX_FX_LAYOUT	fpustate; // HAXM仮想CPUのFPUレジスタ
+	HAX_MSR_DATA	msrstate; // HAXM仮想CPUのMSR
 	HAX_VCPU_STATE	default_state; // HAXM仮想CPUのレジスタ（デフォルト値）
 	HAX_FX_LAYOUT	default_fpustate; // HAXM仮想CPUのFPUレジスタ（デフォルト値）
+	HAX_MSR_DATA	default_msrstate; // HAXM仮想CPUのMSR（デフォルト値）
 	UINT8 update_regs; // 要レジスタ更新
 	UINT8 update_segment_regs; // 要セグメントレジスタ更新
 	UINT8 update_fpu; // 要FPUレジスタ更新
@@ -28,9 +34,7 @@ typedef struct {
 	UINT8 irq_req[256]; // 割り込み待機バッファ。大気中の割り込みベクタが格納される
 	UINT8 irq_reqidx_cur; // 割り込み待機バッファの読み取り位置
 	UINT8 irq_reqidx_end; // 割り込み待機バッファの書き込み位置
-
-	UINT8 bioshookenable; // デバッグレジスタによるエミュレーションBIOSフック有効
-} NP2_HAX;
+} NP2_HAX_STAT;
 typedef struct {
 	UINT8 running; // HAXM CPU実行中フラグ
 
@@ -39,18 +43,24 @@ typedef struct {
 	LARGE_INTEGER clockpersec; // 1秒あたりクロック数
 	LARGE_INTEGER clockcount; // 現在のクロック
 
+	UINT8 I_ratio;
+
 	UINT32 lastA20en; // 前回A20ラインが有効だったか
 	UINT32 lastITFbank; // 前回ITFバンクを使用していたか
 	UINT32 lastVGA256linear; // 前回256色モードのリニアアドレスを使用していたか
+	UINT32 lastVRAMMMIO; // VRAMのメモリアドレスがMMIOモードか
 	
 	UINT8 hurryup; // タイミングが遅れているので急ぐべし
 
 	UINT8 hltflag; // HLT命令で停止中フラグ
+
+	UINT8 allocwabmem; // WAB vramptr登録済みなら1
 } NP2_HAX_CORE;
 
 #define NP2HAX_I_RATIO_MAX	1024
 
-extern	NP2_HAX	np2hax;
+extern	NP2_HAX			np2hax;
+extern	NP2_HAX_STAT	np2haxstat;
 extern	NP2_HAX_CORE	np2haxcore;
 
 #endif

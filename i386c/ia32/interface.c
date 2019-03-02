@@ -90,38 +90,38 @@ ia32_initreg(void)
 	fpu_initialize();
 	
 //#if defined(SUPPORT_IA32_HAXM)
-//	np2hax.state._edx = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
-//	np2hax.state._eflags = 2;
-//	np2hax.state._cr0 = CPU_CR0_CD | CPU_CR0_NW;
+//	np2haxstat.state._edx = (CPU_FAMILY << 8) | (CPU_MODEL << 4) | CPU_STEPPING;
+//	np2haxstat.state._eflags = 2;
+//	np2haxstat.state._cr0 = CPU_CR0_CD | CPU_CR0_NW;
 //#if defined(USE_FPU)
 //	if(i386cpuid.cpu_feature & CPU_FEATURE_FPU){
-//		np2hax.state._cr0 |= CPU_CR0_ET;
-//		np2hax.state._cr0 &= ~CPU_CR0_EM;
+//		np2haxstat.state._cr0 |= CPU_CR0_ET;
+//		np2haxstat.state._cr0 &= ~CPU_CR0_EM;
 //	}else{
-//		np2hax.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
-//		np2hax.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
+//		np2haxstat.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
+//		np2haxstat.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
 //	}
 //#else
-//	np2hax.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
-//	np2hax.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
+//	np2haxstat.state._cr0 |= CPU_CR0_EM | CPU_CR0_NE;
+//	np2haxstat.state._cr0 &= ~(CPU_CR0_MP | CPU_CR0_ET);
 //#endif
-//	np2hax.state._gdt.base = 0x0;
-//	np2hax.state._gdt.limit = 0xffff;
-//	np2hax.state._idt.base = 0x0;
-//	np2hax.state._idt.limit = 0xffff;
-//	np2hax.state._ldt.base = 0x0;
-//	np2hax.state._ldt.limit = 0xffff;
-//	np2hax.state._tr.base = 0x0;
-//	np2hax.state._tr.limit = 0xffff;
+//	np2haxstat.state._gdt.base = 0x0;
+//	np2haxstat.state._gdt.limit = 0xffff;
+//	np2haxstat.state._idt.base = 0x0;
+//	np2haxstat.state._idt.limit = 0xffff;
+//	np2haxstat.state._ldt.base = 0x0;
+//	np2haxstat.state._ldt.limit = 0xffff;
+//	np2haxstat.state._tr.base = 0x0;
+//	np2haxstat.state._tr.limit = 0xffff;
 //	
-//	np2hax.state._dr6 = 0xffff1ff0;
+//	np2haxstat.state._dr6 = 0xffff1ff0;
 //
 //	//for (i = 0; i < CPU_SEGREG_NUM; ++i) {
 //	//	segdesc_init(i, 0, &CPU_STAT_SREG(i));
 //	//}
 //	//LOAD_SEGREG(CPU_CS_INDEX, 0xf000);
-//	np2hax.state._cs.base = 0xffff0000;
-//	np2hax.state._eip = 0xfff0;
+//	np2haxstat.state._cs.base = 0xffff0000;
+//	np2haxstat.state._eip = 0xfff0;
 //	//CPU_ADRSMASK = 0x000fffff;
 //#endif
 }
@@ -232,9 +232,9 @@ ia32_interrupt(int vect, int soft)
 		if(!soft){
 			HAX_TUNNEL *tunnel;
 			tunnel = (HAX_TUNNEL*)np2hax.tunnel.va;
-			if(np2hax.irq_reqidx_end - np2hax.irq_reqidx_cur < 250){
-				np2hax.irq_req[np2hax.irq_reqidx_end] = vect;
-				np2hax.irq_reqidx_end++;
+			if(np2haxstat.irq_reqidx_end - np2haxstat.irq_reqidx_cur < 250){
+				np2haxstat.irq_req[np2haxstat.irq_reqidx_end] = vect;
+				np2haxstat.irq_reqidx_end++;
 			}
 			//i386haxfunc_vcpu_interrupt(vect);
 		}

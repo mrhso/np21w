@@ -444,7 +444,12 @@ void bios_initialize(void) {
 			if(beeplen == 0) beeplen = 1;
 			if(beeplen > 255) beeplen = 255;
 		}
-		mem[ITF_ADRS + 5553] = 255;//(UINT8)beeplen; // XXX: êŠŒˆ‚ß‘Å‚¿
+#if defined(SUPPORT_IA32_HAXM)
+		if (np2hax.enable && np2cfg.sbeepadj) {
+			mem[ITF_ADRS + 5553] = 255;
+		}else
+#endif
+		mem[ITF_ADRS + 5553] = (UINT8)beeplen; // XXX: êŠŒˆ‚ß‘Å‚¿
 	}
 	mem[ITF_ADRS + 0x7ff0] = 0xea;
 	STOREINTELDWORD(mem + ITF_ADRS + 0x7ff1, 0xf8000000);

@@ -206,39 +206,17 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\bios\bios.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios09.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios0c.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios12.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios13.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios18.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios19.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios1a.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios1b.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios1c.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
-    <ClCompile Include="..\bios\bios1f.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\bios\bios.c" />
+    <ClCompile Include="..\bios\bios09.c" />
+    <ClCompile Include="..\bios\bios0c.c" />
+    <ClCompile Include="..\bios\bios12.c" />
+    <ClCompile Include="..\bios\bios13.c" />
+    <ClCompile Include="..\bios\bios18.c" />
+    <ClCompile Include="..\bios\bios19.c" />
+    <ClCompile Include="..\bios\bios1a.c" />
+    <ClCompile Include="..\bios\bios1b.c" />
+    <ClCompile Include="..\bios\bios1c.c" />
+    <ClCompile Include="..\bios\bios1f.c" />
     <ClCompile Include="..\bios\sxsibios.c" />
     <ClCompile Include="..\calendar.c" />
     <ClCompile Include="..\cbus\amd98.c" />
@@ -329,9 +307,7 @@
     <ClCompile Include="..\generic\softkbd.c" />
     <ClCompile Include="..\generic\unasm.c" />
     <ClCompile Include="..\i386c\cpucore.c" />
-    <ClCompile Include="..\i386c\cpumem.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\i386c\cpumem.c" />
     <ClCompile Include="..\i386c\ia32\cpu.c" />
     <ClCompile Include="..\i386c\ia32\cpu_io.c" />
     <ClCompile Include="..\i386c\ia32\cpu_mem.c" />
@@ -382,9 +358,7 @@
     <ClCompile Include="..\i386c\ia32\resolve.c" />
     <ClCompile Include="..\i386c\ia32\segments.c" />
     <ClCompile Include="..\i386c\ia32\task.c" />
-    <ClCompile Include="..\i386hax\haxcore.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\i386hax\haxcore.c" />
     <ClCompile Include="..\i386hax\haxfunc.c" />
     <ClCompile Include="..\io\artic.c" />
     <ClCompile Include="..\io\cgrom.c" />

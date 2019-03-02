@@ -2156,6 +2156,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 			}
 #endif
+#ifdef HOOK_SYSKEY
+			else if ((wParam == VK_SNAPSHOT) && (np2oscfg.syskhook)) {
+				// nothing to do
+			}
+#endif
 			else {
 				winkbd_keydown(wParam, lParam);
 			}
@@ -2766,6 +2771,21 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 						}
 						return 1;
 					}
+#ifdef HOOK_SYSKEY
+					else if ((pkbhs->vkCode == VK_SNAPSHOT) && (np2oscfg.syskhook)) {
+						// PrintScreen -> COPY
+						switch((int)wParam){
+						case WM_KEYDOWN:
+						case WM_SYSKEYDOWN:
+							keystat_keydown(0x61);
+							break;
+						case WM_KEYUP:
+						case WM_SYSKEYUP:
+							keystat_keyup(0x61);
+							break;
+						}
+					}
+#endif
 				}
 				break;
 			}
@@ -2825,14 +2845,29 @@ static void processwait(UINT cnt) {
 
 	if (count+lateframecount >= cnt) {
 		lateframecount = lateframecount + count - cnt;
-		if(lateframecount > np2oscfg.cpustabf) lateframecount = np2oscfg.cpustabf;
 #if defined(SUPPORT_IA32_HAXM)
-		np2haxcore.hltflag = 0;
+		if (np2hax.enable) {
+			np2haxcore.hltflag = 0;
+			if(lateframecount > 0 && np2haxcore.I_ratio < 254){
+				np2haxcore.I_ratio++;
+			}else if(np2haxcore.I_ratio > 1){
+				//np2haxcore.I_ratio--;
+			}
+			lateframecount = 0;
+		}
 #endif
+		if(lateframecount > np2oscfg.cpustabf) lateframecount = np2oscfg.cpustabf;
 		timing_setcount(0);
 		framereset(cnt);
 	}
 	else {
+#if defined(SUPPORT_IA32_HAXM)
+		if (np2hax.enable) {
+			if(np2haxcore.I_ratio > 1){
+				np2haxcore.I_ratio--;
+			}
+		}
+#endif
 		if(lateframecount){
 			SleepEx(0, TRUE);
 		}else{
@@ -3502,11 +3537,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 				DispatchMessage(&msg);
 			}
 			/*else */{
-				UINT8 hurryup = 0;
-#if defined(SUPPORT_IA32_HAXM)
-				hurryup = np2haxcore.hurryup;
-#endif
-				if (np2oscfg.NOWAIT || hurryup) {
+//				UINT8 hurryup = 0;
+//#if defined(SUPPORT_IA32_HAXM)
+//				hurryup = np2haxcore.hurryup;
+//#endif
+				if (np2oscfg.NOWAIT/* || hurryup*/) {
 					ExecuteOneFrame(framecnt == 0);
 					if (np2oscfg.DRAW_SKIP) {		// nowait frame skip
 						framecnt++;

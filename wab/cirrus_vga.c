@@ -6723,7 +6723,10 @@ void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 	}
 	
 #if defined(SUPPORT_IA32_HAXM)
-	i386hax_vm_allocmemoryex(vramptr, CIRRUS_VRAM_SIZE*2);
+	if(!np2haxcore.allocwabmem){
+		i386hax_vm_allocmemoryex(vramptr, CIRRUS_VRAM_SIZE*2);
+		np2haxcore.allocwabmem = 1;
+	}
 #endif
 
 	np2clvga.defgd54xxtype = np2cfg.gd5430type;

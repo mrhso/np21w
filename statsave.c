@@ -57,6 +57,10 @@
 #if defined(BIOS_IO_EMULATION)
 #include "bios/bios.h"
 #endif
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#endif
 
 #if defined(MACOS)
 #define	CRCONST		str_cr
@@ -1250,6 +1254,7 @@ const SFENTRY	*tblterm;
 	
 #if defined(SUPPORT_IA32_HAXM)
 	memcpy(vramex_base, vramex, sizeof(vramex_base));
+	i386haxfunc_vcpu_getMSRs(&np2haxstat.msrstate);
 #endif
 
 	ret = STATFLAG_SUCCESS;
@@ -1522,6 +1527,19 @@ const SFENTRY	*tblterm;
 
 #if defined(SUPPORT_IA32_HAXM)
 	memcpy(vramex, vramex_base, sizeof(vramex_base));
+	i386haxfunc_vcpu_setREGs(&np2haxstat.state);
+	i386haxfunc_vcpu_setFPU(&np2haxstat.fpustate);
+	{
+		HAX_MSR_DATA	msrstate_set = {0};
+		i386haxfunc_vcpu_setMSRs(&np2haxstat.msrstate, &msrstate_set);
+	}
+	i386hax_vm_sethmemory(CPU_ADRSMASK != 0x000fffff);
+	i386hax_vm_setitfmemory(CPU_ITFBANK);
+	i386hax_vm_setvga256linearmemory();
+	np2haxcore.clockpersec = GetTickCounter_ClockPerSec();
+	np2haxcore.lastclock = GetTickCounter_Clock();
+	np2haxcore.clockcount = GetTickCounter_Clock();
+	np2haxcore.I_ratio = 0;
 #endif
 
 	// I/OçÏÇËíºÇµ

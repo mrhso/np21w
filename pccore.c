@@ -729,9 +729,9 @@ void pccore_reset(void) {
 	CPU_CS = 0xf000;
 	CPU_IP = 0xfff0;
 //#if defined(SUPPORT_IA32_HAXM)
-//	np2hax.state._cs.base = 0xf0000;
-//	np2hax.state._cs.selector = 0xf000;
-//	np2hax.state._eip = 0xfff0;
+//	np2haxstat.state._cs.base = 0xf0000;
+//	np2haxstat.state._cs.selector = 0xf000;
+//	np2haxstat.state._eip = 0xfff0;
 //#endif
 
 	CPU_CLEARPREFETCH();
@@ -750,6 +750,7 @@ void pccore_reset(void) {
 		np2haxcore.clockpersec = GetTickCounter_ClockPerSec();
 		np2haxcore.lastclock = GetTickCounter_Clock();
 		np2haxcore.clockcount = GetTickCounter_Clock();
+		np2haxcore.I_ratio = 0;
 	}
 #endif
 //#if defined(SUPPORT_HRTIMER)
@@ -980,18 +981,9 @@ void pccore_exec(BOOL draw) {
 	nevent_set(NEVENT_FLAMES, gdc.dispclock, screenvsync, NEVENT_RELATIVE);
 
 //	nevent_get1stevent();
-#if defined(SUPPORT_IA32_HAXM)
-	//np2haxcore.lastclock = GetTickCounter_Clock();
-#endif
 
 	while(pcstat.screendispflag) {
 		//lastclock = CPU_REMCLOCK;
-#if defined(SUPPORT_IA32_HAXM)
-		if (np2hax.enable) {
-			//i386hax_enter_criticalsection();
-			//i386hax_suspendVMThread();
-		}
-#endif
 #if defined(TRACE)
 		resetcnt++;
 #endif
@@ -1031,14 +1023,8 @@ void pccore_exec(BOOL draw) {
 		if (np2hax.enable) {
 			static UINT64 remain_clk = 0;
 			SINT32 remclktmp = CPU_REMCLOCK;
-			//i386hax_leave_criticalsection();
-			//if(np2haxcore.suspended){
-			//	i386hax_resumeVMThread();
-			//}
-			//i386hax_resumeVMThread();
-			np2haxcore.clockcount = GetTickCounter_Clock();
 			if(!np2haxcore.hltflag){
-				while((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 20 / 19 / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK) {
+				do {
 					i386hax_vm_exec();
 					if(CPU_RESETREQ) break;
 					if(pcstat.hardwarereset) break;
@@ -1046,12 +1032,11 @@ void pccore_exec(BOOL draw) {
 						dmax86();
 					}
 					np2haxcore.clockcount = GetTickCounter_Clock();
-				};
+				} while((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK);
 				if(pcstat.hardwarereset) break;
 				if(CPU_REMCLOCK > 0){
 					CPU_REMCLOCK -= CPU_BASECLOCK;
 				}
-				//np2haxcore.lastclock = GetTickCounter_Clock();
 				if((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK * 6000){
 					UINT64 remain_clk_tmp = remain_clk;
 					if(!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)){
@@ -1059,13 +1044,8 @@ void pccore_exec(BOOL draw) {
 					}else{
 						np2haxcore.hurryup = 1;
 					}
-					//LARGE_INTEGER remain_clk_tmp2;
-					//remain_clk_tmp2 = GetTickCounter_Clock();
 					remain_clk = (np2haxcore.clockpersec.QuadPart * CPU_BASECLOCK + remain_clk_tmp) % pccore.realclock;
 					np2haxcore.lastclock.QuadPart += (np2haxcore.clockpersec.QuadPart * CPU_BASECLOCK + remain_clk_tmp) / pccore.realclock;
-					//if(dmac.working) {
-					//	dmax86();
-					//}
 				}else{
 					np2haxcore.lastclock = GetTickCounter_Clock();
 					np2haxcore.hurryup = 0;
@@ -1097,12 +1077,6 @@ void pccore_exec(BOOL draw) {
 			}
 #endif
 		}
-#if defined(SUPPORT_IA32_HAXM)
-		if (np2hax.enable) {
-			//i386hax_enter_criticalsection();
-			//i386hax_suspendVMThread();
-		}
-#endif
 #if defined(SUPPORT_HRTIMER)
 		if(hrtimerclock){
 			clockcounter += CPU_BASECLOCK;
@@ -1126,26 +1100,8 @@ void pccore_exec(BOOL draw) {
 		}
 #endif
 		nevent_progress();
-#if defined(SUPPORT_IA32_HAXM)
-		if (np2hax.enable) {
-			//i386hax_leave_criticalsection();
-			//i386hax_resumeVMThread();
-		}
-#endif
 	}
-#if defined(SUPPORT_IA32_HAXM)
-	if (np2hax.enable) {
-		//i386hax_enter_criticalsection();
-		//i386hax_suspendVMThread();
-	}
-#endif
 	fdc_intdelay();	// FDC SEEK & RECALIBRATE, etc. np21w ver0.86 rev46
-#if defined(SUPPORT_IA32_HAXM)
-	if (np2hax.enable) {
-		//i386hax_leave_criticalsection();
-		//i386hax_resumeVMThread();
-	}
-#endif
 	artic_callback();
 	mpu98ii_callback();
 	diskdrv_callback();
