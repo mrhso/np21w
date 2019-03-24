@@ -286,6 +286,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 			}
 			if ((fname == NULL) || (fname[0] == '\0')) {
 				int num = drv & 0x0f;
+				sxsi->close(sxsi);
 				ideio_notify(sxsi->drv, 0);
 				file_cpyname(sxsi->fname, _T("\0\0\0\0"), 1);
 				sxsi->flag = 0;
@@ -296,6 +297,7 @@ BRESULT sxsi_devopen(REG8 drv, const OEMCHAR *fname) {
 			else {
 				if((sxsi->flag & SXSIFLAG_READY) && (_tcsnicmp(sxsi->fname, OEMTEXT("\\\\.\\"), 4)!=0 || _tcsicmp(sxsi->fname, np2cfg.idecd[drv & 0x0f])==0) ){
 					// ‚¢‚Á‚½‚ñŽæ‚èo‚·
+					sxsi->close(sxsi);
 					ideio_notify(sxsi->drv, 0);
 					sxsi->flag = 0;
 					cdchange_drv = drv;

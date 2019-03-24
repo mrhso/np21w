@@ -679,6 +679,7 @@ void pccore_reset(void) {
 	soundmng_play();
 
 #ifdef SUPPORT_ASYNC_CPU
+#if !defined(__LIBRETRO__) && !defined(NP2_SDL2) && !defined(NP2_X11)
 	if(GetTickCounterMode()==TCMODE_PERFORMANCECOUNTER){
 		asynccpu_clockpersec = GetTickCounter_ClockPerSec();
 		asynccpu_lastclock = GetTickCounter_Clock();
@@ -687,12 +688,8 @@ void pccore_reset(void) {
 		asynccpu_clockpersec.QuadPart = 0;
 	}
 #endif
+#endif
 	
-//#if defined(SUPPORT_HRTIMER)
-//	hrtimerdiv = 32;
-//	//hrtimerclockcounter = 0;
-//	//QueryPerformanceCounter(&hrtimer);
-//#endif
 }
 
 static void drawscreen(void) {

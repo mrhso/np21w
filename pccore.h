@@ -345,9 +345,22 @@ extern UINT32 hrtimerclock;
 #endif
 
 #ifdef SUPPORT_ASYNC_CPU
+#if !defined(__LIBRETRO__) && !defined(NP2_SDL2) && !defined(NP2_X11)
 extern LARGE_INTEGER asynccpu_lastclock;
 extern LARGE_INTEGER asynccpu_clockpersec;
 extern LARGE_INTEGER asynccpu_clockcount;
+#else
+typedef union {
+    struct {
+        UINT32 LowPart;
+        SINT32 HighPart;
+    } u;
+    SINT64 QuadPart;
+} LARGE_INTEGER;
+extern LARGE_INTEGER asynccpu_lastclock;
+extern LARGE_INTEGER asynccpu_clockpersec;
+extern LARGE_INTEGER asynccpu_clockcount;
+#endif
 #endif
 
 #ifdef __cplusplus
