@@ -273,7 +273,7 @@ void i386hax_resetVMMem(void) {
 	i386hax_vm_setitfmemory(np2haxcore.lastITFbank);
 	np2haxcore.lastVGA256linear = (vramop.mio2[0x2]==0x1);
 	i386hax_vm_setvga256linearmemory();
-	np2haxcore.lastVRAMMMIO = 0;
+	np2haxcore.lastVRAMMMIO = 1;
 	
 	i386hax_vm_setmemoryarea(mem+0xA5000, 0xA5000, 0x3000);
 	//i386hax_vm_setmemoryarea(mem+0xA8000, 0xA8000, 0x8000);
@@ -331,7 +331,7 @@ ia32hax_bioscall(void)
 }
 
 // HAXレジスタ → NP2 IA-32 レジスタ
-static void
+void
 ia32hax_copyregHAXtoNP2(void)
 {
 	CPU_EAX = np2haxstat.state._eax;
@@ -455,7 +455,7 @@ ia32hax_copyregHAXtoNP2(void)
 	CPU_STAT_PAGING = (CPU_CR0 & CPU_CR0_PG)!=0;
 }
 // NP2 IA-32 レジスタ → HAXレジスタ
-static void
+void
 ia32hax_copyregNP2toHAX(void)
 {
 	np2haxstat.state._eax = CPU_EAX;
@@ -658,6 +658,9 @@ coutinue_cpu:
 	}else{
 		tunnel->request_interrupt_window = 0;
 	}
+
+	// リセット可能フラグをクリア
+	np2haxcore.ready_for_reset = 0;
 	
 	// HAXM CPU実行
 	i386haxfunc_vcpu_run();
@@ -738,15 +741,20 @@ coutinue_cpu:
 		}
 		// 高速化のために一部のI/Oポートの処理を簡略化
 		if(tunnel->io._port < 0x60 || 
-			(0x430 <= tunnel->io._port && tunnel->io._port <= 0x64e) || 
-			(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF) || 
+			(0x430 <= tunnel->io._port && tunnel->io._port <= 0x64e && !(g_nevent.item[NEVENT_SASIIO].flag & NEVENT_ENABLE)) || 
 			(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF)){
-			pic_irq();
+			if(tunnel->io._port==0x640){
+				// 厳しめにする
+				if (np2haxcore.hurryup) {
+					break;
+				}
+			}
 			i386haxfunc_vcpu_getREGs(&np2haxstat.state);
 			i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
 			np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 	
 			ia32hax_copyregHAXtoNP2();
+			pic_irq();
 			goto coutinue_cpu;
 		}
 		//np2haxstat.update_regs = 1;
@@ -819,6 +827,8 @@ coutinue_cpu:
 		break;
 	case HAX_EXIT_INTERRUPT: // 割り込み･･･？
 		//printf("HAX_EXIT_INTERRUPT\n");
+		// リセット可能フラグを立てる
+		np2haxcore.ready_for_reset = 1;
 		break;
 	case HAX_EXIT_UNKNOWN: // 謎
 		//printf("HAX_EXIT_UNKNOWN\n");
@@ -826,33 +836,41 @@ coutinue_cpu:
 	case HAX_EXIT_HLT: // HLT命令が実行されたとき
 		np2haxcore.hltflag = 1;
 		//printf("HAX_EXIT_HLT\n");
+		// リセット可能フラグを立てる
+		np2haxcore.ready_for_reset = 1;
 		break;
 	case HAX_EXIT_STATECHANGE: // CPU状態が変わったとき･･･と言いつつ、事実上CPUが実行不能(panic)になったときしか呼ばれない
 		//printf("HAX_EXIT_STATECHANGE\n");
-		{
-			int i;
-			UINT32 memdumpa[0x100];
-			UINT8 memdump[0x100];
-			UINT32 baseaddr;
-			addr = CPU_EIP + (CPU_CS << 4);
-			baseaddr = addr & ~0xff;
-			for(i=0;i<0x100;i++){
-				memdumpa[i] = baseaddr + i;
-				memdump[i] = memp_read8(memdumpa[i]);
-			}
-			//msgbox("HAXM_ia32_panic", "HAXM CPU panic");
-			//pcstat.hardwarereset = TRUE;
-			return;
-		}
+		// リセット可能フラグを立てる
+		np2haxcore.ready_for_reset = 1;
+		//{
+		//	int i;
+		//	UINT32 memdumpa[0x100];
+		//	UINT8 memdump[0x100];
+		//	UINT32 baseaddr;
+		//	addr = CPU_EIP + (CPU_CS << 4);
+		//	baseaddr = addr & ~0xff;
+		//	for(i=0;i<0x100;i++){
+		//		memdumpa[i] = baseaddr + i;
+		//		memdump[i] = memp_read8(memdumpa[i]);
+		//	}
+		//	//msgbox("HAXM_ia32_panic", "HAXM CPU panic");
+		//	//pcstat.hardwarereset = TRUE;
+		//	return;
+		//}
 		break;
 	case HAX_EXIT_PAUSED: // 一時停止？
 		//printf("HAX_EXIT_PAUSED\n");
+		// リセット可能フラグを立てる
+		np2haxcore.ready_for_reset = 1;
 		break;
 	case HAX_EXIT_PAGEFAULT: // ページフォールト？
 		//printf("HAX_EXIT_PAGEFAULT\n");
 		break;
 	case HAX_EXIT_DEBUG: // デバッグ命令(INT3 CCh)が呼ばれたとき
 		//printf("HAX_EXIT_DEBUG\n");
+		// リセット可能フラグを立てる
+		np2haxcore.ready_for_reset = 1;
 		// リアルモード or 仮想86
 		if(!CPU_STAT_PM || CPU_STAT_VM86){
 			addr = CPU_EIP + (CPU_CS << 4);
@@ -993,7 +1011,7 @@ void i386hax_vm_setmemory(void) {
 	}
 	
 	//info.pa_start = 0xFFF00000;
-	//info.size = 0xA0000;
+	//info.size = 0xF8000;
 	//info.flags = 0;
 	//info.va = (UINT64)mem;
 	//if(i386haxfunc_setRAM(&info)==FAILURE){
@@ -1037,24 +1055,24 @@ void i386hax_vm_setitfmemory(UINT8 isitfbank) {
 		return;
 	}
 	
-	//info.pa_start = 0xFFFF8000;
-	//info.size = 0x8000;
-	//info.flags = HAX_RAM_INFO_INVALID;
-	//if(i386haxfunc_setRAM(&info)==FAILURE){
-	//}
-	//if(isitfbank){
-	//	info.flags = HAX_RAM_INFO_ROM;
-	//	info.va = (UINT64)(mem + ITF_ADRS);
-	//}else{
-	//	info.flags = 0;
-	//	info.va = (UINT64)(mem + info.pa_start);
-	//}
-	//if(i386haxfunc_setRAM(&info)==FAILURE){
-	//	TRACEOUT(("HAXM: HAX VM set ITF bank memory failed."));
-	//	msgbox("HAXM VM", "HAX VM set ITF bank memory failed.");
-	//	np2hax.enable = 0;
-	//	return;
-	//}
+	info.pa_start = 0xFFFF8000;
+	info.size = 0x8000;
+	info.flags = HAX_RAM_INFO_INVALID;
+	if(i386haxfunc_setRAM(&info)==FAILURE){
+	}
+	if(isitfbank){
+		info.flags = HAX_RAM_INFO_ROM;
+		info.va = (UINT64)(mem + ITF_ADRS);
+	}else{
+		info.flags = HAX_RAM_INFO_ROM;
+		info.va = (UINT64)(mem + 0xF8000);
+	}
+	if(i386haxfunc_setRAM(&info)==FAILURE){
+		TRACEOUT(("HAXM: HAX VM set ITF bank memory failed."));
+		msgbox("HAXM VM", "HAX VM set ITF bank memory failed.");
+		np2hax.enable = 0;
+		return;
+	}
 
 	if(isitfbank){
 		TRACEOUT(("HAXM: HAX VM set ITF bank memory. (ITF)"));

@@ -54,11 +54,6 @@
 #include	"iocore.h"
 #include	"soundmng.h"
 
-#if defined(SUPPORT_IA32_HAXM)
-#include "i386hax/haxfunc.h"
-#include "i386hax/haxcore.h"
-#endif
-
 #if defined(NP2_X11)
 #include <gdk/gdk.h>
 #endif
@@ -130,13 +125,6 @@ HDC			ga_hdc_cursor; // CIRRUS VGAのカーソル画像のHDC
 
 static HCURSOR ga_hFakeCursor = NULL; // ハードウェアカーソル（仮）CIRRUS VGAのカーソル画像が上手く表示出来ない場合用
 #endif
-
-#define MMIO_MODE_MMIO	0
-#define MMIO_MODE_VRAM	1
-int mmio_mode = MMIO_MODE_MMIO; // 0==MMIO, 1==VRAM
-UINT32 mmio_mode_region1 = 0; // 0==MMIO, 1==VRAM
-UINT32 mmio_mode_region2 = 0; // 0==MMIO, 1==VRAM
-UINT8 lastlinmmio = 0;
 
 void pcidev_cirrus_cfgreg_w(UINT32 devNumber, UINT8 funcNumber, UINT8 cfgregOffset, UINT8 sizeinbytes, UINT32 value);
 void pc98_cirrus_setWABreg(void);
@@ -2895,50 +2883,6 @@ static void cirrus_cursor_draw_line(VGAState *s1, uint8_t *d1, int scr_y)
  *
  ***************************************/
 
-void cirrus_linear_mmio_update(void *opaque)
-{
-#if defined(SUPPORT_IA32_HAXM)
-    CirrusVGAState *s = (CirrusVGAState *) opaque;
-    uint32_t_ ret;
-	uint8_t mode;
-	uint8_t linmmio = (s->sr[0x17] & 0x44) == 0x44;
-	mode = s->gr[0x05] & 0x7;
-
-	if((0) ||
-		(s->cirrus_srcptr != s->cirrus_srcptr_end) ||
-		((s->gr[0x0B] & 0x14) == 0x14) ||
-		(s->gr[0x0B] & 0x02) ||
-		!(mode < 4 || mode > 5 || ((s->gr[0x0B] & 0x4) == 0))){
-		if(mmio_mode == MMIO_MODE_VRAM){
-			if(np2clvga.VRAMWindowAddr){
-				if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size);
-				mmio_mode_region1 = 0;
-			}
-			if(np2clvga.pciLFB_Addr){
-				if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, cirrusvga->real_vram_size);
-				mmio_mode_region2 = 0;
-			}
-			lastlinmmio = linmmio;
-			mmio_mode = MMIO_MODE_MMIO;
-		}
-	}else{
-		if(mmio_mode == MMIO_MODE_MMIO || np2clvga.VRAMWindowAddr!=mmio_mode_region1  || np2clvga.pciLFB_Addr!=mmio_mode_region2 || lastlinmmio!=linmmio){
-			if(np2clvga.VRAMWindowAddr){
-				if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size);
-				i386hax_vm_setmemoryarea(vramptr, np2clvga.VRAMWindowAddr, cirrusvga->real_vram_size);
-				mmio_mode_region1 = np2clvga.VRAMWindowAddr;
-			}
-			if(np2clvga.pciLFB_Addr){
-				if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
-				i386hax_vm_setmemoryarea(vramptr, np2clvga.pciLFB_Addr, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
-				mmio_mode_region2 = np2clvga.pciLFB_Addr;
-			}
-			lastlinmmio = linmmio;
-			mmio_mode = MMIO_MODE_VRAM;
-		}
-	}
-#endif
-}
 uint32_t_ cirrus_linear_readb(void *opaque, target_phys_addr_t addr)
 {
     CirrusVGAState *s = (CirrusVGAState *) opaque;
@@ -3803,7 +3747,6 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
             g_cirrus_linear_write[2] = cirrus_linear_writel;
         }
     }
-	cirrus_linear_mmio_update(s);
 }
 
 
@@ -6144,7 +6087,6 @@ void pc98_cirrus_vga_initVRAMWindowAddr(){
 		}
 	}
 	pc98_cirrus_setMMIOWindowAddr();
-	cirrus_update_memory_access(cirrusvga);
 }
 
 // ボード種類からVRAMサイズを決定する
@@ -6673,12 +6615,9 @@ void pc98_cirrus_vga_init(void)
 	for (i = 0; i < 256; ++i) PalIndexes[i] = i;
 	
 	ga_bmpInfo_cursor = (BITMAPINFO*)calloc(1, sizeof(BITMAPINFO));	
-	
-#if defined(SUPPORT_IA32_HAXM)
-	vramptr = (uint8_t*)_aligned_malloc(CIRRUS_VRAM_SIZE*2, 4096); // 2倍取っておく
-#else
+
 	vramptr = (uint8_t*)malloc(CIRRUS_VRAM_SIZE*2); // 2倍取っておく
-#endif
+	
 	ga_bmpInfo_cursor->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	ga_bmpInfo_cursor->bmiHeader.biPlanes = 1;
 	ga_bmpInfo_cursor->bmiHeader.biBitCount = 32;
@@ -6722,13 +6661,6 @@ void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 		return;
 	}
 	
-#if defined(SUPPORT_IA32_HAXM)
-	if(!np2haxcore.allocwabmem){
-		i386hax_vm_allocmemoryex(vramptr, CIRRUS_VRAM_SIZE*2);
-		np2haxcore.allocwabmem = 1;
-	}
-#endif
-
 	np2clvga.defgd54xxtype = np2cfg.gd5430type;
 	np2clvga.gd54xxtype = np2cfg.gd5430type;
 	//np2clvga.defgd54xxtype = CIRRUS_98ID_PCI;
@@ -6831,12 +6763,7 @@ void pc98_cirrus_vga_shutdown(void)
 	free(ga_bmpInfo_cursor);
 	free(ga_bmpInfo);
 #endif
-#if defined(SUPPORT_IA32_HAXM)
-	_aligned_free(vramptr);
-#else
 	free(vramptr);
-#endif
-	
 #if defined(_WIN32)
 	DeleteDC(ga_hdc_cursor);
 	DeleteObject(ga_hbmp_cursor);

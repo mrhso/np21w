@@ -257,7 +257,8 @@ static void stop_hook_systemkey()
 	if(np2_hThreadKeyHook && np2_hThreadKeyHookhWnd){
 		np2_hThreadKeyHookexit = 1;
 		SendMessage(np2_hThreadKeyHookhWnd , WM_CLOSE , 0 , 0);
-		WaitForSingleObject(np2_hThreadKeyHook,  INFINITE);
+		WaitForSingleObject(np2_hThreadKeyHook, INFINITE);
+		CloseHandle(np2_hThreadKeyHook);
 		np2_hThreadKeyHook = NULL;
 		np2_hThreadKeyHookexit = 0;
 	}
@@ -3229,7 +3230,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 #endif
 #endif
-	
+
 	winloc_InitDwmFunc();
 
 	WM_QueryCancelAutoPlay = RegisterWindowMessage(_T("QueryCancelAutoPlay"));
@@ -3395,6 +3396,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 			return(FALSE);
 		}
 	}
+	/*
+	// XXX: Direct3D—‚Ý‚ÌƒGƒ‰[‘Îô
+	{
+		MSG msg;
+		while(PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE))
+		{
+			if (!GetMessage(&msg, NULL, 0, 0)) {
+				break;
+			}
+			if ((msg.hwnd != hWnd) ||
+				((msg.message != WM_SYSKEYDOWN) &&
+				(msg.message != WM_SYSKEYUP))) {
+				TranslateMessage(&msg);
+			}
+			DispatchMessage(&msg);
+		}
+	}*/
 
 	CSoundMng::Initialize();
 	OpenSoundDevice(hWnd);
@@ -3653,6 +3671,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	CSoundMng::GetInstance()->Close();
 	CSoundMng::Deinitialize();
+	scrnmng_shutdown();
 	scrnmng_destroy();
 	recvideo_close();
 

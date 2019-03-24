@@ -17,6 +17,7 @@ public:
 	LARGE_INTEGER Get_rawclock();
 	LARGE_INTEGER Get_clockpersec();
 	void SetMode(int mode);
+	int GetMode();
 
 private:
 	LARGE_INTEGER m_nFreq;		//!< 周波数
@@ -155,6 +156,10 @@ void TickCounter::SetMode(int mode)
 		break;
 	}
 }
+int TickCounter::GetMode()
+{
+	return m_mode;
+}
 
 
 // ---- C インタフェイス
@@ -177,6 +182,10 @@ DWORD GetTickCounter()
 void SetTickCounterMode(int mode)
 {
 	s_tick.SetMode(mode);
+}
+int GetTickCounterMode()
+{
+	return s_tick.GetMode();
 }
 
 /**

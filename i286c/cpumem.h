@@ -44,7 +44,7 @@ enum {
 #ifdef __cplusplus
 extern "C" {
 #endif
-	
+
 extern	UINT8	mem[0x200000];
 
 void MEMCALL memm_arch(UINT type);

@@ -55,6 +55,8 @@ typedef struct {
 	UINT8 hltflag; // HLT–½—ß‚Å’â~’†ƒtƒ‰ƒO
 
 	UINT8 allocwabmem; // WAB vramptr“o˜^Ï‚İ‚È‚ç1
+
+	UINT8 ready_for_reset;
 } NP2_HAX_CORE;
 
 #define NP2HAX_I_RATIO_MAX	1024
@@ -94,6 +96,9 @@ void i386hax_vm_setvga256linearmemory(void); // 0xF00000`0xF80000
 // ”Ä—p ƒƒ‚ƒŠ—ÌˆæŠ„‚è“–‚Ä
 void i386hax_vm_setmemoryarea(UINT8 *vramptr, UINT32 addr, UINT32 size);
 void i386hax_vm_removememoryarea(UINT8 *vramptr, UINT32 addr, UINT32 size);
+
+void ia32hax_copyregHAXtoNP2(void);
+void ia32hax_copyregNP2toHAX(void);
 
 #endif
 

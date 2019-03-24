@@ -671,14 +671,6 @@ void pccore_reset(void) {
 #if defined(SUPPORT_IA32_HAXM)
 	if(np2hax.hVMDevice){
 		i386hax_vm_allocmemory();
-		i386hax_vm_setmemory();
-		i386hax_vm_setbankmemory();
-		i386hax_vm_setitfmemory(CPU_ITFBANK);
-		i386hax_vm_sethmemory(CPU_ADRSMASK == 0x00ffffff);
-		i386hax_vm_setextmemory();
-		i386hax_vm_setvga256linearmemory();
-		
-		i386hax_resetVMMem();
 	}
 #endif
 
@@ -728,11 +720,6 @@ void pccore_reset(void) {
 	CS_BASE = 0xf0000;
 	CPU_CS = 0xf000;
 	CPU_IP = 0xfff0;
-//#if defined(SUPPORT_IA32_HAXM)
-//	np2haxstat.state._cs.base = 0xf0000;
-//	np2haxstat.state._cs.selector = 0xf000;
-//	np2haxstat.state._eip = 0xfff0;
-//#endif
 
 	CPU_CLEARPREFETCH();
 	sysmng_cpureset();
@@ -745,12 +732,21 @@ void pccore_reset(void) {
 	soundmng_play();
 	
 #if defined(SUPPORT_IA32_HAXM)
-	//np2hax.enable = 0;
 	if(np2hax.enable){
-		np2haxcore.clockpersec = GetTickCounter_ClockPerSec();
-		np2haxcore.lastclock = GetTickCounter_Clock();
-		np2haxcore.clockcount = GetTickCounter_Clock();
-		np2haxcore.I_ratio = 0;
+		if(np2hax.hVMDevice){
+			i386hax_vm_setmemory();
+			i386hax_vm_setbankmemory();
+			i386hax_vm_setextmemory();
+		
+			i386hax_resetVMMem();
+
+			np2haxcore.clockpersec = GetTickCounter_ClockPerSec();
+			np2haxcore.lastclock = GetTickCounter_Clock();
+			np2haxcore.clockcount = GetTickCounter_Clock();
+			np2haxcore.I_ratio = 0;
+		}else{
+			np2hax.enable = 1;
+		}
 	}
 #endif
 //#if defined(SUPPORT_HRTIMER)
@@ -988,13 +984,12 @@ void pccore_exec(BOOL draw) {
 		resetcnt++;
 #endif
 		pic_irq();
-		if (CPU_RESETREQ) {
-			CPU_RESETREQ = 0;
 #if defined(SUPPORT_IA32_HAXM)
-			if (np2hax.enable) {
-				//i386hax_resetVMCPU();
-			}
+		if (CPU_RESETREQ && (!np2hax.enable || np2haxcore.ready_for_reset)) {
+#else
+		if (CPU_RESETREQ) {
 #endif
+			CPU_RESETREQ = 0;
 #if defined(SUPPORT_WAB)
 			np2wab.relaystateint = np2wab.relaystateext = 0;
 			np2wab_setRelayState(0); // XXX:
@@ -1012,6 +1007,18 @@ void pccore_exec(BOOL draw) {
 #if defined(SUPPORT_PCI)
 			pcidev_basereset(); // XXX: Win9x‚ÌÄ‹N“®‚Å•K—v
 #endif
+#if defined(SUPPORT_IA32_HAXM)
+			if (np2hax.enable) {
+				//i386hax_resetVMCPU();
+				//i386haxfunc_vcpu_setREGs(&np2haxstat.state);
+				//i386haxfunc_vcpu_setFPU(&np2haxstat.fpustate);
+				//ia32hax_copyregHAXtoNP2();
+				//CPU_SHUT();
+				np2haxstat.update_regs = np2haxstat.update_fpu = 1;
+				np2haxstat.irq_reqidx_cur = np2haxstat.irq_reqidx_end = 0;
+				pic_reset(&np2cfg);
+			}
+#endif
 			CPU_SHUT();
 		}
 #if defined(USE_TSC)
@@ -1021,23 +1028,33 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_IA32_HAXM)
 		if (np2hax.enable) {
+			static int skipcounter = 0;
 			static UINT64 remain_clk = 0;
 			SINT32 remclktmp = CPU_REMCLOCK;
 			if(!np2haxcore.hltflag){
-				do {
+				np2haxcore.clockcount = GetTickCounter_Clock();
+				skipcounter++;
+				while(skipcounter > 2 || (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK) {
 					i386hax_vm_exec();
+					skipcounter = 0;
 					if(CPU_RESETREQ) break;
 					if(pcstat.hardwarereset) break;
 					if(dmac.working) {
 						dmax86();
 					}
 					np2haxcore.clockcount = GetTickCounter_Clock();
-				} while((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK);
+					if(np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart > np2haxcore.clockpersec.QuadPart){
+						// ’x‚ê‚·‚¬‚Ìê‡
+						np2haxcore.lastclock = GetTickCounter_Clock();
+						np2haxcore.hurryup = 0;
+						break;
+					}
+				}
 				if(pcstat.hardwarereset) break;
 				if(CPU_REMCLOCK > 0){
 					CPU_REMCLOCK -= CPU_BASECLOCK;
 				}
-				if((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK * 6000){
+				if(np2haxcore.I_ratio < 200 && (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK * 6000){
 					UINT64 remain_clk_tmp = remain_clk;
 					if(!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)){
 						np2haxcore.hurryup = 0;
