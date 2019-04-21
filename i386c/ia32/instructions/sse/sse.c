@@ -1422,6 +1422,26 @@ void SSE_PREFETCHTx(void)
 		// XXX: ‰½‚à‚µ‚È‚¢
 	}
 }
+void SSE_NOPPREFETCH(void)
+{
+	UINT32 op;
+	UINT idx, sub;
+	
+	//SSE_check_NM_EXCEPTION();
+	//SSE_setTag();
+	CPU_SSEWORKCLOCK;
+	GET_PCBYTE((op));
+	idx = (op >> 3) & 7;
+	sub = (op & 7);
+	if ((op) >= 0xc0) {
+		// XXX: ‚±‚±‚Í‚Ç‚¤ˆµ‚¤?
+		//EXCEPTION(UD_EXCEPTION, 0);
+	} else {
+		UINT32 maddr;
+		maddr = calc_ea_dst((op));
+		// XXX: ‰½‚à‚µ‚È‚¢
+	}
+}
 void SSE_SFENCE(void)
 {
 	// Nothing to do
@@ -1720,6 +1740,10 @@ void SSE_MOVNTQ(void)
 	EXCEPTION(UD_EXCEPTION, 0);
 }
 void SSE_PREFETCHTx(void)
+{
+	EXCEPTION(UD_EXCEPTION, 0);
+}
+void SSE_NOPPREFETCH(void)
 {
 	EXCEPTION(UD_EXCEPTION, 0);
 }
