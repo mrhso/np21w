@@ -985,6 +985,7 @@ BEGIN
             MENUITEM "F12 = CPUウェイト無し(切替)", IDM_F12NOWAIT2
             MENUITEM SEPARATOR
             MENUITEM "NumLockキー有効(&N)",         IDM_USENUMLOCK
+            MENUITEM "PageUpとPageDownを入替",      IDM_SWAPPAGEUPDOWN
             MENUITEM SEPARATOR
             MENUITEM "システムキーフック有効(&S)",  IDM_SYSKHOOK
         END
@@ -1377,7 +1378,7 @@ NP21TOOL                BITMAP                  "..\\np21tool.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "..\\np2.ico"
+IDI_ICON1               ICON                    "..\\haxmnp2.ico"
 IDI_ICON2               ICON                    "..\\np2debug.ico"
 
 /////////////////////////////////////////////////////////////////////////////

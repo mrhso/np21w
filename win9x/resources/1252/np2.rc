@@ -992,6 +992,7 @@ BEGIN
             MENUITEM "F12 = No wait(toggle)",       IDM_F12NOWAIT2
             MENUITEM SEPARATOR
             MENUITEM "Use &NumLock key",            IDM_USENUMLOCK
+            MENUITEM "Swap PageUp/PageDown",        IDM_SWAPPAGEUPDOWN
             MENUITEM SEPARATOR
             MENUITEM "&System Key Hook",            IDM_SYSKHOOK
         END
@@ -1374,7 +1375,7 @@ NP21TOOL                BITMAP                  "..\\np21tool.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "..\\np2.ico"
+IDI_ICON1               ICON                    "..\\haxmnp2.ico"
 IDI_ICON2               ICON                    "..\\np2debug.ico"
 
 /////////////////////////////////////////////////////////////////////////////
