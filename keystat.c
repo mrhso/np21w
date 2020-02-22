@@ -379,7 +379,12 @@ void keystat_resendstat(void) {
 
 	REG8	i;
 
-	for (i=0; i<0x80; i++) {
+	//for (i=0; i<0x80; i++) {
+	//	if (keystat.ref[i] != NKEYREF_NC) {
+	//		keyboard_send(i);
+	//	}
+	//}
+	for (i=0x70; i<=0x74; i++) {
 		if (keystat.ref[i] != NKEYREF_NC) {
 			keyboard_send(i);
 		}

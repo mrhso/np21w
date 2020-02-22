@@ -132,6 +132,7 @@ static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 			biosioemu_push8(0x648, (cy & 0xff)); 
 			biosioemu_push8_read(0x64e); 
 			biosioemu_push8(0x64c, 0xA0|((oldAL & 0x1) << 4)|(hd & 0x0f)); 
+			biosioemu_push8_read(0x432);
 			if ((oldAL & 0xf) >= 0x2) {
 				biosioemu_push8(0x432, 0x01); // BANK #2
 			}else{
