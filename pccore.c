@@ -1036,54 +1036,7 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_IA32_HAXM)
 		if (np2hax.enable) {
-			static int skipcounter = 0;
-			static UINT64 remain_clk = 0;
-			SINT32 remclktmp = CPU_REMCLOCK;
-			if(!np2haxcore.hltflag){
-				np2haxcore.clockcount = GetTickCounter_Clock();
-				skipcounter++;
-				while(skipcounter > 2 || (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK) {
-					i386hax_vm_exec();
-					skipcounter = 0;
-					if(CPU_RESETREQ) break;
-					if(pcstat.hardwarereset) break;
-					if(dmac.working) {
-						dmax86();
-					}
-					np2haxcore.clockcount = GetTickCounter_Clock();
-					if(np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart > np2haxcore.clockpersec.QuadPart){
-						// ’x‚ê‚·‚¬‚Ìê‡
-						np2haxcore.lastclock = GetTickCounter_Clock();
-						np2haxcore.hurryup = 0;
-						break;
-					}
-				}
-				if(pcstat.hardwarereset) break;
-				if(CPU_REMCLOCK > 0){
-					CPU_REMCLOCK -= CPU_BASECLOCK;
-				}
-				if(np2haxcore.I_ratio < 200 && (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK * 6000){
-					UINT64 remain_clk_tmp = remain_clk;
-					if(!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)){
-						np2haxcore.hurryup = 0;
-					}else{
-						np2haxcore.hurryup = 1;
-					}
-					remain_clk = (np2haxcore.clockpersec.QuadPart * CPU_BASECLOCK + remain_clk_tmp) % pccore.realclock;
-					np2haxcore.lastclock.QuadPart += (np2haxcore.clockpersec.QuadPart * CPU_BASECLOCK + remain_clk_tmp) / pccore.realclock;
-				}else{
-					np2haxcore.lastclock = GetTickCounter_Clock();
-					np2haxcore.hurryup = 0;
-				}
-			}else{
-				if(dmac.working) {
-					dmax86();
-				}
-				CPU_REMCLOCK = 0;
-				np2haxcore.lastclock = GetTickCounter_Clock();
-				np2haxcore.hurryup = 0;
-			}
-			
+			i386hax_vm_exec();
 		}else
 #endif
 		{
@@ -1102,6 +1055,9 @@ void pccore_exec(BOOL draw) {
 			}
 #endif
 		}
+//#if defined(SUPPORT_IA32_HAXM)
+//		np2haxcore.lastclock = GetTickCounter_Clock();
+//#endif
 #if defined(SUPPORT_HRTIMER)
 		if(hrtimerclock){
 			clockcounter += CPU_BASECLOCK;
@@ -1125,7 +1081,16 @@ void pccore_exec(BOOL draw) {
 		}
 #endif
 		nevent_progress();
+//#if defined(SUPPORT_IA32_HAXM)
+//		np2haxcore.clockcount = GetTickCounter_Clock();
+//		if(CPU_REMCLOCK > 0){
+//			CPU_REMCLOCK -= (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+//		}
+//#endif
 	}
+//#if defined(SUPPORT_IA32_HAXM)
+//	np2haxcore.lastclock = GetTickCounter_Clock();
+//#endif
 	fdc_intdelay();	// FDC SEEK & RECALIBRATE, etc. np21w ver0.86 rev46
 	artic_callback();
 	mpu98ii_callback();
@@ -1149,5 +1114,12 @@ void pccore_exec(BOOL draw) {
 		piccnt = 0;
 	}
 #endif
+
+//#if defined(SUPPORT_IA32_HAXM)
+//	np2haxcore.clockcount = GetTickCounter_Clock();
+//	if(CPU_REMCLOCK > 0){
+//		CPU_REMCLOCK -= (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+//	}
+//#endif
 }
 

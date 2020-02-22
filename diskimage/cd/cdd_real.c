@@ -434,7 +434,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 	DISK_GEOMETRY dgCDROM;
 	CDROM_TOC tocCDROM;
 	DWORD dwNotUsed;
-	int i;
+	UINT i;
 
 	ZeroMemory(trk, sizeof(trk));
 	trks = 0;

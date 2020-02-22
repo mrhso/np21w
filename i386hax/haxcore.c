@@ -27,6 +27,8 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
+#include	"timing.h"
+#include	"dmax86.h"
 #include	"bios/bios.h"
 #include	"vram/vram.h"
 #include	"wab/cirrus_vga_extern.h"
@@ -579,13 +581,16 @@ ia32hax_copyregNP2toHAX(void)
 }
 
 // 仮想マシン実行
-void i386hax_vm_exec(void) {
+void i386hax_vm_exec_part(void) {
 	HAX_TUNNEL *tunnel;
 	UINT8 *iobuf;
 	UINT32 exitstatus;
 	UINT32 addr;
+	SINT32 oldremclock;
 #define PMCOUNTER_THRESHOLD	200000
 	static UINT32 pmcounter = 0;
+
+
 
 	np2haxcore.running = 1;
 
@@ -672,6 +677,7 @@ coutinue_cpu:
 	switch (exitstatus) {
 	case HAX_EXIT_IO: // I/Oポートへのアクセス
 		//printf("HAX_EXIT_IO\n");
+		oldremclock = CPU_REMCLOCK;
 		switch(tunnel->io._direction){ // 入力 or 出力
 		case HAX_IO_OUT: // 出力
 			if(tunnel->io._df==0){ // 連続でデータを出力する場合の方向？
@@ -734,30 +740,36 @@ coutinue_cpu:
 			}
 			break;
 		}
-		// 時間切れなら抜ける
-		np2haxcore.clockcount = GetTickCounter_Clock();
-		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
+		if(CPU_REMCLOCK==-1){
 			break;
 		}
-		// 高速化のために一部のI/Oポートの処理を簡略化
-		if(tunnel->io._port < 0x60 || 
-			(0x430 <= tunnel->io._port && tunnel->io._port <= 0x64e && !(g_nevent.item[NEVENT_SASIIO].flag & NEVENT_ENABLE)) || 
-			(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF)){
-			if(tunnel->io._port==0x640){
-				// 厳しめにする
-				if (np2haxcore.hurryup) {
-					break;
-				}
+
+		{
+			SINT32 diff; 
+			np2haxcore.clockcount = GetTickCounter_Clock();
+			diff = (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+			if(CPU_REMCLOCK > 0){
+				CPU_REMCLOCK -= diff;
 			}
-			i386haxfunc_vcpu_getREGs(&np2haxstat.state);
-			i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
-			np2haxstat.update_regs = np2haxstat.update_fpu = 0;
-	
-			ia32hax_copyregHAXtoNP2();
-			pic_irq();
-			goto coutinue_cpu;
+			np2haxcore.lastclock.QuadPart = np2haxcore.clockcount.QuadPart;
 		}
-		//np2haxstat.update_regs = 1;
+	
+		// 時間切れなら抜ける
+		if (CPU_REMCLOCK <= 0) {
+			break;
+		}
+		if (CPU_REMCLOCK > 0 && timing_getcount_baseclock()!=0) {
+			CPU_REMCLOCK = 0;
+			break;
+		}
+		i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+		i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+		np2haxstat.update_regs = np2haxstat.update_fpu = 0;
+	
+		ia32hax_copyregHAXtoNP2();
+		pic_irq();
+
+		goto coutinue_cpu;
 		break;
 	case HAX_EXIT_FAST_MMIO: // メモリマップドI/Oへのアクセス
 		//printf("HAX_EXIT_FAST_MMIO\n");
@@ -794,9 +806,22 @@ coutinue_cpu:
 				break;
 			}
 		}
+		{
+			SINT32 diff; 
+			np2haxcore.clockcount = GetTickCounter_Clock();
+			diff = (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+			if(CPU_REMCLOCK > 0){
+				CPU_REMCLOCK -= diff;
+			}
+			np2haxcore.lastclock.QuadPart = np2haxcore.clockcount.QuadPart;
+		}
+	
 		// 時間切れなら抜ける
-		np2haxcore.clockcount = GetTickCounter_Clock();
-		if (!((np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock * 255 / (255-np2haxcore.I_ratio) / np2haxcore.clockpersec.QuadPart < CPU_BASECLOCK)) {
+		if (CPU_REMCLOCK <= 0) {
+			break;
+		}
+		if (CPU_REMCLOCK > 0 && timing_getcount_baseclock()!=0) {
+			CPU_REMCLOCK = 0;
 			break;
 		}
 		i386haxfunc_vcpu_getREGs(&np2haxstat.state);
@@ -891,6 +916,49 @@ coutinue_cpu:
 	}
 	
 	np2haxcore.running = 0;
+}
+void i386hax_vm_exec(void) {
+	static int skipcounter = 0;
+	static SINT32 remain_clk = 0;
+	SINT32 remclktmp = CPU_REMCLOCK;
+	int timing;
+	if(pcstat.hardwarereset){
+		CPU_REMCLOCK = 0;
+		return;
+	}
+	if(!np2haxcore.hltflag){
+		CPU_REMCLOCK += remain_clk;
+		np2haxcore.lastclock = GetTickCounter_Clock();
+		while(CPU_REMCLOCK > 0){
+			i386hax_vm_exec_part();
+			if(dmac.working) {
+				dmax86();
+			}
+			np2haxcore.clockcount = GetTickCounter_Clock();
+			if(CPU_REMCLOCK > 0){
+				CPU_REMCLOCK -= (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+			}
+			np2haxcore.lastclock  = np2haxcore.clockcount;
+			if(CPU_RESETREQ) break;
+			if(pcstat.hardwarereset) break;
+			if (CPU_REMCLOCK > 0 && (timing = timing_getcount_baseclock())!=0) {
+				CPU_REMCLOCK = 0;
+				break;
+			}
+		}
+		if(CPU_REMCLOCK <= 0){
+			remain_clk = CPU_REMCLOCK;
+		}else{
+			remain_clk = 0;
+		}
+		CPU_REMCLOCK = 0;
+	}else{
+		if(dmac.working) {
+			dmax86();
+		}
+		CPU_REMCLOCK = 0;
+		remain_clk = 0;
+	}
 }
 
 void i386hax_disposeVM(void) {
