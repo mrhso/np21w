@@ -199,6 +199,10 @@ typedef	signed __int64		SINT64;
 
 #define SUPPORT_WIN2000HOST
 
+#if defined(SUPPORT_IA32_HAXM)
+#define USE_CUSTOM_HOOKINST
+#endif
+
 #if defined(CPUCORE_IA32)
 #pragma warning(disable: 4819)
 #endif

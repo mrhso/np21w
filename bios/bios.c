@@ -20,7 +20,11 @@
 #include "keytable.res"
 #include "itfrom.res"
 #include "startup.res"
+#if defined(SUPPORT_IA32_HAXM)
+#include "biosfd80_hax.res"
+#else
 #include "biosfd80.res"
+#endif
 #if defined(SUPPORT_IDEIO)
 #include	"fdd/sxsi.h"
 #include	"cbus/ideio.h"
@@ -29,6 +33,18 @@
 #include	"timemng.h"
 #endif
 #include	"fmboard.h"
+
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#define USE_CUSTOM_HOOKINST
+#endif
+
+#ifdef USE_CUSTOM_HOOKINST
+#define BIOS_HOOKINST	bioshookinfo.hookinst
+#else
+#define BIOS_HOOKINST	0x90	// NOP命令（固定）
+#endif
 
 #define	BIOS_SIMULATE
 
@@ -58,8 +74,38 @@ static const IODATA iodata[] = {
 static const UINT8 msw_default[8] =
 							{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e};
 
+#ifdef USE_CUSTOM_HOOKINST
+BIOSHOOKINFO	bioshookinfo;
+#endif
 #if defined(BIOS_IO_EMULATION)
 BIOSIOEMU	biosioemu; // np21w ver0.86 rev46 BIOS I/O emulation
+#endif
+
+#ifdef USE_CUSTOM_HOOKINST
+// BIOSフック命令をデフォルト設定（NOP命令 0x90）から書き換える
+static void bios_updatehookinst(UINT8 *mem, UINT32 updatesize) {
+
+	UINT32 i;
+
+	if(bioshookinfo.hookinst == HOOKINST_DEFAULT) return; // 書き換え不要
+
+	// XXX: 命令をちゃんと見て書き換えないとやばい
+	for(i=0;i<updatesize-1;i++){
+		if(*mem == HOOKINST_DEFAULT){
+			// 次の命令がNOP, STI, RET, IRETっぽければ書き換え（間違って書き換えるのを回避）
+			if(*(mem+1) == 0x90 || *(mem+1) == 0xFB || *(mem+1) == 0xC2 || *(mem+1) == 0xC3 || *(mem+1) == 0xCB || *(mem+1) == 0xCA || *(mem+1) == 0xCF || *(mem+1) == 0xE8 || *(mem+1) == 0xE9 || *(mem+1) == 0xEE){
+				*mem = bioshookinfo.hookinst;
+			}else if(*(mem+1) == 0x51 && *(mem+2) == 0xB9){
+				*mem = bioshookinfo.hookinst;
+			}else if(*(mem+1) == 0xec && *(mem+2) == 0x3c){
+				*mem = bioshookinfo.hookinst;
+			}else{
+				*mem = 0x90;
+			}
+		}
+		mem++;
+	}
+}
 #endif
 
 //             DA/UA = 80h,00h 81h,01h 82h,01h 83h,01h
@@ -320,6 +366,17 @@ void bios_initialize(void) {
 	UINT32	tmp;
 	UINT	pos;
 	
+#if defined(USE_CUSTOM_HOOKINST)
+#if defined(SUPPORT_IA32_HAXM)
+	if (np2hax.enable) {
+		bioshookinfo.hookinst = 0xCC;//0xF4;//;0xCC;//HOOKINST_DEFAULT; // BIOSフックに使う命令（デフォルトはNOP命令をフック）
+	}else
+#endif
+	{
+		bioshookinfo.hookinst = HOOKINST_DEFAULT; // BIOSフックに使う命令（デフォルトはNOP命令をフック）
+	}
+#endif
+
 #if defined(BIOS_IO_EMULATION)
 	// np21w ver0.86 rev46 BIOS I/O emulation
 	memset(&biosioemu, 0, sizeof(biosioemu));
@@ -417,7 +474,7 @@ void bios_initialize(void) {
 	if(np2cfg.memcheckspeed > 1){
 		// 猫メモリチェックのDEC r/m16 を強制フック(実行時はアドレスが変わるので注意)
 		STOREINTELWORD((mem + ITF_ADRS + 5886), 128 * np2cfg.memcheckspeed);
-		mem[ITF_ADRS + 5924] = 0x90;
+		mem[ITF_ADRS + 5924] = BIOS_HOOKINST;
 	}
 #endif
 	np2cfg.memchkmx = 0; // 無効化 (obsolete)
@@ -430,7 +487,7 @@ void bios_initialize(void) {
 			for(i=ITF_ADRS + 6066; i >= ITF_ADRS + 6058; i--){
 				mem[i] = mem[i-1]; // 1byteずらし
 			}
-			mem[ITF_ADRS + 6067] = mem[ITF_ADRS + 6068] = 0x90; // call	WAITVSYNC を NOP化
+			mem[ITF_ADRS + 6067] = mem[ITF_ADRS + 6068] = BIOS_HOOKINST; // call	WAITVSYNC を NOP化
 			mem[ITF_ADRS + 6055] = 0x81; // CMP r/m16, imm8 を CMP r/m16, imm16 に変える
 			STOREINTELWORD((mem + ITF_ADRS + 6057), (MEMORY_MAXSIZE-14)); // cmp　bx, (EXTMEMORYMAX - 16)の部分をいじる
 			STOREINTELWORD((mem + ITF_ADRS + 6061+1), (MEMORY_MAXSIZE-14)); // mov　bx, (EXTMEMORYMAX - 16)の部分をいじる（1byteずらしたのでオフセット注意）
@@ -444,6 +501,11 @@ void bios_initialize(void) {
 			if(beeplen == 0) beeplen = 1;
 			if(beeplen > 255) beeplen = 255;
 		}
+#if defined(SUPPORT_IA32_HAXM)
+		if (np2hax.enable && np2cfg.sbeepadj) {
+			mem[ITF_ADRS + 5553] = 255;
+		}else
+#endif
 		mem[ITF_ADRS + 5553] = (UINT8)beeplen; // XXX: 場所決め打ち
 	}
 	mem[ITF_ADRS + 0x7ff0] = 0xea;
@@ -521,15 +583,19 @@ void bios_initialize(void) {
 	// エミュレーション用に書き換え。とりあえずINT 18HとINT 1BHとINT 1CHのみ対応
 	if(biosioemu.enable){
 		mem[BIOS_BASE + BIOSOFST_18 + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
-		mem[BIOS_BASE + BIOSOFST_18 + 2] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_18 + 2] = BIOS_HOOKINST; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_18 + 3] = 0xcf; // 0xcf(IRET)
 		mem[BIOS_BASE + BIOSOFST_1b + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
-		mem[BIOS_BASE + BIOSOFST_1b + 2] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_1b + 2] = BIOS_HOOKINST; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_1b + 3] = 0xcf; // 0xcf(IRET)
 		mem[BIOS_BASE + BIOSOFST_1c + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
-		mem[BIOS_BASE + BIOSOFST_1c + 2] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_1c + 2] = BIOS_HOOKINST; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_1c + 3] = 0xcf; // 0xcf(IRET)
 	}
+#endif
+	
+#ifdef USE_CUSTOM_HOOKINST
+	bios_updatehookinst(mem + 0xf8000, 0x100000 - 0xf8000);
 #endif
 }
 

@@ -2,6 +2,7 @@
 
 #if 1
 #undef	TRACEOUT
+//#define USE_TRACEOUT_VS
 //#define MEM_BDA_TRACEOUT
 //#define MEM_D8_TRACEOUT
 #ifdef USE_TRACEOUT_VS
@@ -42,9 +43,17 @@ static void trace_fmt_ex(const char *fmt, ...)
 #if defined(SUPPORT_PCI)
 #include	"bios/bios.h"
 #endif
+#if defined(SUPPORT_IA32_HAXM)
+#include	"i386hax/haxfunc.h"
+#include	"i386hax/haxcore.h"
+#endif
 
 
+#if defined(SUPPORT_IA32_HAXM)
+	UINT8	*mem = NULL; // Alloc in pccore_mem_malloc()
+#else
 	UINT8	mem[0x200000];
+#endif
 
 
 typedef void (MEMCALL * MEM8WRITE)(UINT32 address, REG8 value);
@@ -295,6 +304,23 @@ const VACCTBL	*vacc;
 	if (!(func & 0x20)) {
 #endif	// defined(SUPPORT_PC9821)
 		vacc = vacctbl + (func & 0x0f);
+#if defined(SUPPORT_IA32_HAXM)
+		if (np2hax.enable) {
+			if ((func & 0x0f) < 8) {
+				if(np2haxcore.lastVRAMMMIO){
+					i386hax_vm_setmemoryarea(mem+0xA8000, 0xA8000, 0x8000);
+					i386hax_vm_setmemoryarea(mem+0xB0000, 0xB0000, 0x10000);
+					np2haxcore.lastVRAMMMIO = 0;
+				}
+			}else{
+				if(!np2haxcore.lastVRAMMMIO){
+					i386hax_vm_removememoryarea(mem+0xA8000, 0xA8000, 0x8000);
+					i386hax_vm_removememoryarea(mem+0xB0000, 0xB0000, 0x10000);
+					np2haxcore.lastVRAMMMIO = 1;
+				}
+			}
+		}
+#endif
 
 		memfn0.rd8[0xa8000 >> 15] = vacc->rd8;
 		memfn0.rd8[0xb0000 >> 15] = vacc->rd8;
@@ -337,6 +363,16 @@ const VACCTBL	*vacc;
 #if defined(SUPPORT_PC9821)
 	}
 	else {
+#if defined(SUPPORT_IA32_HAXM)
+		if (np2hax.enable) {
+			if(!np2haxcore.lastVRAMMMIO){
+				i386hax_vm_removememoryarea(mem+0xA8000, 0xA8000, 0x8000);
+				i386hax_vm_removememoryarea(mem+0xB0000, 0xB0000, 0x10000);
+				np2haxcore.lastVRAMMMIO = 1;
+			}
+		}
+#endif
+
 		memfn0.rd8[0xa8000 >> 15] = memvga0_rd8;
 		memfn0.rd8[0xb0000 >> 15] = memvga1_rd8;
 		memfn0.rd8[0xb8000 >> 15] = memnc_rd8;
@@ -459,6 +495,7 @@ REG8 MEMCALL memp_read8(UINT32 address) {
 #ifdef MEM_BDA_TRACEOUT
 	if(0x400 <= address && address < 0x600){
 		switch(address){
+		case 0x55f:
 		case 0x58a:
 			break;
 		default:
@@ -572,6 +609,7 @@ REG16 MEMCALL memp_read16(UINT32 address) {
 #ifdef MEM_BDA_TRACEOUT
 	if(0x400 <= address && address < 0x600){
 		switch(address){
+		case 0x55f:
 		case 0x58a:
 			break;
 		default:
@@ -690,6 +728,7 @@ UINT32 MEMCALL memp_read32(UINT32 address) {
 #ifdef MEM_BDA_TRACEOUT
 	if(0x400 <= address && address < 0x600){
 		switch(address){
+		case 0x55f:
 		case 0x58a:
 			break;
 		default:

@@ -115,21 +115,6 @@ void sxsi_allflash(void) {
 		sxsi++;
 	}
 }
-void sxsi_allreopen(void) {
-
-	SXSIDEV	sxsi;
-	SXSIDEV	sxsiterm;
-
-	sxsi = sxsi_dev;
-	sxsiterm = sxsi + NELEMENTS(sxsi_dev);
-	while(sxsi < sxsiterm) {
-		if (sxsi->flag & SXSIFLAG_FILEOPENED) {
-			sxsi->flag &= ~SXSIFLAG_FILEOPENED;
-			(*sxsi->close)(sxsi);
-		}
-		sxsi++;
-	}
-}
 
 void sxsi_alltrash(void) {
 

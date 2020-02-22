@@ -34,6 +34,14 @@ enum {
 	
 };
 
+#ifdef USE_CUSTOM_HOOKINST
+#define HOOKINST_DEFAULT	0x90	// NOP–½—ß
+
+typedef struct {
+	UINT8	hookinst; // BIOSƒtƒbƒN‚·‚é–½—ß default:NOP(0x90)
+} BIOSHOOKINFO;
+#endif
+
 #if defined(BIOS_IO_EMULATION)
 // np21w ver0.86 rev46 BIOS I/O emulation
 
@@ -68,6 +76,9 @@ extern "C" {
 
 // extern	BOOL	biosrom;
 	
+#ifdef USE_CUSTOM_HOOKINST
+extern BIOSHOOKINFO	bioshookinfo;
+#endif
 #if defined(BIOS_IO_EMULATION)
 // np21w ver0.86 rev46 BIOS I/O emulation
 extern BIOSIOEMU	biosioemu;

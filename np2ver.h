@@ -3,7 +3,11 @@
  * @brief	The version
  */
 
+#if defined(SUPPORT_IA32_HAXM)
+#define	NP2VER_CORE			"ver.0.86 rev.69HAX"
+#else
 #define	NP2VER_CORE			"ver.0.86 rev.69"
+#endif
 
 // #define	NP2VER_WIN9X
 // #define	NP2VER_MACOSX
