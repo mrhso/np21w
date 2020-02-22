@@ -669,6 +669,9 @@ static const PFTBL s_IniItems[] =
 #if defined(SUPPORT_ASYNC_CPU)
 	PFVAL("ASYNCCPU", PFTYPE_BOOL,		&np2cfg.asynccpu), // 非同期CPUモード有効
 #endif
+#if defined(SUPPORT_IDEIO)
+	PFVAL("IDEBADDR", PFRO_HEX8,		&np2cfg.idebaddr), // IDE BIOD アドレス（デフォルト：D8h(D8000h)）
+#endif
 	
 
 	// OS依存？

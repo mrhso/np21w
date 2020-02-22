@@ -32,10 +32,6 @@
 #include	<process.h>
 #endif
 
-#if !defined(_countof)
-#define _countof(a)	(sizeof(a)/sizeof(a[0]))
-#endif
-
 NP2WAB		np2wab = {0};
 NP2WABWND	np2wabwnd = {0};
 NP2WABCFG	np2wabcfg;
@@ -126,8 +122,8 @@ void wabwin_readini()
 	np2wabcfg.multithread = 1;
 	np2wabcfg.halftone = 0;
 
-	initgetfile(szPath, _countof(szPath));
-	ini_read(szPath, g_Name, s_wabwndini, _countof(s_wabwndini));
+	initgetfile(szPath, NELEMENTS(szPath));
+	ini_read(szPath, g_Name, s_wabwndini, NELEMENTS(s_wabwndini));
 }
 
 /**
@@ -137,8 +133,8 @@ void wabwin_writeini()
 {
 	if(!np2wabcfg.readonly){
 		TCHAR szPath[MAX_PATH];
-		initgetfile(szPath, _countof(szPath));
-		ini_write(szPath, g_Name, s_wabwndini, _countof(s_wabwndini));
+		initgetfile(szPath, NELEMENTS(szPath));
+		ini_write(szPath, g_Name, s_wabwndini, NELEMENTS(s_wabwndini));
 	}
 }
 
@@ -226,11 +222,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 			mii.cbSize = sizeof(mii);
 			mii.fMask = MIIM_TYPE | MIIM_STATE | MIIM_ID | MIIM_SUBMENU | MIIM_DATA;
 			mii.dwTypeData = szString;
-			mii.cch = _countof(szString);
+			mii.cch = NELEMENTS(szString);
 			GetMenuItemInfo(hWabMenu, 0, TRUE, &mii);
 			InsertMenuItem(hSysMenu, 0, TRUE, &mii);
 			mii.dwTypeData = szString;
-			mii.cch = _countof(szString);
+			mii.cch = NELEMENTS(szString);
 			GetMenuItemInfo(hWabMenu, 1, TRUE, &mii);
 			InsertMenuItem(hSysMenu, 0, TRUE, &mii);
 			CheckMenuItem(hSysMenu, IDM_WABSYSMENU_HALFTONE, MF_BYCOMMAND | (np2wabcfg.halftone ? MF_CHECKED : MF_UNCHECKED));

@@ -2,10 +2,6 @@
 #include	"cpucore.h"
 #include	"pccore.h"
 #include	"iocore.h"
-#if defined(SUPPORT_IA32_HAXM)
-#include	"i386hax/haxfunc.h"
-#include	"i386hax/haxcore.h"
-#endif
 
 
 // EPSON専用ポート 0c00～
