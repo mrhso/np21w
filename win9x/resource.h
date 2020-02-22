@@ -118,6 +118,7 @@
 #define IDC_FULLSCREEN_ZOOM             13203
 #define IDC_RENDERER_TYPE               13210
 #define IDC_RENDERER_IMODE              13211
+#define IDC_RENDERER_EXCLUSIVE          13212
 #define IDC_GDC7220                     13301
 #define IDC_GDC72020                    13302
 #define IDC_GCBOX                       13303
@@ -193,6 +194,7 @@
 #define IDC_VOLRHYTHM                   15209
 #define IDC_VOLRHYTHMSTR                15210
 #define IDC_SNDMIXDEF                   15211
+#define IDC_SNDMIXDEF2                  15212
 #define IDC_VOLMASTER                   15213
 #define IDC_VOLMASTERSTR                15214
 #define IDC_VOLCDDA                     15220

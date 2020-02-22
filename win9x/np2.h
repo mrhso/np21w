@@ -86,6 +86,7 @@ typedef struct {
 
 #if defined(SUPPORT_SCRN_DIRECT3D)
 	UINT8	d3d_imode; // Direct3D interpolation mode
+	UINT8	d3d_exclusive; // Direct3D fullscreen exclusive mode
 #endif
 
 	UINT8	cSoundDeviceType;

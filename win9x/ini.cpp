@@ -755,6 +755,7 @@ static const PFTBL s_IniItems[] =
 
 #if defined(SUPPORT_SCRN_DIRECT3D)
 	PFVAL("D3D_IMODE", PFTYPE_UINT8,	&np2oscfg.d3d_imode), // Direct3D 拡大縮小補間モード
+	PFVAL("D3D_EXCLU", PFTYPE_UINT8,	&np2oscfg.d3d_exclusive), // Direct3D 排他モード使用
 #endif
 
 	PFVAL("snddev_t", PFTYPE_UINT8,		&np2oscfg.cSoundDeviceType),

@@ -607,6 +607,51 @@ static int checkResolution(int width, int height) {
 	return(FAILURE);
 }
 
+typedef struct tagMONITORINFOENUMDATA{
+	int found;
+	int areasize;
+    RECT np2windowrect;
+    RECT monitorrect;
+} MONITORINFOENUMDATA;
+
+#define MAX(a, b)	((a>b) ? (a) :(b))
+#define MIN(a, b)	((a>b) ? (b) :(a))
+
+static BOOL CALLBACK monitorInfoEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
+	MONITORINFOENUMDATA* mondata = (MONITORINFOENUMDATA*)dwData;
+	int cx1, cx2, cy1, cy2;
+	int w1, w2, h1, h2;
+	int distx, disty;
+	int sx1, sx2, ex1, ex2, sy1, sy2, ey1, ey2;
+	sx1 = mondata->np2windowrect.left;
+	ex1 = mondata->np2windowrect.right;
+	sy1 = mondata->np2windowrect.top;
+	ey1 = mondata->np2windowrect.bottom;
+	sx2 = lprcMonitor->left;
+	ex2 = lprcMonitor->right;
+	sy2 = lprcMonitor->top;
+	ey2 = lprcMonitor->bottom;
+	cx1 = (sx1 + ex1)/2;
+	cy1 = (sy1 + ey1)/2;
+	w1 = ex1 - sx1;
+	h1 = ey1 - sy1;
+	cx2 = (sx2 + ex2)/2;
+	cy2 = (sy2 + ey2)/2;
+	w2 = ex2 - sx2;
+	h2 = ey2 - sy2;
+	distx = (cx2 > cx1 ? cx2 - cx1 : cx1 - cx2);
+	disty = (cy2 > cy1 ? cy2 - cy1 : cy1 - cy2);
+	if(distx < (w1 + w2)/2 && disty < (h1 + h2)/2){
+		int areasize = (MIN(ex1, ex2) - MAX(sx1, sx2)) * (MIN(ey1, ey2) - MAX(sy1, sy2));
+		if(areasize > mondata->areasize){
+			mondata->areasize = areasize;
+			mondata->monitorrect = *lprcMonitor;
+			mondata->found = 1;
+		}
+	}
+    return TRUE;
+}
+
 // ----
 
 typedef IDirect3D9 * (WINAPI *TEST_DIRECT3DCREATE9)(UINT SDKVersion);
@@ -775,7 +820,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 	d3d.d3dparam.MultiSampleQuality = 0;
 	d3d.d3dparam.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3d.d3dparam.hDeviceWindow = g_hWndMain;
-	d3d.d3dparam.Windowed = (scrnmode & SCRNMODE_FULLSCREEN) ? FALSE : TRUE;
+	d3d.d3dparam.Windowed = ((scrnmode & SCRNMODE_FULLSCREEN) && np2oscfg.d3d_exclusive) ? FALSE : TRUE;
 	d3d.d3dparam.EnableAutoDepthStencil = FALSE;
 	d3d.d3dparam.AutoDepthStencilFormat = D3DFMT_D16;
 	d3d.d3dparam.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
@@ -806,6 +851,23 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 #endif
 
 		fscrnmod = FSCRNCFG_fscrnmod;
+
+		// 排他モードを使わないとき
+		if(!np2oscfg.d3d_exclusive){
+			MONITORINFOENUMDATA mondata = {0};
+			fscrnmod |= FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP; // 排他モードを使わないとき、解像度変更しないことにする（できなくはないが面倒なことこの上ない）
+			GetWindowRect(g_hWndMain, &mondata.np2windowrect); // 猫ウィンドウの位置とサイズを取得
+			EnumDisplayMonitors(NULL, NULL, (MONITORENUMPROC)monitorInfoEnumProc, (LPARAM)&mondata); // 猫のいるモニターを探す
+			if(!mondata.found){
+				// 猫どこにもいない時にはプライマリモニタで
+				mondata.monitorrect.left = mondata.monitorrect.top = 0;
+				mondata.monitorrect.right = GetSystemMetrics(SM_CXSCREEN);
+				mondata.monitorrect.bottom = GetSystemMetrics(SM_CYSCREEN);
+			}
+			MoveWindow(g_hWndMain, mondata.monitorrect.left, mondata.monitorrect.top, 
+				mondata.monitorrect.right - mondata.monitorrect.left, mondata.monitorrect.bottom - mondata.monitorrect.top, TRUE); // ウィンドウサイズを全画面に変える
+		}
+
 		if(!(fscrnmod & FSCRNMOD_SAMERES)){
 			current_d3d_imode = D3D_IMODE_NEAREST_NEIGHBOR;
 		}
@@ -1066,13 +1128,13 @@ void scrnmngD3D_fullscrnmenu(int y) {
 			d3d.menudisp = menudisp;
 			if (menudisp == 1) {
 				np2class_enablemenu(g_hWndMain, TRUE);
-				d3d.d3ddev->SetDialogBoxMode(TRUE);
+				if(np2oscfg.d3d_exclusive) d3d.d3ddev->SetDialogBoxMode(TRUE);
 				//d3d.d3ddev->Present(NULL, NULL, NULL, NULL);
 				//InvalidateRect(g_hWndMain, NULL, TRUE);
 				//DrawMenuBar(g_hWndMain);
 			}
 			else {
-				d3d.d3ddev->SetDialogBoxMode(FALSE);
+				if(np2oscfg.d3d_exclusive) d3d.d3ddev->SetDialogBoxMode(FALSE);
 				np2class_enablemenu(g_hWndMain, FALSE);
 				clearoutfullscreen();
 			}
@@ -1089,7 +1151,7 @@ void scrnmngD3D_topwinui(void) {
 	mousemng_disable(MOUSEPROC_WINUI);
 	d3d_enter_criticalsection();
 	if (!d3d.cliping++) {
-		d3d.d3ddev->SetDialogBoxMode(TRUE);
+		if(np2oscfg.d3d_exclusive) d3d.d3ddev->SetDialogBoxMode(TRUE);
 #ifndef __GNUC__
 		WINNLSEnableIME(g_hWndMain, TRUE);
 #endif
@@ -1107,7 +1169,7 @@ void scrnmngD3D_clearwinui(void) {
 #ifndef __GNUC__
 		WINNLSEnableIME(g_hWndMain, FALSE);
 #endif
-		d3d.d3ddev->SetDialogBoxMode(FALSE);
+		if(np2oscfg.d3d_exclusive) d3d.d3ddev->SetDialogBoxMode(FALSE);
 	}
 	if (scrnmng.flag & SCRNFLAG_FULLSCREEN) {
 		np2class_enablemenu(g_hWndMain, FALSE);

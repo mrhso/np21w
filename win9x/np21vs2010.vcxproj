@@ -561,7 +561,9 @@
     <ClCompile Include="oemtext.cpp" />
     <ClCompile Include="recvideo.cpp" />
     <ClCompile Include="scrnmng.cpp" />
-    <ClCompile Include="scrnmng_d3d.cpp" />
+    <ClCompile Include="scrnmng_d3d.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="scrnmng_dd.cpp" />
     <ClCompile Include="soundmng.cpp" />
     <ClCompile Include="soundmng\asio\asiodriverlist.cpp" />
