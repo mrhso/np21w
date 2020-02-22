@@ -252,6 +252,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,82,170,10
     LTEXT           "",IDC_COM1DEFF,26,94,148,10,SS_SUNKEN
     PUSHBUTTON      "...",IDC_COM1DEFB,176,94,10,10
+    CONTROL         "Fixed aspect mode (1:1)",IDC_COM1PENTABFA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,28,150,10
 END
 
 IDD_PC9861A DIALOG 0, 0, 224, 140
@@ -1552,6 +1553,7 @@ BEGIN
     IDS_COM3                "COM3"
     IDS_COM4                "COM4"
     IDS_MIDI                "MIDI"
+    IDS_TABLET              "PENTAB"
     IDS_2_0MHZ              "1.9968MHz"
     IDS_2_5MHZ              "2.4576MHz"
 END

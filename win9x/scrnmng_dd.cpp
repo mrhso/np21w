@@ -1521,3 +1521,18 @@ void scrnmngDD_bltwab() {
 	}
 #endif
 }
+
+// 描画領域の範囲をクライアント座標で取得
+void scrnmngDD_getrect(RECT *lpRect) {
+	if (ddraw.scrnmode & SCRNMODE_FULLSCREEN) {
+		if (GetWindowLongPtr(g_hWndMain, NP2GWLP_HMENU)) {
+			*lpRect = ddraw.scrn;
+		}
+		else {
+			*lpRect = ddraw.scrnclip;
+		}
+	}
+	else {
+		*lpRect = ddraw.scrn;
+	}
+}

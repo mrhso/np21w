@@ -101,6 +101,10 @@
 
 #include	<process.h>
 
+#ifdef SUPPORT_WACOM_TABLET
+void cmwacom_setNCControl(bool enable);
+#endif
+
 #ifdef BETA_RELEASE
 #define		OPENING_WAIT		1500
 #endif
@@ -157,7 +161,10 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 
 						0, 8, 
 						0, 0, 0, TCMODE_DEFAULT, 0, 1, 
+						0,
+#if defined(SUPPORT_WACOM_TABLET)
 						0
+#endif	// defined(SUPPORT_VSTi)
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -1446,6 +1453,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			}else{
 				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
 			}
+#ifdef SUPPORT_WACOM_TABLET
+			cmwacom_setNCControl(!!np2oscfg.mouse_nc);
+#endif
 			break;
 
 		case IDM_MOUSERAW:
@@ -3690,6 +3700,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	CSoundMng::Deinitialize();
 	scrnmng_shutdown();
 	scrnmng_destroy();
+	commng_finalize();
 	recvideo_close();
 
 	mousemng_destroy();

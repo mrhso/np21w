@@ -49,6 +49,8 @@ protected:
 private:
 	COMMNG m_cm;				//!< パラメタ
 	COMCFG& m_cfg;				//!< コンフィグ
+	UINT8 m_pentabfa;			//!< ペンタブアスペクト比固定
+	CWndProc m_chkpentabfa;		//!< Pen tablet fixed aspect mode
 	CComboData m_port;			//!< Port
 	CComboData m_speed;			//!< Speed
 	CComboData m_chars;			//!< Chars
@@ -69,6 +71,9 @@ static const CComboData::Entry s_port[] =
 	{MAKEINTRESOURCE(IDS_COM3),			COMPORT_COM3},
 	{MAKEINTRESOURCE(IDS_COM4),			COMPORT_COM4},
 	{MAKEINTRESOURCE(IDS_MIDI),			COMPORT_MIDI},
+#if defined(SUPPORT_WACOM_TABLET)
+	{MAKEINTRESOURCE(IDS_TABLET),		COMPORT_TABLET},
+#endif
 };
 
 //! キャラクタ サイズ
@@ -155,6 +160,17 @@ BOOL SerialOptComPage::OnInitDialog()
 
 	m_mimpifile.SubclassDlgItem(IDC_COM1DEFF, this);
 	m_mimpifile.SetWindowText(m_cfg.def);
+	
+#if defined(SUPPORT_WACOM_TABLET)
+	m_pentabfa = np2oscfg.pentabfa;
+#else
+	m_pentabfa = 0;
+#endif
+	m_chkpentabfa.SubclassDlgItem(IDC_COM1PENTABFA, this);
+	if(m_pentabfa)
+		m_chkpentabfa.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+	else
+		m_chkpentabfa.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 
 	UpdateControls();
 
@@ -231,6 +247,14 @@ void SerialOptComPage::OnOK()
 		}
 		nUpdated |= SYS_UPDATEOSCFG;
 	}
+	
+#if defined(SUPPORT_WACOM_TABLET)
+	if (np2oscfg.pentabfa != m_pentabfa)
+	{
+		np2oscfg.pentabfa = m_pentabfa;
+		nUpdated |= SYS_UPDATEOSCFG;
+	}
+#endif
 
 	sysmng_update(nUpdated);
 }
@@ -252,6 +276,10 @@ BOOL SerialOptComPage::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_COM1DEFB:
 			m_mimpifile.Browse();
 			return TRUE;
+			
+		case IDC_COM1PENTABFA:
+			m_pentabfa = (m_chkpentabfa.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
+			return TRUE;
 	}
 	return FALSE;
 }
@@ -264,6 +292,7 @@ void SerialOptComPage::UpdateControls()
 	const UINT nPort = m_port.GetCurItemData(m_cfg.port);
 	const bool bSerialShow = ((nPort >= COMPORT_COM1) && (nPort <= COMPORT_COM4));
 	const bool bMidiShow = (nPort == COMPORT_MIDI);
+	const bool bPentabShow = (nPort == COMPORT_TABLET);
 
 	static const UINT serial[] =
 	{
@@ -289,6 +318,9 @@ void SerialOptComPage::UpdateControls()
 		wnd.EnableWindow(bMidiShow ? TRUE : FALSE);
 		wnd.ShowWindow(bMidiShow ? SW_SHOW : SW_HIDE);
 	}
+	
+	m_chkpentabfa.EnableWindow(bPentabShow ? TRUE : FALSE);
+	m_chkpentabfa.ShowWindow(bPentabShow ? SW_SHOW : SW_HIDE);
 }
 
 

@@ -68,6 +68,8 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed)
 		return false;
 	}
 
+	PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+
 	DCB dcb;
 	::GetCommState(m_hSerial, &dcb);
 	for (UINT i = 0; i < NELEMENTS(cmserial_speed); i++)
@@ -107,6 +109,8 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed)
 			dcb.StopBits = ONESTOPBIT;
 			break;
 	}
+	dcb.fOutX = FALSE;
+	dcb.fInX = FALSE;
 	::SetCommState(m_hSerial, &dcb);
 	return true;
 }

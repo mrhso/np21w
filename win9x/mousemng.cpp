@@ -7,6 +7,11 @@
 #include	<dinput.h>
 #pragma comment(lib, "dinput8.lib")
 
+#ifdef SUPPORT_WACOM_TABLET
+bool cmwacom_skipMouseEvent(void);
+void cmwacom_setExclusiveMode(bool enable);
+#endif
+
 #define	MOUSEMNG_RANGE		128
 
 
@@ -77,6 +82,12 @@ scre_err:
 }
 
 UINT8 mousemng_getstat(SINT16 *x, SINT16 *y, int clear) {
+#ifdef SUPPORT_WACOM_TABLET
+	if(cmwacom_skipMouseEvent()){
+		mousemng.x = 0;
+		mousemng.y = 0;
+	}
+#endif
 	*x = mousemng.x;
 	*y = mousemng.y;
 	if (clear) {
@@ -180,6 +191,10 @@ static void mousecapture(BOOL capture) {
 	LONG	style;
 	POINT	cp;
 	RECT	rct;
+	
+#ifdef SUPPORT_WACOM_TABLET
+	cmwacom_setExclusiveMode(capture ? true : false);
+#endif
 
 	if(np2oscfg.rawmouse){
 		if(mousemng_checkdinput8()!=SUCCESS){

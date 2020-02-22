@@ -175,7 +175,14 @@ void rs232c_callback(void) {
 
 	BOOL	intr;
 
+	if(rs232c.result & 2) {
+		return;
+	}
+
 	intr = FALSE;
+	if (cm_rs232c == NULL) {
+		cm_rs232c = commng_create(COMCREATE_SERIAL);
+	}
 	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c.data))) {
 		rs232c.result |= 2;
 		if (sysport.c & 1) {
@@ -292,19 +299,26 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 static REG8 IOINPCALL rs232c_i30(UINT port) {
 
 	(void)port;
+	if(rs232c.result & 2){
+		rs232c.result &= ~0x2;
+	}
 	return(rs232c.data);
 }
 
 static REG8 IOINPCALL rs232c_i32(UINT port) {
 
+	UINT8 ret = rs232c.result;
+
 	if (!(rs232c_stat() & 0x20)) {
-		return(rs232c.result | 0x80);
+		return(ret | 0x80);
 	}
 	else {
 		(void)port;
-		return(rs232c.result);
+		return(ret);
 	}
 }
+
+
 
 
 // ----

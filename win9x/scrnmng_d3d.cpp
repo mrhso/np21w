@@ -1924,6 +1924,21 @@ void scrnmngD3D_bltwab() {
 #endif
 }
 
+// 描画領域の範囲をクライアント座標で取得
+void scrnmngD3D_getrect(RECT *lpRect) {
+	if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {
+		if (GetWindowLongPtr(g_hWndMain, NP2GWLP_HMENU)) {
+			*lpRect = d3d.scrn;
+		}
+		else {
+			*lpRect = d3d.scrnclip;
+		}
+	}
+	else {
+		*lpRect = d3d.scrn;
+	}
+}
+
 #else
 
 #ifndef __GNUC__
@@ -1987,6 +2002,8 @@ void scrnmngD3D_exitsizing(void){}
 void scrnmngD3D_updatefsres(void){}
 void scrnmngD3D_blthdc(HDC hdc){}
 void scrnmngD3D_bltwab(void){}
+
+void scrnmngD3D_getrect(RECT &lpRect) {}
 
 #if defined(SUPPORT_DCLOCK)
 BOOL scrnmngD3D_isdispclockclick(const POINT *pt){return FALSE;}

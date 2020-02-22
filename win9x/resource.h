@@ -157,6 +157,7 @@
 #define IDC_COM1DEFE                    14119
 #define IDC_COM1DEFF                    14120
 #define IDC_COM1DEFB                    14121
+#define IDC_COM1PENTABFA                14122
 #define IDC_PC9861E                     14201
 #define IDC_CH1SPEED                    14202
 #define IDC_CH1INT                      14203
@@ -371,6 +372,7 @@
 #define IDS_COM3                        30193
 #define IDS_COM4                        30194
 #define IDS_MIDI                        30195
+#define IDS_TABLET                      30196
 #define IDS_2_0MHZ                      30201
 #define IDS_2_5MHZ                      30202
 #define IDS_CLOCKFORMAT                 30203

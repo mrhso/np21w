@@ -15,7 +15,10 @@ enum {
 	COMCREATE_MPU98II,
 #if defined(SUPPORT_SMPU98)
 	COMCREATE_SMPU98_A,
-	COMCREATE_SMPU98_B
+	COMCREATE_SMPU98_B,
+#endif
+#if defined(SUPPORT_WACOM_TABLET)
+	COMCREATE_TABLET,
 #endif
 };
 
@@ -23,7 +26,9 @@ enum {
 	COMCONNECT_OFF			= 0,
 	COMCONNECT_SERIAL,
 	COMCONNECT_MIDI,
-	COMCONNECT_PARALLEL
+	COMCONNECT_PARALLEL,
+	COMCONNECT_TABLET,
+
 };
 
 enum {
@@ -79,7 +84,8 @@ enum {
 	COMPORT_COM2,
 	COMPORT_COM3,
 	COMPORT_COM4,
-	COMPORT_MIDI
+	COMPORT_MIDI,
+	COMPORT_TABLET
 };
 
 enum {
@@ -87,7 +93,8 @@ enum {
 	COMSIG_COM2				= 0x324d4f43,
 	COMSIG_COM3				= 0x334d4f43,
 	COMSIG_COM4				= 0x344d4f43,
-	COMSIG_MIDI				= 0x4944494d
+	COMSIG_MIDI				= 0x4944494d,
+	COMSIG_TABLET			= 0x5944494d // XXX: ‚È‚¼
 };
 
 enum {
@@ -96,3 +103,4 @@ enum {
 };
 
 void commng_initialize(void);
+void commng_finalize(void);

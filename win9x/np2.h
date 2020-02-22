@@ -119,6 +119,10 @@ typedef struct {
 	UINT8	usemastervolume; // Use MAster Volume
 	
 	UINT8	toolwndhistory; // Number of data of recently opened FD image list in Tool Window
+	
+#ifdef SUPPORT_WACOM_TABLET
+	UINT8	pentabfa; // Pen tablet fixed aspect mode
+#endif	// defined(SUPPORT_WACOM_TABLET)
 } NP2OSCFG;
 
 

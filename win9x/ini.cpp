@@ -789,6 +789,10 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USE_MVOL", PFRO_BOOL,		&np2oscfg.usemastervolume), // マスタボリューム設定を使用する
 	
 	PFVAL("TWNDHIST", PFRO_UINT8,		&np2oscfg.toolwndhistory), // ツールウィンドウのFDファイル履歴の記憶数
+	
+#if defined(SUPPORT_WACOM_TABLET)
+	PFVAL("PENTABFA", PFTYPE_BOOL,		&np2oscfg.pentabfa), // ペンタブレット アスペクト比固定モード
+#endif
 };
 
 //! .ini 拡張子

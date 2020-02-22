@@ -10,6 +10,7 @@
 #include "commng/cmnull.h"
 #include "commng/cmpara.h"
 #include "commng/cmserial.h"
+#include "commng/cmwacom.h"
 #include "generic/cmjasts.h"
 
 /**
@@ -18,6 +19,16 @@
 void commng_initialize(void)
 {
 	cmmidi_initailize();
+#if defined(SUPPORT_WACOM_TABLET)
+	cmwacom_initialize();
+	cmwacom_setNCControl(!!np2oscfg.mouse_nc);
+#endif
+}
+void commng_finalize(void)
+{
+#if defined(SUPPORT_WACOM_TABLET)
+	cmwacom_finalize();
+#endif
 }
 
 /**
@@ -84,6 +95,12 @@ COMMNG commng_create(UINT nDevice)
 				ret->msg(ret, COMMSG_MIMPIDEFEN, (INTPTR)pComCfg->def_en);
 			}
 		}
+#if defined(SUPPORT_WACOM_TABLET)
+		else if (pComCfg->port == COMPORT_TABLET)
+		{
+			ret = CComWacom::CreateInstance(g_hWndMain);
+		}
+#endif
 	}
 
 	if (ret == NULL)

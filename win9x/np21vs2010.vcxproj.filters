@@ -304,6 +304,12 @@
     <Filter Include="ソース ファイル\lio">
       <UniqueIdentifier>{7d11f730-6a89-4d86-ac7d-e77ea77f94c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\win9x\commng\wintab">
+      <UniqueIdentifier>{f4696469-4571-4632-8b1d-bf43c1d951ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\win9x\commng\wintab">
+      <UniqueIdentifier>{a6285a00-893d-4b3f-8f19-a6123ea4aabb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1344,6 +1350,12 @@
     <ClCompile Include="..\cbus\smpu98.c">
       <Filter>ソース ファイル\cbus</Filter>
     </ClCompile>
+    <ClCompile Include="commng\cmwacom.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
+    <ClCompile Include="commng\wintab\Utils.cpp">
+      <Filter>ソース ファイル\win9x\commng\wintab</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2362,6 +2374,21 @@
     </ClInclude>
     <ClInclude Include="..\cbus\smpu98.h">
       <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmwacom.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\wintab\MSGPACK.H">
+      <Filter>ヘッダー ファイル\win9x\commng\wintab</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\wintab\PKTDEF.H">
+      <Filter>ヘッダー ファイル\win9x\commng\wintab</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\wintab\WINTAB.H">
+      <Filter>ヘッダー ファイル\win9x\commng\wintab</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\wintab\Utils.h">
+      <Filter>ヘッダー ファイル\win9x\commng\wintab</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

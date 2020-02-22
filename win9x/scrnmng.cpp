@@ -531,3 +531,14 @@ void scrnmng_bltwab() {
 		scrnmngDD_bltwab();
 	}
 }
+
+void scrnmng_getrect(RECT *lpRect){
+#ifdef SUPPORT_SCRN_DIRECT3D
+	if(scrnmng_current_drawtype==DRAWTYPE_DIRECT3D){
+		scrnmngD3D_getrect(lpRect);
+	}else
+#endif
+	{
+		scrnmngDD_getrect(lpRect);
+	}
+}
