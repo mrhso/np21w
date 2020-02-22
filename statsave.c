@@ -61,6 +61,8 @@
 #include "bios/bios.h"
 #endif
 
+extern int sxsi_unittbl[];
+
 #if defined(MACOS)
 #define	CRCONST		str_cr
 #elif defined(WIN32) || defined(X11)
@@ -1559,6 +1561,29 @@ const SFENTRY	*tblterm;
 	iocore_bind();
 	cbuscore_bind();
 	fmboard_bind();
+	
+	// DA/UA‚Æ—v‘f”Ô†‚Ì‘Î‰ŠÖŒW‚ğ‰Šú‰»
+	for(i=0;i<4;i++){
+		sxsi_unittbl[i] = i;
+	}
+#if defined(SUPPORT_IDEIO)
+	if (pccore.hddif & PCHDD_IDE) {
+		int i, idx, ncidx;
+		// –¢Ú‘±‚Ì‚à‚Ì‚ğ–³‹‚µ‚ÄÚ‘±‡‚ÉDA/UA‚ğŠ„‚è“–‚Ä‚é
+		ncidx = idx = 0;
+		for(i=0;i<4;i++){
+			if(sxsi_getdevtype(i)==SXSIDEV_HDD){
+				sxsi_unittbl[idx] = i;
+				idx++;
+			}else{
+				ncidx = i;
+			}
+		}
+		for(;idx<4;idx++){
+			sxsi_unittbl[idx] = ncidx; // XXX: —]‚Á‚½DA/UA‚Í‚Æ‚è‚ ‚¦‚¸–¢Ú‘±‚Ì”Ô†‚Éİ’è
+		}
+	}
+#endif
 
 #if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
 	pcidev_bind();

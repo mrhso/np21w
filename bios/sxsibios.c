@@ -17,6 +17,8 @@
 // XXX: WORKAROUND for Win9x boot menu
 #include	"keystat.h"
 
+extern int sxsi_unittbl[];
+
 typedef REG8 (*SXSIFUNC)(UINT type, SXSIDEV sxsi);
 
 static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, FILEPOS *ppos) {
@@ -71,7 +73,7 @@ static REG8 sxsibios_write(UINT type, SXSIDEV sxsi) {
 		while(size) {
 			r = min(size, sxsi->size);
 			MEML_READS(addr, work, r);
-			ret = sxsi_write(CPU_AL, pos, work, r);
+			ret = sxsi_write(sxsi_unittbl[CPU_AL & 0x3], pos, work, r);
 			if (ret >= 0x20) {
 				break;
 			}
@@ -104,7 +106,7 @@ static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 		addr = (CPU_ES << 4) + CPU_BP;
 		while(size) {
 			r = min(size, sxsi->size);
-			ret = sxsi_read(CPU_AL, pos, work, r);
+			ret = sxsi_read(sxsi_unittbl[CPU_AL & 0x3], pos, work, r);
 			if (ret >= 0x20) {
 				break;
 			}
@@ -133,9 +135,9 @@ static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 			biosioemu_push8(0x64a, ((cy >> 8) & 0xff)); 
 			biosioemu_push8(0x648, (cy & 0xff)); 
 			biosioemu_push8_read(0x64e); 
-			biosioemu_push8(0x64c, 0xA0|((oldAL & 0x1) << 4)|(hd & 0x0f)); 
+			biosioemu_push8(0x64c, 0xA0|((sxsi_unittbl[oldAL & 0x3] & 0x1) << 4)|(hd & 0x0f)); 
 			biosioemu_push8_read(0x432);
-			if ((oldAL & 0xf) >= 0x2) {
+			if ((sxsi_unittbl[oldAL & 0x3] & 0xf) >= 0x2) {
 				biosioemu_push8(0x432, 0x01); // BANK #2
 			}else{
 				biosioemu_push8(0x432, 0x00); // BANK #1 
@@ -161,7 +163,7 @@ static REG8 sxsibios_format(UINT type, SXSIDEV sxsi) {
 			pos = 0;
 			posmax = (FILEPOS)sxsi->surfaces * sxsi->cylinders;
 			while(pos < posmax) {
-				ret = sxsi_format(CPU_AL, pos * sxsi->sectors);
+				ret = sxsi_format(sxsi_unittbl[CPU_AL & 0x3], pos * sxsi->sectors);
 				if (ret) {
 					break;
 				}
@@ -181,7 +183,7 @@ static REG8 sxsibios_format(UINT type, SXSIDEV sxsi) {
 //			i286_memstr_read(CPU_ES, CPU_BP, work, CPU_BX);
 			ret = sxsi_pos(type, sxsi, &pos);
 			if (!ret) {
-				ret = sxsi_format(CPU_AL, pos);
+				ret = sxsi_format(sxsi_unittbl[CPU_AL & 0x3], pos);
 			}
 		}
 	}
@@ -219,8 +221,12 @@ static REG8 sasibios_init(UINT type, SXSIDEV sxsi) {
 #else
 	for (i=0x00, bit=0x0100; i<0x02; i++, bit<<=1) {
 #endif
-		sxsi = sxsi_getptr(i);
-		if ((sxsi) && (sxsi->flag & SXSIFLAG_READY) && sxsi->devtype==SXSIDEV_HDD) {
+		//sxsi = sxsi_getptr(i);
+		//if ((sxsi) && ((sxsi->flag & SXSIFLAG_READY) && sxsi->devtype==SXSIDEV_HDD || sxsi->devtype==SXSIDEV_CDROM)) {
+		//	diskequip |= bit;
+		//}
+		sxsi = sxsi_getptr(sxsi_unittbl[i]);
+		if ((sxsi) && ((sxsi->flag & SXSIFLAG_READY) && sxsi->devtype==SXSIDEV_HDD)) {
 			diskequip |= bit;
 		}
 	}
@@ -281,7 +287,8 @@ REG8 sasibios_operate(void) {
 	else {
 		return(0x60);
 	}
-	sxsi = sxsi_getptr(CPU_AL);
+	//sxsi = sxsi_getptr(CPU_AL);
+	sxsi = sxsi_getptr(sxsi_unittbl[CPU_AL & 0x3]);
 	if (sxsi == NULL) {
 		return(0x60);
 	}

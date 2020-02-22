@@ -485,7 +485,10 @@ static void IOOUTCALL ideio_o430(UINT port, REG8 dat) {
 	TRACEOUT(("ideio setbank%d %.2x [%.4x:%.8x]",
 									(port >> 1) & 1, dat, CPU_CS, CPU_EIP));
 	if (!(dat & 0x80)) {
-		ideio.bank[(port >> 1) & 1] = dat;
+		//char buf[100] = {0};
+		ideio.bank[(port >> 1) & 1] = dat & 0x71;
+		//sprintf(buf, "0x%x\n", dat);
+		//OutputDebugStringA(buf);
 	}
 }
 
@@ -525,8 +528,18 @@ static void IOOUTCALL ideio_o433(UINT port, REG8 dat) {
 }
 
 static REG8 IOINPCALL ideio_i433(UINT port) {
+	
+	UINT	bank;
+	REG8	ret;
+	
+	bank = (port >> 1) & 1;
+	ret = (ideio.bank[bank] & 0x1) ? 0x2 : 0x0;
 
-	return(0x00);
+	if(ret == 0x2 && ideio.dev[1].drv[0].device==IDETYPE_NONE && ideio.dev[1].drv[1].device==IDETYPE_NONE){
+		ret = 0;
+	}
+	//OutputDebugStringA("IN 433h\n");
+	return(ret);
 }
 
 static void IOOUTCALL ideio_o435(UINT port, REG8 dat) {

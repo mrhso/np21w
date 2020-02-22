@@ -62,6 +62,9 @@ static const UINT8 msw_default[8] =
 BIOSIOEMU	biosioemu; // np21w ver0.86 rev46 BIOS I/O emulation
 #endif
 
+//             DA/UA = 80h,00h 81h,01h 82h,01h 83h,01h
+int sxsi_unittbl[4] = {0,      1,      2,      3}; // DA/UAをインデックスに変換する
+
 static void bios_itfprepare(void) {
 
 const IODATA	*p;
@@ -102,6 +105,10 @@ static void bios_reinitbyswitch(void) {
 	UINT8	biosflag;
 	UINT16	extmem; // LARGE_MEM //UINT16	extmem;
 	UINT8	boot;
+	int		i;
+#if defined(SUPPORT_IDEIO)
+	int		idx, ncidx;
+#endif
 	//FILEH	fh;
 	//OEMCHAR	path[MAX_PATH];
 
@@ -181,14 +188,32 @@ static void bios_reinitbyswitch(void) {
 	mem[MEMB_CRT_BIOS] |= 0x04;		// 05/02/03
 	mem[0x45c] = 0x40;
 	
+	// DA/UAと要素番号の対応関係を初期化
+	for(i=0;i<4;i++){
+		sxsi_unittbl[i] = i;
+	}
 #if defined(SUPPORT_IDEIO)
 	if (pccore.hddif & PCHDD_IDE) {
+		// 未接続のものを無視して接続順にDA/UAを割り当てる
+		ncidx = idx = 0;
+		for(i=0;i<4;i++){
+			if(sxsi_getdevtype(i)==SXSIDEV_HDD){
+				sxsi_unittbl[idx] = i;
+				idx++;
+			}else{
+				ncidx = i;
+			}
+		}
+		for(;idx<4;idx++){
+			sxsi_unittbl[idx] = ncidx; // XXX: 余ったDA/UAはとりあえず未接続の番号に設定
+		}
+
 		mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 							  (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
 
 		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。
-		mem[0x05ba] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
-						(sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
+		mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+						(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
 		if(np2cfg.winntfix){
 			// WinNT3.50で必要
 			if(sxsi_getdevtype(1)==SXSIDEV_NC && sxsi_getdevtype(3)==SXSIDEV_NC){
@@ -601,7 +626,7 @@ void biosioemu_enq8(UINT16 port, UINT8 data) {
 		biosioemu.count++;
 	}
 }
-void biosioemu_enq16(UINT16 port) {
+void biosioemu_enq16(UINT16 port, UINT32 data) {
 	
 	if(!biosioemu.enable) return;
 
@@ -614,7 +639,7 @@ void biosioemu_enq16(UINT16 port) {
 		}
 		biosioemu.data[0].flag = BIOSIOEMU_FLAG_MB;
 		biosioemu.data[0].port = port;
-		biosioemu.data[0].data = 0;
+		biosioemu.data[0].data = data;
 		biosioemu.count++;
 	}
 }

@@ -16,6 +16,8 @@ enum {
 	CACHE_BUFFER	= 32768
 };
 
+extern int sxsi_unittbl[];
+
 
 // ---- FDD
 
@@ -860,7 +862,7 @@ REG16 bootstrapload(void) {
 	}
 	if(pccore.hddif & PCHDD_IDE){
 		for (i=0; (i<4) && (!bootseg); i++) {
-			if(sxsi_getptr(i)->devtype == SXSIDEV_HDD){
+			if(sxsi_getptr(sxsi_unittbl[i])->devtype == SXSIDEV_HDD){
 				bootseg = boot_hd((REG8)(0x80 + i));
 			}
 		}
