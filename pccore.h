@@ -351,6 +351,8 @@ extern UINT32 hrtimerclock;
 #endif
 
 #ifdef SUPPORT_ASYNC_CPU
+extern int asynccpu_lateflag;
+extern int asynccpu_fastflag;
 #if !defined(__LIBRETRO__) && !defined(NP2_SDL2) && !defined(NP2_X11)
 extern LARGE_INTEGER asynccpu_lastclock;
 extern LARGE_INTEGER asynccpu_clockpersec;

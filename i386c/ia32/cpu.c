@@ -38,6 +38,12 @@
 #include "timing.h"
 #include "nevent.h"
 #include "pccore.h"
+#include	"iocore.h"
+#include	"sound/sound.h"
+#include	"sound/beep.h"
+#include	"sound/fmboard.h"
+#include	"sound/soundrom.h"
+#include	"cbus/mpu98ii.h"
 #endif
 
 
@@ -273,31 +279,29 @@ exec_allstep(void)
 	UINT32 op;
 	void (*func)(void);
 #if defined(SUPPORT_ASYNC_CPU)
-	int skipcnt = 10;
-	int cnt = 0;
+	int firstflag = 1;
 	UINT timing;
+	UINT lcflag = 0;
+	SINT32 oldremclock = CPU_REMCLOCK;
+	static int remclock_mul = 1000;
+	int remclockb = 0;
+	int remclkcnt = 0x100;
+	int repflag = 0;
+	static int latecount = 0;
+	static int latecount2 = 0;
+	static int hltflag = 0;
+
+	if(latecount2==0){
+		if(latecount > 0){
+			//latecount--;
+		}else if (latecount < 0){
+			latecount++;
+		}
+	}
+	latecount2 = (latecount2+1) & 0x1fff;
 #endif
 	
 	do {
-#if defined(SUPPORT_ASYNC_CPU)
-		// ”ñ“¯ŠúCPUˆ—
-		if(np2cfg.asynccpu){
-			if(cnt==0){
-				cnt = (cnt + 1) % skipcnt;
-				timing = timing_getcount_baseclock();
-				if(timing!=0){
-					CPU_REMCLOCK = 0;
-					break;
-				}
-				if(g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
-					if(timing==0){
-						CPU_REMCLOCK = 10000;
-						cnt = 0;
-					}
-				}
-			}
-		}
-#endif
 
 		CPU_PREV_EIP = CPU_EIP;
 		CPU_STATSAVE.cpu_inst = CPU_STATSAVE.cpu_inst_default;
@@ -381,10 +385,11 @@ exec_allstep(void)
 			cpu_debug_rep_cont = 0;
 	#endif
 			(*insttable_1byte[CPU_INST_OP32][op])();
-			continue;
+			goto cpucontinue; //continue;
 		}
 
 		/* rep */
+		repflag = CPU_ECX;
 		CPU_WORKCLOCK(5);
 	#if defined(DEBUG)
 		if (!cpu_debug_rep_cont) {
@@ -526,6 +531,83 @@ exec_allstep(void)
 				}
 			}
 		}
+cpucontinue:
+#if defined(SUPPORT_ASYNC_CPU)
+		// ”ñ“¯ŠúCPUˆ—
+		if(np2cfg.asynccpu){
+#define LATECOUNTER_THRESHOLD	6
+#define LATECOUNTER_THRESHOLDM	6
+			int realclock = 0;
+			if(CPU_STAT_HLT){
+				hltflag = pccore.multiple;
+			}
+			if(CPU_REMCLOCK >= 0 && !realclock && (remclkcnt > 0x7)){
+				remclkcnt = 0;
+				firstflag = 0;
+				timing = timing_getcount_baseclock();
+				if(timing!=0){
+					if(!asynccpu_fastflag && !asynccpu_lateflag){
+						if(remclock_mul < 100000) {
+							latecount++;
+							if(latecount > +LATECOUNTER_THRESHOLD){
+								if(pccore.multiple > 2){
+									if(pccore.multiple > 40){
+										pccore.multiple-=3;
+									}else if(pccore.multiple > 20){
+										pccore.multiple-=2;
+									}else{
+										pccore.multiple-=1;
+									}
+									pccore.realclock = pccore.baseclock * pccore.multiple;
+		
+									sound_changeclock();
+									beep_changeclock();
+									mpu98ii_changeclock();
+									keyboard_changeclock();
+									mouseif_changeclock();
+									gdc_updateclock();
+								}
+
+								latecount = 0;
+							}
+						}
+						asynccpu_lateflag = 1;
+					}
+					CPU_REMCLOCK = 0;
+					break;
+				}else{
+					if(!hltflag && !asynccpu_lateflag && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
+						//CPU_REMCLOCK = 10000;
+						//oldremclock = CPU_REMCLOCK;
+						if(!asynccpu_fastflag){
+							latecount--;
+							if(latecount < -LATECOUNTER_THRESHOLDM){
+								if(pccore.multiple < np2cfg.multiple){
+									pccore.multiple+=1;
+									pccore.realclock = pccore.baseclock * pccore.multiple;
+		
+									sound_changeclock();
+									beep_changeclock();
+									mpu98ii_changeclock();
+									keyboard_changeclock();
+									mouseif_changeclock();
+									gdc_updateclock();
+
+									latecount = 0;
+								}
+							}
+							asynccpu_fastflag = 1;
+						}
+					}
+					firstflag = 1;
+				}
+			}
+			remclkcnt++;
+		}
+#endif
 
 	} while (CPU_REMCLOCK > 0);
+#if defined(SUPPORT_ASYNC_CPU)
+	if(hltflag > 0) hltflag--;
+#endif
 }

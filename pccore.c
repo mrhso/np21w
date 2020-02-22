@@ -191,6 +191,8 @@ static void pccore_hrtimer_stop() {
 #endif
 
 #ifdef SUPPORT_ASYNC_CPU
+int asynccpu_lateflag = 0;
+int asynccpu_fastflag = 0;
 LARGE_INTEGER asynccpu_lastclock = {0};
 LARGE_INTEGER asynccpu_clockpersec = {0};
 LARGE_INTEGER asynccpu_clockcount = {0};
@@ -220,7 +222,11 @@ static void pccore_set(const NP2CFG *pConfig)
 {
 	UINT8	model;
 	UINT32	multiple;
+#if defined(SUPPORT_LARGE_MEMORY)
 	UINT16	extsize;
+#else
+	UINT8	extsize;
+#endif
 
 	ZeroMemory(&pccore, sizeof(pccore));
 	model = PCMODEL_VX;
@@ -987,6 +993,10 @@ void pccore_exec(BOOL draw) {
 #endif
 		nevent_progress();
 	}
+#if defined(SUPPORT_ASYNC_CPU)
+	asynccpu_lateflag = 0;
+	asynccpu_fastflag = 0;
+#endif
 	artic_callback();
 	mpu98ii_callback();
 	diskdrv_callback();
