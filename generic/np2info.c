@@ -276,6 +276,10 @@ static void info_sound(OEMCHAR *str, int maxlen, const NP2INFOEX *ex)
 			lpBoard = OEMTEXT("Speak board");
 			break;
 
+		case SOUNDID_86_SPEAKBOARD:
+			lpBoard = OEMTEXT("PC-9801-86 + Speak board");
+			break;
+
 		case SOUNDID_SPARKBOARD:
 			lpBoard = OEMTEXT("Spark board");
 			break;

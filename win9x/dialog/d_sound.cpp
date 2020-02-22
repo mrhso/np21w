@@ -908,12 +908,14 @@ private:
 	UINT8 m_snd118irqf;				//!< IRQ(FM)設定値
 	UINT8 m_snd118irqp;				//!< IRQ(PCM)設定値
 	UINT8 m_snd118irqm;				//!< IRQ(MIDI)設定値
+	UINT8 m_snd118rom;				//!< ROM設定値
 	CComboData m_cmbio;				//!< IO
 	CComboData m_cmbid;				//!< ID
 	CComboData m_cmbdma;			//!< DMA
 	CComboData m_cmbirqf;			//!< IRQ(FM)
 	CComboData m_cmbirqp;			//!< IRQ(PCM)
 	CComboData m_cmbirqm;			//!< IRQ(MIDI)
+	CWndProc m_chkrom;				//!< ROM
 };
 
 //! 118 I/O
@@ -983,6 +985,7 @@ SndOpt118Page::SndOpt118Page()
 	, m_snd118irqf(0)
 	, m_snd118irqp(0)
 	, m_snd118irqm(0)
+	, m_snd118rom(0)
 {
 }
 
@@ -1006,6 +1009,7 @@ BOOL SndOpt118Page::OnInitDialog()
 	m_snd118irqf = np2cfg.snd118irqf;
 	m_snd118irqp = np2cfg.snd118irqp;
 	m_snd118irqm = np2cfg.snd118irqm;
+	m_snd118rom = np2cfg.snd118rom;
 	
 	m_cmbio.SubclassDlgItem(IDC_SND118IO, this);
 	m_cmbio.Add(s_io118, _countof(s_io118));
@@ -1031,6 +1035,12 @@ BOOL SndOpt118Page::OnInitDialog()
 	m_cmbirqf.SetCurItemData(m_snd118irqf);
 	m_cmbirqp.SetCurItemData(m_snd118irqp);
 	m_cmbirqm.SetCurItemData(m_snd118irqm);
+	
+	m_chkrom.SubclassDlgItem(IDC_SND118ROM, this);
+	if(m_snd118rom)
+		m_chkrom.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+	else
+		m_chkrom.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 
 	m_cmbio.SetFocus();
 
@@ -1072,6 +1082,11 @@ void SndOpt118Page::OnOK()
 		np2cfg.snd118irqm = m_snd118irqm;
 		::sysmng_update(SYS_UPDATECFG);
 	}
+	if (m_snd118rom!=np2cfg.snd118rom)
+	{
+		np2cfg.snd118rom = m_snd118rom;
+		::sysmng_update(SYS_UPDATECFG);
+	}
 }
 
 /**
@@ -1107,6 +1122,10 @@ BOOL SndOpt118Page::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_SND118INTM:
 			m_snd118irqm = m_cmbirqm.GetCurItemData(0xff);
 			return TRUE;
+			
+		case IDC_SND118ROM:
+			m_snd118rom = (m_chkrom.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
+			return TRUE;
 
 		case IDC_SND118DEF:
 			m_snd118io = 0x0188;
@@ -1115,12 +1134,17 @@ BOOL SndOpt118Page::OnCommand(WPARAM wParam, LPARAM lParam)
 			m_snd118irqf = 12;
 			m_snd118irqp = 12;
 			m_snd118irqm = 0xff;
+			m_snd118rom = 1;
 			m_cmbio.SetCurItemData(m_snd118io);
 			m_cmbid.SetCurItemData(m_snd118id);
 			m_cmbdma.SetCurItemData(m_snd118dma);
 			m_cmbirqf.SetCurItemData(m_snd118irqf);
 			m_cmbirqp.SetCurItemData(m_snd118irqp);
 			m_cmbirqm.SetCurItemData(m_snd118irqm);
+			if(m_snd118rom)
+				m_chkrom.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
+			else
+				m_chkrom.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
 			return TRUE;
 	}
 	return FALSE;
