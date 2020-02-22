@@ -743,33 +743,46 @@ coutinue_cpu:
 		if(CPU_REMCLOCK==-1){
 			break;
 		}
-
-		{
-			SINT32 diff; 
-			np2haxcore.clockcount = GetTickCounter_Clock();
-			diff = (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
-			if(CPU_REMCLOCK > 0){
-				CPU_REMCLOCK -= diff;
+		//CPU_REMCLOCK = oldremclock;
+		
+		// 高速化のために一部のI/Oポートの処理を簡略化
+		//if(tunnel->io._port < 0x60 || 
+		//	(0x430 <= tunnel->io._port && tunnel->io._port <= 0x64e && !(g_nevent.item[NEVENT_SASIIO].flag & NEVENT_ENABLE)) || 
+		//	(0x7FD9 <= tunnel->io._port && tunnel->io._port <= 0x7FDF)){
+			if(tunnel->io._port==0x640){
+				// 厳しめにする
+				if (np2haxcore.hurryup) {
+					//np2haxcore.hurryup = 0;
+					break;
+				}
 			}
-			np2haxcore.lastclock.QuadPart = np2haxcore.clockcount.QuadPart;
-		}
+			{
+				SINT32 diff; 
+				np2haxcore.clockcount = GetTickCounter_Clock();
+				diff = (np2haxcore.clockcount.QuadPart - np2haxcore.lastclock.QuadPart) * pccore.realclock / np2haxcore.clockpersec.QuadPart;
+				if(CPU_REMCLOCK > 0){
+					CPU_REMCLOCK -= diff;
+				}
+				np2haxcore.lastclock.QuadPart = np2haxcore.clockcount.QuadPart;
+			}
 	
-		// 時間切れなら抜ける
-		if (CPU_REMCLOCK <= 0) {
-			break;
-		}
-		if (CPU_REMCLOCK > 0 && timing_getcount_baseclock()!=0) {
-			CPU_REMCLOCK = 0;
-			break;
-		}
-		i386haxfunc_vcpu_getREGs(&np2haxstat.state);
-		i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
-		np2haxstat.update_regs = np2haxstat.update_fpu = 0;
+			// 時間切れなら抜ける
+			if (CPU_REMCLOCK <= 0) {
+				break;
+			}
+			if (CPU_REMCLOCK > 0 && timing_getcount_baseclock()!=0) {
+				CPU_REMCLOCK = 0;
+				break;
+			}
+			i386haxfunc_vcpu_getREGs(&np2haxstat.state);
+			i386haxfunc_vcpu_getFPU(&np2haxstat.fpustate);
+			np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 	
-		ia32hax_copyregHAXtoNP2();
-		pic_irq();
+			ia32hax_copyregHAXtoNP2();
+			pic_irq();
 
-		goto coutinue_cpu;
+			goto coutinue_cpu;
+		//}
 		break;
 	case HAX_EXIT_FAST_MMIO: // メモリマップドI/Oへのアクセス
 		//printf("HAX_EXIT_FAST_MMIO\n");
@@ -950,6 +963,9 @@ void i386hax_vm_exec(void) {
 			remain_clk = CPU_REMCLOCK;
 		}else{
 			remain_clk = 0;
+		}
+		if (CPU_REMCLOCK < -(SINT32)(CPU_BASECLOCK*3)) {
+			np2haxcore.hurryup = 1;
 		}
 		CPU_REMCLOCK = 0;
 	}else{

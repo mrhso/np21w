@@ -2882,11 +2882,12 @@ static void processwait(UINT cnt) {
 #if defined(SUPPORT_IA32_HAXM)
 		if (np2hax.enable) {
 			np2haxcore.hltflag = 0;
-			if(lateframecount > 0 && np2haxcore.I_ratio < 254){
-				np2haxcore.I_ratio++;
-			}else if(np2haxcore.I_ratio > 1){
-				//np2haxcore.I_ratio--;
-			}
+			//if(lateframecount > 0 && np2haxcore.I_ratio < 254){
+			//	np2haxcore.I_ratio++;
+			//}else if(np2haxcore.I_ratio > 1){
+			//	//np2haxcore.I_ratio--;
+			//}
+			np2haxcore.hurryup = 0;
 			lateframecount = 0;
 		}
 #endif
@@ -2895,13 +2896,13 @@ static void processwait(UINT cnt) {
 		framereset(cnt);
 	}
 	else {
-#if defined(SUPPORT_IA32_HAXM)
-		if (np2hax.enable) {
-			if(np2haxcore.I_ratio > 1){
-				np2haxcore.I_ratio--;
-			}
-		}
-#endif
+//#if defined(SUPPORT_IA32_HAXM)
+//		if (np2hax.enable) {
+//			if(np2haxcore.I_ratio > 1){
+//				np2haxcore.I_ratio--;
+//			}
+//		}
+//#endif
 		if(lateframecount){
 			SleepEx(0, TRUE);
 		}else{
