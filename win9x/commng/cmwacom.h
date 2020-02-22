@@ -16,7 +16,25 @@
 #include "wintab/PKTDEF.H"
 #include "wintab/Utils.h"
 
+#pragma pack(1)
+typedef struct tagCMWACOM_CONFIG {
+	bool enable; // ペンタブモード有効（猫マウス操作不可）
+	bool start; // STでtrue, SPでfalse（座標送信再開／一時停止？）
+	bool scrnsizemode; // 画面サイズ指定モード
+	bool disablepressure; // 筆圧無効モード（データ形式が変わる）
+	bool relmode; // 相対座標モード
+	bool csvmode; // CSV座標モード（筆圧無効モードでのみ有効）
+	bool suppress; // 抑制モード（同じ座標値は送らない）
+	bool mode19200; // 19200bpsモード
+	SINT32 resolution_w;
+	SINT32 resolution_h;
+	SINT32 screen_w;
+	SINT32 screen_h;
+} CMWACOM_CONFIG;
+#pragma pack()
+
 void cmwacom_initialize(void);
+void cmwacom_reset(void);
 void cmwacom_finalize(void);
 bool cmwacom_skipMouseEvent(void);
 void cmwacom_setNCControl(bool enable);
@@ -38,6 +56,8 @@ public:
 	bool SkipMouseEvent();
 	void SetExclusiveMode(bool enable);
 	void SetNCControl(bool enable);
+	void GetConfig(CMWACOM_CONFIG *cfg);
+	void SetConfig(CMWACOM_CONFIG cfg);
 	
 	int m_skiptabletevent;
 
@@ -66,15 +86,15 @@ private:
 	SINT32 m_sBuffer_wpos;			/*!< バッファ書き込み位置 */
 	SINT32 m_sBuffer_rpos;			/*!< バッファ読み込み位置 */
 
-	UINT8 m_lastdata[WACOM_BUFFER];
+	UINT8 m_lastdata[32];
 	SINT32 m_lastdatalen;
 	
 	int m_skipmouseevent;
 	bool m_exclusivemode;
 	bool m_nccontrol;
 	
-	bool m_start;
 	SINT32 m_wait;
+	bool m_sendlastdata; // 最後のデータを再送信する
 	
 	SINT32 m_mousedown;
 	SINT32 m_mouseX;
@@ -83,7 +103,13 @@ private:
 	char m_cmdbuf[WACOM_CMDBUFFER];
 	SINT32 m_cmdbuf_pos;
 	
-	SINT32 m_resolution;
+	CMWACOM_CONFIG m_config;
+	//SINT32 m_resolution_w;
+	//SINT32 m_resolution_h;
+
+	//bool m_scrnsizemode;
+	//SINT32 m_screen_w;
+	//SINT32 m_screen_h;
 	
 	SINT32 m_minX;
 	SINT32 m_maxX;

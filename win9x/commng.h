@@ -33,9 +33,10 @@ enum {
 
 enum {
 	COMMSG_MIDIRESET		= 0,
-	COMMSG_SETFLAG,
-	COMMSG_GETFLAG,
-	COMMSG_USER
+	COMMSG_SETFLAG			= 1,
+	COMMSG_GETFLAG			= 2,
+	COMMSG_USER			    = 3,
+	COMMSG_CHANGESPEED		= 4,
 };
 
 struct _commng;

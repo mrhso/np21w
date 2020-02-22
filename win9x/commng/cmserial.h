@@ -7,7 +7,7 @@
 
 #include "cmbase.h"
 
-extern const UINT32 cmserial_speed[10];
+extern const UINT32 cmserial_speed[11];
 
 /**
  * @brief commng シリアル デバイス クラス

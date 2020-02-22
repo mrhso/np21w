@@ -9,7 +9,7 @@
 /**
  * 速度テーブル
  */
-const UINT32 cmserial_speed[10] = {110, 300, 1200, 2400, 4800,
+const UINT32 cmserial_speed[11] = {110, 300, 600, 1200, 2400, 4800,
 							9600, 19200, 38400, 57600, 115200};
 
 /**
@@ -173,5 +173,54 @@ UINT8 CComSerial::GetStat()
  */
 INTPTR CComSerial::Message(UINT nMessage, INTPTR nParam)
 {
+	switch (nMessage)
+	{
+		case COMMSG_CHANGESPEED:
+			{
+				int newspeed = *(reinterpret_cast<int*>(nParam));
+				DCB dcb;
+				::GetCommState(m_hSerial, &dcb);
+				for (UINT i = 0; i < NELEMENTS(cmserial_speed); i++)
+				{
+					if (cmserial_speed[i] >= newspeed)
+					{
+						if(cmserial_speed[i] != dcb.BaudRate){
+							dcb.BaudRate = cmserial_speed[i];
+							::SetCommState(m_hSerial, &dcb);
+						}
+						break;
+					}
+				}
+			}
+			break;
+			
+		case COMMSG_SETFLAG:
+			{
+				COMFLAG flag = reinterpret_cast<COMFLAG>(nParam);
+				if ((flag) && (flag->size == sizeof(_COMFLAG)))
+				{
+					return 1;
+				}
+			}
+			break;
+
+		case COMMSG_GETFLAG:
+			{
+				// dummy data
+				COMFLAG flag = (COMFLAG)_MALLOC(sizeof(_COMFLAG), "RS232C FLAG");
+				if (flag)
+				{
+					flag->size = sizeof(_COMFLAG);
+					flag->sig = COMSIG_COM1;
+					flag->ver = 0;
+					flag->param = 0;
+					return reinterpret_cast<INTPTR>(flag);
+				}
+			}
+			break;
+
+		default:
+			break;
+	}
 	return 0;
 }

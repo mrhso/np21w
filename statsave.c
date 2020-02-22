@@ -1559,7 +1559,7 @@ const SFENTRY	*tblterm;
 	iocore_bind();
 	cbuscore_bind();
 	fmboard_bind();
-	
+
 #if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
 	pcidev_bind();
 #endif
@@ -1636,6 +1636,8 @@ const SFENTRY	*tblterm;
 	np2wab.lastHeight = 0;
 	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
 #endif
+	
+	pit_setrs232cspeed((pit.ch + 2)->value);
 	
 	return(ret);
 }

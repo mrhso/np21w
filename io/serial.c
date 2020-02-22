@@ -152,6 +152,14 @@ void keyboard_changeclock(void) {
 // ---- RS-232C
 
 	COMMNG	cm_rs232c;
+	
+#define RS232C_BUFFER		(1 << 6)
+#define RS232C_BUFFER_MASK	(RS232C_BUFFER - 1)
+#define RS232C_BUFFER_CLRC	32
+static UINT8 rs232c_buf[RS232C_BUFFER];
+static UINT8 rs232c_buf_rpos = 0;
+static UINT8 rs232c_buf_wpos = 0;
+static int rs232c_removecounter = 0;
 
 void rs232c_construct(void) {
 
@@ -174,23 +182,36 @@ void rs232c_open(void) {
 void rs232c_callback(void) {
 
 	BOOL	intr;
-
-	if(rs232c.result & 2) {
-		return;
+	
+	int bufused = (rs232c_buf_wpos - rs232c_buf_rpos) & RS232C_BUFFER_MASK;
+	if(bufused == 0){
+		rs232c_removecounter = 0;
 	}
+	//if(rs232c.result & 2) {
+	//	return;
+	//}
 
 	intr = FALSE;
 	if (cm_rs232c == NULL) {
 		cm_rs232c = commng_create(COMCREATE_SERIAL);
 	}
-	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c.data))) {
+	rs232c_removecounter = (rs232c_removecounter + 1) % RS232C_BUFFER_CLRC;
+	if (bufused > 0 && rs232c_removecounter==0){
+		rs232c_buf_rpos = (rs232c_buf_rpos+1) & RS232C_BUFFER_MASK; // 一番古いものを捨てる
+	}
+	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
+		rs232c_buf_wpos = (rs232c_buf_wpos+1) & RS232C_BUFFER_MASK;
+	}
+	if (rs232c_buf_rpos != rs232c_buf_wpos) {
+		rs232c.data = rs232c_buf[rs232c_buf_rpos]; // データを1つ取り出し
+
 		rs232c.result |= 2;
 		if (sysport.c & 1) {
 			intr = TRUE;
 		}
 	}
 	else {
-		rs232c.result &= (UINT8)~2;
+		//rs232c.result &= (UINT8)~2;
 	}
 	if (sysport.c & 4) {
 		if (rs232c.send) {
@@ -298,11 +319,29 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 
 static REG8 IOINPCALL rs232c_i30(UINT port) {
 
-	(void)port;
-	if(rs232c.result & 2){
+	UINT8 ret = rs232c.data;
+
+	if (rs232c_buf_rpos == rs232c_buf_wpos) {
+		// 無理矢理読む
+		if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
+			rs232c_buf_wpos = (rs232c_buf_wpos+1) & RS232C_BUFFER_MASK;
+			rs232c.data = rs232c_buf[rs232c_buf_rpos]; // データを1つ取り出し
+		}
+	}
+	if (rs232c_buf_rpos != rs232c_buf_wpos) {
+		rs232c_buf_rpos = (rs232c_buf_rpos+1) & RS232C_BUFFER_MASK; // バッファ読み取り位置を1進める
+	}
+	if (rs232c_buf_rpos != rs232c_buf_wpos) { // 送信すべきデータがあるか確認
+		rs232c.data = rs232c_buf[rs232c_buf_rpos]; // 次のデータを取り出し
+		if (sysport.c & 1) {
+			pic_setirq(4);
+		}
+	}else{
+
 		rs232c.result &= ~0x2;
 	}
-	return(rs232c.data);
+	rs232c_removecounter = 0;
+	return(ret);
 }
 
 static REG8 IOINPCALL rs232c_i32(UINT port) {

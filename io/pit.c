@@ -9,7 +9,9 @@
 #include	"sound.h"
 #include	"beep.h"
 #include	"board14.h"
+#include	"commng.h"
 
+extern	COMMNG	cm_rs232c;
 
 #define	BEEPCOUNTEREX					// BEEPアイドル時のカウンタをα倍に
 #if defined(CPUCORE_IA32)
@@ -231,6 +233,23 @@ void pit_setflag(PITCH pitch, REG8 value) {
 	}
 }
 
+void pit_setrs232cspeed(REG8 value) {
+	if(value == 0) return;
+	if (cm_rs232c) {
+		if ((pccore.dipsw[0] & 0x30)==0x30) { // とりあえず調歩同期だけ
+			int newvalue;
+			if (pccore.cpumode & CPUMODE_8MHZ) {
+				newvalue = 9600 * 13 / value;
+			}else{
+				newvalue = 38400 * 4 / value;
+			}
+			if(newvalue < 38400){
+				cm_rs232c->msg(cm_rs232c, COMMSG_CHANGESPEED, (INTPTR)&newvalue);
+			}
+		}
+	}
+}
+
 BOOL pit_setcount(PITCH pitch, REG8 value) {
 
 	UINT8	flag;
@@ -381,10 +400,18 @@ static void IOOUTCALL pit_o73(UINT port, REG8 dat) {
 static void IOOUTCALL pit_o75(UINT port, REG8 dat) {
 
 	PITCH	pitch;
+	UINT8	oldvalue;
 
 	pitch = pit.ch + 2;
+	oldvalue = pitch->value;
 	if (pit_setcount(pitch, dat)) {
+		if(pitch->value != oldvalue){
+			pit_setrs232cspeed(pitch->value);
+		}
 		return;
+	}
+	if(pitch->value != oldvalue){
+		pit_setrs232cspeed(pitch->value);
 	}
 	pitch->flag |= PIT_FLAG_I;
 	rs232c_open();

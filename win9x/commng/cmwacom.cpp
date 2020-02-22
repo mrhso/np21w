@@ -10,8 +10,21 @@
 #ifdef SUPPORT_WACOM_TABLET
 
 #include <math.h>
+#include "pccore.h"
 #include "mousemng.h"
 #include "scrnmng.h"
+#include "sysport.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern	_SYSPORT	sysport;
+
+void pic_setirq(REG8 irq);
+
+#ifdef __cplusplus
+}
+#endif
 
 typedef CComWacom *CMWACOM;
 
@@ -30,15 +43,29 @@ static CComWacom *g_cmwacom = NULL;
 static WNDPROC g_lpfnDefProc = NULL;
 static bool g_exclusivemode = false;
 static bool g_nccontrol = false;
+static DWORD g_datatime = 0;
+static SINT32 g_lastPosX = 0;
+static SINT32 g_lastPosY = 0;
+static bool g_lastPosValid = false;
 
 void cmwacom_initialize(void){
 	if(!g_wacom_initialized){
 		if ( LoadWintab( ) ){
+			g_datatime = GetTickCount();
 			g_wacom_initialized = true;
 		}else{
 			g_wacom_initialized = false;
 		}
 	}
+}
+void cmwacom_reset(void){
+	if(g_cmwacom){
+		CMWACOM_CONFIG cfg;
+		g_cmwacom->GetConfig(&cfg);
+		cfg.enable = false;
+		g_cmwacom->SetConfig(cfg);
+	}
+	g_wacom_initialized = false;
 }
 void cmwacom_finalize(void){
 	if(g_wacom_initialized){
@@ -88,15 +115,24 @@ LRESULT CALLBACK tabletWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		break;
 	case WM_ACTIVATE:
 		if (wParam) {
+			//if(g_cmwacom){
+			//	CMWACOM_CONFIG cfg;
+			//	g_cmwacom->GetConfig(&cfg);
+			//	if(!cfg.enable){
+			//		break;
+			//	}
+			//}
 			gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
+			gpWTEnable(g_cmwacom->GetHTab(), TRUE);
+			{
+				SINT16 x, y;
+				mousemng_getstat(&x, &y, false);
+				mousemng_setstat(x, y, uPD8255A_LEFTBIT|uPD8255A_RIGHTBIT);
+			}
+			g_cmwacom->m_skiptabletevent = 20;
+		}else{
+			gpWTEnable(g_cmwacom->GetHTab(), FALSE);
 		}
-		gpWTEnable(g_cmwacom->GetHTab(), (BOOL)wParam);
-		{
-			SINT16 x, y;
-			mousemng_getstat(&x, &y, false);
-			mousemng_setstat(x, y, uPD8255A_LEFTBIT|uPD8255A_RIGHTBIT);
-		}
-		g_cmwacom->m_skiptabletevent = 20;
 		break;
     }
 	return CallWindowProc(g_lpfnDefProc, hWnd, msg, wParam, lParam);
@@ -129,7 +165,6 @@ CComWacom::CComWacom()
 	, m_hwndMain(NULL)
 	, m_hTab(NULL)
 	, m_hMgr(NULL)
-	, m_start(false)
 	, m_cmdbuf_pos(0)
 	, m_sBuffer_wpos(0)
 	, m_sBuffer_rpos(0)
@@ -138,9 +173,21 @@ CComWacom::CComWacom()
 	, m_skiptabletevent(0)
 	, m_exclusivemode(false)
 	, m_nccontrol(false)
-	, m_resolution(TABLET_BASERASOLUTION)
 	, m_lastdatalen(0)
+	, m_sendlastdata(false)
 {
+	m_config.enable = false;
+	m_config.scrnsizemode = false;
+	m_config.disablepressure = false;
+	m_config.relmode = false;
+	m_config.csvmode = false;
+	m_config.suppress = false;
+	m_config.start = true;
+	m_config.mode19200 = false;
+	m_config.resolution_w = TABLET_BASERASOLUTION;
+	m_config.resolution_h = TABLET_BASERASOLUTION;
+	m_config.screen_w = 640;
+	m_config.screen_h = 480;
 	ZeroMemory(m_sBuffer, sizeof(m_sBuffer));
 }
 
@@ -194,7 +241,12 @@ bool CComWacom::Initialize(HWND hWnd)
 	
 	return true;
 }
-
+void CComWacom::GetConfig(CMWACOM_CONFIG *cfg){
+	*cfg = m_config;
+}
+void CComWacom::SetConfig(CMWACOM_CONFIG cfg){
+	m_config = cfg;
+}
 
 void CComWacom::InitializeTabletDevice(){
 	LOGCONTEXTA lcMine;
@@ -274,6 +326,16 @@ void CComWacom::InitializeTabletDevice(){
         m_ObtBuf[0] = 1;
         gpWTMgrExt(m_hMgr, WTX_OBT, m_ObtBuf);
     }
+	
+	// 偽lastdata
+	m_lastdata[0] = 0xA0;
+	m_lastdata[1] = 0x00;
+	m_lastdata[2] = 0x00;
+	m_lastdata[3] = 0x00;
+	m_lastdata[4] = 0x00;
+	m_lastdata[5] = 0x00;
+	m_lastdata[6] = 0x00;
+	m_lastdatalen = 7;
 }
 void CComWacom::FinalizeTabletDevice(){
 	if (m_hTab)
@@ -298,11 +360,15 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 	PACKET tPckt;
 	static SINT32 last_rawButtons;
 	
-	m_fixedaspect = np2oscfg.pentabfa;
+	m_fixedaspect = (np2oscfg.pentabfa ? true : false);
 
 	if (gpWTPacket((HCTX)LOWORD(lParam), (UINT)wParam, (LPSTR)&tPckt)) {
 		bool proximityflag = false;
 		int newbuttons;
+		if(!m_config.enable){
+			m_skipmouseevent = 0;
+			return true;
+		}
 		if(!m_exclusivemode && !m_nccontrol){
 			m_skipmouseevent = 0;
 			return true;
@@ -324,7 +390,7 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 		m_rawPressure = LOWORD(tPckt.pkNormalPressure); /* 筆圧 */
 		if(m_rawPressureMax-m_rawPressureMin > 0){
-			if(m_rawPressure < m_rawPressureMin){
+			if(m_rawPressure <= m_rawPressureMin){
 				m_pressure = 0.0;
 			}else{
 				m_pressure = (double)(m_rawPressure-m_rawPressureMin)/(m_rawPressureMax-m_rawPressureMin);
@@ -380,13 +446,28 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 		m_tiltY = m_altitude * sin(m_azimuth*2*M_PI);
 
 		if(m_wait==0){
-			UINT16 pktPressure = (UINT32)(m_pressure * 255);
+			UINT16 pktPressure;
 			SINT32 pktXtmp, pktYtmp;
 			UINT16 pktX, pktY;
-			SINT32 tablet_resX = TABLET_RAWMAX_X * m_resolution / TABLET_BASERASOLUTION;
-			SINT32 tablet_resY = TABLET_RAWMAX_Y * m_resolution / TABLET_BASERASOLUTION;
-			char buf[10];
+			SINT32 tablet_resX = TABLET_RAWMAX_X * m_config.resolution_w / TABLET_BASERASOLUTION;
+			SINT32 tablet_resY = TABLET_RAWMAX_Y * m_config.resolution_h / TABLET_BASERASOLUTION;
+			char buf[32];
+			pktPressure = (UINT32)(m_pressure * 255);
+			// ペンON/OFFそれぞれで255段階（らしい）
+			if(!m_config.disablepressure){
+				if(m_pressure < 0.5){
+					m_rawButtons &= ~0x1;
+					pktPressure = pktPressure = (UINT32)((m_pressure) / (1.0 - 0.5) * 255);
+				}else{
+					pktPressure = pktPressure = (UINT32)((m_pressure - 0.5) / (1.0 - 0.5) * 255);
+				}
+			}
 			if(m_exclusivemode){
+				// 排他モード（マウスキャプチャ中）
+				if(m_config.scrnsizemode){
+					tablet_resX = m_config.screen_w;
+					tablet_resY = m_config.screen_h;
+				}
 				if(m_fixedaspect){
 					// アスペクト比がArtPad IIと同じになるように修正
 					if(tablet_resX * (m_maxY - m_minY) > tablet_resY * (m_maxX - m_minX)){
@@ -401,17 +482,17 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					pktYtmp = tablet_resY - (m_rawY * tablet_resY / (m_maxY - m_minY)); // 左下原点ですってよ
 				}
 			}else{
+				// ホストマウス連動モード（マウスキャプチャなし操作モード）
 				RECT rectClient;
 				POINT pt;
-				//GetClientRect(hWnd, &rectClient);
-				//rectClient.left++;
-				//rectClient.top++;
-				//rectClient.right--;
-				//rectClient.bottom--;
 				scrnmng_getrect(&rectClient);
 				pt.x = rectClient.left;
 				pt.y = rectClient.top;
 				ClientToScreen(hWnd, &pt);
+				if(m_config.scrnsizemode){
+					tablet_resX = m_config.screen_w;
+					tablet_resY = m_config.screen_h;
+				}
 				pktXtmp = ((m_rawX - pt.x) * tablet_resX / (rectClient.right - rectClient.left));
 				pktYtmp = (((m_maxY - m_rawY) - pt.y) * tablet_resY / (rectClient.bottom - rectClient.top));
 				//pktXtmp = m_rawX - pt.x;
@@ -420,33 +501,76 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					// 範囲外は移動のみ可能
 					m_rawButtons = m_rawButtons & 0x4;
 					pktPressure = 0;
-					//proximityflag = true;
+					proximityflag = true;
 				}
 			}
+			// はみ出さないように座標範囲を修正
 			if(pktXtmp < 0) pktXtmp = 0;
 			if(pktYtmp < 0) pktYtmp = 0;
 			if(pktXtmp > tablet_resX) pktXtmp = tablet_resX;
 			if(pktYtmp > tablet_resY) pktYtmp = tablet_resY;
-			pktX = (UINT16)pktXtmp;
-			pktY = (UINT16)pktYtmp;
-			buf[0] = (proximityflag ? 0xA0 : 0xE0)|(m_rawButtons ? 0x8 : 0)|((pktX >> 14) & 0x2)|((((pktPressure) & 1) << 2));
-			buf[1] = ((pktX >> 7) & 0x7f);
-			buf[2] = (pktX & 0x7f);
-			buf[3] = ((m_rawButtons & 0xf) << 3)|((pktY >> 14) & 0x2)|((((pktPressure >> 1) & 1) << 2));
-			buf[4] = ((pktY >> 7) & 0x7f);
-			buf[5] = (pktY & 0x7f);
-			buf[6] = (((m_rawButtons & ~0x4) ? 0x00 : 0x40))|(pktPressure >> 2);
-			memcpy(m_lastdata, buf, 7);
-			m_lastdatalen = 7;
-			if(SendDataToReadBuffer(buf, 7)){
-				m_wait += 0;
+			
+			if(m_config.relmode){
+				// 相対座標モード
+				if(g_lastPosValid){
+					pktX = (SINT16)((SINT32)pktXtmp - g_lastPosX);
+					pktY = (SINT16)((SINT32)pktYtmp - g_lastPosY);
+				}else{
+					pktX = 0;
+					pktY = 0;
+				}
+			}else{
+				// 絶対座標モード
+				pktX = (UINT16)pktXtmp;
+				pktY = (UINT16)pktYtmp;
 			}
+
+			if(m_config.disablepressure && m_config.csvmode){
+				// CSV座標モード（筆圧無効モードでないと使えない）
+				int slen = sprintf(buf, "#,%05d,%05d,%02d\r\n", pktX, pktY, proximityflag ? 99 : m_rawButtons);
+				if(slen > 0){
+					memcpy(m_lastdata, buf, slen);
+					m_lastdatalen = slen;
+					if(SendDataToReadBuffer(buf, slen)){
+						//m_wait += 0;
+					}
+				}
+			}else{
+				if(m_config.disablepressure){
+					// 筆圧無効モード
+					buf[0] = 0xe0|((pktX >> 14) & 0x3);
+					buf[1] = ((pktX >> 7) & 0x7f);
+					buf[2] = (pktX & 0x7f);
+					buf[3] = ((pktY >> 14) & 0x3);
+					buf[4] = ((pktY >> 7) & 0x7f);
+					buf[5] = (pktY & 0x7f);
+					buf[6] = m_rawButtons;
+				}else{
+					// 通常モード
+					buf[0] = (proximityflag ? 0xA0 : 0xE0)|((m_rawButtons & ~0x1) ? 0x8 : 0)|((pktX >> 14) & 0x3)|((((pktPressure) & 0) << 2));
+					buf[1] = ((pktX >> 7) & 0x7f);
+					buf[2] = (pktX & 0x7f);
+					buf[3] = ((m_rawButtons & 0xf) << 3)|((pktY >> 14) & 0x3)|((((pktPressure >> 1) & 0) << 2));
+					buf[4] = ((pktY >> 7) & 0x7f);
+					buf[5] = (pktY & 0x7f);
+					buf[6] = (((m_rawButtons & ~0x4) ? 0x00 : 0x40))|((pktPressure >> 2)&0x3f);
+				}
+				memcpy(m_lastdata, buf, 7);
+				m_lastdatalen = 7;
+				if(SendDataToReadBuffer(buf, 7)){
+					//m_wait += 7;
+				}
+			}
+			g_lastPosX = pktXtmp;
+			g_lastPosY = pktYtmp;
+			g_lastPosValid = true;
 		}
 	}
 
 	return true;
 }
 bool CComWacom::HandleMouseMoveMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
+	if(!m_config.enable) return false;
 	if(m_skipmouseevent > 0){
 		m_skipmouseevent--;
 		return true;
@@ -454,12 +578,14 @@ bool CComWacom::HandleMouseMoveMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	return false;
 }
 bool CComWacom::HandleMouseUpMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
+	if(!m_config.enable) return false;
 	if(!m_exclusivemode && m_skipmouseevent > 0){
 		return true;
 	}
 	return false;
 }
 bool CComWacom::HandleMouseDownMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
+	if(!m_config.enable) return false;
 	if(!m_exclusivemode && m_skipmouseevent > 0){
 		return true;
 	}
@@ -483,6 +609,9 @@ bool CComWacom::SendDataToReadBuffer(const char *data, int len){
 	int bufused = (m_sBuffer_wpos - m_sBuffer_rpos) & (WACOM_BUFFER - 1);
 	if(bufused + len >= WACOM_BUFFER){
 		// Buffer Full
+		if (sysport.c & 1) {
+			pic_setirq(4); // XXX: 催促
+		}
 		return false;
 	}
 	for(int i=0;i<len;i++){
@@ -501,18 +630,28 @@ bool CComWacom::SendDataToReadBuffer(const char *data, int len){
 UINT CComWacom::Read(UINT8* pData)
 {
 	static int nodatacounter = 0;
+	DWORD datatime = GetTickCount();
 	if(m_wait > 0){
 		m_wait--;
+		g_datatime = datatime;
 		return 0;
 	}
+	if(datatime - g_datatime > 500){
+		// データが古いので捨てましょう
+		m_sBuffer_rpos = m_sBuffer_wpos;
+		g_datatime = datatime;
+		return 0;
+	}
+	g_datatime = datatime;
 	if(m_sBuffer_wpos != m_sBuffer_rpos){
+		nodatacounter = 0;
 		*pData = m_sBuffer[m_sBuffer_rpos];
 		m_sBuffer_rpos = (m_sBuffer_rpos + 1) & (WACOM_BUFFER - 1);
 		return 1;
 	}else{
 		nodatacounter++;
 		// XXX: 長期間データがないとWin9xでおかしくなるようなので暫定対策
-		if(nodatacounter > 256){
+		if(m_config.mode19200 && nodatacounter > 256){
 			if(m_lastdatalen > 0){
 				char buf[10];
 				memcpy(buf, m_lastdata, 7);
@@ -521,11 +660,11 @@ UINT CComWacom::Read(UINT8* pData)
 				}else{
 					buf[0] &= ~0x40;
 				}
-				SendDataToReadBuffer(buf, m_lastdatalen);
+				if(m_config.start) SendDataToReadBuffer(buf, m_lastdatalen);
 			}
 			nodatacounter = 0;
 		}
-		return 0;
+		g_lastPosValid = false;
 	}
 	return 0;
 }
@@ -550,13 +689,33 @@ UINT CComWacom::Write(UINT8 cData)
 			if(strcmp(m_cmdbuf, "#")==0){
 				// Reset to protocol IV command set
 				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
-			}else if(strcmp(m_cmdbuf, "$")==0){
-				// Reset to 9600 bps (sent at 19200 bps)
+				m_config.scrnsizemode = false;
+				m_config.disablepressure = false;
+				m_config.csvmode = false;
+				m_config.relmode = false;
+				m_config.start = true; // Start sending coordinates
+				m_config.mode19200 = false;
+			}else if(strcmp(m_cmdbuf, "#~*F202C800")==0){
+				// 19200 bps mode
 				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
-			}else if(strcmp(m_cmdbuf, "ST")==0){
-				m_start = true; // Start sending coordinates
-			}else if(strcmp(m_cmdbuf, "SP")==0){
-				m_start = false; // Stop sending coordinates
+				m_config.scrnsizemode = false;
+				m_config.disablepressure = false;
+				m_config.csvmode = false;
+				m_config.relmode = false;
+				m_config.start = true; // Start sending coordinates
+				m_config.mode19200 = true;
+			}else if(strcmp(m_cmdbuf, "$")==0){
+				// Reset to 9600 bps (sent at 19200 bps) & Disable Pressure
+				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
+				m_config.scrnsizemode = false;
+				m_config.disablepressure = true;
+				m_config.mode19200 = false;
+			}else if(strncmp(m_cmdbuf, "ST", 2)==0){
+				m_config.start = true; // Start sending coordinates
+			}else if(strncmp(m_cmdbuf, "@ST", 2)==0){
+				m_config.start = true; // Start sending coordinates
+			}else if(strncmp(m_cmdbuf, "SP", 2)==0){
+				m_config.start = false; // Stop sending coordinates
 			}else if(strcmp(m_cmdbuf, "~R")==0){
 				SendDataToReadBuffer(cmwacom_RData, sizeof(cmwacom_RData));
 				if(m_wait < WACOM_BUFFER) m_wait += sizeof(cmwacom_RData)*2;
@@ -565,7 +724,41 @@ UINT CComWacom::Write(UINT8 cData)
 				if(m_wait < WACOM_BUFFER) m_wait += sizeof(cmwacom_CData)*2;
 			}else if(strncmp(m_cmdbuf, "NR", 2)==0){
 				// Set Resolution
-				m_resolution = atoi(m_cmdbuf + 2);
+				m_config.resolution_w = m_config.resolution_h = atoi(m_cmdbuf + 2);
+				m_config.scrnsizemode = false;
+			}else if(strcmp(m_cmdbuf, "AS0")==0){
+				m_config.csvmode = true;
+			}else if(strcmp(m_cmdbuf, "AS1")==0){
+				m_config.csvmode = false;
+			}else if(strcmp(m_cmdbuf, "DE0")==0){
+				m_config.relmode = false;
+			}else if(strcmp(m_cmdbuf, "DE1")==0){
+				m_config.relmode = true;
+			}else if(strcmp(m_cmdbuf, "SU01")==0){
+				m_config.suppress = true;
+			}else if(strcmp(m_cmdbuf, "SU00")==0){
+				m_config.suppress = false;
+			}else if(strncmp(m_cmdbuf, "SC", 2)==0){
+				// Set Screen Size?
+				int w, h;
+				char *spos = strchr(m_cmdbuf, ',');
+				if(spos){
+					w = atoi(m_cmdbuf + 2);
+					h = atoi(spos + 1);
+					if(w > 0 && h > 0){
+						m_config.screen_w = w;
+						m_config.screen_h = h;
+						m_config.scrnsizemode = true;
+					}
+				}
+			}else if(strcmp(m_cmdbuf, "TEFINE")==0){
+				// I'm Fine!
+				char data[] = "KT-0405-R00 V1.3-2 95/04/28 by WACOM\r\nFINE\r\nI AM FINE.\r\n";
+				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
+				SendDataToReadBuffer(data, sizeof(data));
+				m_lastdatalen = 0;
+				m_wait = sizeof(data);
+				m_config.enable = true;
 			}
 			m_cmdbuf_pos = 0;
 		}else{
@@ -576,6 +769,7 @@ UINT CComWacom::Write(UINT8 cData)
 				//if(m_wait < WACOM_BUFFER) m_wait += sizeof(cmwacom_ModelData)*2;
 				m_wait = sizeof(cmwacom_ModelData);
 				m_cmdbuf_pos = 0;
+				m_config.enable = true;
 			}
 		}
 	}
@@ -608,6 +802,37 @@ UINT8 CComWacom::GetStat()
  */
 INTPTR CComWacom::Message(UINT nMessage, INTPTR nParam)
 {
+	switch (nMessage)
+	{
+		case COMMSG_SETFLAG:
+			{
+				COMFLAG flag = reinterpret_cast<COMFLAG>(nParam);
+				if ((flag) && (flag->size == sizeof(_COMFLAG) + sizeof(m_config)) && (flag->sig == COMSIG_MIDI))
+				{
+					CopyMemory(&m_config, flag + 1, sizeof(m_config));
+					return 1;
+				}
+			}
+			break;
+
+		case COMMSG_GETFLAG:
+			{
+				COMFLAG flag = (COMFLAG)_MALLOC(sizeof(_COMFLAG) + sizeof(m_config), "PENTAB FLAG");
+				if (flag)
+				{
+					flag->size = sizeof(_COMFLAG) + sizeof(m_config);
+					flag->sig = COMSIG_MIDI;
+					flag->ver = 0;
+					flag->param = 0;
+					CopyMemory(flag + 1, &m_config, sizeof(m_config));
+					return reinterpret_cast<INTPTR>(flag);
+				}
+			}
+			break;
+
+		default:
+			break;
+	}
 	return 0;
 }
 
