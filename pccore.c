@@ -907,9 +907,9 @@ void screendisp(NEVENTITEM item) {
 	gdc_work(GDCWORK_SLAVE);
 	gdc.vsync = 0;
 	pcstat.screendispflag = 0;
-	if (!np2cfg.DISPSYNC) {
-		drawscreen();
-	}
+	//if (!np2cfg.DISPSYNC) {
+	//	drawscreen();
+	//}
 	pi = &pic.pi[0];
 	if (pi->irr & PIC_CRTV) {
 		pi->irr &= ~PIC_CRTV;
@@ -967,6 +967,11 @@ void pccore_exec(BOOL draw) {
 	soundmng_sync();
 	mouseif_sync();
 	pal_eventclear();
+
+	// HAXM‚Ìê‡Aæ‚É•`‰æ
+	if (!np2cfg.DISPSYNC) {
+		drawscreen();
+	}
 
 	gdc.vsync = 0;
 	pcstat.screendispflag = 1;

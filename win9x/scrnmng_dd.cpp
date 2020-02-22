@@ -42,8 +42,9 @@
 //! 8BPP パレット数
 #define PALLETES_8BPP	NP2PAL_TEXT3
 
-extern WINLOCEX np2_winlocexallwin(HWND base);
+static int req_enter_criticalsection = 0;
 
+extern WINLOCEX np2_winlocexallwin(HWND base);
 
 typedef struct {
 	LPDIRECTDRAW		ddraw1;
@@ -155,7 +156,7 @@ static void renewalclientsize(BOOL winloc) {
 		ddraw.rect.bottom = height;
 		scrnwidth = width;
 		scrnheight = height;
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		switch(fscrnmod) {
 			default:
 			case FSCRNMOD_NORESIZE:
@@ -236,7 +237,7 @@ static void renewalclientsize(BOOL winloc) {
 		}
 	}
 	else {
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		multiple = scrnstat.multiple;
 		if (!(ddraw.scrnmode & SCRNMODE_ROTATE)) {
 			if ((np2oscfg.paddingx) && (multiple == 8)) {
@@ -642,7 +643,7 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 		}
 #endif
 		bitcolor = np2oscfg.fscrnbpp;
-		fscrnmod = np2oscfg.fscrnmod;
+		fscrnmod = FSCRNCFG_fscrnmod;
 		if ((fscrnmod & (FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP)) &&
 			(dd_displayName[0] ? EnumDisplaySettings(dd_displayName, ENUM_REGISTRY_SETTINGS, &devmode) : EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode))) {
 			if (fscrnmod & FSCRNMOD_SAMERES) {
@@ -695,7 +696,7 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 #ifdef SUPPORT_WAB
 		if(!np2wabwnd.multiwindow){
-			if(np2oscfg.fscrnmod & FSCRNMOD_SAMERES){
+			if(FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES){
 				int maxx = GetSystemMetrics(SM_CXSCREEN);
 				int maxy = GetSystemMetrics(SM_CYSCREEN);
 				ddsd.dwWidth = (WAB_MAX_WIDTH > maxx ? maxx : WAB_MAX_WIDTH);
@@ -786,6 +787,10 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 			// 実サイズに
 			width = ddsd.dwWidth = scrnstat.width;//np2wab.realWidth;
 			height = ddsd.dwHeight = scrnstat.height;//np2wab.realHeight;
+			if (scrnmode & SCRNMODE_ROTATE) {
+				ddsd.dwWidth = scrnstat.height;
+				ddsd.dwHeight = scrnstat.width;
+			}
 			ddsd.dwWidth++; // +1しないと駄目らしい
 		}else{
 			if (!(scrnmode & SCRNMODE_ROTATE)) {
@@ -1095,7 +1100,11 @@ void scrnmngDD_update(void) {
 	RECT	*scrn;
 	HRESULT	r;
 	
-	dd_enter_criticalsection();
+	if(!dd_tryenter_criticalsection()){
+		req_enter_criticalsection = 1;
+		return;
+	}
+	//dd_enter_criticalsection();
 	if (scrnmng.palchanged) {
 		scrnmng.palchanged = FALSE;
 		paletteset();
@@ -1148,6 +1157,7 @@ void scrnmngDD_update(void) {
 		}
 	}
 	dd_leave_criticalsection();
+	req_enter_criticalsection = 0;
 }
 
 
@@ -1346,7 +1356,7 @@ void scrnmngDD_sizing(UINT side, RECT *rect) {
 
 void scrnmngDD_exitsizing(void)
 {
-	scrnmngDD_setmultiple(scrnsizing.mul);
+	scrnmng_setmultiple(scrnsizing.mul);
 	InvalidateRect(g_hWndMain, NULL, TRUE);		// ugh
 }
 
@@ -1365,7 +1375,7 @@ void scrnmngDD_updatefsres(void) {
 	ddbf.dwSize = sizeof(ddbf);
 	ddbf.dwFillColor = 0;
 
-	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
+	if((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		dd_enter_criticalsection();
 		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		ddraw.backsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
@@ -1429,11 +1439,36 @@ void scrnmngDD_blthdc(HDC hdc) {
 	if (np2wab.wndWidth < 32 || np2wab.wndHeight < 32) return;
 	if (mt_wabpausedrawing) return;
 	if (ddraw.wabsurf != NULL) {
+		while(req_enter_criticalsection){
+			Sleep(1);
+		}
 		dd_enter_criticalsection();
 		mt_wabdrawing = 1;
 		r = ddraw.wabsurf->GetDC(&hDCDD);
 		if (r == DD_OK){
-			r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
+			POINT pt[3];
+			switch(ddraw.scrnmode & SCRNMODE_ROTATEMASK){
+			case SCRNMODE_ROTATELEFT:
+				pt[0].x = 0;
+				pt[0].y = scrnstat.width;
+				pt[1].x = 0;
+				pt[1].y = 0;
+				pt[2].x = scrnstat.height;
+				pt[2].y = scrnstat.width;
+				r = PlgBlt(hDCDD, pt, hdc, 0, 0, np2wab.realWidth, np2wab.realHeight, NULL, 0, 0);
+				break;
+			case SCRNMODE_ROTATERIGHT:
+				pt[0].x = scrnstat.height;
+				pt[0].y = 0;
+				pt[1].x = scrnstat.height;
+				pt[1].y = scrnstat.width;
+				pt[2].x = 0;
+				pt[2].y = 0;
+				r = PlgBlt(hDCDD, pt, hdc, 0, 0, np2wab.realWidth, np2wab.realHeight, NULL, 0, 0);
+				break;
+			default:
+				r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
+			}
 			ddraw.wabsurf->ReleaseDC(hDCDD);
 		}
 		mt_wabdrawing = 0;
@@ -1463,11 +1498,20 @@ void scrnmngDD_bltwab() {
 			exmgn = scrnstat.extend;
 		}
 		src.left = src.top = 0;
-		src.right = scrnstat.width;
-		src.bottom = scrnstat.height;
-		dstmp = *dst;
-		dstmp.left += exmgn;
-		dstmp.right = dstmp.left + scrnstat.width;
+
+		if (!(ddraw.scrnmode & SCRNMODE_ROTATE)) {
+			src.right = scrnstat.width;
+			src.bottom = scrnstat.height;
+			dstmp = *dst;
+			dstmp.left += exmgn;
+			dstmp.right = dstmp.left + scrnstat.width;
+		}else{
+			src.right = scrnstat.height;
+			src.bottom = scrnstat.width;
+			dstmp = *dst;
+			dstmp.left += exmgn;
+			dstmp.right = dstmp.left + scrnstat.height;
+		}
 		dd_enter_criticalsection();
 		r = ddraw.backsurf->Blt(&dstmp, ddraw.wabsurf, &src, DDBLT_WAIT, NULL);
 		if (r == DDERR_SURFACELOST) {

@@ -7,9 +7,9 @@
 
 #pragma once
 
-// XXX: 1600x1024ˆÈã‚É‚È‚ç‚È‚¢‚Ì‚Å·‚µ“–‚½‚Á‚Ä‚Í‚±‚ê‚Å\•ª
+// XXX: ‰ñ“]‚³‚¹‚Ä‚à1600x1600ˆÈã‚É‚È‚ç‚È‚¢‚Ì‚Å·‚µ“–‚½‚Á‚Ä‚Í‚±‚ê‚Å\•ª
 #define WAB_MAX_WIDTH	1600
-#define WAB_MAX_HEIGHT	1024
+#define WAB_MAX_HEIGHT	1600
 
 #ifdef __cplusplus
 extern "C" {

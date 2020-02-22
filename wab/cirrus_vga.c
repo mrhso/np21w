@@ -132,7 +132,8 @@ static HCURSOR ga_hFakeCursor = NULL; // ƒn[ƒhƒEƒFƒAƒJ[ƒ\ƒ‹i‰¼jCIRRUS VGA‚Ìƒ
 #endif
 
 #define MMIO_MODE_MMIO	0
-#define MMIO_MODE_VRAM	1
+#define MMIO_MODE_VRAM1	1
+#define MMIO_MODE_VRAM2	2
 int mmio_mode = MMIO_MODE_MMIO; // 0==MMIO, 1==VRAM
 UINT32 mmio_mode_region1 = 0; // 0==MMIO, 1==VRAM
 UINT32 mmio_mode_region2 = 0; // 0==MMIO, 1==VRAM
@@ -2909,33 +2910,50 @@ void cirrus_linear_mmio_update(void *opaque)
 		((s->gr[0x0B] & 0x14) == 0x14) ||
 		(s->gr[0x0B] & 0x02) ||
 		!(mode < 4 || mode > 5 || ((s->gr[0x0B] & 0x4) == 0))){
-		if(mmio_mode == MMIO_MODE_VRAM){
+		if(mmio_mode != MMIO_MODE_MMIO){
 			if(np2clvga.VRAMWindowAddr){
-				if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size);
-				mmio_mode_region1 = 0;
+				if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size - (mmio_mode==MMIO_MODE_VRAM1 ? 0x1000 : 0));
 			}
+			mmio_mode_region1 = 0;
 			if(np2clvga.pciLFB_Addr){
 				if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, cirrusvga->real_vram_size);
-				mmio_mode_region2 = 0;
 			}
+			mmio_mode_region2 = 0;
 			lastlinmmio = linmmio;
 			mmio_mode = MMIO_MODE_MMIO;
 		}
 	}else{
-		if(mmio_mode == MMIO_MODE_MMIO || np2clvga.VRAMWindowAddr!=mmio_mode_region1  || np2clvga.pciLFB_Addr!=mmio_mode_region2 || lastlinmmio!=linmmio){
-			if(np2clvga.VRAMWindowAddr){
-				if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size);
-				i386hax_vm_setmemoryarea(vramptr, np2clvga.VRAMWindowAddr, cirrusvga->real_vram_size);
+		//if((s->sr[0x17] & 0x44) == 0x44 && (s->gr[0x6] & 0x0c) == 0x04){
+		//	if(mmio_mode != MMIO_MODE_VRAM1 || np2clvga.VRAMWindowAddr!=mmio_mode_region1  || np2clvga.pciLFB_Addr!=mmio_mode_region2 || lastlinmmio!=linmmio){
+		//		if(np2clvga.VRAMWindowAddr){
+		//			if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size);
+		//			i386hax_vm_setmemoryarea(vramptr, np2clvga.VRAMWindowAddr, cirrusvga->real_vram_size - 0x1000);
+		//		}
+		//		mmio_mode_region1 = np2clvga.VRAMWindowAddr;
+		//		if(np2clvga.pciLFB_Addr){
+		//			if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
+		//			i386hax_vm_setmemoryarea(vramptr, np2clvga.pciLFB_Addr, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
+		//		}
+		//		mmio_mode_region2 = np2clvga.pciLFB_Addr;
+		//		lastlinmmio = linmmio;
+		//		mmio_mode = MMIO_MODE_VRAM1;
+		//	}
+		//}else{
+			if(mmio_mode != MMIO_MODE_VRAM2 || np2clvga.VRAMWindowAddr!=mmio_mode_region1  || np2clvga.pciLFB_Addr!=mmio_mode_region2 || lastlinmmio!=linmmio){
+				if(np2clvga.VRAMWindowAddr){
+					if(mmio_mode_region1) i386hax_vm_removememoryarea(vramptr, mmio_mode_region1, cirrusvga->real_vram_size - (mmio_mode==MMIO_MODE_VRAM1 ? 0x1000 : 0));
+					i386hax_vm_setmemoryarea(vramptr, np2clvga.VRAMWindowAddr, cirrusvga->real_vram_size);
+				}
 				mmio_mode_region1 = np2clvga.VRAMWindowAddr;
-			}
-			if(np2clvga.pciLFB_Addr){
-				if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
-				i386hax_vm_setmemoryarea(vramptr, np2clvga.pciLFB_Addr, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
+				if(np2clvga.pciLFB_Addr){
+					if(mmio_mode_region2) i386hax_vm_removememoryarea(vramptr, mmio_mode_region2, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
+					i386hax_vm_setmemoryarea(vramptr, np2clvga.pciLFB_Addr, linmmio ? s->linear_mmio_mask : cirrusvga->real_vram_size);
+				}
 				mmio_mode_region2 = np2clvga.pciLFB_Addr;
+				lastlinmmio = linmmio;
+				mmio_mode = MMIO_MODE_VRAM2;
 			}
-			lastlinmmio = linmmio;
-			mmio_mode = MMIO_MODE_VRAM;
-		}
+		//}
 	}
 #endif
 }
