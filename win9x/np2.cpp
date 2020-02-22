@@ -131,19 +131,43 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, KEY_UNKNOWN, 0, 0,
 						0, 0, 0, {1, 2, 2, 1},
 						{5, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 #if defined(SUPPORT_SMPU98)
 						{5, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 						{5, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 #endif
 						{0, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 						{0, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 						{0, 0, 0x3e, 19200,
-						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0},
+						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
+#if defined(SUPPORT_NAMED_PIPE)
+						 OEMTEXT("NP2-NamedPipe"), OEMTEXT("."),
+#endif
+						},
 						0xffffff, 0xffbf6a, 0, 0,
 						0, 1,
 						0, 0,
@@ -168,8 +192,8 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 0, TCMODE_DEFAULT, 0, 1, 
 						0,
 #if defined(SUPPORT_WACOM_TABLET)
-						0
-#endif	// defined(SUPPORT_VSTi)
+						0,
+#endif	// defined(SUPPORT_WACOM_TABLET)
 					};
 
 		OEMCHAR		fddfolder[MAX_PATH];
@@ -1458,6 +1482,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			}else{
 				SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
 			}
+#ifdef SUPPORT_WACOM_TABLET
+			cmwacom_setNCControl(!!np2oscfg.mouse_nc);
+#endif
 			break;
 
 		case IDM_MOUSERAW:
@@ -1522,6 +1549,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 		case IDM_MIDIPANIC:
 			rs232c_midipanic();
 			mpu98ii_midipanic();
+#if defined(SUPPORT_SMPU98)
+			smpu98_midipanic();
+#endif
 			pc9861k_midipanic();
 			break;
 

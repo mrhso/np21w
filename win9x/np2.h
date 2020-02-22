@@ -21,6 +21,10 @@ typedef struct {
 	OEMCHAR	mdl[64];
 	OEMCHAR	def[MAX_PATH];
 	UINT8	fixedspeed;
+#if defined(SUPPORT_NAMED_PIPE)
+	OEMCHAR	pipename[MAX_PATH]; // The name of the named-pipe
+	OEMCHAR	pipeserv[MAX_PATH]; // The server name of the named-pipe
+#endif
 } COMCFG;
 
 typedef struct {
@@ -117,7 +121,7 @@ typedef struct {
 	UINT8	readonly; // No save changed settings
 	UINT8	usewheel; // Use mouse wheel
 	UINT8	tickmode; // Force Set Tick Counter Mode
-	UINT8	usemastervolume; // Use MAster Volume
+	UINT8	usemastervolume; // Use Master Volume
 	
 	UINT8	toolwndhistory; // Number of data of recently opened FD image list in Tool Window
 	

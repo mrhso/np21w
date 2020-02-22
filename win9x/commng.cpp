@@ -10,7 +10,12 @@
 #include "commng/cmnull.h"
 #include "commng/cmpara.h"
 #include "commng/cmserial.h"
+#if defined(SUPPORT_WACOM_TABLET)
 #include "commng/cmwacom.h"
+#endif
+#if defined(SUPPORT_NAMED_PIPE)
+#include "commng/cmpipe.h"
+#endif
 #include "generic/cmjasts.h"
 
 /**
@@ -99,6 +104,12 @@ COMMNG commng_create(UINT nDevice)
 		else if (pComCfg->port == COMPORT_TABLET)
 		{
 			ret = CComWacom::CreateInstance(g_hWndMain);
+		}
+#endif
+#if defined(SUPPORT_NAMED_PIPE)
+		else if (pComCfg->port == COMPORT_PIPE)
+		{
+			ret = CComPipe::CreateInstance(pComCfg->pipename, pComCfg->pipeserv);
 		}
 #endif
 	}

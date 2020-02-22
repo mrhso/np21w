@@ -1368,6 +1368,9 @@
     <ClCompile Include="..\cbus\smpu98.c">
       <Filter>ソース ファイル\cbus</Filter>
     </ClCompile>
+    <ClCompile Include="commng\cmpipe.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2407,6 +2410,9 @@
     </ClInclude>
     <ClInclude Include="..\cbus\smpu98.h">
       <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmpipe.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

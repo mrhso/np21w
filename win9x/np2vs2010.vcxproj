@@ -498,6 +498,7 @@
     <ClCompile Include="commng\cmmidioutvst.cpp" />
     <ClCompile Include="commng\cmnull.cpp" />
     <ClCompile Include="commng\cmpara.cpp" />
+    <ClCompile Include="commng\cmpipe.cpp" />
     <ClCompile Include="commng\cmserial.cpp" />
     <ClCompile Include="commng\vsthost\vstbuffer.cpp" />
     <ClCompile Include="commng\vsthost\vsteditwnd.cpp" />
@@ -811,6 +812,7 @@
     <ClInclude Include="commng\cmmidioutvst.h" />
     <ClInclude Include="commng\cmnull.h" />
     <ClInclude Include="commng\cmpara.h" />
+    <ClInclude Include="commng\cmpipe.h" />
     <ClInclude Include="commng\cmserial.h" />
     <ClInclude Include="commng\vsthost\vstbuffer.h" />
     <ClInclude Include="commng\vsthost\vsteditwnd.h" />
