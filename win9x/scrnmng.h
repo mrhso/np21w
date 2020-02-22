@@ -73,6 +73,13 @@ typedef struct {
 	int		multiple;
 } SCRNSTAT;
 
+typedef struct {
+	UINT8	hasfscfg;
+	UINT8	fscrnmod;
+	UINT8	scrn_mul;
+	UINT8	d3d_imode;
+} SCRNRESCFG;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +87,14 @@ extern "C" {
 
 extern	SCRNMNG		scrnmng;			// É}ÉNÉçóp
 extern	SCRNSTAT	scrnstat;
+extern	SCRNRESCFG	scrnrescfg;
+
+#define	FSCRNCFG_fscrnmod	(np2oscfg.fsrescfg && scrnrescfg.hasfscfg ? scrnrescfg.fscrnmod : np2oscfg.fscrnmod)
+#define	FSCRNCFG_d3d_imode	(np2oscfg.fsrescfg && scrnrescfg.hasfscfg ? scrnrescfg.d3d_imode : np2oscfg.d3d_imode)
+
+void scrnres_readini();
+void scrnres_readini_res(int width, int height);
+void scrnres_writeini();
 
 extern UINT8 scrnmng_current_drawtype;
 

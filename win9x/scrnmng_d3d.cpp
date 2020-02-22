@@ -45,7 +45,8 @@
 
 #define CREATEDEVICE_RETRY_MAX	3
 
-int devicelostflag = 0;
+static int devicelostflag = 0;
+static int req_enter_criticalsection = 0;
 
 extern WINLOCEX np2_winlocexallwin(HWND base);
 
@@ -119,7 +120,7 @@ static void getscreensize(int *screenwidth, int *screenheight, UINT scrnmode){
 
 		scrnwidth = width;
 		scrnheight = height;
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		switch(fscrnmod) {
 			default:
 			case FSCRNMOD_NORESIZE:
@@ -171,7 +172,7 @@ static void getscreensize(int *screenwidth, int *screenheight, UINT scrnmode){
 		height = min(scrnstat.height, d3d.height);
 
 		multiple = scrnstat.multiple;
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		if (!(scrnmode & SCRNMODE_ROTATE)) {
 			scrnwidth = (width * multiple) >> 3;
 			scrnheight = (height * multiple) >> 3;
@@ -225,7 +226,7 @@ static void renewalclientsize(BOOL winloc) {
 		d3d.rect.right = width;
 		d3d.rect.bottom = height;
 		getscreensize(&scrnwidth, &scrnheight, d3d.scrnmode);
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		if(fscrnmod==FSCRNMOD_ASPECTFIX8) {
 			multiple = min(width, height);
 		}
@@ -272,7 +273,7 @@ static void renewalclientsize(BOOL winloc) {
 		}
 	}
 	else {
-		fscrnmod = np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK;
+		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		multiple = scrnstat.multiple;
 		getscreensize(&scrnwidth, &scrnheight, d3d.scrnmode);
 		if (!(d3d.scrnmode & SCRNMODE_ROTATE)) {
@@ -692,7 +693,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 
 	d3d_enter_criticalsection();
 
-	current_d3d_imode = np2oscfg.d3d_imode;
+	current_d3d_imode = FSCRNCFG_d3d_imode;
 
 	static UINT8 lastscrnmode = 0;
 	static WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
@@ -804,7 +805,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 		}
 #endif
 
-		fscrnmod = np2oscfg.fscrnmod;
+		fscrnmod = FSCRNCFG_fscrnmod;
 		if(!(fscrnmod & FSCRNMOD_SAMERES)){
 			current_d3d_imode = D3D_IMODE_NEAREST_NEIGHBOR;
 		}
@@ -871,22 +872,32 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 #endif
 	}
 	else {
+		int	wabwidth;
+		int	wabheight;
 		RECT crect;
 
 #ifdef SUPPORT_WAB
 		//if(!np2wabwnd.multiwindow && (np2wab.relay&0x3)!=0 && np2wab.realWidth>=640 && np2wab.realHeight>=400){
 		if(!np2wabwnd.multiwindow && (np2wab.relay&0x3)!=0 && scrnstat.width>=640 && scrnstat.height>=400){
 			// ŽÀƒTƒCƒY‚É
-			width = bufwidth = scrnstat.width;//np2wab.realWidth;
-			height = bufheight = scrnstat.height;//np2wab.realHeight;
+			width = wabwidth = bufwidth = scrnstat.width;//np2wab.realWidth;
+			height = wabheight = bufheight = scrnstat.height;//np2wab.realHeight;
+			if (scrnmode & SCRNMODE_ROTATE) {
+				wabwidth = bufwidth = scrnstat.height;
+				wabheight = bufheight = scrnstat.width;
+			}
 			bufwidth++; // +1‚µ‚È‚¢‚Æ‘Ê–Ú‚ç‚µ‚¢
 			bufheight++; // +1‚µ‚È‚¢‚Æ‘Ê–Ú‚ç‚µ‚¢
 		}else{
 			if (!(scrnmode & SCRNMODE_ROTATE)) {
+				wabwidth = 640;
+				wabheight = 480;
 				bufwidth = 640 + 1;
 				bufheight = 480;
 			}
 			else {
+				wabwidth = 480;
+				wabheight = 640;
 				bufwidth = 480;
 				bufheight = 640 + 1;
 			}
@@ -895,10 +906,14 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 		}
 #else
 		if (!(scrnmode & SCRNMODE_ROTATE)) {
+			wabwidth = 640;
+			wabheight = 480;
 			d3d.d3dparam.BackBufferWidth = 640 + 1;
 			d3d.d3dparam.BackBufferHeight = 480;
 		}
 		else {
+			wabwidth = 480;
+			wabheight = 640;
 			d3d.d3dparam.BackBufferWidth = 480;
 			d3d.d3dparam.BackBufferHeight = 640 + 1;
 		}
@@ -934,7 +949,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 		d3d.d3ddev->CreateOffscreenPlainSurface(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.backsurf, NULL);
 		//d3d.d3ddev->CreateRenderTarget(bufwidth, bufheight, d3d.d3dparam.BackBufferFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &d3d.backsurf, NULL);
 #ifdef SUPPORT_WAB
-		d3d.d3ddev->CreateOffscreenPlainSurface(width, height, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.wabsurf, NULL);
+		d3d.d3ddev->CreateOffscreenPlainSurface(wabwidth, wabheight, d3d.d3dparam.BackBufferFormat, D3DPOOL_DEFAULT, &d3d.wabsurf, NULL);
 #endif
 
 		d3d.extend = 1;
@@ -1310,8 +1325,11 @@ void scrnmngD3D_update(void) {
 		paletteset();
 	}
 	
-	//if(!d3d_tryenter_criticalsection()) return;
-	d3d_enter_criticalsection();
+	if(!d3d_tryenter_criticalsection()){
+		req_enter_criticalsection = 1;
+		return;
+	}
+	//d3d_enter_criticalsection();
 	if(d3d.backsurf != NULL) {
 		if(d3d.backsurf2 != NULL && (current_d3d_imode == D3D_IMODE_PIXEL || current_d3d_imode == D3D_IMODE_PIXEL2 || current_d3d_imode == D3D_IMODE_PIXEL3)){
 			RECT	rectbuf = {0};
@@ -1452,6 +1470,7 @@ void scrnmngD3D_update(void) {
 		}
 	}
 	d3d_leave_criticalsection();
+	req_enter_criticalsection = 0;
 }
 
 
@@ -1672,7 +1691,7 @@ void scrnmngD3D_sizing(UINT side, RECT *rect) {
 
 void scrnmngD3D_exitsizing(void)
 {
-	scrnmngD3D_setmultiple(scrnsizing.mul);
+	scrnmng_setmultiple(scrnsizing.mul);
 	InvalidateRect(g_hWndMain, NULL, TRUE);		// ugh
 }
 
@@ -1690,7 +1709,7 @@ void scrnmngD3D_updatefsres(void) {
 	rect.right = width;
 	rect.bottom = height;
 
-	if((np2oscfg.fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
+	if((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		d3d_enter_criticalsection();
 		d3d.d3ddev->ColorFill(d3d.wabsurf, NULL, D3DCOLOR_XRGB(0, 0, 0));
 		d3d.d3ddev->ColorFill(d3d.backsurf, NULL, D3DCOLOR_XRGB(0, 0, 0));
@@ -1759,12 +1778,37 @@ void scrnmngD3D_blthdc(HDC hdc) {
 	if (mt_wabpausedrawing) return;
 	if (np2wab.wndWidth < 32 || np2wab.wndHeight < 32) return;
 	if (d3d.wabsurf != NULL) {
+		while(req_enter_criticalsection){
+			Sleep(1);
+		}
 		d3d_enter_criticalsection();
 		if (d3d.menudisp != 1 && d3d.cliping == 0){
 			mt_wabdrawing = 1;
 			r = d3d.wabsurf->GetDC(&hDCDD);
 			if (r == D3D_OK){
-				r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
+				POINT pt[3];
+				switch(d3d.scrnmode & SCRNMODE_ROTATEMASK){
+				case SCRNMODE_ROTATELEFT:
+					pt[0].x = 0;
+					pt[0].y = scrnstat.width;
+					pt[1].x = 0;
+					pt[1].y = 0;
+					pt[2].x = scrnstat.height;
+					pt[2].y = scrnstat.width;
+					r = PlgBlt(hDCDD, pt, hdc, 0, 0, np2wab.realWidth, np2wab.realHeight, NULL, 0, 0);
+					break;
+				case SCRNMODE_ROTATERIGHT:
+					pt[0].x = scrnstat.height;
+					pt[0].y = 0;
+					pt[1].x = scrnstat.height;
+					pt[1].y = scrnstat.width;
+					pt[2].x = 0;
+					pt[2].y = 0;
+					r = PlgBlt(hDCDD, pt, hdc, 0, 0, np2wab.realWidth, np2wab.realHeight, NULL, 0, 0);
+					break;
+				default:
+					r = BitBlt(hDCDD, 0, 0, scrnstat.width, scrnstat.height, hdc, 0, 0, SRCCOPY);
+				}
 				d3d.wabsurf->ReleaseDC(hDCDD);
 			}
 			mt_wabdrawing = 0;
@@ -1798,11 +1842,20 @@ void scrnmngD3D_bltwab() {
 			exmgn = scrnstat.extend;
 		}
 		src.left = src.top = 0;
-		src.right = scrnstat.width;
-		src.bottom = scrnstat.height;
-		dstmp = *dst;
-		//dstmp.left += exmgn;
-		dstmp.right = dstmp.left + scrnstat.width;
+		
+		if (!(d3d.scrnmode & SCRNMODE_ROTATE)) {
+			src.right = scrnstat.width;
+			src.bottom = scrnstat.height;
+			dstmp = *dst;
+			//dstmp.left += exmgn;
+			dstmp.right = dstmp.left + scrnstat.width;
+		}else{
+			src.right = scrnstat.height;
+			src.bottom = scrnstat.width;
+			dstmp = *dst;
+			//dstmp.left += exmgn;
+			dstmp.right = dstmp.left + scrnstat.height;
+		}
 		d3d_enter_criticalsection();
 		d3d.d3ddev->StretchRect(d3d.wabsurf, &src, d3d.backsurf, &dstmp, D3DTEXF_POINT);
 		d3d_leave_criticalsection();
