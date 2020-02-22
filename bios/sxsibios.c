@@ -11,7 +11,9 @@
 #include	"scsicmd.h"
 #include	"fdd/sxsi.h"
 #include	"timing.h"
-
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
+#include	"bios.h"
+#endif
 
 typedef REG8 (*SXSIFUNC)(UINT type, SXSIDEV sxsi);
 
@@ -87,12 +89,15 @@ static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 	UINT32	addr;
 	UINT	r;
 	UINT8	work[1024];
+	FILEPOS	posbase;
+	UINT8	oldAL = CPU_AL;
 
 	size = CPU_BX;
 	if (!size) {
 		size = 0x10000;
 	}
 	ret = sxsi_pos(type, sxsi, &pos);
+	posbase = pos;
 	if (!ret) {
 		addr = (CPU_ES << 4) + CPU_BP;
 		while(size) {
@@ -107,6 +112,35 @@ static REG8 sxsibios_read(UINT type, SXSIDEV sxsi) {
 			pos++;
 		}
 	}
+#ifdef SUPPORT_IDEIO
+	if((oldAL & 0xf0) == 0x80){
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
+		if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
+			// for Windows 9x IDE Driver
+			UINT8 sn;
+			UINT16 cy;
+			UINT8 hd;
+			sn = (posbase % sxsi->sectors) + 1;
+			posbase /= sxsi->sectors;
+			hd = (posbase % sxsi->surfaces);
+			posbase /= sxsi->surfaces;
+			cy = posbase & 0xffff;
+			// LIFO‚È‚Ì‚Å‹t‡’ˆÓ
+			biosioemu_push8(0x644, (CPU_BX / 512) & 0xff); 
+			biosioemu_push8(0x646, sn); 
+			biosioemu_push8(0x64a, ((cy >> 8) & 0xff)); 
+			biosioemu_push8(0x648, (cy & 0xff)); 
+			biosioemu_push8_read(0x64e); 
+			biosioemu_push8(0x64c, 0xA0|((oldAL & 0x1) << 4)|(hd & 0x0f)); 
+			if ((oldAL & 0xf) >= 0x2) {
+				biosioemu_push8(0x432, 0x01); // BANK #2
+			}else{
+				biosioemu_push8(0x432, 0x00); // BANK #1 
+			}
+		}
+#endif
+	}
+#endif
 	return(ret);
 }
 

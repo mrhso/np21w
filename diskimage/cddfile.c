@@ -578,7 +578,7 @@ void cd_destroy(SXSIDEV sxsi) {
 
 	if(sxsi->hdl){
 		_MFREE((CDINFO)sxsi->hdl);
-		sxsi->hdl = (INT_PTR)NULL;
+		sxsi->hdl = (INTPTR)NULL;
 	}
 }
 //	----

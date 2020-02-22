@@ -186,10 +186,15 @@ static void bios_reinitbyswitch(void) {
 		mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 							  (sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
 
+		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。
+		mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+						(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
 		if(np2cfg.winntfix){
-			// WinNT4.0でHDDが認識するようになる（ただしWin9xではHDD認識失敗の巻き添えになってCDが認識しなくなる）
-			mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
-						  (sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
+			// WinNT3.50で必要
+			if(sxsi_getdevtype(1)==SXSIDEV_NC && sxsi_getdevtype(3)==SXSIDEV_NC){
+				mem[0x0457] = (sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x42 : 0x07)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x90 : 0x38);//0xd2; // 接続なしは111でないと駄目
+				mem[0x05b0] = 0xff; // 接続状況に関係なし？
+			}
 		}
 	}else{
 		mem[0xF8E80+0x0010] &= ~0x0f;
@@ -486,13 +491,16 @@ void bios_initialize(void) {
 	}
 #endif
 	
-// np21w ver0.86 rev46 BIOS I/O emulation
+// np21w ver0.86 rev46-69 BIOS I/O emulation
 #if defined(BIOS_IO_EMULATION)
-	// エミュレーション用に書き換え。とりあえずINT 18HとINT 1CHのみ対応
+	// エミュレーション用に書き換え。とりあえずINT 18HとINT 1BHとINT 1CHのみ対応
 	if(biosioemu.enable){
 		mem[BIOS_BASE + BIOSOFST_18 + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
 		mem[BIOS_BASE + BIOSOFST_18 + 2] = 0x90; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_18 + 3] = 0xcf; // 0xcf(IRET)
+		mem[BIOS_BASE + BIOSOFST_1b + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
+		mem[BIOS_BASE + BIOSOFST_1b + 2] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_1b + 3] = 0xcf; // 0xcf(IRET)
 		mem[BIOS_BASE + BIOSOFST_1c + 1] = 0xee; // 0xcf(IRET) -> 0xee(OUT DX, AL)
 		mem[BIOS_BASE + BIOSOFST_1c + 2] = 0x90; // 0x90(NOP) BIOS hook
 		mem[BIOS_BASE + BIOSOFST_1c + 3] = 0xcf; // 0xcf(IRET)
@@ -528,9 +536,9 @@ static void bios_itfcall(void) {
 	}
 }
 
-// np21w ver0.86 rev46 BIOS I/O emulation
+// np21w ver0.86 rev46-69 BIOS I/O emulation
 #if defined(BIOS_IO_EMULATION)
-// LIFO
+// LIFO（若干高速だが逆順のため注意）
 void biosioemu_push8(UINT16 port, UINT8 data) {
 	
 	if(!biosioemu.enable) return;
@@ -539,6 +547,39 @@ void biosioemu_push8(UINT16 port, UINT8 data) {
 		biosioemu.data[biosioemu.count].flag = BIOSIOEMU_FLAG_NONE;
 		biosioemu.data[biosioemu.count].port = port;
 		biosioemu.data[biosioemu.count].data = data;
+		biosioemu.count++;
+	}
+}
+void biosioemu_push16(UINT16 port, UINT32 data) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		biosioemu.data[biosioemu.count].flag = BIOSIOEMU_FLAG_MB;
+		biosioemu.data[biosioemu.count].port = port;
+		biosioemu.data[biosioemu.count].data = data;
+		biosioemu.count++;
+	}
+}
+void biosioemu_push8_read(UINT16 port) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		biosioemu.data[biosioemu.count].flag = BIOSIOEMU_FLAG_READ;
+		biosioemu.data[biosioemu.count].port = port;
+		biosioemu.data[biosioemu.count].data = 0;
+		biosioemu.count++;
+	}
+}
+void biosioemu_push16_read(UINT16 port) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		biosioemu.data[biosioemu.count].flag = BIOSIOEMU_FLAG_READ|BIOSIOEMU_FLAG_MB;
+		biosioemu.data[biosioemu.count].port = port;
+		biosioemu.data[biosioemu.count].data = 0;
 		biosioemu.count++;
 	}
 }
@@ -560,6 +601,57 @@ void biosioemu_enq8(UINT16 port, UINT8 data) {
 		biosioemu.count++;
 	}
 }
+void biosioemu_enq16(UINT16 port) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		int i;
+		for(i=biosioemu.count-1;i>=0;i--){
+			biosioemu.data[i+1].flag = biosioemu.data[i].flag;
+			biosioemu.data[i+1].port = biosioemu.data[i].port;
+			biosioemu.data[i+1].data = biosioemu.data[i].data;
+		}
+		biosioemu.data[0].flag = BIOSIOEMU_FLAG_MB;
+		biosioemu.data[0].port = port;
+		biosioemu.data[0].data = 0;
+		biosioemu.count++;
+	}
+}
+void biosioemu_enq8_read(UINT16 port) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		int i;
+		for(i=biosioemu.count-1;i>=0;i--){
+			biosioemu.data[i+1].flag = biosioemu.data[i].flag;
+			biosioemu.data[i+1].port = biosioemu.data[i].port;
+			biosioemu.data[i+1].data = biosioemu.data[i].data;
+		}
+		biosioemu.data[0].flag = BIOSIOEMU_FLAG_READ;
+		biosioemu.data[0].port = port;
+		biosioemu.data[0].data = 0;
+		biosioemu.count++;
+	}
+}
+void biosioemu_enq16_read(UINT16 port) {
+	
+	if(!biosioemu.enable) return;
+
+	if(biosioemu.count < BIOSIOEMU_DATA_MAX){
+		int i;
+		for(i=biosioemu.count-1;i>=0;i--){
+			biosioemu.data[i+1].flag = biosioemu.data[i].flag;
+			biosioemu.data[i+1].port = biosioemu.data[i].port;
+			biosioemu.data[i+1].data = biosioemu.data[i].data;
+		}
+		biosioemu.data[0].flag = BIOSIOEMU_FLAG_READ|BIOSIOEMU_FLAG_MB;
+		biosioemu.data[0].port = port;
+		biosioemu.data[0].data = 0;
+		biosioemu.count++;
+	}
+}
 void biosioemu_begin(void) {
 	
 	if(!biosioemu.enable) return;
@@ -574,9 +666,36 @@ void biosioemu_begin(void) {
 		// レジスタ退避
 		biosioemu.oldEAX = CPU_EAX;
 		biosioemu.oldEDX = CPU_EDX;
-		// I/O出力データ設定
-		CPU_DX = biosioemu.data[idx].port;
-		CPU_AL = biosioemu.data[idx].data;
+		// I/O設定
+		if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_READ){
+			if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_MB){
+				// I/Oポート設定
+				CPU_DX = biosioemu.data[idx].port;
+				//CPU_EAX = biosioemu.data[idx].data;
+				// 入力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xed;
+			}else{
+				// I/Oポート設定
+				CPU_DX = biosioemu.data[idx].port;
+				//CPU_AL = biosioemu.data[idx].data & 0xff;
+				// 入力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xec;
+			}
+		}else{
+			if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_MB){
+				// I/O出力データ設定
+				CPU_DX = biosioemu.data[idx].port;
+				CPU_EAX = biosioemu.data[idx].data;
+				// 出力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xef;
+			}else{
+				// I/O出力データ設定
+				CPU_DX = biosioemu.data[idx].port;
+				CPU_AL = biosioemu.data[idx].data & 0xff;
+				// 出力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xee;
+			}
+		}
 		biosioemu.count--;
 	}
 }
@@ -592,12 +711,39 @@ void biosioemu_proc(void) {
 		biosioemu.oldEDX = 0;
 	}else{
 		int idx = biosioemu.count-1;
-		// I/O出力データ設定
-		CPU_DX = biosioemu.data[idx].port;
-		CPU_AL = biosioemu.data[idx].data;
-		biosioemu.count--;
 		// 命令位置を戻す
 		CPU_EIP -= 2;
+		// I/O設定
+		if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_READ){
+			if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_MB){
+				// I/Oポート設定
+				CPU_DX = biosioemu.data[idx].port;
+				//CPU_EAX = biosioemu.data[idx].data;
+				// 入力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xed;
+			}else{
+				// I/Oポート設定
+				CPU_DX = biosioemu.data[idx].port;
+				//CPU_AL = biosioemu.data[idx].data & 0xff;
+				// 入力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xec;
+			}
+		}else{
+			if(biosioemu.data[idx].flag & BIOSIOEMU_FLAG_MB){
+				// I/O出力データ設定
+				CPU_DX = biosioemu.data[idx].port;
+				CPU_EAX = biosioemu.data[idx].data;
+				// 出力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xef;
+			}else{
+				// I/O出力データ設定
+				CPU_DX = biosioemu.data[idx].port;
+				CPU_AL = biosioemu.data[idx].data & 0xff;
+				// 出力サイズ設定
+				mem[CPU_EIP + (CPU_CS << 4)] = 0xee;
+			}
+		}
+		biosioemu.count--;
 	}
 }
 #endif
@@ -757,8 +903,25 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 		case BIOS_BASE + BIOSOFST_1b:
 			CPU_STI;
 			CPU_REMCLOCK -= 200;
+#if defined(BIOS_IO_EMULATION)
+			oldEIP = CPU_EIP;
+#endif
 			bios0x1b();
+#if defined(BIOS_IO_EMULATION)
+			// np21w ver0.86 rev69 BIOS I/O emulation
+			if(oldEIP == CPU_EIP){
+				biosioemu_begin(); 
+			}else{
+				biosioemu.count = 0; 
+			}
+#endif
 			return(1);
+			
+#if defined(BIOS_IO_EMULATION)
+		case BIOS_BASE + BIOSOFST_1b + 2: // np21w ver0.86 rev69 BIOS I/O emulation
+			biosioemu_proc();
+			return(1);
+#endif
 
 		case BIOS_BASE + BIOSOFST_1c:
 			CPU_REMCLOCK -= 200;

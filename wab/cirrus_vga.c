@@ -128,6 +128,7 @@ static HCURSOR ga_hFakeCursor = NULL; // ÉnÅ[ÉhÉEÉFÉAÉJÅ[É\ÉãÅiâºÅjCIRRUS VGAÇÃÉ
 
 void pcidev_cirrus_cfgreg_w(UINT32 devNumber, UINT8 funcNumber, UINT8 cfgregOffset, UINT8 sizeinbytes, UINT32 value);
 void pc98_cirrus_setWABreg(void);
+static void cirrusvga_setAutoWABID(void);
 
 // QEMUÇ≈égÇÌÇÍÇƒÇ¢ÇÈÇØÇ«ÇÊÇ≠ï™Ç©ÇÁÇ»Ç©Ç¡ÇΩÇÃÇ≈ñ≥éãÇ≥ÇÍÇƒÇ¢ÇÈä÷êîÇ‚ïœêîíB(´®
 static void cpu_register_physical_memory(target_phys_addr_t start_addr, ram_addr_t size, ram_addr_t phys_offset){
@@ -5783,7 +5784,7 @@ static REG8 IOINPCALL cirrusvga_iff82(UINT port) {
 
 // WAB, WSNóp
 static void cirrusvga_setAutoWABID() {
-	switch(np2clvga.gd54xxtype){
+	switch(np2clvga.defgd54xxtype){
 	case CIRRUS_98ID_AUTO_XE_G1_PCI:
 		np2clvga.gd54xxtype = CIRRUS_98ID_GA98NBIC;
 		memset(cirrusvga->vram_ptr, 0x00, cirrusvga->real_vram_size);
@@ -5887,7 +5888,8 @@ static REG8 IOINPCALL cirrusvga_i40e1(UINT port) {
 	return cirrusvga_wab_40e1;
 }
 static void IOOUTCALL cirrusvga_o40e1(UINT port, REG8 dat) {
-	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK){
+	if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || 
+		(np2clvga.defgd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK && (np2clvga.gd54xxtype == CIRRUS_98ID_Xe10 || np2clvga.gd54xxtype == CIRRUS_98ID_PCI)){ // ã≠êßïœçXÇãñÇ∑
 		cirrusvga_setAutoWABID();
 	}
 	cirrusvga_wab_40e1 = dat;

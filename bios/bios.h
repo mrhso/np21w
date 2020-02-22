@@ -43,6 +43,7 @@ enum {
 enum {
 	BIOSIOEMU_FLAG_NONE	= 0x0,
 	BIOSIOEMU_FLAG_MB	= 0x1, // ビットを立てるとDX, AX(16bit)またはDX, EAX(32bit)になる（立てなければ8bitアクセス）
+	BIOSIOEMU_FLAG_READ	= 0x2, // ビットを立てると空読みする
 };
 typedef struct {
 	UINT8	flag; // アクセスフラグ(現状ではBIOSIOEMU_FLAG_NONEのみ)
@@ -117,9 +118,15 @@ void bios0x1c(void);
 void bios0x1f(void);
 
 #if defined(BIOS_IO_EMULATION)
-// np21w ver0.86 rev46 BIOS I/O emulation
+// np21w ver0.86 rev46-69 BIOS I/O emulation
 void biosioemu_push8(UINT16 port, UINT8 data);
+void biosioemu_push16(UINT16 port, UINT32 data);
+void biosioemu_push8_read(UINT16 port);
+void biosioemu_push16_read(UINT16 port);
 void biosioemu_enq8(UINT16 port, UINT8 data);
+void biosioemu_enq16(UINT16 port, UINT32 data);
+void biosioemu_enq8_read(UINT16 port);
+void biosioemu_enq16_read(UINT16 port);
 #endif
 
 #ifdef __cplusplus
