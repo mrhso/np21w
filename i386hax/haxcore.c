@@ -958,6 +958,11 @@ void i386hax_vm_exec(void) {
 				CPU_REMCLOCK = 0;
 				break;
 			}
+			if(np2haxcore.hltflag){
+				CPU_REMCLOCK = 0;
+				remain_clk = 0;
+				break;
+			}
 		}
 		if(CPU_REMCLOCK <= 0){
 			remain_clk = CPU_REMCLOCK;

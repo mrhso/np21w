@@ -21,6 +21,9 @@
 #include "scsiio.h"
 #include "pc9861k.h"
 #include "mpu98ii.h"
+#if defined(SUPPORT_SMPU98)
+#include "smpu98.h"
+#endif
 #include "board14.h"
 #include "amd98.h"
 #include "bios/bios.h"
@@ -132,6 +135,9 @@ typedef struct {
 
 
 extern	COMMNG	cm_mpu98;
+#if defined(SUPPORT_SMPU98)
+extern	COMMNG	cm_smpu98[];
+#endif
 extern	COMMNG	cm_rs232c;
 
 typedef struct {
@@ -1147,6 +1153,16 @@ static int flagsave_com(STFLAGH sfh, const SFENTRY *tbl) {
 		case 1:
 			cm = cm_rs232c;
 			break;
+			
+#if defined(SUPPORT_SMPU98)
+		case 2:
+			cm = cm_smpu98[0];
+			break;
+			
+		case 3:
+			cm = cm_smpu98[1];
+			break;
+#endif
 
 		default:
 			cm = NULL;
@@ -1201,6 +1217,20 @@ static int flagload_com(STFLAGH sfh, const SFENTRY *tbl) {
 			cm = commng_create(COMCREATE_SERIAL);
 			cm_rs232c = cm;
 			break;
+			
+#if defined(SUPPORT_SMPU98)
+		case 2:
+			commng_destroy(cm_smpu98[0]);
+			cm = commng_create(COMCREATE_SMPU98_A);
+			cm_smpu98[0] = cm;
+			break;
+
+		case 3:
+			commng_destroy(cm_smpu98[1]);
+			cm = commng_create(COMCREATE_SMPU98_B);
+			cm_smpu98[1] = cm;
+			break;
+#endif
 
 		default:
 			cm = NULL;
@@ -1427,6 +1457,9 @@ const SFENTRY	*tblterm;
 	soundmng_stop();
 	rs232c_midipanic();
 	mpu98ii_midipanic();
+#if defined(SUPPORT_SMPU98)
+	smpu98_midipanic();
+#endif
 	pc9861k_midipanic();
 	sxsi_alltrash();
 
@@ -1552,7 +1585,7 @@ const SFENTRY	*tblterm;
 	iocore_bind();
 	cbuscore_bind();
 	fmboard_bind();
-	
+
 #if defined(SUPPORT_PC9821)&&defined(SUPPORT_PCI)
 	pcidev_bind();
 #endif
@@ -1628,6 +1661,11 @@ const SFENTRY	*tblterm;
 	np2wab.lastWidth = 0;
 	np2wab.lastHeight = 0;
 	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
+#endif
+	
+	pit_setrs232cspeed((pit.ch + 2)->value);
+#if defined(SUPPORT_RS232C_FIFO)
+	rs232c_vfast_setrs232cspeed(rs232cfifo.vfast);
 #endif
 	
 	return(ret);

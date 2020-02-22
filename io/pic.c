@@ -134,7 +134,7 @@ void pic_irq(void) {												// ver0.78
 	// Š„‚İ‹–‰ÂH
 #if defined(SUPPORT_IA32_HAXM)
 	if (np2hax.enable) {
-		
+
 	}else
 #endif
 	if (!CPU_isEI) {

@@ -331,7 +331,7 @@ void pc9861k_midipanic(void) {
 		cm_pc9861ch1->msg(cm_pc9861ch1, COMMSG_MIDIRESET, 0);
 	}
 	if (cm_pc9861ch2) {
-		cm_pc9861ch2->msg(cm_pc9861ch1, COMMSG_MIDIRESET, 0);
+		cm_pc9861ch2->msg(cm_pc9861ch2, COMMSG_MIDIRESET, 0);
 	}
 }
 

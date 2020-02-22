@@ -10,6 +10,7 @@
 #include "commng/cmnull.h"
 #include "commng/cmpara.h"
 #include "commng/cmserial.h"
+#include "commng/cmwacom.h"
 #include "generic/cmjasts.h"
 
 /**
@@ -18,6 +19,16 @@
 void commng_initialize(void)
 {
 	cmmidi_initailize();
+#if defined(SUPPORT_WACOM_TABLET)
+	cmwacom_initialize();
+	cmwacom_setNCControl(!!np2oscfg.mouse_nc);
+#endif
+}
+void commng_finalize(void)
+{
+#if defined(SUPPORT_WACOM_TABLET)
+	cmwacom_finalize();
+#endif
 }
 
 /**
@@ -54,6 +65,16 @@ COMMNG commng_create(UINT nDevice)
 		case COMCREATE_MPU98II:
 			pComCfg = &np2oscfg.mpu;
 			break;
+			
+#if defined(SUPPORT_SMPU98)
+		case COMCREATE_SMPU98_A:
+			pComCfg = &np2oscfg.smpuA;
+			break;
+
+		case COMCREATE_SMPU98_B:
+			pComCfg = &np2oscfg.smpuB;
+			break;
+#endif
 
 		default:
 			break;
@@ -63,7 +84,7 @@ COMMNG commng_create(UINT nDevice)
 	{
 		if ((pComCfg->port >= COMPORT_COM1) && (pComCfg->port <= COMPORT_COM4))
 		{
-			ret = CComSerial::CreateInstance(pComCfg->port - COMPORT_COM1 + 1, pComCfg->param, pComCfg->speed);
+			ret = CComSerial::CreateInstance(pComCfg->port - COMPORT_COM1 + 1, pComCfg->param, pComCfg->speed, pComCfg->fixedspeed);
 		}
 		else if (pComCfg->port == COMPORT_MIDI)
 		{
@@ -74,6 +95,12 @@ COMMNG commng_create(UINT nDevice)
 				ret->msg(ret, COMMSG_MIMPIDEFEN, (INTPTR)pComCfg->def_en);
 			}
 		}
+#if defined(SUPPORT_WACOM_TABLET)
+		else if (pComCfg->port == COMPORT_TABLET)
+		{
+			ret = CComWacom::CreateInstance(g_hWndMain);
+		}
+#endif
 	}
 
 	if (ret == NULL)

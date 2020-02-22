@@ -11,6 +11,9 @@
 
 #include	"pccore.h"
 #include	"net.h"
+#ifdef SUPPORT_LGY98
+#include	"lgy98.h"
+#endif
 #include <winioctl.h>
 #include <tchar.h>
 
@@ -316,6 +319,10 @@ void np2net_shutdown(void)
 {
 	np2net_hThreadexit = 1;
 	np2net_closeTAP();
+#ifdef SUPPORT_LGY98
+	lgy98_shutdown();
+#endif
+
 }
 
 // éQçlï∂å£: http://dsas.blog.klab.org/archives/51012690.html
