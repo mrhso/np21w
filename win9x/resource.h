@@ -158,6 +158,7 @@
 #define IDC_COM1DEFF                    14120
 #define IDC_COM1DEFB                    14121
 #define IDC_COM1PENTABFA                14122
+#define IDC_COM1FSPEED                  14123
 #define IDC_PC9861E                     14201
 #define IDC_CH1SPEED                    14202
 #define IDC_CH1INT                      14203

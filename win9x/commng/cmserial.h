@@ -15,7 +15,7 @@ extern const UINT32 cmserial_speed[11];
 class CComSerial : public CComBase
 {
 public:
-	static CComSerial* CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed);
+	static CComSerial* CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed);
 
 protected:
 	CComSerial();
@@ -28,5 +28,7 @@ protected:
 private:
 	HANDLE m_hSerial;		/*!< シリアル ハンドル */
 
-	bool Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed);
+	bool m_fixedspeed;	/*!< 通信速度固定 */
+
+	bool Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed);
 };

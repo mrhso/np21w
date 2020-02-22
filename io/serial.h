@@ -29,6 +29,7 @@ typedef struct {
 	UINT	pos;
 	UINT	dummyinst;
 	UINT	mul;
+	UINT8	rawmode;
 } _RS232C, *RS232C;
 
 

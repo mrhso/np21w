@@ -56,7 +56,7 @@ BOOL pit_setcount(PITCH pitch, REG8 value);
 UINT pit_getcount(PITCH pitch);
 REG8 pit_getstat(PITCH pitch);
 
-void pit_setrs232cspeed(REG8 value);
+void pit_setrs232cspeed(UINT16 value);
 
 void itimer_reset(const NP2CFG *pConfig);
 void itimer_bind(void);

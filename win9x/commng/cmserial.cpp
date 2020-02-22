@@ -19,10 +19,10 @@ const UINT32 cmserial_speed[11] = {110, 300, 600, 1200, 2400, 4800,
  * @param[in] nSpeed スピード
  * @return インスタンス
  */
-CComSerial* CComSerial::CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed)
+CComSerial* CComSerial::CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed)
 {
 	CComSerial* pSerial = new CComSerial;
-	if (!pSerial->Initialize(nPort, cParam, nSpeed))
+	if (!pSerial->Initialize(nPort, cParam, nSpeed, fixedspeed))
 	{
 		delete pSerial;
 		pSerial = NULL;
@@ -58,7 +58,7 @@ CComSerial::~CComSerial()
  * @retval true 成功
  * @retval false 失敗
  */
-bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed)
+bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed)
 {
 	TCHAR szName[16];
 	wsprintf(szName, TEXT("COM%u"), nPort);
@@ -67,6 +67,8 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed)
 	{
 		return false;
 	}
+
+	m_fixedspeed = !!fixedspeed;
 
 	PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 
@@ -176,14 +178,14 @@ INTPTR CComSerial::Message(UINT nMessage, INTPTR nParam)
 	switch (nMessage)
 	{
 		case COMMSG_CHANGESPEED:
-			{
+			if(!m_fixedspeed){
 				int newspeed = *(reinterpret_cast<int*>(nParam));
-				DCB dcb;
-				::GetCommState(m_hSerial, &dcb);
 				for (UINT i = 0; i < NELEMENTS(cmserial_speed); i++)
 				{
 					if (cmserial_speed[i] >= newspeed)
 					{
+						DCB dcb;
+						::GetCommState(m_hSerial, &dcb);
 						if(cmserial_speed[i] != dcb.BaudRate){
 							dcb.BaudRate = cmserial_speed[i];
 							::SetCommState(m_hSerial, &dcb);

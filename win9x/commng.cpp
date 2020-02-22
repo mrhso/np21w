@@ -84,7 +84,7 @@ COMMNG commng_create(UINT nDevice)
 	{
 		if ((pComCfg->port >= COMPORT_COM1) && (pComCfg->port <= COMPORT_COM4))
 		{
-			ret = CComSerial::CreateInstance(pComCfg->port - COMPORT_COM1 + 1, pComCfg->param, pComCfg->speed);
+			ret = CComSerial::CreateInstance(pComCfg->port - COMPORT_COM1 + 1, pComCfg->param, pComCfg->speed, pComCfg->fixedspeed);
 		}
 		else if (pComCfg->port == COMPORT_MIDI)
 		{

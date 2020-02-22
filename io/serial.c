@@ -155,7 +155,7 @@ void keyboard_changeclock(void) {
 	
 #define RS232C_BUFFER		(1 << 6)
 #define RS232C_BUFFER_MASK	(RS232C_BUFFER - 1)
-#define RS232C_BUFFER_CLRC	32
+#define RS232C_BUFFER_CLRC	16
 static UINT8 rs232c_buf[RS232C_BUFFER];
 static UINT8 rs232c_buf_rpos = 0;
 static UINT8 rs232c_buf_wpos = 0;
@@ -196,7 +196,7 @@ void rs232c_callback(void) {
 		cm_rs232c = commng_create(COMCREATE_SERIAL);
 	}
 	rs232c_removecounter = (rs232c_removecounter + 1) % RS232C_BUFFER_CLRC;
-	if (bufused > 0 && rs232c_removecounter==0){
+	if (bufused > 0 && rs232c_removecounter==0 || bufused == RS232C_BUFFER-1){
 		rs232c_buf_rpos = (rs232c_buf_rpos+1) & RS232C_BUFFER_MASK; // 一番古いものを捨てる
 	}
 	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
@@ -205,10 +205,12 @@ void rs232c_callback(void) {
 	if (rs232c_buf_rpos != rs232c_buf_wpos) {
 		rs232c.data = rs232c_buf[rs232c_buf_rpos]; // データを1つ取り出し
 
-		rs232c.result |= 2;
-		if (sysport.c & 1) {
-			intr = TRUE;
-		}
+		//if(!(rs232c.result & 2) || bufused == RS232C_BUFFER-1) {
+			rs232c.result |= 2;
+			if (sysport.c & 1) {
+				intr = TRUE;
+			}
+		//}
 	}
 	else {
 		//rs232c.result &= (UINT8)~2;
@@ -274,6 +276,7 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 			break;
 
 		case 0x01:			// mode
+			rs232c.rawmode = dat;
 			if (!(dat & 0x03)) {
 				rs232c.mul = 10 * 16;
 			}
@@ -305,6 +308,7 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 						break;
 				}
 			}
+			pit_setrs232cspeed((pit.ch + 2)->value);
 			rs232c.pos++;
 			break;
 
@@ -321,25 +325,25 @@ static REG8 IOINPCALL rs232c_i30(UINT port) {
 
 	UINT8 ret = rs232c.data;
 
-	if (rs232c_buf_rpos == rs232c_buf_wpos) {
-		// 無理矢理読む
-		if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
-			rs232c_buf_wpos = (rs232c_buf_wpos+1) & RS232C_BUFFER_MASK;
-			rs232c.data = rs232c_buf[rs232c_buf_rpos]; // データを1つ取り出し
-		}
-	}
+	//if (rs232c_buf_rpos == rs232c_buf_wpos) {
+	//	// 無理矢理読む
+	//	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
+	//		rs232c_buf_wpos = (rs232c_buf_wpos+1) & RS232C_BUFFER_MASK;
+	//		rs232c.data = rs232c_buf[rs232c_buf_rpos]; // データを1つ取り出し
+	//	}
+	//}
 	if (rs232c_buf_rpos != rs232c_buf_wpos) {
 		rs232c_buf_rpos = (rs232c_buf_rpos+1) & RS232C_BUFFER_MASK; // バッファ読み取り位置を1進める
 	}
-	if (rs232c_buf_rpos != rs232c_buf_wpos) { // 送信すべきデータがあるか確認
-		rs232c.data = rs232c_buf[rs232c_buf_rpos]; // 次のデータを取り出し
-		if (sysport.c & 1) {
-			pic_setirq(4);
-		}
-	}else{
+	//if (rs232c_buf_rpos != rs232c_buf_wpos) { // 送信すべきデータがあるか確認
+	//	rs232c.data = rs232c_buf[rs232c_buf_rpos]; // 次のデータを取り出し
+	//	if (sysport.c & 1) {
+	//		pic_setirq(4);
+	//	}
+	//}else{
 
 		rs232c.result &= ~0x2;
-	}
+	//}
 	rs232c_removecounter = 0;
 	return(ret);
 }
@@ -378,6 +382,7 @@ void rs232c_reset(const NP2CFG *pConfig) {
 	rs232c.pos = 0;
 	rs232c.dummyinst = 0;
 	rs232c.mul = 10 * 16;
+	rs232c.rawmode = 0;
 
 	(void)pConfig;
 }

@@ -20,6 +20,7 @@ typedef struct {
 	OEMCHAR	min[MAXPNAMELEN];
 	OEMCHAR	mdl[64];
 	OEMCHAR	def[MAX_PATH];
+	UINT8	fixedspeed;
 } COMCFG;
 
 typedef struct {

@@ -704,6 +704,24 @@ UINT CComWacom::Write(UINT8 cData)
 				m_config.relmode = false;
 				m_config.start = true; // Start sending coordinates
 				m_config.mode19200 = true;
+			}else if(strncmp(m_cmdbuf, "~*F2039100,000,00,1000,1000", 3)==0){
+				// 19200 bps mode & Enable Pressure (win3.1)
+				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
+				m_config.scrnsizemode = false;
+				m_config.disablepressure = false;
+				m_config.csvmode = false;
+				m_config.relmode = false;
+				m_config.start = true; // Start sending coordinates
+				m_config.mode19200 = true;
+			}else if(strncmp(m_cmdbuf, "~*E2039100,000,00,1000,1000", 3)==0){
+				// 9600 bps mode & Enable Pressure (win3.1)
+				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
+				m_config.scrnsizemode = false;
+				m_config.disablepressure = false;
+				m_config.csvmode = false;
+				m_config.relmode = false;
+				m_config.start = true; // Start sending coordinates
+				m_config.mode19200 = false;
 			}else if(strcmp(m_cmdbuf, "$")==0){
 				// Reset to 9600 bps (sent at 19200 bps) & Disable Pressure
 				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
@@ -759,6 +777,7 @@ UINT CComWacom::Write(UINT8 cData)
 				m_lastdatalen = 0;
 				m_wait = sizeof(data);
 				m_config.enable = true;
+				m_config.mode19200 = false;
 			}
 			m_cmdbuf_pos = 0;
 		}else{

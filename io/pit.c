@@ -233,17 +233,18 @@ void pit_setflag(PITCH pitch, REG8 value) {
 	}
 }
 
-void pit_setrs232cspeed(REG8 value) {
+void pit_setrs232cspeed(UINT16 value) {
 	if(value == 0) return;
 	if (cm_rs232c) {
 		if ((pccore.dipsw[0] & 0x30)==0x30) { // ‚Æ‚è‚ ‚¦‚¸’²•à“¯Šú‚¾‚¯
 			int newvalue;
+			int mul[] = {1, 1, 16, 64};
 			if (pccore.cpumode & CPUMODE_8MHZ) {
-				newvalue = 9600 * 13 / value;
+				newvalue = 9600 * 208 / mul[rs232c.rawmode & 0x3] / value;
 			}else{
-				newvalue = 38400 * 4 / value;
+				newvalue = 9600 * 256 / mul[rs232c.rawmode & 0x3] / value;
 			}
-			if(newvalue < 38400){
+			if(newvalue <= 38400){ // XXX: ‘å‚«‚·‚¬‚é‚Ì‚Í–³Ž‹
 				cm_rs232c->msg(cm_rs232c, COMMSG_CHANGESPEED, (INTPTR)&newvalue);
 			}
 		}
@@ -400,7 +401,7 @@ static void IOOUTCALL pit_o73(UINT port, REG8 dat) {
 static void IOOUTCALL pit_o75(UINT port, REG8 dat) {
 
 	PITCH	pitch;
-	UINT8	oldvalue;
+	UINT16	oldvalue;
 
 	pitch = pit.ch + 2;
 	oldvalue = pitch->value;

@@ -51,6 +51,7 @@ private:
 	COMCFG& m_cfg;				//!< コンフィグ
 	UINT8 m_pentabfa;			//!< ペンタブアスペクト比固定
 	CWndProc m_chkpentabfa;		//!< Pen tablet fixed aspect mode
+	CWndProc m_chkfixedspeed;	//!< Fixed speed mode
 	CComboData m_port;			//!< Port
 	CComboData m_speed;			//!< Speed
 	CComboData m_chars;			//!< Chars
@@ -171,6 +172,9 @@ BOOL SerialOptComPage::OnInitDialog()
 		m_chkpentabfa.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
 	else
 		m_chkpentabfa.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+	
+	m_chkfixedspeed.SubclassDlgItem(IDC_COM1FSPEED, this);
+	m_chkfixedspeed.SendMessage(BM_SETCHECK , m_cfg.fixedspeed ? BST_CHECKED : BST_UNCHECKED , 0);
 
 	UpdateControls();
 
@@ -255,6 +259,13 @@ void SerialOptComPage::OnOK()
 		nUpdated |= SYS_UPDATEOSCFG;
 	}
 #endif
+	
+	const UINT8 cFSpeedEnable = (IsDlgButtonChecked(IDC_COM1FSPEED) != BST_UNCHECKED) ? 1 : 0;
+	if (m_cfg.fixedspeed != cFSpeedEnable)
+	{
+		m_cfg.fixedspeed = cFSpeedEnable;
+		nUpdated |= SYS_UPDATEOSCFG;
+	}
 
 	sysmng_update(nUpdated);
 }
@@ -321,6 +332,9 @@ void SerialOptComPage::UpdateControls()
 	
 	m_chkpentabfa.EnableWindow(bPentabShow ? TRUE : FALSE);
 	m_chkpentabfa.ShowWindow(bPentabShow ? SW_SHOW : SW_HIDE);
+	
+	m_chkfixedspeed.EnableWindow(bSerialShow ? TRUE : FALSE);
+	m_chkfixedspeed.ShowWindow(bSerialShow ? SW_SHOW : SW_HIDE);
 }
 
 
