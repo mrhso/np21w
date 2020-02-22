@@ -623,6 +623,9 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GDMELOFS", PFTYPE_UINT8,		&np2cfg.gd5430melofs),
 	PFVAL("GANBBSEX", PFTYPE_BOOL,		&np2cfg.ga98nb_bigscrn_ex),
 #endif
+#if defined(SUPPORT_VGA_MODEX)
+	PFVAL("USEMODEX", PFTYPE_BOOL,		&np2cfg.usemodex),
+#endif
 #if defined(SUPPORT_GPIB)
 	PFVAL("USE_GPIB", PFTYPE_BOOL,		&np2cfg.usegpib),
 	PFVAL("GPIB_IRQ", PFTYPE_UINT8,		&np2cfg.gpibirq),

@@ -3827,16 +3827,23 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
 
 	////if ((s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK) != 0) {
 	////	np2clvga.VRAMWindowAddr3 = (s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK) << 20;
-	if ((cirrusvga_wab_42e1 & 0x18) == 0x18){
+	if (np2clvga.gd54xxtype > 0xff && (cirrusvga_wab_42e1 & 0x18) == 0x18){
 		np2clvga.VRAMWindowAddr3 = 0xf00000;
 	}
 	else {
-		// アクセス不可にしておく
-		if (s->gr[0x06] & 0x08) {
-			np2clvga.VRAMWindowAddr3 = 0;//0xb0000;
-		}
-		else {
-			np2clvga.VRAMWindowAddr3 = 0;//0xa0000;
+#if defined(SUPPORT_VGA_MODEX)
+		if(np2clvga.modex){
+			if (s->gr[0x06] & 0x08) {
+				np2clvga.VRAMWindowAddr3 = 0xb0000;
+			}
+			else {
+				np2clvga.VRAMWindowAddr3 = 0xa0000;
+			}
+		}else
+#endif
+		{
+			// アクセス不可にしておく
+			np2clvga.VRAMWindowAddr3 = 0;
 		}
 	}
 
@@ -5011,6 +5018,29 @@ LOGPALETTE * NewLogPal(const uint8_t *pCirrusPalette , int iSize) {
 }
 #endif
 
+void ConvertYUV2RGB(int width, unsigned char *srcYUV16, unsigned char *dstRGB32Line){
+	int j;
+	int offset = 128;
+	for(j=0;j<width/2;j++){
+		int u0 = srcYUV16[j * 4 + 0];
+		int y0 = srcYUV16[j * 4 + 1];
+		int v0 = srcYUV16[j * 4 + 2];
+		int y1 = srcYUV16[j * 4 + 3];
+		int r0 = (298 * (y0 - 16) + 409 * (v0 - offset) + 128) >> 8;
+		int g0 = (298 * (y0 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+		int b0 = (298 * (y0 - 16) + 516 * (u0 - offset) + 128) >> 8;
+		int r1 = (298 * (y1 - 16) + 409 * (v0 - offset) + 128) >> 8;
+		int g1 = (298 * (y1 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+		int b1 = (298 * (y1 - 16) + 516 * (u0 - offset) + 128) >> 8;
+		dstRGB32Line[j*8 + 0] = (b0 < 0 ? 0 : (b0 > 255 ? 255 : b0));
+		dstRGB32Line[j*8 + 1] = (g0 < 0 ? 0 : (g0 > 255 ? 255 : g0));
+		dstRGB32Line[j*8 + 2] = (r0 < 0 ? 0 : (r0 > 255 ? 255 : r0));
+		dstRGB32Line[j*8 + 4] = (b1 < 0 ? 0 : (b1 > 255 ? 255 : b1));
+		dstRGB32Line[j*8 + 5] = (g1 < 0 ? 0 : (g1 > 255 ? 255 : g1));
+		dstRGB32Line[j*8 + 6] = (r1 < 0 ? 0 : (r1 > 255 ? 255 : r1));
+	}
+}
+
 //　画面表示(仮)　本当はQEMUのオリジナルのコードを移植すべきなんだけど･･･
 //  Cirrus VRAM (screen & cursor) -> GDI Device Independent Bitmap
 void cirrusvga_drawGraphic(){
@@ -5019,6 +5049,8 @@ void cirrusvga_drawGraphic(){
 	//static UINT32 kdown = 0;
 	//static UINT32 kdownc = 0;
 	static INT32 memshift = 0; // DEBUG 
+	static INT32 sysmemmode = 0; // DEBUG 
+	static INT32 tabon = 0; // DEBUG 
 #endif
 	int i, j, width, height, bpp;
 	uint32_t_ line_offset = 0;
@@ -5089,8 +5121,26 @@ void cirrusvga_drawGraphic(){
 	//	//vram_ptr = vram_ptr + 1024*768*1;
 	//	kdownc = 0;
 	}
+	if(GetKeyState(VK_TAB)<0){
+		if(!tabon){
+			sysmemmode = (sysmemmode + 1) % 3;
+			tabon = 1;
+		}
+	}else{
+		tabon = 0;
+	}
 	//if(GetKeyState(VK_CONTROL)<0){
+	switch(sysmemmode){
+	case 0:
 		vram_ptr = vram_ptr + 1280*16*memshift;
+		break;
+	case 1:
+		vram_ptr = mem + 1280*16*memshift;
+		break;
+	case 2:
+		vram_ptr = CPU_EXTMEMBASE + 1280*16*memshift;
+		break;
+	}
 	//}
 	// DEBUG (END)
 #endif
@@ -5098,6 +5148,27 @@ void cirrusvga_drawGraphic(){
 	// Cirrusの色数と解像度を取得
     bpp = cirrusvga->get_bpp((VGAState*)cirrusvga);
     cirrusvga->get_resolution((VGAState*)cirrusvga, &width, &height);
+	
+#if defined(SUPPORT_VGA_MODEX)
+	// PC/AT MODE X compatible
+	if (np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
+		static UINT8 lastmodex = 0;
+		if(np2clvga.modex){
+			if(!lastmodex){
+				cirrusvga->sr[0x07] &= ~0x01;
+			}
+			bpp = 8;
+			width = 320;
+			height = 240;
+			line_offset = 320;
+		}else{
+			if(!lastmodex){
+				cirrusvga->sr[0x07] |= 0x01;
+			}
+		}
+		lastmodex = np2clvga.modex;
+	}
+#endif
 
 	if(bpp==0) return; 
 
@@ -5381,7 +5452,7 @@ void cirrusvga_drawGraphic(){
 	if(cirrusvga->cr[0x3e] & 0x01){ // Check Video Window Master Enable bit
 		uint32_t_* bitfleld;
 		int vidwnd_format = ((cirrusvga->cr[0x3e] >> 1) & 0x7);
-		int vidwnd_bpp = (vidwnd_format==4 || vidwnd_format==5) ? 16 : 8;
+		int vidwnd_bpp = (vidwnd_format==0 || vidwnd_format==4 || vidwnd_format==5) ? 16 : 8;
 		int vidwnd_horizontalZoom = (cirrusvga->cr[0x31]);
 		int vidwnd_verticalZoom = (cirrusvga->cr[0x32]);
 		int vidwnd_region1Adj = (cirrusvga->cr[0x5d]>>0) & 0x3;
@@ -5400,10 +5471,16 @@ void cirrusvga_drawGraphic(){
 		int vidwnd_dstheight = vidwnd_verticalEnd - vidwnd_verticalStart;
 		int vidwnd_dstX = vidwnd_region1Size * 32 / bpp + vidwnd_region1Adj * 8 / bpp;
 		int vidwnd_dstY = vidwnd_verticalStart;
+		int vidwnd_yuv = 0;
 		if(vidwnd_horizontalZoom > 0) vidwnd_dstwidth = vidwnd_srcwidth * 256 / vidwnd_horizontalZoom;
 		if(vidwnd_verticalZoom > 0) vidwnd_srcheight = vidwnd_dstheight * vidwnd_verticalZoom / 256;
 #if defined(_WIN32)
 		switch(vidwnd_format){
+		case 0: // YUV 4:2:2 UYVY
+			// TODO: YUVとかも作らないといけない（けどどうするよ？）
+			vidwnd_yuv = 1;
+			vidwnd_bpp = 32;
+			break;
 		case 4: // RGB555
 			//// XXX: RGB555になってない？？？
 			//ga_bmpInfo->bmiHeader.biCompression = BI_RGB;
@@ -5417,7 +5494,6 @@ void cirrusvga_drawGraphic(){
 			ga_bmpInfo->bmiHeader.biCompression = BI_BITFIELDS;
 			break;
 		default:
-			// TODO: YUVとかも作らないといけない（けどどうするよ？）
 			break;
 		}
 		ga_bmpInfo->bmiHeader.biBitCount = vidwnd_bpp;
@@ -5425,28 +5501,66 @@ void cirrusvga_drawGraphic(){
 #if defined(DEBUG_CIRRUS_VRAM)
 		scanptr = scanptr - 1280*16*memshift; // DEBUG
 #endif
-		if(vidwnd_dstwidth == vidwnd_srcwidth){
-			for(i=0;i<vidwnd_srcheight;i++){
-				ga_bmpInfo->bmiHeader.biWidth = width;
-				ga_bmpInfo->bmiHeader.biHeight = 1;
-				r = SetDIBitsToDevice(
-					hdc , vidwnd_dstX , vidwnd_dstY + i ,
-					vidwnd_srcwidth , 1 ,
-					0 , 0 , 0 , 1 ,
-					scanptr , ga_bmpInfo , DIB_RGB_COLORS
-				);
-				scanptr += vidwnd_srcpitch;
+		if(vidwnd_dstwidth == vidwnd_srcwidth && vidwnd_dstheight == vidwnd_srcheight){
+			if(!vidwnd_yuv){
+				for(i=0;i<vidwnd_srcheight;i++){
+					ga_bmpInfo->bmiHeader.biWidth = width;
+					ga_bmpInfo->bmiHeader.biHeight = 1;
+					r = SetDIBitsToDevice(
+						hdc , vidwnd_dstX , vidwnd_dstY + i ,
+						vidwnd_srcwidth , 1 ,
+						0 , 0 , 0 , 1 ,
+						scanptr , ga_bmpInfo , DIB_RGB_COLORS
+					);
+					scanptr += vidwnd_srcpitch;
+				}
+			}else{
+				unsigned char *linebuf = (unsigned char*)malloc(vidwnd_srcwidth*4);
+				for(i=0;i<vidwnd_srcheight;i++){
+					ConvertYUV2RGB(vidwnd_srcwidth, (unsigned char *)scanptr, linebuf);
+					ga_bmpInfo->bmiHeader.biWidth = width;
+					ga_bmpInfo->bmiHeader.biHeight = 1;
+					r = SetDIBitsToDevice(
+						hdc , vidwnd_dstX , vidwnd_dstY + i ,
+						vidwnd_srcwidth , 1 ,
+						0 , 0 , 0 , 1 ,
+						linebuf , ga_bmpInfo , DIB_RGB_COLORS
+					);
+					scanptr += vidwnd_srcpitch;
+				}
+				free(linebuf);
 			}
 		}else{
-			for(i=0;i<vidwnd_dstheight;i++){
-				ga_bmpInfo->bmiHeader.biWidth = width;
-				ga_bmpInfo->bmiHeader.biHeight = 1;
-				r = StretchDIBits(
-					hdc , vidwnd_dstX , vidwnd_dstY + i ,
-					vidwnd_dstwidth , 1 ,
-					0 , 0 , vidwnd_srcwidth , 1 ,
-					scanptr + (i * vidwnd_srcheight / vidwnd_dstheight) * vidwnd_srcpitch, ga_bmpInfo , DIB_RGB_COLORS , SRCCOPY
-				);
+			if(!vidwnd_yuv){
+				for(i=0;i<vidwnd_dstheight;i++){
+					ga_bmpInfo->bmiHeader.biWidth = width;
+					ga_bmpInfo->bmiHeader.biHeight = 1;
+					r = StretchDIBits(
+						hdc , vidwnd_dstX , vidwnd_dstY + i ,
+						vidwnd_dstwidth , 1 ,
+						0 , 0 , vidwnd_srcwidth , 1 ,
+						scanptr + (i * vidwnd_srcheight / vidwnd_dstheight) * vidwnd_srcpitch, ga_bmpInfo , DIB_RGB_COLORS , SRCCOPY
+					);
+				}
+			}else{
+				int lastline = -1;
+				unsigned char *linebuf = (unsigned char*)malloc(vidwnd_srcwidth*4);
+				for(i=0;i<vidwnd_dstheight;i++){
+					int curline = (i * vidwnd_srcheight / vidwnd_dstheight);
+					if(lastline != curline){
+						ConvertYUV2RGB(vidwnd_srcwidth, (unsigned char *)(scanptr + curline * vidwnd_srcpitch), linebuf);
+						lastline = curline;
+					}
+					ga_bmpInfo->bmiHeader.biWidth = width;
+					ga_bmpInfo->bmiHeader.biHeight = 1;
+					r = StretchDIBits(
+						hdc , vidwnd_dstX , vidwnd_dstY + i ,
+						vidwnd_dstwidth , 1 ,
+						0 , 0 , vidwnd_srcwidth , 1 ,
+						linebuf, ga_bmpInfo , DIB_RGB_COLORS , SRCCOPY
+					);
+				}
+				free(linebuf);
 			}
 		}
 #elif defined(NP2_X11)
@@ -6446,10 +6560,14 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 	
 			iocore_attachout(0x3b4, vga_ioport_write_wrap);
 			iocore_attachinp(0x3b4, vga_ioport_read_wrap);
+			iocore_attachout(0x3b5, vga_ioport_write_wrap);
+			iocore_attachinp(0x3b5, vga_ioport_read_wrap);
 			iocore_attachout(0x3ba, vga_ioport_write_wrap);
 			iocore_attachinp(0x3ba, vga_ioport_read_wrap);
 			iocore_attachout(0x3d4, vga_ioport_write_wrap);
 			iocore_attachinp(0x3d4, vga_ioport_read_wrap);
+			iocore_attachout(0x3d5, vga_ioport_write_wrap);
+			iocore_attachinp(0x3d5, vga_ioport_read_wrap);
 			iocore_attachout(0x3da, vga_ioport_write_wrap);
 			iocore_attachinp(0x3da, vga_ioport_read_wrap);
 			

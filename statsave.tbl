@@ -175,7 +175,7 @@ static const SFENTRY np2tbl[] = {
 	{"WABCFG",		0,	STATFLAG_BIN,	&np2wabcfg,		sizeof(np2wabcfg)},
 #endif
 #if defined(SUPPORT_CL_GD5430)
-	{"NP2CLVGA",	0,	STATFLAG_BIN,	&np2clvga,		sizeof(np2clvga)},
+	{"NP2CLVGA",	0,	STATFLAG_BIN|STATFLAG_BWD_COMPATIBLE,	&np2clvga,		sizeof(np2clvga)},
 	{"CLVGA",		0,	STATFLAG_BIN,	cirrusvga_statsavebuf, sizeof(cirrusvga_statsavebuf)},
 #endif
 #if defined(SUPPORT_HOSTDRV)

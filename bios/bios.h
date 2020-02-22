@@ -18,6 +18,7 @@ enum {
 
 	BIOSOFST_09		= 0x0088,					// Keyboard
 	BIOSOFST_0c		= 0x008c,					// Serial
+	BIOSOFST_10		= 0x008e,					// (PC/AT VGA)
 
 	BIOSOFST_12		= 0x0090,					// FDC
 	BIOSOFST_13		= 0x0094,					// FDC

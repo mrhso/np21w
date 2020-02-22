@@ -189,6 +189,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i286x\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>
@@ -236,6 +237,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <LargeAddressAware>false</LargeAddressAware>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i286x\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>

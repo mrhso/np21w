@@ -243,6 +243,9 @@ struct tagNP2Config
 	UINT8	gd5430melofs;
 	UINT8	ga98nb_bigscrn_ex;
 #endif
+#if defined(SUPPORT_VGA_MODEX)
+	UINT8	usemodex;
+#endif
 #if defined(SUPPORT_GPIB)
 	UINT8	usegpib; // GPIBŽg—p
 	UINT8	gpibirq; // GPIB IRQ

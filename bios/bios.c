@@ -34,11 +34,40 @@
 #endif
 #include	"fmboard.h"
 
+#if defined(SUPPORT_VGA_MODEX)
+#if defined(SUPPORT_WAB)
+#include	"wab/wab.h"
+#endif
+#if defined(SUPPORT_CL_GD5430)
+#include	"wab/cirrus_vga_extern.h"
+#endif
+#endif
+
 #if defined(SUPPORT_IA32_HAXM)
 #include	"i386hax/haxfunc.h"
 #include	"i386hax/haxcore.h"
 #define USE_CUSTOM_HOOKINST
 #endif
+
+#if 0
+#undef	TRACEOUT
+#define USE_TRACEOUT_VS
+#ifdef USE_TRACEOUT_VS
+static void trace_fmt_ex(const char *fmt, ...)
+{
+	char stmp[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsprintf(stmp, fmt, ap);
+	strcat(stmp, "\n");
+	va_end(ap);
+	OutputDebugStringA(stmp);
+}
+#define	TRACEOUT(s)	trace_fmt_ex s
+#else
+#define	TRACEOUT(s)	(void)(s)
+#endif
+#endif	/* 1 */
 
 #ifdef USE_CUSTOM_HOOKINST
 #define BIOS_HOOKINST	bioshookinfo.hookinst
@@ -594,6 +623,17 @@ void bios_initialize(void) {
 	}
 #endif
 	
+// np21w ver0.86 rev70 VGA BIOS for MODE X
+#if defined(SUPPORT_VGA_MODEX)
+	if(np2cfg.usemodex){
+		mem[BIOS_BASE + BIOSOFST_10 + 0] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOSOFST_10 + 1] = 0xcf; // 0xcf(IRET)
+		mem[BIOS_BASE + BIOSOFST_10 + 0] = 0x90; // 0x90(NOP) BIOS hook
+		mem[BIOS_BASE + BIOS_TABLE + 0x20] = 0x8e;
+		mem[BIOS_BASE + BIOS_TABLE + 0x21] = 0x00;
+	}
+#endif
+	
 #ifdef USE_CUSTOM_HOOKINST
 	bios_updatehookinst(mem + 0xf8000, 0x100000 - 0xf8000);
 #endif
@@ -934,6 +974,43 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			CPU_REMCLOCK -= 500;
 			bios0x0c();
 			return(1);
+			
+// np21w ver0.86 rev70 VGA BIOS for MODE X
+#if defined(SUPPORT_VGA_MODEX)
+		case BIOS_BASE + BIOSOFST_10:
+			CPU_REMCLOCK -= 500;
+			TRACEOUT(("VGA INT: AH=%02x, AL=%02x", CPU_AH, CPU_AL));
+			switch(CPU_AH){
+			case 0x00:
+#if defined(SUPPORT_CL_GD5430)
+				np2wab.relaystateint |= 0x02;
+				np2wab_setRelayState(0x02);
+				if(CPU_AL == 0x13){
+					// MODE X
+					np2clvga.modex = 1;
+					np2clvga.VRAMWindowAddr3 = 0xa0000;
+				}else{
+					np2clvga.modex = 0;
+					np2clvga.VRAMWindowAddr3 = 0;
+				}
+#endif
+				break;
+			case 0x1a:
+				// XXX: WAB—LŒø‚ÌŽž‚¾‚¯•Ô‚·
+				if(np2wab.relaystateint || np2wab.relaystateext){
+					if(CPU_AL==0x00){
+						CPU_BH = 0x00;
+						CPU_BL = 0x08;
+					}
+					CPU_AL = 0x1a;
+				}
+				break;
+			default:
+				// nothing to do
+				break;
+			}
+			return(1);
+#endif
 
 		case BIOS_BASE + BIOSOFST_12:
 			CPU_REMCLOCK -= 500;
