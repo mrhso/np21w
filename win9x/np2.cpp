@@ -1281,9 +1281,14 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.SOUND_SW = SOUNDID_MATE_X_PCM;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
-
+			
 		case IDM_SPEAKBOARD:
-			np2cfg.SOUND_SW = 0x20;
+			np2cfg.SOUND_SW = SOUNDID_SPEAKBOARD;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
+			
+		case IDM_86SPEAKBOARD:
+			np2cfg.SOUND_SW = SOUNDID_86_SPEAKBOARD;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
 
@@ -1323,6 +1328,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 
 		case IDM_AMD98:
 			np2cfg.SOUND_SW = 0x80;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
+			
+		case IDM_WAVESTAR:
+			np2cfg.SOUND_SW = SOUNDID_WAVESTAR;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
 
@@ -2145,6 +2155,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			if ((wParam == VK_F12) && (!np2oscfg.F12COPY)) {
 				mousemng_toggle(MOUSEPROC_SYSTEM);
 				np2oscfg.MOUSE_SW = !np2oscfg.MOUSE_SW;
+				if(!np2oscfg.mouse_nc){
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) | CS_DBLCLKS);
+				}else/* if (!scrnmng_isfullscreen())*/ {
+					SetClassLong(g_hWndMain, GCL_STYLE, GetClassLong(g_hWndMain, GCL_STYLE) & ~CS_DBLCLKS);
+					if (np2oscfg.wintype != 0) {
+						// XXX: メニューが出せなくなって詰むのを回避（暫定）
+						if (!scrnmng_isfullscreen()) {
+							WINLOCEX	wlex;
+							np2oscfg.wintype = 0;
+							wlex = np2_winlocexallwin(hWnd);
+							winlocex_setholdwnd(wlex, hWnd);
+							np2class_windowtype(hWnd, np2oscfg.wintype);
+							winlocex_move(wlex);
+							winlocex_destroy(wlex);
+							sysmng_update(SYS_UPDATEOSCFG);
+						}
+					}
+				}
 				sysmng_update(SYS_UPDATECFG);
 			}
 			else if ((wParam == VK_F12) && (np2oscfg.F12COPY==7)) {

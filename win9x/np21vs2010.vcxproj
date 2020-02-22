@@ -189,7 +189,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <LargeAddressAware>false</LargeAddressAware>
+      <LargeAddressAware>true</LargeAddressAware>
       <DelayLoadDLLs>d3d9.dll;dinput8.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
@@ -255,7 +255,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\common\profile.c" />
     <ClCompile Include="..\common\rect.c" />
@@ -954,6 +953,7 @@
     <YASM Include="x64\parts.x64">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </YASM>
   </ItemGroup>
   <ItemGroup>

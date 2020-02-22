@@ -65,12 +65,13 @@ static const OEMCHAR str_pentium[] = OEMTEXT("PENTIUM");
 static const OEMCHAR str_mhz[] = OEMTEXT("%uMHz");
 
 // np21/w dynamic config
-#define NP21W_SWITCH_DUMMY		0
-#define NP21W_SWITCH_GD54XXTYPE	1
-#define NP21W_SWITCH_SOUNDBOARD	2
-#define NP21W_SWITCH_SYNCCLOCK	3
-#define NP21W_SWITCH_PCIENABLE	4
-#define NP21W_SWITCH_ASYNCCPU	5
+#define NP21W_SWITCH_DUMMY				0
+#define NP21W_SWITCH_GD54XXTYPE			1
+#define NP21W_SWITCH_SOUNDBOARD			2
+#define NP21W_SWITCH_SYNCCLOCK			3
+#define NP21W_SWITCH_PCIENABLE			4
+#define NP21W_SWITCH_ASYNCCPU			5
+#define NP21W_SWITCH_DISABLESOUNDROM	6
 
 
 static void setoutstr(const OEMCHAR *str) {
@@ -206,6 +207,9 @@ static void np2sysp_getconfig(const void *arg1, long arg2) {
 		configvalue = np2cfg.asynccpu ? 1 : 0;
 #endif	/* defined(SUPPORT_ASYNC_CPU) */
 		break;
+	case NP21W_SWITCH_DISABLESOUNDROM:
+		configvalue = 0; // èÌéû0
+		break;
 	case NP21W_SWITCH_DUMMY:
 	default:
 		break;
@@ -252,10 +256,10 @@ static void np2sysp_cngconfig(const void *arg1, long arg2) {
 			fmboard_bind();
 			if (((pccore.model & PCMODELMASK) >= PCMODEL_VX) &&
 				(pccore.sound & 0x7e)) {
-				if(g_nSoundID == SOUNDID_MATE_X_PCM || ((g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118) && np2cfg.snd118irqf == np2cfg.snd118irqp) || g_nSoundID == SOUNDID_PC_9801_86_WSS){
+				if(g_nSoundID == SOUNDID_MATE_X_PCM || ((g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118) && np2cfg.snd118irqf == np2cfg.snd118irqp) || g_nSoundID == SOUNDID_PC_9801_86_WSS || g_nSoundID == SOUNDID_WAVESTAR){
 					iocore_out8(0x188, 0x27);
 					iocore_out8(0x18a, 0x30);
-					if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118){
+					if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR){
 						iocore_out8(cs4231.port[4], 0x27);
 						iocore_out8(cs4231.port[4]+2, 0x30);
 					}
@@ -315,6 +319,11 @@ static void np2sysp_cngconfig(const void *arg1, long arg2) {
 		np2cfg.asynccpu = configvalue ? 1 : 0;
 		configvalue = np2cfg.asynccpu ? 1 : 0;
 #endif	/* defined(SUPPORT_ASYNC_CPU) */
+		break;
+	case NP21W_SWITCH_DISABLESOUNDROM:
+		if(configvalue == 1){
+			soundrom_reset(); // ÉTÉEÉìÉhROMÇè¡Ç∑
+		}
 		break;
 	case NP21W_SWITCH_DUMMY:
 	default:

@@ -172,7 +172,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	}
 
 	bufs = pcm86->realbuf - pcm86->virbuf;
-	if (bufs < 0)									/* ˆ——Ž‚¿‚Ä‚éc */
+	if (bufs <= 0)									/* ˆ——Ž‚¿‚Ä‚éc */
 	{
 		bufs &= ~3;
 		pcm86->virbuf += bufs;

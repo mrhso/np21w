@@ -262,6 +262,32 @@ void cs4231_control(UINT idx, REG8 dat) {
 	UINT8	modify;
 	DMACH	dmach;
 	switch(idx){
+	case 0x2: // Left Auxiliary #1 Input Control
+		if(g_nSoundID==SOUNDID_WAVESTAR){
+			UINT i;
+			if(dat >= 0x10) dat = 15;
+			cs4231.devvolume[0xff] = (~dat) & 15;
+			opngen_setvol(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
+			psggen_setvol(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
+			rhythm_setvol(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+#if defined(SUPPORT_FMGEN)
+			if(np2cfg.usefmgen) {
+				opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
+				opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
+				opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+			}
+#endif
+			for (i = 0; i < _countof(g_opna); i++)
+			{
+				rhythm_update(&g_opna[i].rhythm);
+			}
+		}
+		break;
+	case 0x3: // Right Auxiliary #1 Input Control
+		if(g_nSoundID==SOUNDID_WAVESTAR){
+			// XXX: 本当は左右のボリューム調整が必要
+		}
+		break;
 	case 0xd:
 		break;
 	case 0xc:
@@ -377,6 +403,8 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 					}
 					offset = (offset+1) & CS4231_BUFMASK; // DMAデータ読み取りバッファの書き込み位置を進める（＆最後に到達したら最初に戻す）
 				}
+
+				// XXX: 再生位置調整（Win9x,Win2000再生ノイズ対策用・とりあえず+方向だけ）
 				playcount_adjustcounter += leng;
 				if(playcount_adjustcounter >= PLAYCOUNT_ADJUST_VALUE){
 					playcount_adjustcounter -= PLAYCOUNT_ADJUST_VALUE;
@@ -387,6 +415,7 @@ UINT dmac_getdata_(DMACH dmach, UINT8 *buf, UINT offset, UINT size) {
 						}
 					}
 				}
+
 				dmach->adrs.d = addr; // DMA読み取りアドレス現在位置を更新
 			}
 			else {									// dir -

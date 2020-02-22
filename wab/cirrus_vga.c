@@ -3788,12 +3788,12 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
 	}
 	else {
 		// アクセス不可にしておく
-		//if (s->gr[0x06] & 0x08) {
-		//	np2clvga.VRAMWindowAddr3 = 0xb0000;
-		//}
-		//else {
-		//	np2clvga.VRAMWindowAddr3 = 0xa0000;
-		//}
+		if (s->gr[0x06] & 0x08) {
+			np2clvga.VRAMWindowAddr3 = 0;//0xb0000;
+		}
+		else {
+			np2clvga.VRAMWindowAddr3 = 0;//0xa0000;
+		}
 	}
 
     if ((s->sr[0x17] & 0x44) == 0x44) {
@@ -6281,8 +6281,8 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			pcidev.devices[pcidev_cirrus_deviceid].header.subsysventorID = 0x0000;
 			pcidev.devices[pcidev_cirrus_deviceid].header.interruptpin = 0xff;
 			pcidev.devices[pcidev_cirrus_deviceid].header.interruptline = 0x00;
-			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] = 0xF0000000;
-			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] = 0xF2000000;
+			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[0] = 0xFC000000;
+			pcidev.devices[pcidev_cirrus_deviceid].header.baseaddrregs[1] = 0xFE000000;
 			pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[0] = 0x02000000-1;
 			pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[1] = CIRRUS_PNPMMIO_SIZE-1;
 			pcidev.devices[pcidev_cirrus_deviceid].headerrom.baseaddrregs[2] = 0xffffffff;

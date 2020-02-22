@@ -409,6 +409,9 @@ BEGIN
     COMBOBOX        IDC_SND118INTP,146,26,60,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Interrupt(MIDI)",IDC_STATIC,94,46,50,10
     COMBOBOX        IDC_SND118INTM,146,44,60,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "ROM",IDC_SND118ROM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,64,40,10
+    LTEXT           "Jumper",IDC_STATIC,8,72,30,8
+    CONTROL         "",IDC_SND118JMP,"Static",SS_ENHMETAFILE | SS_NOTIFY,8,84,100,36
     PUSHBUTTON      "Defaults",IDC_SND118DEF,136,102,40,14
 END
 
@@ -1010,11 +1013,13 @@ BEGIN
             MENUITEM "PC-9801-86 + 118(&B460)",     IDM_PC9801_86_118
             MENUITEM "Mate-&X PCM",                 IDM_MATE_X_PCM
             MENUITEM "S&peak board",                IDM_SPEAKBOARD
+            MENUITEM "PC-9801-86 + S&peak board",   IDM_86SPEAKBOARD
             MENUITEM "Sp&ark board",                IDM_SPARKBOARD
             MENUITEM "Sound &Orchestra",            IDM_SOUNDORCHESTRA
             MENUITEM "Sound Orchestra-&V",          IDM_SOUNDORCHESTRAV
             MENUITEM "Sound B&laster 16",           IDM_SB16
             MENUITEM "&AMD-98",                     IDM_AMD98
+            MENUITEM "&WaveStar",                   IDM_WAVESTAR
             MENUITEM "&JastSound",                  IDM_JASTSOUND
             MENUITEM SEPARATOR
             MENUITEM "&Seek sound",                 IDM_SEEKSND
@@ -1391,6 +1396,13 @@ IDI_ICON3               ICON                    "..\\np2vm.ico"
 SEEKWAV                 EXTROM                  "..\\fddseek.wav"
 SEEK1WAV                EXTROM                  "..\\fddseek1.wav"
 RELAY1WAV               EXTROM                  "..\\relay1.wav"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RAWBMP
+//
+
+JUMPER118               RAWBMP                  "..\\j118.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
