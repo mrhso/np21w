@@ -136,7 +136,9 @@ void fmboard_destruct(void)
 	opl3_destruct(&g_opl3);
 
 	board118_finalize();
+#ifdef SUPPORT_SOUND_SB16
 	boardsb16_finalize();
+#endif
 }
 
 /**

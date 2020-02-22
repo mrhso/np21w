@@ -798,7 +798,7 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 		}else{
 			SetWindowLong(g_hWndMain, GWL_STYLE, winstyle);
 			SetWindowLong(g_hWndMain, GWL_EXSTYLE, winstyleex);
-			SetWindowPos(g_hWndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_FRAMECHANGED);
+			SetWindowPos(g_hWndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_FRAMECHANGED|SWP_NOACTIVATE);
 			GetWindowPlacement(g_hWndMain, &wp);
 		}
 	}

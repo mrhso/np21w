@@ -254,6 +254,10 @@ BEGIN
     LTEXT           "",IDC_COM1DEFF,26,94,148,10,SS_SUNKEN
     PUSHBUTTON      "...",IDC_COM1DEFB,176,94,10,10
     CONTROL         "操作領域の縦横比を固定",IDC_COM1PENTABFA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,28,150,10
+    LTEXT           "パイプ名",IDC_COM1STR30,8,28,50,8
+    EDITTEXT        IDC_COM1PIPENAME,55,25,80,14, ES_AUTOHSCROLL
+    LTEXT           "サーバー名",IDC_COM1STR31,8,44,50,8
+    EDITTEXT        IDC_COM1PIPESERV,55,41,80,14, ES_AUTOHSCROLL
 END
 
 IDD_PC9861A DIALOG 0, 0, 224, 140
@@ -1549,6 +1553,7 @@ BEGIN
     IDS_COM4                "COM4"
     IDS_MIDI                "MIDI"
     IDS_TABLET              "PENTAB"
+    IDS_PIPE                "PIPE"
     IDS_2_0MHZ              "1.9968MHz"
     IDS_2_5MHZ              "2.4576MHz"
 END

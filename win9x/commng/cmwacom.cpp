@@ -109,13 +109,6 @@ LRESULT CALLBACK tabletWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			break;
 		case WM_ACTIVATE:
 			if (wParam) {
-				//if(g_cmwacom){
-				//	CMWACOM_CONFIG cfg;
-				//	g_cmwacom->GetConfig(&cfg);
-				//	if(!cfg.enable){
-				//		break;
-				//	}
-				//}
 				gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
 				gpWTEnable(g_cmwacom->GetHTab(), TRUE);
 				{
@@ -298,7 +291,7 @@ void CComWacom::InitializeTabletDevice(){
 		m_maxX = lcMine.lcOutExtX;
 		m_maxY = lcMine.lcOutExtY;
 	}
-	m_hTab = gpWTOpenA(m_hwndMain, &lcMine, TRUE);
+	m_hTab = gpWTOpenA(m_hwndMain, &lcMine, GetForegroundWindow()==m_hwndMain ? TRUE : FALSE);
 	if (!m_hTab)
 	{
 		return;
@@ -605,9 +598,16 @@ void CComWacom::SetNCControl(bool enable){
 bool CComWacom::SendDataToReadBuffer(const char *data, int len){
 	int bufused = (m_sBuffer_wpos - m_sBuffer_rpos) & (WACOM_BUFFER - 1);
 	if(bufused + len >= WACOM_BUFFER){
-		// Buffer Full
-		if (sysport.c & 1) {
-			pic_setirq(4); // XXX: Ã‘£
+#if defined(SUPPORT_RS232C_FIFO)
+		if(rs232cfifo.port138 & 0x1){
+			// Ã‘£‚µ‚È‚¢
+		}else 
+#endif
+		{
+			// Buffer Full
+			if (sysport.c & 1) {
+				pic_setirq(4); // XXX: Ã‘£
+			}
 		}
 		return false;
 	}
@@ -728,6 +728,7 @@ UINT CComWacom::Write(UINT8 cData)
 			}else if(strncmp(m_cmdbuf, "ST", 2)==0){
 				m_config.start = true; // Start sending coordinates
 			}else if(strncmp(m_cmdbuf, "@ST", 2)==0){
+				// Start sending coordinates & get current position
 				char data[] = {0xA0};
 				if(m_lastdatalen > 0){
 					char buf[10];
@@ -741,7 +742,7 @@ UINT CComWacom::Write(UINT8 cData)
 				}else{
 					SendDataToReadBuffer(data, sizeof(data));
 				}
-				m_config.start = true; // Start sending coordinates
+				m_config.start = true;
 			}else if(strncmp(m_cmdbuf, "SP", 2)==0){
 				m_config.start = false; // Stop sending coordinates
 			}else if(strcmp(m_cmdbuf, "~R")==0){

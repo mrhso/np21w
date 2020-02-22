@@ -718,6 +718,10 @@ static const PFTBL s_IniItems[] =
 	PFSTR("com1mmap", PFTYPE_STR,		np2oscfg.com1.mout),
 	PFSTR("com1mmdl", PFTYPE_STR,		np2oscfg.com1.mdl),
 	PFSTR("com1mdef", PFTYPE_STR,		np2oscfg.com1.def),
+#if defined(SUPPORT_NAMED_PIPE)
+	PFSTR("com1pnam", PFTYPE_STR,		np2oscfg.com1.pipename),
+	PFSTR("com1psrv", PFTYPE_STR,		np2oscfg.com1.pipeserv),
+#endif
 
 	PFMAX("com2port", PFTYPE_UINT8,		&np2oscfg.com2.port,	5),
 	PFVAL("com2para", PFTYPE_UINT8,		&np2oscfg.com2.param),
@@ -726,6 +730,10 @@ static const PFTBL s_IniItems[] =
 	PFSTR("com2mmap", PFTYPE_STR,		np2oscfg.com2.mout),
 	PFSTR("com2mmdl", PFTYPE_STR,		np2oscfg.com2.mdl),
 	PFSTR("com2mdef", PFTYPE_STR,		np2oscfg.com2.def),
+#if defined(SUPPORT_NAMED_PIPE)
+	PFSTR("com2pnam", PFTYPE_STR,		np2oscfg.com2.pipename),
+	PFSTR("com2psrv", PFTYPE_STR,		np2oscfg.com2.pipeserv),
+#endif
 
 	PFMAX("com3port", PFTYPE_UINT8,		&np2oscfg.com3.port,	5),
 	PFVAL("com3para", PFTYPE_UINT8,		&np2oscfg.com3.param),
@@ -734,6 +742,10 @@ static const PFTBL s_IniItems[] =
 	PFSTR("com3mmap", PFTYPE_STR,		np2oscfg.com3.mout),
 	PFSTR("com3mmdl", PFTYPE_STR,		np2oscfg.com3.mdl),
 	PFSTR("com3mdef", PFTYPE_STR,		np2oscfg.com3.def),
+#if defined(SUPPORT_NAMED_PIPE)
+	PFSTR("com3pnam", PFTYPE_STR,		np2oscfg.com3.pipename),
+	PFSTR("com3psrv", PFTYPE_STR,		np2oscfg.com3.pipeserv),
+#endif
 
 	PFVAL("force400", PFRO_BOOL,		&np2oscfg.force400),
 	PFVAL("e_resume", PFTYPE_BOOL,		&np2oscfg.resume),

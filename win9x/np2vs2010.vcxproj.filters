@@ -1239,6 +1239,9 @@
     <ClCompile Include="commng\cmwacom.cpp">
       <Filter>ソース ファイル\win9x\commng</Filter>
     </ClCompile>
+    <ClCompile Include="commng\cmpipe.cpp">
+      <Filter>ソース ファイル\win9x\commng</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2187,6 +2190,9 @@
       <Filter>ヘッダー ファイル\win9x\commng\wintab</Filter>
     </ClInclude>
     <ClInclude Include="commng\cmwacom.h">
+      <Filter>ヘッダー ファイル\win9x\commng</Filter>
+    </ClInclude>
+    <ClInclude Include="commng\cmpipe.h">
       <Filter>ヘッダー ファイル\win9x\commng</Filter>
     </ClInclude>
   </ItemGroup>

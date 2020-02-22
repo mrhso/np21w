@@ -197,6 +197,36 @@ INTPTR CComSerial::Message(UINT nMessage, INTPTR nParam)
 			}
 			break;
 			
+		case COMMSG_CHANGEMODE:
+			if(!m_fixedspeed){
+				bool changed = false;
+				UINT8 newmode = *(reinterpret_cast<UINT8*>(nParam)); // I/O 32h モードセットのデータ
+				BYTE stopbits_value[] = {ONESTOPBIT, ONESTOPBIT, ONE5STOPBITS, TWOSTOPBITS};
+				BYTE parity_value[] = {NOPARITY, ODDPARITY, NOPARITY, EVENPARITY};
+				BYTE bytesize_value[] = {5, 6, 7, 8};
+				DCB dcb;
+				::GetCommState(m_hSerial, &dcb);
+				if(dcb.StopBits != stopbits_value[(newmode >> 6) & 0x3]){
+					dcb.StopBits = stopbits_value[(newmode >> 6) & 0x3];
+					changed = true;
+				}
+				if(dcb.Parity != parity_value[(newmode >> 4) & 0x3]){
+					dcb.Parity = parity_value[(newmode >> 4) & 0x3];
+					changed = true;
+				}
+				if(dcb.ByteSize != bytesize_value[(newmode >> 2) & 0x3]){
+					dcb.ByteSize = bytesize_value[(newmode >> 2) & 0x3];
+					changed = true;
+				}
+				if(changed){
+					::PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+					::SetCommState(m_hSerial, &dcb);
+				}
+				break;
+			}
+			break;
+			
+
 		case COMMSG_SETFLAG:
 			{
 				COMFLAG flag = reinterpret_cast<COMFLAG>(nParam);

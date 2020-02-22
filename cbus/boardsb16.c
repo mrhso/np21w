@@ -276,10 +276,12 @@ void boardsb16_unbind(void) {
 }
 void boardsb16_finalize(void)
 {
+#ifdef USE_MAME
 	if (opl3) {
 		YMF262Shutdown(opl3);
 		opl3 = NULL;
 	}
+#endif
 }
 
 #endif
