@@ -14,6 +14,8 @@
 #if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 #include	"bios.h"
 #endif
+// XXX: WORKAROUND for Win9x boot menu
+#include	"keystat.h"
 
 typedef REG8 (*SXSIFUNC)(UINT type, SXSIDEV sxsi);
 
@@ -234,6 +236,7 @@ static REG8 sasibios_sense(UINT type, SXSIDEV sxsi) {
 		return((REG8)(sxsi->mediatype & 7));
 	}
 	else {
+		char buf[64];
 		if (CPU_AH == 0x84) {
 			CPU_BX = sxsi->size;
 			CPU_CX = sxsi->cylinders;
@@ -281,6 +284,10 @@ REG8 sasibios_operate(void) {
 	sxsi = sxsi_getptr(CPU_AL);
 	if (sxsi == NULL) {
 		return(0x60);
+	}
+	// XXX: WORKAROUND for Win9x boot menu
+	if(keystat.ref[0x1c] != NKEYREF_NC){
+		CPU_REMCLOCK = -1;
 	}
 	return((*sasifunc[CPU_AH & 0x0f])(type, sxsi));
 }
