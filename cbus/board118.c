@@ -475,13 +475,27 @@ void board118_reset(const NP2CFG *pConfig)
 	
 	// OPNAリセット
 	opna_reset(&g_opna[opna_idx], OPNA_MODE_2608 | OPNA_HAS_TIMER | OPNA_S98);
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WAVESTAR){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
 		// OPNAタイマーをセットしない
 		//opna_timer(&g_opna[opna_idx], 0x10, NEVENT_FMTIMERA, NEVENT_FMTIMERB);
 	}else{
 		// OPNAタイマーをセット
 		UINT irqval = 0x00;
-		switch(np2cfg.snd118irqf){
+		UINT8 irqf = np2cfg.snd118irqf;
+		if(g_nSoundID==SOUNDID_PC_9801_86_118){
+			UINT8 irq86table[4] = {0x03, 0x0d, 0x0a, 0x0c};
+			UINT8 nIrq86 = (np2cfg.snd86opt & 0x10) | ((np2cfg.snd86opt & 0x4) << 5) | ((np2cfg.snd86opt & 0x8) << 3);
+			UINT8 irq86 = irq86table[nIrq86 >> 6];
+			irqf = np2cfg.snd118irqp;
+			if(irqf == irq86){
+				if(irq86!=3){
+					irqf = 0x3;
+				}else{
+					irqf = 0xC;
+				}
+			}
+		}
+		switch(irqf){
 		case 3:
 			irqval = 0x10|(0 << 6);
 			break;
@@ -524,7 +538,7 @@ void board118_reset(const NP2CFG *pConfig)
 	}
 	
 	// 色々設定
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_MATE_X_PCM){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
 	}else{
 		if(pConfig->snd118rom && g_nSoundID!=SOUNDID_PC_9801_86_118){
 			soundrom_load(0xcc000, OEMTEXT("118"));

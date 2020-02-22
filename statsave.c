@@ -1549,31 +1549,6 @@ const SFENTRY	*tblterm;
 	pc98_cirrus_vga_bind();
 	pc98_cirrus_vga_load();
 #endif
-
-	gdcs.textdisp |= GDCSCRN_EXT;
-	gdcs.textdisp |= GDCSCRN_ALLDRAW2;
-	gdcs.grphdisp |= GDCSCRN_EXT;
-	gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
-	gdcs.palchange = GDCSCRN_REDRAW;
-	tramflag.renewal = 1;
-	cgwindow.writable |= 0x80;
-#if defined(CPUSTRUC_FONTPTR)
-	FONTPTR_LOW = fontrom + cgwindow.low;
-	FONTPTR_HIGH = fontrom + cgwindow.high;
-#endif
-	MEMM_VRAM(vramop.operate);
-	fddmtr_reset();
-	soundmng_play();
-
-#if defined(SUPPORT_WAB)
-	np2wab.relay = 0;
-	np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
-	np2wab.realWidth = np2wab.wndWidth; // XXX: ???
-	np2wab.realHeight = np2wab.wndHeight; // XXX: ???
-	np2wab.lastWidth = 0;
-	np2wab.lastHeight = 0;
-	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
-#endif
 	
 	// OPNAÉ{ÉäÉÖÅ[ÉÄçƒê›íË
 	if(g_nSoundID == SOUNDID_WAVESTAR){
@@ -1603,6 +1578,31 @@ const SFENTRY	*tblterm;
 	{
 		rhythm_update(&g_opna[i].rhythm);
 	}
+
+	gdcs.textdisp |= GDCSCRN_EXT;
+	gdcs.textdisp |= GDCSCRN_ALLDRAW2;
+	gdcs.grphdisp |= GDCSCRN_EXT;
+	gdcs.grphdisp |= GDCSCRN_ALLDRAW2;
+	gdcs.palchange = GDCSCRN_REDRAW;
+	tramflag.renewal = 1;
+	cgwindow.writable |= 0x80;
+#if defined(CPUSTRUC_FONTPTR)
+	FONTPTR_LOW = fontrom + cgwindow.low;
+	FONTPTR_HIGH = fontrom + cgwindow.high;
+#endif
+	MEMM_VRAM(vramop.operate);
+	fddmtr_reset();
+	soundmng_play();
+
+#if defined(SUPPORT_WAB)
+	np2wab.relay = 0;
+	np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
+	np2wab.realWidth = np2wab.wndWidth; // XXX: ???
+	np2wab.realHeight = np2wab.wndHeight; // XXX: ???
+	np2wab.lastWidth = 0;
+	np2wab.lastHeight = 0;
+	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
+#endif
 	
 	return(ret);
 }

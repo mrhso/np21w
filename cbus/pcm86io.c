@@ -311,6 +311,7 @@ static REG8 IOINPCALL pcm86_ia464(UINT port) {
 }
 static void pcm86_updateWaveStarPorts(){
 	if(cs4231.devvolume[0xfe]){
+		// I/OポートをWSSに変更
 		iocore_detachout(0xa460);
 		//iocore_attachout(0xa464, cs4231io0_w8_wavestar);
 		iocore_attachout(0xa466, cs4231io0_w8_wavestar);
@@ -323,7 +324,12 @@ static void pcm86_updateWaveStarPorts(){
 		iocore_attachinp(0xa468, cs4231io0_r8_wavestar);
 		iocore_attachinp(0xa46a, cs4231io0_r8_wavestar);
 		iocore_attachinp(0xa46c, cs4231io0_r8_wavestar);
+		
+		// OPNA割り込み無効
+		g_pcm86.irq = 0xff;
+		g_opna[0].s.irq = 0xff;
 	}else{
+		// I/Oポートを86互換に変更
 		iocore_attachout(0xa460, pcm86_oa460);
 		iocore_attachout(0xa462, pcm86_oa462);
 		iocore_attachout(0xa464, pcm86_oa464);
@@ -339,6 +345,10 @@ static void pcm86_updateWaveStarPorts(){
 		iocore_attachinp(0xa46a, pcm86_ia46a);
 		iocore_attachinp(0xa46c, pcm86_inpdummy);
 		iocore_attachinp(0xa46e, pcm86_inpdummy);
+		
+		// OPNA割り込み有効
+		g_pcm86.irq = cs4231.devvolume[0xfd];
+		g_opna[0].s.irq = cs4231.devvolume[0xfc];
 	}
 }
 
@@ -356,6 +366,9 @@ void pcm86io_setopt(REG8 cDipSw)
 
 	if(g_nSoundID==SOUNDID_WAVESTAR){
 		g_pcm86.soundflags = 0x41;
+		fmboard_extenable(1);
+		cs4231.devvolume[0xfd] = g_pcm86.irq;
+		cs4231.devvolume[0xfc] = g_opna[0].s.irq;
 	}
 }
 
@@ -388,8 +401,10 @@ void pcm86io_bind(void) {
 	iocore_attachinp(0xa46a, pcm86_ia46a);
 	iocore_attachinp(0xa46c, pcm86_inpdummy);
 	iocore_attachinp(0xa46e, pcm86_inpdummy);
-
-	pcm86_updateWaveStarPorts();
+	
+	if(g_nSoundID == SOUNDID_WAVESTAR){
+		pcm86_updateWaveStarPorts();
+	}
 }
 void pcm86io_unbind(void) {
 	

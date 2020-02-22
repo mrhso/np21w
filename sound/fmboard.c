@@ -163,7 +163,8 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 
 	board14_reset(pConfig, (nSoundID == SOUNDID_PC_9801_14) ? TRUE : FALSE);
 	amd98_reset(pConfig);
-
+	
+	g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 	switch (nSoundID)
 	{
 		case SOUNDID_PC_9801_14:
@@ -182,24 +183,20 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 
 		case SOUNDID_PC_9801_118:
-			g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 			board118_reset(pConfig);
 			break;
 			
 		case SOUNDID_PC_9801_86_WSS:
-			g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 			board118_reset(pConfig);
 			board86_reset(pConfig, FALSE);
 			break;
 			
 		case SOUNDID_PC_9801_86_118:
-			g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 			board118_reset(pConfig);
 			board86_reset(pConfig, FALSE);
 			break;
 			
 		case SOUNDID_MATE_X_PCM:
-			g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 			board118_reset(pConfig);
 			break;
 			
@@ -208,7 +205,6 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 
 		case SOUNDID_WAVESTAR:
-			g_nSoundID = nSoundID; // XXX: æ‚ÉÝ’è
 			board118_reset(pConfig);
 			board86_reset(pConfig, FALSE);
 			break;
@@ -254,10 +250,9 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 #endif	// defined(SUPPORT_PX)
 
 		default:
-			nSoundID = SOUNDID_NONE;
+			g_nSoundID = SOUNDID_NONE;
 			break;
 	}
-	g_nSoundID = nSoundID;
 	soundmng_setreverse(pConfig->snd_x);
 	opngen_setVR(pConfig->spb_vrc, pConfig->spb_vrl);
 }

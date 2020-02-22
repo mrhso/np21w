@@ -298,9 +298,7 @@
     <ClCompile Include="..\font\fontx68k.c" />
     <ClCompile Include="..\generic\cmjasts.c" />
     <ClCompile Include="..\generic\cmndraw.c" />
-    <ClCompile Include="..\generic\dipswbmp.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\generic\dipswbmp.c" />
     <ClCompile Include="..\generic\hostdrv.c" />
     <ClCompile Include="..\generic\hostdrvs.c" />
     <ClCompile Include="..\generic\keydisp.c" />
