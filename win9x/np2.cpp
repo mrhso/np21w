@@ -2539,6 +2539,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 			}
 			break;
+			
+#if defined(SUPPORT_SCRN_DIRECT3D)
+		case WM_SETFOCUS:
+			if (scrnmng_isfullscreen() && scrnmng_current_drawtype==DRAWTYPE_DIRECT3D && !np2oscfg.d3d_exclusive && !winui_en) {
+				ShowWindow( hWnd, SW_RESTORE );
+			}
+			break;
+
+		case WM_KILLFOCUS:
+			if (scrnmng_isfullscreen() && scrnmng_current_drawtype==DRAWTYPE_DIRECT3D && !np2oscfg.d3d_exclusive && !winui_en) {
+				ShowWindow( hWnd, SW_MINIMIZE );
+			}
+			break;
+#endif
 
 		case WM_CLOSE:
 			b = FALSE;
@@ -2823,6 +2837,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 						}
 						return 1;
 					}
+#ifdef HOOK_SYSKEY
 					else if ((pkbhs->vkCode == VK_SNAPSHOT) && (np2oscfg.syskhook)) {
 						// PrintScreen -> COPY
 						switch((int)wParam){
@@ -2836,6 +2851,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 							break;
 						}
 					}
+#endif
 				}
 				break;
 			}

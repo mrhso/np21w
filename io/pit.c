@@ -235,6 +235,9 @@ void pit_setflag(PITCH pitch, REG8 value) {
 
 void pit_setrs232cspeed(UINT16 value) {
 	if(value == 0) return;
+#if defined(SUPPORT_RS232C_FIFO)
+	if(rs232cfifo.vfast & 0x80) return; // V FASTÉÇÅ[ÉhÇ≈ÇÕâΩÇ‡ÇµÇ»Ç¢
+#endif
 	if (cm_rs232c) {
 		if ((pccore.dipsw[0] & 0x30)==0x30) { // Ç∆ÇËÇ†Ç¶Ç∏í≤ï‡ìØä˙ÇæÇØ
 			int newvalue;

@@ -11,20 +11,9 @@
 
 #include <math.h>
 #include "pccore.h"
+#include "iocore.h"
 #include "mousemng.h"
 #include "scrnmng.h"
-#include "sysport.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern	_SYSPORT	sysport;
-
-void pic_setirq(REG8 irq);
-
-#ifdef __cplusplus
-}
-#endif
 
 typedef CComWacom *CMWACOM;
 
@@ -658,20 +647,20 @@ UINT CComWacom::Read(UINT8* pData)
 		return 1;
 	}else{
 		nodatacounter++;
-		// XXX: 長期間データがないとWin9xでおかしくなるようなので暫定対策
-		if(m_config.mode19200 && nodatacounter > 256){
-			if(m_lastdatalen > 0){
-				char buf[10];
-				memcpy(buf, m_lastdata, 7);
-				if(m_rawButtons != 0) {
-					buf[0] |= 0x40;
-				}else{
-					buf[0] &= ~0x40;
-				}
-				if(m_config.start) SendDataToReadBuffer(buf, m_lastdatalen);
-			}
-			nodatacounter = 0;
-		}
+		//// XXX: 長期間データがないとWin9xでおかしくなるようなので暫定対策
+		//if(m_config.mode19200 && nodatacounter > 256){
+		//	if(m_lastdatalen > 0){
+		//		char buf[10];
+		//		memcpy(buf, m_lastdata, 7);
+		//		if(m_rawButtons != 0) {
+		//			buf[0] |= 0x40;
+		//		}else{
+		//			buf[0] &= ~0x40;
+		//		}
+		//		if(m_config.start) SendDataToReadBuffer(buf, m_lastdatalen);
+		//	}
+		//	nodatacounter = 0;
+		//}
 		g_lastPosValid = false;
 	}
 	return 0;
@@ -739,6 +728,19 @@ UINT CComWacom::Write(UINT8 cData)
 			}else if(strncmp(m_cmdbuf, "ST", 2)==0){
 				m_config.start = true; // Start sending coordinates
 			}else if(strncmp(m_cmdbuf, "@ST", 2)==0){
+				char data[] = {0xA0};
+				if(m_lastdatalen > 0){
+					char buf[10];
+					memcpy(buf, m_lastdata, 7);
+					if(m_rawButtons != 0) {
+						buf[0] |= 0x40;
+					}else{
+						buf[0] &= ~0x40;
+					}
+					SendDataToReadBuffer(buf, m_lastdatalen);
+				}else{
+					SendDataToReadBuffer(data, sizeof(data));
+				}
 				m_config.start = true; // Start sending coordinates
 			}else if(strncmp(m_cmdbuf, "SP", 2)==0){
 				m_config.start = false; // Stop sending coordinates
@@ -792,13 +794,28 @@ UINT CComWacom::Write(UINT8 cData)
 			m_cmdbuf[m_cmdbuf_pos] = cData;
 			m_cmdbuf_pos++;
 			if(m_cmdbuf_pos >= 2 && strncmp(&m_cmdbuf[m_cmdbuf_pos-2], "~#", 2)==0){ // 例外的に即応答
+				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
 				SendDataToReadBuffer(cmwacom_ModelData, sizeof(cmwacom_ModelData));
 				//if(m_wait < WACOM_BUFFER) m_wait += sizeof(cmwacom_ModelData)*2;
-				m_wait = sizeof(cmwacom_ModelData);
+#if defined(SUPPORT_RS232C_FIFO)
+				if(rs232cfifo.port138 & 0x1){
+					// FIFOモードではウェイトなし
+					m_wait = 0;
+				}else
+#endif
+				{
+					m_wait = 4;
+				}
 				m_cmdbuf_pos = 0;
 				m_config.enable = true;
 			}
 		}
+#if defined(SUPPORT_RS232C_FIFO)
+		if(rs232cfifo.port138 & 0x1){
+			// FIFOモードではウェイトなし
+			m_wait = 0;
+		}
+#endif
 	}
 	return 0;
 }

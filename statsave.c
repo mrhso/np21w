@@ -1638,6 +1638,9 @@ const SFENTRY	*tblterm;
 #endif
 	
 	pit_setrs232cspeed((pit.ch + 2)->value);
+#if defined(SUPPORT_RS232C_FIFO)
+	rs232c_vfast_setrs232cspeed(rs232cfifo.vfast);
+#endif
 	
 	return(ret);
 }

@@ -1,5 +1,4 @@
 #include	"compiler.h"
-#include	"pccore.h"
 #include	"scrnmng.h"
 #include	"scrndraw.h"
 #include	"sdraw.h"
