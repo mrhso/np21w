@@ -384,6 +384,12 @@ void keystat_resendstat(void) {
 	//		keyboard_send(i);
 	//	}
 	//}
+	if (keystat.ref[0x00] != NKEYREF_NC) {
+		keyboard_send(0x00);
+	}
+	if (keystat.ref[0x0f] != NKEYREF_NC) {
+		keyboard_send(0x0f);
+	}
 	for (i=0x70; i<=0x74; i++) {
 		if (keystat.ref[i] != NKEYREF_NC) {
 			keyboard_send(i);
