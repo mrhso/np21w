@@ -1112,6 +1112,10 @@ void mpu98ii_bind(void) {
 			break;
 		}
 	}
+	// WaveStar
+	if(g_nSoundID == SOUNDID_WAVESTAR){
+		mpu98.irqnum = 10;
+	}
 }
 
 void mpu98ii_callback(void) {

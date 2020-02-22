@@ -836,7 +836,10 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 			
 		case SOUNDID_PC_9801_86_ADPCM:
 			return FLAG_OPNA1 | FLAG_PCM86;
-
+			
+		case SOUNDID_WAVESTAR:
+			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_CS4231;
+			
 		case SOUNDID_SPEAKBOARD:
 			return FLAG_OPNA1;
 
@@ -1397,6 +1400,7 @@ int statsave_load(const OEMCHAR *filename) {
 	BOOL		done;
 const SFENTRY	*tbl;
 const SFENTRY	*tblterm;
+	UINT		i;
 
 	sffh = statflag_open(filename, NULL, 0);
 	if (sffh == NULL) {
@@ -1570,6 +1574,35 @@ const SFENTRY	*tblterm;
 	np2wab.lastHeight = 0;
 	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
 #endif
+	
+	// OPNAÉ{ÉäÉÖÅ[ÉÄçƒê›íË
+	if(g_nSoundID == SOUNDID_WAVESTAR){
+		opngen_setvol(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
+		psggen_setvol(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
+		rhythm_setvol(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+#if defined(SUPPORT_FMGEN)
+		if(np2cfg.usefmgen) {
+			opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
+			opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
+			opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+		}
+#endif
+	}else{
+		opngen_setvol(np2cfg.vol_fm);
+		psggen_setvol(np2cfg.vol_ssg);
+		rhythm_setvol(np2cfg.vol_rhythm);
+#if defined(SUPPORT_FMGEN)
+		if(np2cfg.usefmgen) {
+			opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm);
+			opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg);
+			opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm);
+		}
+#endif
+	}
+	for (i = 0; i < _countof(g_opna); i++)
+	{
+		rhythm_update(&g_opna[i].rhythm);
+	}
 	
 	return(ret);
 }

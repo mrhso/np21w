@@ -1325,6 +1325,11 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.SOUND_SW = 0x80;
 			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
 			break;
+			
+		case IDM_WAVESTAR:
+			np2cfg.SOUND_SW = SOUNDID_WAVESTAR;
+			update |= SYS_UPDATECFG | SYS_UPDATESBOARD;
+			break;
 
 		case IDM_JASTSOUND:
 			np2oscfg.jastsnd = !np2oscfg.jastsnd;

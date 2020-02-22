@@ -21,7 +21,9 @@ static void IOOUTCALL opna_o188(UINT port, REG8 dat)
 
 static void IOOUTCALL opna_o18a(UINT port, REG8 dat)
 {
+
 	g_opna[0].s.data = dat;
+
 	opna_writeRegister(&g_opna[0], g_opna[0].s.addrl, dat);
 
 	(void)port;

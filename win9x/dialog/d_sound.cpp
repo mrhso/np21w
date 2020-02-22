@@ -134,13 +134,17 @@ void SndOptMixerPage::OnOK()
 		}
 	}
 
+	UINT volex = 15;
+	if(g_nSoundID==SOUNDID_WAVESTAR){
+		volex = cs4231.devvolume[0xff];
+	}
 	const UINT8 cFM = static_cast<UINT8>(m_fm.GetPos());
 	if (np2cfg.vol_fm != cFM)
 	{
 		np2cfg.vol_fm = cFM;
-		opngen_setvol(cFM);
+		opngen_setvol(cFM * volex / 15);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumeFM_linear(cFM);
+		opna_fmgen_setallvolumeFM_linear(cFM * volex / 15);
 #endif	/* SUPPORT_FMGEN */
 		bUpdated = true;
 	}
@@ -149,9 +153,9 @@ void SndOptMixerPage::OnOK()
 	if (np2cfg.vol_ssg != cPSG)
 	{
 		np2cfg.vol_ssg = cPSG;
-		psggen_setvol(cPSG);
+		psggen_setvol(cPSG * volex / 15);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumePSG_linear(cPSG);
+		opna_fmgen_setallvolumePSG_linear(cPSG * volex / 15);
 #endif	/* SUPPORT_FMGEN */
 		bUpdated = true;
 	}
@@ -184,9 +188,9 @@ void SndOptMixerPage::OnOK()
 	if (np2cfg.vol_rhythm != cRhythm)
 	{
 		np2cfg.vol_rhythm = cRhythm;
-		rhythm_setvol(cRhythm);
+		rhythm_setvol(cRhythm * volex / 15);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumeRhythmTotal_linear(cRhythm);
+		opna_fmgen_setallvolumeRhythmTotal_linear(cRhythm * volex / 15);
 #endif	/* SUPPORT_FMGEN */
 		for (UINT i = 0; i < _countof(g_opna); i++)
 		{
@@ -916,6 +920,10 @@ private:
 	CComboData m_cmbirqp;			//!< IRQ(PCM)
 	CComboData m_cmbirqm;			//!< IRQ(MIDI)
 	CWndProc m_chkrom;				//!< ROM
+	CStaticDipSw m_jumper;			//!< Jumper
+	void Set(UINT8 cValue);
+	void SetJumper(UINT cAdd, UINT cRemove);
+	void OnDipSw();
 };
 
 //! 118 I/O
@@ -1041,6 +1049,8 @@ BOOL SndOpt118Page::OnInitDialog()
 		m_chkrom.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
 	else
 		m_chkrom.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+	
+	m_jumper.SubclassDlgItem(IDC_SND118JMP, this);
 
 	m_cmbio.SetFocus();
 
@@ -1101,30 +1111,37 @@ BOOL SndOpt118Page::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDC_SND118IO:
 			m_snd118io = m_cmbio.GetCurItemData(0x0188);
+			m_jumper.Invalidate();
 			return TRUE;
 			
 		case IDC_SND118ID:
 			m_snd118id = m_cmbid.GetCurItemData(0x80);
+			m_jumper.Invalidate();
 			return TRUE;
 
 		case IDC_SND118DMA:
 			m_snd118dma = m_cmbdma.GetCurItemData(3);
+			m_jumper.Invalidate();
 			return TRUE;
 
 		case IDC_SND118INTF:
 			m_snd118irqf = m_cmbirqf.GetCurItemData(12);
+			m_jumper.Invalidate();
 			return TRUE;
 
 		case IDC_SND118INTP:
 			m_snd118irqp = m_cmbirqp.GetCurItemData(12);
+			m_jumper.Invalidate();
 			return TRUE;
 
 		case IDC_SND118INTM:
 			m_snd118irqm = m_cmbirqm.GetCurItemData(0xff);
+			m_jumper.Invalidate();
 			return TRUE;
 			
 		case IDC_SND118ROM:
 			m_snd118rom = (m_chkrom.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
+			m_jumper.Invalidate();
 			return TRUE;
 
 		case IDC_SND118DEF:
@@ -1134,7 +1151,7 @@ BOOL SndOpt118Page::OnCommand(WPARAM wParam, LPARAM lParam)
 			m_snd118irqf = 12;
 			m_snd118irqp = 12;
 			m_snd118irqm = 0xff;
-			m_snd118rom = 1;
+			m_snd118rom = 0;
 			m_cmbio.SetCurItemData(m_snd118io);
 			m_cmbid.SetCurItemData(m_snd118id);
 			m_cmbdma.SetCurItemData(m_snd118dma);
@@ -1145,6 +1162,11 @@ BOOL SndOpt118Page::OnCommand(WPARAM wParam, LPARAM lParam)
 				m_chkrom.SendMessage(BM_SETCHECK , BST_CHECKED , 0);
 			else
 				m_chkrom.SendMessage(BM_SETCHECK , BST_UNCHECKED , 0);
+			m_jumper.Invalidate();
+			return TRUE;
+
+		case IDC_SND86DIP:
+			OnDipSw();
 			return TRUE;
 	}
 	return FALSE;
@@ -1162,9 +1184,24 @@ LRESULT SndOpt118Page::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 	switch (nMsg)
 	{
 		case WM_DRAWITEM:
+			if (LOWORD(wParam) == IDC_SND118JMP)
+			{
+				UINT8* pBitmap = dipswbmp_getsnd118(m_snd118io, m_snd118dma, m_snd118irqf, m_snd118irqp, m_snd118irqm, m_snd118rom);
+				m_jumper.Draw((reinterpret_cast<LPDRAWITEMSTRUCT>(lParam))->hDC, pBitmap);
+				_MFREE(pBitmap);
+			}
 			return FALSE;
 	}
 	return CDlgProc::WindowProc(nMsg, wParam, lParam);
+}
+
+/**
+ * DIPSW をタップした
+ */
+void SndOpt118Page::OnDipSw()
+{
+	// TODO: Jumperをクリックしたときの動作を実装する
+	m_jumper.Invalidate();
 }
 
 

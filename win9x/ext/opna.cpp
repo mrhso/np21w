@@ -187,6 +187,22 @@ void opna_reset(POPNA opna, REG8 cCaps)
 			opna->userdata = NULL;
 		}
 	}
+	
+	// âπó èâä˙âª
+	opngen_setvol(np2cfg.vol_fm);
+	psggen_setvol(np2cfg.vol_ssg);
+	rhythm_setvol(np2cfg.vol_rhythm);
+#if defined(SUPPORT_FMGEN)
+	if(np2cfg.usefmgen) {
+		opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm);
+		opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg);
+		opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm);
+	}
+#endif	/* SUPPORT_FMGEN */
+	for (UINT i = 0; i < _countof(g_opna); i++)
+	{
+		rhythm_update(&g_opna[i].rhythm);
+	}
 }
 
 /**
