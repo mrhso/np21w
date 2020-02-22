@@ -74,6 +74,7 @@ void cmwacom_finalize(void){
 	if(g_wacom_initialized){
 		UnloadWintab();
 	}
+	g_cmwacom = NULL;
 	g_wacom_initialized = false;
 }
 bool cmwacom_skipMouseEvent(void){
@@ -93,51 +94,53 @@ void cmwacom_setNCControl(bool enable){
 }
 
 LRESULT CALLBACK tabletWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
-    switch (msg) {
-	case WT_PACKET:
-		if(g_cmwacom->HandlePacketMessage(hWnd, msg, wParam, lParam)){
-			return FALSE;
-		}
-		break;
-	case WM_MOUSEMOVE:
-		if(g_cmwacom->HandleMouseMoveMessage(hWnd, msg, wParam, lParam)){
-			return FALSE;
-		}
-		break;
-	case WM_LBUTTONUP:
-	case WM_RBUTTONUP:
-		if(g_cmwacom->HandleMouseUpMessage(hWnd, msg, wParam, lParam)){
-			return FALSE;
-		}
-		break;
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		if(g_cmwacom->HandleMouseDownMessage(hWnd, msg, wParam, lParam)){
-			return FALSE;
-		}
-		break;
-	case WM_ACTIVATE:
-		if (wParam) {
-			//if(g_cmwacom){
-			//	CMWACOM_CONFIG cfg;
-			//	g_cmwacom->GetConfig(&cfg);
-			//	if(!cfg.enable){
-			//		break;
-			//	}
-			//}
-			gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
-			gpWTEnable(g_cmwacom->GetHTab(), TRUE);
-			{
-				SINT16 x, y;
-				mousemng_getstat(&x, &y, false);
-				mousemng_setstat(x, y, uPD8255A_LEFTBIT|uPD8255A_RIGHTBIT);
+	if(g_cmwacom){
+		switch (msg) {
+		case WT_PACKET:
+			if(g_cmwacom->HandlePacketMessage(hWnd, msg, wParam, lParam)){
+				return FALSE;
 			}
-			g_cmwacom->m_skiptabletevent = 20;
-		}else{
-			gpWTEnable(g_cmwacom->GetHTab(), FALSE);
+			break;
+		case WM_MOUSEMOVE:
+			if(g_cmwacom->HandleMouseMoveMessage(hWnd, msg, wParam, lParam)){
+				return FALSE;
+			}
+			break;
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+			if(g_cmwacom->HandleMouseUpMessage(hWnd, msg, wParam, lParam)){
+				return FALSE;
+			}
+			break;
+		case WM_LBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+			if(g_cmwacom->HandleMouseDownMessage(hWnd, msg, wParam, lParam)){
+				return FALSE;
+			}
+			break;
+		case WM_ACTIVATE:
+			if (wParam) {
+				//if(g_cmwacom){
+				//	CMWACOM_CONFIG cfg;
+				//	g_cmwacom->GetConfig(&cfg);
+				//	if(!cfg.enable){
+				//		break;
+				//	}
+				//}
+				gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
+				gpWTEnable(g_cmwacom->GetHTab(), TRUE);
+				{
+					SINT16 x, y;
+					mousemng_getstat(&x, &y, false);
+					mousemng_setstat(x, y, uPD8255A_LEFTBIT|uPD8255A_RIGHTBIT);
+				}
+				g_cmwacom->m_skiptabletevent = 20;
+			}else{
+				gpWTEnable(g_cmwacom->GetHTab(), FALSE);
+			}
+			break;
 		}
-		break;
-    }
+	}
 	return CallWindowProc(g_lpfnDefProc, hWnd, msg, wParam, lParam);
 }
 
@@ -354,7 +357,6 @@ void CComWacom::FinalizeTabletDevice(){
 		}
 		gpWTClose(m_hTab);
 		m_hTab = NULL;
-		g_cmwacom = NULL;
 		g_wacom_allocated = false;
 	}
 }
