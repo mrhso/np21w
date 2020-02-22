@@ -273,50 +273,29 @@ exec_allstep(void)
 	UINT32 op;
 	void (*func)(void);
 #if defined(SUPPORT_ASYNC_CPU)
-	int clkstep = 4; // XXX: timing_getcount_baseclockを頻繁に呼ぶと負荷が大きい気がするので間引き
-	int clkcnt = 0;
+	int skipcnt = 10;
+	int cnt = 0;
+	UINT timing;
 #endif
 	
 	do {
 #if defined(SUPPORT_ASYNC_CPU)
 		// 非同期CPU処理
 		if(np2cfg.asynccpu){
-			//if(asynccpu_clockpersec.QuadPart){
-			//	// 厳密っぽい時間にする
-			//	if(clkcnt==0){
-			//		asynccpu_clockcount = GetTickCounter_Clock();
-			//		if(!((asynccpu_clockcount.QuadPart - asynccpu_lastclock.QuadPart) * pccore.realclock / asynccpu_clockpersec.QuadPart < CPU_BASECLOCK)){
-			//			if(CPU_REMCLOCK > 0){
-			//				CPU_REMCLOCK -= CPU_BASECLOCK;
-			//			}
-			//			asynccpu_lastclock = GetTickCounter_Clock();
-			//			break;
-			//		}
-			//	}
-			//	clkcnt++;
-			//	if(clkcnt >= clkstep) clkstep -= clkstep;
-			//}else{
-				// 雑なタイミングにする
-				// 時間が無ければCPU処理をスキップ
-				if(clkcnt == 0){
-					if(CPU_REMCLOCK > 0){
-						if(timing_getcount_baseclock()!=0){
-							CPU_REMCLOCK = 0;
-							break;
-						}
-					}
+			if(cnt==0){
+				cnt = (cnt + 1) % skipcnt;
+				timing = timing_getcount_baseclock();
+				if(timing!=0){
+					CPU_REMCLOCK = 0;
+					break;
 				}
-				clkcnt++;
-				if(clkcnt >= clkstep) clkstep -= clkstep;
-				// 時間に余裕があればCPUを動かし続ける
-				if(CPU_REMCLOCK <= 10000 && (g_nevent.item[NEVENT_FLAMES].flag & NEVENT_ENABLE) && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
-					if(timing_getcount_baseclock()==0){
+				if(g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
+					if(timing==0){
 						CPU_REMCLOCK = 10000;
-						clkstep = 1;
-						clkcnt = 0;
+						cnt = 0;
 					}
 				}
-			//}
+			}
 		}
 #endif
 

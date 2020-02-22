@@ -94,6 +94,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_ASYNC_CPU)
 				0,
 #endif
+#if defined(SUPPORT_IDEIO)
+				0xD8,
+#endif
 
 				OEMTEXT("VX"), PCBASECLOCK25, PCBASEMULTIPLE, 1,
 				{0x48, 0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x6e},

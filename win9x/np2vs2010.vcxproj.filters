@@ -259,6 +259,12 @@
     <Filter Include="ヘッダー ファイル\sound\mame">
       <UniqueIdentifier>{69e55071-1b40-4cc2-928d-d45bc986a5af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\io\pci">
+      <UniqueIdentifier>{e6da250b-858c-4fa8-9663-2d66e79a5ad2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\io\pci">
+      <UniqueIdentifier>{a4838f41-2e7e-4a13-a9c8-7c5624c4d070}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\calendar.c">
@@ -1209,6 +1215,15 @@
     <ClCompile Include="..\cbus\ct1745io.c">
       <Filter>ソース ファイル\cbus</Filter>
     </ClCompile>
+    <ClCompile Include="..\io\pci\cbusbridge.c">
+      <Filter>ソース ファイル\io\pci</Filter>
+    </ClCompile>
+    <ClCompile Include="..\io\pci\98graphbridge.c">
+      <Filter>ソース ファイル\io\pci</Filter>
+    </ClCompile>
+    <ClCompile Include="..\io\pegc.c">
+      <Filter>ソース ファイル\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2131,6 +2146,15 @@
     </ClInclude>
     <ClInclude Include="..\cbus\ct1745io.h">
       <Filter>ヘッダー ファイル\cbus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\io\pci\cbusbridge.h">
+      <Filter>ヘッダー ファイル\io\pci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\io\pci\98graphbridge.h">
+      <Filter>ヘッダー ファイル\io\pci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\io\pegc.h">
+      <Filter>ヘッダー ファイル\io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

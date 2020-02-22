@@ -9,6 +9,11 @@
 #if defined(ENABLE_TRAP)
 #include "trap/steptrap.h"
 #endif
+#if defined(SUPPORT_ASYNC_CPU)
+#include "timing.h"
+#include "nevent.h"
+#include "pccore.h"
+#endif
 
 
 	I286CORE	i286core;
@@ -304,6 +309,35 @@ void i286c(void) {
 			dmax86();
 		} while(I286_REMCLOCK > 0);
 	}
+#if defined(SUPPORT_ASYNC_CPU)
+	else if(np2cfg.asynccpu){
+		int skipcnt = 10;
+		int cnt = 0;
+		UINT timing;
+		do {
+#if defined(ENABLE_TRAP)
+			steptrap(CPU_CS, CPU_IP);
+#endif
+			GET_PCBYTE(opcode);
+			i286op[opcode]();
+			
+			if(cnt==0){
+				cnt = (cnt + 1) % skipcnt;
+				timing = timing_getcount_baseclock();
+				if(timing!=0){
+					CPU_REMCLOCK = 0;
+					break;
+				}
+				if(g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
+					if(timing==0){
+						CPU_REMCLOCK = 10000;
+						cnt = 0;
+					}
+				}
+			}
+		} while(I286_REMCLOCK > 0);
+	}
+#endif
 	else {
 		do {
 #if defined(ENABLE_TRAP)
