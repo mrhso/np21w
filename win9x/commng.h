@@ -20,6 +20,7 @@ enum {
 #if defined(SUPPORT_WACOM_TABLET)
 	COMCREATE_TABLET,
 #endif
+	COMCREATE_NULL			= 0xffff,
 };
 
 enum {

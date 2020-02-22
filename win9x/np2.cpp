@@ -2557,6 +2557,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			if (b) {
 				CDebugUtyView::AllClose();
+				CDebugUtyView::DisposeAllClosedWindow();
 				DestroyWindow(hWnd);
 			}
 			break;
@@ -3254,7 +3255,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #ifdef _DEBUG
 	// 使うときはstdlib.hとcrtdbg.hをインクルードする
 	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	//_CrtSetBreakAlloc(504);
+	//_CrtSetBreakAlloc(499);
 #endif
 
 #if defined(SUPPORT_WIN2000HOST)
