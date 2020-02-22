@@ -44,6 +44,9 @@
 #include	"sound/fmboard.h"
 #include	"sound/soundrom.h"
 #include	"cbus/mpu98ii.h"
+#if defined(SUPPORT_SMPU98)
+#include	"cbus/smpu98.h"
+#endif
 #endif
 
 
@@ -563,6 +566,9 @@ cpucontinue:
 									sound_changeclock();
 									beep_changeclock();
 									mpu98ii_changeclock();
+#if defined(SUPPORT_SMPU98)
+									smpu98_changeclock();
+#endif
 									keyboard_changeclock();
 									mouseif_changeclock();
 									gdc_updateclock();
@@ -589,6 +595,9 @@ cpucontinue:
 									sound_changeclock();
 									beep_changeclock();
 									mpu98ii_changeclock();
+#if defined(SUPPORT_SMPU98)
+									smpu98_changeclock();
+#endif
 									keyboard_changeclock();
 									mouseif_changeclock();
 									gdc_updateclock();
@@ -604,6 +613,8 @@ cpucontinue:
 			}
 			remclkcnt++;
 		}
+#else
+		;
 #endif
 
 	} while (CPU_REMCLOCK > 0);

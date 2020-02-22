@@ -529,8 +529,14 @@ static const PFTBL s_IniItems[] =
 	PFVAL("optSPBVR", PFTYPE_HEX8,		&np2cfg.spb_vrc),
 	PFMAX("optSPBVL", PFTYPE_UINT8,		&np2cfg.spb_vrl,		24),
 	PFVAL("optSPB_X", PFTYPE_BOOL,		&np2cfg.spb_x),
+	PFVAL("USEMPU98", PFTYPE_BOOL,		&np2cfg.mpuenable),
 	PFVAL("optMPU98", PFTYPE_HEX8,		&np2cfg.mpuopt),
 	PFVAL("optMPUAT", PFTYPE_BOOL,		&np2cfg.mpu_at),
+#if defined(SUPPORT_SMPU98)
+	PFVAL("USE_SMPU", PFTYPE_BOOL,		&np2cfg.smpuenable),
+	PFVAL("opt_SMPU", PFTYPE_HEX8,		&np2cfg.smpuopt),
+	PFVAL("SMPUMUTB", PFTYPE_BOOL,		&np2cfg.smpumuteB),
+#endif
 	
 	PFVAL("opt118io", PFTYPE_HEX16,		&np2cfg.snd118io),
 	PFVAL("opt118id", PFTYPE_HEX8,		&np2cfg.snd118id),
@@ -693,6 +699,17 @@ static const PFTBL s_IniItems[] =
 	PFSTR("mpu98min", PFTYPE_STR,		np2oscfg.mpu.min),
 	PFSTR("mpu98mdl", PFTYPE_STR,		np2oscfg.mpu.mdl),
 	PFSTR("mpu98def", PFTYPE_STR,		np2oscfg.mpu.def),
+	
+#if defined(SUPPORT_SMPU98)
+	PFSTR("smpuAmap", PFTYPE_STR,		np2oscfg.smpuA.mout),
+	PFSTR("smpuAmin", PFTYPE_STR,		np2oscfg.smpuA.min),
+	PFSTR("smpuAmdl", PFTYPE_STR,		np2oscfg.smpuA.mdl),
+	PFSTR("smpuAdef", PFTYPE_STR,		np2oscfg.smpuA.def),
+	PFSTR("smpuBmap", PFTYPE_STR,		np2oscfg.smpuB.mout),
+	PFSTR("smpuBmin", PFTYPE_STR,		np2oscfg.smpuB.min),
+	PFSTR("smpuBmdl", PFTYPE_STR,		np2oscfg.smpuB.mdl),
+	PFSTR("smpuBdef", PFTYPE_STR,		np2oscfg.smpuB.def),
+#endif
 
 	PFMAX("com1port", PFTYPE_UINT8,		&np2oscfg.com1.port,	5),
 	PFVAL("com1para", PFTYPE_UINT8,		&np2oscfg.com1.param),

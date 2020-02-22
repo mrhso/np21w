@@ -19,6 +19,9 @@
 #include	"cbuscore.h"
 #include	"pc9861k.h"
 #include	"mpu98ii.h"
+#if defined(SUPPORT_SMPU98)
+#include	"smpu98.h"
+#endif
 #include	"amd98.h"
 #include "bios/bios.h"
 #include "bios/biosmem.h"
@@ -114,6 +117,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 
 				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 100, 64, 64, 64, 64, 64,
 				1, 0x82, 0,
+#if defined(SUPPORT_SMPU98)
+				0, 0x82, 0,
+#endif	/* SUPPORT_SMPU98 */
 				0, {0x17, 0x04, 0x1f}, {0x0c, 0x0c, 0x02, 0x10, 0x3f, 0x3f},
 #if defined(SUPPORT_FMGEN)
 				1,
@@ -300,6 +306,13 @@ static void pccore_set(const NP2CFG *pConfig)
 	{
 		pccore.device |= PCCBUS_PC9861K;
 	}
+#if defined(SUPPORT_SMPU98)
+	if (pConfig->smpuenable)
+	{
+		pccore.device |= PCCBUS_SMPU98;
+	}
+	else 
+#endif
 	if (pConfig->mpuenable)
 	{
 		pccore.device |= PCCBUS_MPU98;
@@ -378,6 +391,9 @@ void pccore_init(void) {
 
 	rs232c_construct();
 	mpu98ii_construct();
+#if defined(SUPPORT_SMPU98)
+	smpu98_construct();
+#endif
 	pc9861k_initialize();
 
 	iocore_create();
@@ -430,6 +446,9 @@ void pccore_term(void) {
 	iocore_destroy();
 
 	pc9861k_deinitialize();
+#if defined(SUPPORT_SMPU98)
+	smpu98_destruct();
+#endif
 	mpu98ii_destruct();
 	rs232c_destruct();
 
@@ -999,6 +1018,9 @@ void pccore_exec(BOOL draw) {
 #endif
 	artic_callback();
 	mpu98ii_callback();
+#if defined(SUPPORT_SMPU98)
+	smpu98_callback();
+#endif
 	diskdrv_callback();
 	calendar_inc();
 	S98_sync();

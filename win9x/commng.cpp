@@ -54,6 +54,16 @@ COMMNG commng_create(UINT nDevice)
 		case COMCREATE_MPU98II:
 			pComCfg = &np2oscfg.mpu;
 			break;
+			
+#if defined(SUPPORT_SMPU98)
+		case COMCREATE_SMPU98_A:
+			pComCfg = &np2oscfg.smpuA;
+			break;
+
+		case COMCREATE_SMPU98_B:
+			pComCfg = &np2oscfg.smpuB;
+			break;
+#endif
 
 		default:
 			break;

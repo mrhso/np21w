@@ -1341,6 +1341,9 @@
     <ClCompile Include="..\io\pegc.c">
       <Filter>ソース ファイル\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\cbus\smpu98.c">
+      <Filter>ソース ファイル\cbus</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2356,6 +2359,9 @@
     </ClInclude>
     <ClInclude Include="..\io\pegc.h">
       <Filter>ヘッダー ファイル\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cbus\smpu98.h">
+      <Filter>ヘッダー ファイル\cbus</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
