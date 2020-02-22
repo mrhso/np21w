@@ -451,6 +451,8 @@ void pccore_term(void) {
 #endif
 	mpu98ii_destruct();
 	rs232c_destruct();
+	
+	printif_finalize();
 
 	sxsi_alltrash();
 	

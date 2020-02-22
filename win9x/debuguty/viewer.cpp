@@ -132,6 +132,7 @@ CDebugUtyView::~CDebugUtyView()
 	if (m_lpItem)
 	{
 		delete m_lpItem;
+		m_lpItem = NULL;
 	}
 
 	for (size_t i = 0; i < _countof(g_np2view); i++)

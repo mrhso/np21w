@@ -393,6 +393,7 @@ void scrnmng_update(void) {
 
 void scrnmng_setmultiple(int multiple)
 {
+	if(multiple < 1) multiple = 8;
 	if(np2oscfg.fsrescfg && scrnrescfg.scrn_mul!=multiple){
 		scrnrescfg.hasfscfg = 1;
 		scrnrescfg.fscrnmod = np2oscfg.fscrnmod;

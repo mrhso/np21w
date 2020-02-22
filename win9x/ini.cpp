@@ -676,7 +676,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("ASYNCCPU", PFTYPE_BOOL,		&np2cfg.asynccpu), // 非同期CPUモード有効
 #endif
 #if defined(SUPPORT_IDEIO)
-	PFVAL("IDEBADDR", PFRO_HEX8,		&np2cfg.idebaddr), // IDE BIOD アドレス（デフォルト：D8h(D8000h)）
+	PFVAL("IDEBADDR", PFRO_HEX8,		&np2cfg.idebaddr), // IDE BIOS アドレス（デフォルト：D8h(D8000h)）
 #endif
 	
 
@@ -758,7 +758,7 @@ static const PFTBL s_IniItems[] =
 
 #if defined(SUPPORT_SCRN_DIRECT3D)
 	PFVAL("D3D_IMODE", PFTYPE_UINT8,	&np2oscfg.d3d_imode), // Direct3D 拡大縮小補間モード
-	PFVAL("D3D_EXCLU", PFTYPE_UINT8,	&np2oscfg.d3d_exclusive), // Direct3D 排他モード使用
+	PFVAL("D3D_EXCLU", PFTYPE_BOOL,		&np2oscfg.d3d_exclusive), // Direct3D 排他モード使用
 #endif
 
 	PFVAL("snddev_t", PFTYPE_UINT8,		&np2oscfg.cSoundDeviceType),

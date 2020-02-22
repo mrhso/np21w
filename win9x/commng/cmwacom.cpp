@@ -68,6 +68,9 @@ void cmwacom_reset(void){
 	g_wacom_initialized = false;
 }
 void cmwacom_finalize(void){
+	if(g_cmwacom){
+		g_cmwacom->FinalizeTabletDevice();
+	}
 	if(g_wacom_initialized){
 		UnloadWintab();
 	}
@@ -200,6 +203,8 @@ CComWacom::~CComWacom()
 		SetWindowLongPtr(m_hwndMain, GWLP_WNDPROC, (LONG_PTR)g_lpfnDefProc);
 		g_lpfnDefProc = NULL;
 	}
+	FinalizeTabletDevice();
+	g_cmwacom = NULL;
 }
 
 /**
@@ -221,7 +226,7 @@ bool CComWacom::Initialize(HWND hWnd)
 		return false; // 複数個の利用は不可
 	}
 
-	if (!gpWTInfoA(0, 0, NULL)) {
+	if (!gpWTInfoA || !gpWTInfoA(0, 0, NULL)) {
 		return false; // WinTab使用不可
 	}
 	
@@ -349,6 +354,7 @@ void CComWacom::FinalizeTabletDevice(){
 		}
 		gpWTClose(m_hTab);
 		m_hTab = NULL;
+		g_cmwacom = NULL;
 		g_wacom_allocated = false;
 	}
 }

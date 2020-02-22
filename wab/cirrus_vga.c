@@ -6606,7 +6606,7 @@ void pc98_cirrus_vga_init(void)
 	HDC hdc;
 	UINT i;
 	WORD* PalIndexes;
-    CirrusVGAState *s;
+    //CirrusVGAState *s;
 	//HBITMAP hbmp;
 	//BOOL b;
 
@@ -6638,7 +6638,6 @@ void pc98_cirrus_vga_init(void)
 
 	ga_hFakeCursor = LoadCursor(NULL, IDC_ARROW);
 
-	cirrusvga_opaque = cirrusvga = s = (CirrusVGAState*)calloc(1, sizeof(CirrusVGAState));
 #else
 	vramptr = (uint8_t*)malloc(CIRRUS_VRAM_SIZE*2); // 2”{Žæ‚Á‚Ä‚¨‚­
 
@@ -6647,9 +6646,13 @@ void pc98_cirrus_vga_init(void)
 	ds.mouse_set = np2vga_ds_mouse_set;
 	ds.cursor_define = np2vga_ds_cursor_define;
 	ds.next = NULL;
-
-	cirrusvga_opaque = cirrusvga = (CirrusVGAState*)calloc(1, sizeof(CirrusVGAState));
 #endif
+
+	if(cirrusvga_opaque){
+		free(cirrusvga_opaque);
+		cirrusvga_opaque = cirrusvga = NULL;
+	}
+	cirrusvga_opaque = cirrusvga = (CirrusVGAState*)calloc(1, sizeof(CirrusVGAState));
 }
 void pc98_cirrus_vga_reset(const NP2CFG *pConfig)
 {
@@ -6768,6 +6771,10 @@ void pc98_cirrus_vga_shutdown(void)
 	DeleteDC(ga_hdc_cursor);
 	DeleteObject(ga_hbmp_cursor);
 #endif
+	if(cirrusvga_opaque){
+		free(cirrusvga_opaque);
+		cirrusvga_opaque = cirrusvga = NULL;
+	}
 	//free(cursorptr);
 }
 

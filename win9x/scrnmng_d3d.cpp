@@ -226,6 +226,9 @@ static void renewalclientsize(BOOL winloc) {
 		d3d.rect.right = width;
 		d3d.rect.bottom = height;
 		getscreensize(&scrnwidth, &scrnheight, d3d.scrnmode);
+		if ((np2oscfg.paddingx)/* && (multiple == 8)*/) {
+			extend = min(scrnstat.extend, d3d.extend);
+		}
 		fscrnmod = FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK;
 		if(fscrnmod==FSCRNMOD_ASPECTFIX8) {
 			multiple = min(width, height);
@@ -277,22 +280,23 @@ static void renewalclientsize(BOOL winloc) {
 		multiple = scrnstat.multiple;
 		getscreensize(&scrnwidth, &scrnheight, d3d.scrnmode);
 		if (!(d3d.scrnmode & SCRNMODE_ROTATE)) {
-			if ((np2oscfg.paddingx) && (multiple == 8)) {
+			if ((np2oscfg.paddingx)/* && (multiple == 8)*/) {
 				extend = min(scrnstat.extend, d3d.extend);
 			}
 			d3d.rect.right = width + extend;
+			d3d.rect.left = (multiple != 8 ? extend : 0);
 			d3d.rect.bottom = height;
-			d3d.scrn.left = np2oscfg.paddingx - extend;
+			d3d.scrn.left = np2oscfg.paddingx - (multiple == 8 ? extend : 0);
 			d3d.scrn.top = np2oscfg.paddingy;
 		}
 		else {
-			if ((np2oscfg.paddingy) && (multiple == 8)) {
+			if ((np2oscfg.paddingy)/* && (multiple == 8)*/) {
 				extend = min(scrnstat.extend, d3d.extend);
 			}
 			d3d.rect.right = height;
-			d3d.rect.bottom = width + extend;
+			d3d.rect.bottom = width + (multiple == 8 ? extend : 0);
 			d3d.scrn.left = np2oscfg.paddingx;
-			d3d.scrn.top = np2oscfg.paddingy - extend;
+			d3d.scrn.top = np2oscfg.paddingy - (multiple == 8 ? extend : 0);
 		}
 		d3d.scrn.right = np2oscfg.paddingx + scrnwidth;
 		d3d.scrn.bottom = np2oscfg.paddingy + scrnheight;
@@ -305,15 +309,6 @@ static void renewalclientsize(BOOL winloc) {
 		scrnmng_setwindowsize(g_hWndMain, scrnwidth, scrnheight);
 		winlocex_move(wlex);
 		winlocex_destroy(wlex);
-
-		//if(d3d.d3dparam.BackBufferWidth != scrnwidth+2 || d3d.d3dparam.BackBufferHeight != scrnheight+2){
-		//	d3d.d3dparam.BackBufferWidth = scrnwidth+2;
-		//	d3d.d3dparam.BackBufferHeight = scrnheight+2;
-		//	if(d3d.d3ddev!=NULL){
-		//		scrnmngD3D_destroy();
-		//		scrnmngD3D_create(g_scrnmode);
-		//	}
-		//}
 	}
 	scrnsurf.width = width;
 	scrnsurf.height = height;
@@ -932,6 +927,8 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 		DispClock::GetInstance()->SetPalettes(bitcolor);
 		DispClock::GetInstance()->Reset();
 #endif
+
+		d3d.extend = 1;
 	}
 	else {
 		int	wabwidth;
@@ -1027,9 +1024,9 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 	d3d.width = width;
 	d3d.height = height;
 	d3d.cliping = 0;
-	if (scrnmode & SCRNMODE_FULLSCREEN) {
+	//if (scrnmode & SCRNMODE_FULLSCREEN) {
 		renewalclientsize(TRUE); // XXX: スナップ解除等が起こるので暫定TRUE
-	}
+	//}
 	lastscrnmode = scrnmode;
 //	screenupdate = 3;					// update!
 #if defined(SUPPORT_WAB)
@@ -1202,6 +1199,7 @@ void scrnmngD3D_clearwinui(void) {
 
 void scrnmngD3D_setwidth(int posx, int width) {
 	
+	if(scrnstat.multiple < 1) scrnstat.multiple = 8;
 #if defined(SUPPORT_WAB)
 	if(width > WAB_MAX_WIDTH) width = WAB_MAX_WIDTH;
 #else
@@ -1226,6 +1224,7 @@ void scrnmngD3D_setwidth(int posx, int width) {
 				scrnmngD3D_destroy();
 				scrnmngD3D_create(g_scrnmode);
 				d3d_leave_criticalsection();
+				renewalclientsize(TRUE);
 			}
 		}
 	}
@@ -1246,6 +1245,7 @@ void scrnmngD3D_setextend(int extend) {
 				scrnmngD3D_destroy();
 				scrnmngD3D_create(g_scrnmode);
 				d3d_leave_criticalsection();
+				renewalclientsize(TRUE);
 			}
 		}
 	}
@@ -1253,6 +1253,7 @@ void scrnmngD3D_setextend(int extend) {
 
 void scrnmngD3D_setheight(int posy, int height) {
 	
+	if(scrnstat.multiple < 1) scrnstat.multiple = 8;
 #if defined(SUPPORT_WAB)
 	if(height > WAB_MAX_HEIGHT) height = WAB_MAX_HEIGHT;
 #else
@@ -1277,6 +1278,7 @@ void scrnmngD3D_setheight(int posy, int height) {
 				scrnmngD3D_destroy();
 				scrnmngD3D_create(g_scrnmode);
 				d3d_leave_criticalsection();
+				renewalclientsize(TRUE);
 			}
 		}
 	}
@@ -1284,6 +1286,7 @@ void scrnmngD3D_setheight(int posy, int height) {
 
 void scrnmngD3D_setsize(int posx, int posy, int width, int height) {
 	
+	if(scrnstat.multiple < 1) scrnstat.multiple = 8;
 #if defined(SUPPORT_WAB)
 	if(width > WAB_MAX_WIDTH) width = WAB_MAX_WIDTH;
 	if(height > WAB_MAX_HEIGHT) height = WAB_MAX_HEIGHT;
@@ -1311,6 +1314,7 @@ void scrnmngD3D_setsize(int posx, int posy, int width, int height) {
 				scrnmngD3D_destroy();
 				scrnmngD3D_create(g_scrnmode);
 				d3d_leave_criticalsection();
+				renewalclientsize(TRUE);
 			}
 		}
 	}
@@ -1566,6 +1570,7 @@ void scrnmngD3D_setmultiple(int multiple)
 				scrnmngD3D_destroy();
 				scrnmngD3D_create(g_scrnmode);
 				d3d_leave_criticalsection();
+				renewalclientsize(TRUE);
 			}
 		}
 	}
@@ -1900,7 +1905,7 @@ void scrnmngD3D_bltwab() {
 			dst = &d3d.rect;
 		}else{
 			dst = &d3d.rect;
-			exmgn = scrnstat.extend;
+			exmgn = (scrnstat.multiple == 8 ? scrnstat.extend : 0);
 		}
 		src.left = src.top = 0;
 		
@@ -1908,13 +1913,13 @@ void scrnmngD3D_bltwab() {
 			src.right = scrnstat.width;
 			src.bottom = scrnstat.height;
 			dstmp = *dst;
-			//dstmp.left += exmgn;
+			dstmp.left += exmgn;
 			dstmp.right = dstmp.left + scrnstat.width;
 		}else{
 			src.right = scrnstat.height;
 			src.bottom = scrnstat.width;
 			dstmp = *dst;
-			//dstmp.left += exmgn;
+			dstmp.left += exmgn;
 			dstmp.right = dstmp.left + scrnstat.height;
 		}
 		d3d_enter_criticalsection();

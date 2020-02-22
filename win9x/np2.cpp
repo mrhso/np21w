@@ -1744,9 +1744,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 					hBmp = CreateDIBitmap(hDC, &(lpbinfo->bmiHeader), CBM_INIT, lppixels, lpbinfo, DIB_RGB_COLORS);
 				}
 				ReleaseDC(NULL, hDC);
-				_MFREE(lppal);
-				_MFREE(lppixels);
-				_MFREE(lpbinfo);
+				free(lppal);
+				free(lppixels);
+				free(lpbinfo);
 				if(OpenClipboard(hWnd)){
 					// クリップボード奪取成功
 					EmptyClipboard();
@@ -2822,7 +2822,6 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 						}
 						return 1;
 					}
-#ifdef HOOK_SYSKEY
 					else if ((pkbhs->vkCode == VK_SNAPSHOT) && (np2oscfg.syskhook)) {
 						// PrintScreen -> COPY
 						switch((int)wParam){
@@ -2836,7 +2835,6 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 							break;
 						}
 					}
-#endif
 				}
 				break;
 			}
@@ -2944,7 +2942,7 @@ void unloadNP2INI(){
 #endif
 	
 	sxsi_alltrash();
-	//pccore_term();
+	pccore_term();
 
 	CSoundMng::GetInstance()->Close();
 	CSoundMng::Deinitialize();
@@ -3253,6 +3251,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 	BOOL		xrollkey;
 	
+#ifdef _DEBUG
+	// 使うときはstdlib.hとcrtdbg.hをインクルードする
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtSetBreakAlloc(504);
+#endif
+
 #if defined(SUPPORT_WIN2000HOST)
 #ifdef _WINDOWS
 #ifndef _WIN64
@@ -3695,16 +3699,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif
 
 	pccore_term();
-	
+
 	CSoundMng::GetInstance()->Close();
 	CSoundMng::Deinitialize();
 	scrnmng_shutdown();
 	scrnmng_destroy();
 	commng_finalize();
 	recvideo_close();
-
 	mousemng_destroy();
-
+	
 	if (sys_updates	& (SYS_UPDATECFG | SYS_UPDATEOSCFG)) {
 		initsave();
 		toolwin_writeini();
@@ -3720,6 +3723,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #endif	// defined(SUPPORT_WAB)
 	skbdwin_deinitialize();
 	
+	CSubWndBase::Deinitialize();
+	CWndProc::Deinitialize();
+	
 	winloc_DisposeDwmFunc();
 
 	UnloadExternalResource();
@@ -3727,6 +3733,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	TRACETERM();
 	_MEM_USED(TEXT("report.txt"));
 	dosio_term();
+
+	Np2Arg::Release();
+
+	//_CrtDumpMemoryLeaks();
 
 	return((int)msg.wParam);
 }

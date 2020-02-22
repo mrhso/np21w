@@ -113,6 +113,7 @@
 #define IDC_SKIPLIGHT                   13104
 #define IDC_LIGHTSTR                    13105
 #define IDC_SOFTWARERENDERING           13106
+#define IDC_1DOTTEXTSCRSHIFT            13107
 #define IDC_FULLSCREEN_SAMEBPP          13201
 #define IDC_FULLSCREEN_SAMERES          13202
 #define IDC_FULLSCREEN_ZOOM             13203

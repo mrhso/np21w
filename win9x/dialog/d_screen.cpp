@@ -495,6 +495,7 @@ BOOL ScrOptFullscreenPage::OnInitDialog()
 void ScrOptFullscreenPage::OnOK()
 {
 	UINT8 c = 0;
+	UINT8 c2 = 0;
 	if (IsDlgButtonChecked(IDC_FULLSCREEN_SAMEBPP) != BST_UNCHECKED)
 	{
 		c |= FSCRNMOD_SAMEBPP;
@@ -503,18 +504,21 @@ void ScrOptFullscreenPage::OnOK()
 	{
 		c |= FSCRNMOD_SAMERES;
 	}
+	c2 = c;
 	c |= m_zoom.GetCurItemData(FSCRNCFG_fscrnmod & FSCRNMOD_ASPECTMASK);
-	if (FSCRNCFG_fscrnmod != c)
+	c2 |= m_zoom.GetCurItemData(np2oscfg.fscrnmod & FSCRNMOD_ASPECTMASK);
+	if ((np2oscfg.fsrescfg && (!scrnrescfg.hasfscfg || scrnrescfg.fscrnmod != c)) || np2oscfg.fscrnmod != c2)
 	{
+		if((np2oscfg.fsrescfg && (!scrnrescfg.hasfscfg || scrnrescfg.fscrnmod != c)) || (!np2oscfg.fsrescfg && np2oscfg.fscrnmod != c2)){
+			resetScreen = 1;
+		}
 		if(np2oscfg.fsrescfg){
 			scrnrescfg.fscrnmod = c;
 			scrnrescfg.hasfscfg = 1;
 			scrnres_writeini();
-		}else{
-			np2oscfg.fscrnmod = c;
 		}
+		np2oscfg.fscrnmod = c;
 		::sysmng_update(SYS_UPDATEOSCFG);
-		resetScreen = 1;
 	}
 }
 
@@ -625,7 +629,7 @@ void ScrOptRendererPage::OnOK()
 {
 	bool bUpdated = false;
 	UINT8 cMode = 0;
-	UINT32 tmp;
+	UINT32 tmp, tmp2;
 	tmp = m_type.GetCurItemData(np2oscfg.drawtype);
 	if (tmp != np2oscfg.drawtype)
 	{
@@ -639,17 +643,19 @@ void ScrOptRendererPage::OnOK()
 		resetScreen = 1;
 		bUpdated = true;
 	}
-	tmp = m_mode.GetCurItemData(FSCRNCFG_d3d_imode);
-	if (tmp != FSCRNCFG_d3d_imode)
+	tmp = m_mode.GetCurItemData(scrnrescfg.d3d_imode);
+	tmp2 = m_mode.GetCurItemData(np2oscfg.d3d_imode);
+	if ((np2oscfg.fsrescfg && (!scrnrescfg.hasfscfg || scrnrescfg.d3d_imode != tmp)) || np2oscfg.d3d_imode != tmp2)
 	{
+		if((np2oscfg.fsrescfg && (!scrnrescfg.hasfscfg || scrnrescfg.d3d_imode != tmp)) || (!np2oscfg.fsrescfg && np2oscfg.d3d_imode != tmp2)){
+			resetScreen = 1;
+		}
 		if(np2oscfg.fsrescfg){
 			scrnrescfg.d3d_imode = tmp;
 			scrnrescfg.hasfscfg = 1;
 			scrnres_writeini();
-		}else{
-			np2oscfg.d3d_imode = tmp;
 		}
-		resetScreen = 1;
+		np2oscfg.d3d_imode = tmp;
 		bUpdated = true;
 	}
 	cMode = (IsDlgButtonChecked(IDC_RENDERER_EXCLUSIVE) != BST_UNCHECKED);

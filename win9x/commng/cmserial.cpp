@@ -47,6 +47,7 @@ CComSerial::~CComSerial()
 	if (m_hSerial != INVALID_HANDLE_VALUE)
 	{
 		::CloseHandle(m_hSerial);
+		m_hSerial = INVALID_HANDLE_VALUE;
 	}
 }
 
