@@ -116,7 +116,11 @@ enum
 	STATFLAG_HDRV,
 #endif
 	STATFLAG_MEM,
-	STATFLAG_SXSI
+	STATFLAG_SXSI,
+	STATFLAG_MASK				= 0x3fff,
+	
+	STATFLAG_BWD_COMPATIBLE			= 0x4000, // このフラグが立っているとき、古いバージョンのステートセーブと互換性がある（足りないデータは0で埋められるので注意する）いまのところSTATFLAG_BINのみサポート
+	STATFLAG_FWD_COMPATIBLE			= 0x8000, // このフラグが立っているとき、新しいバージョンのステートセーブと互換性がある（足りないデータは無かったことになるので注意する）いまのところSTATFLAG_BINのみサポート
 };
 
 typedef struct {
@@ -485,7 +489,8 @@ static int flagsave_common(STFLAGH sfh, const SFENTRY *tbl) {
 
 static int flagload_common(STFLAGH sfh, const SFENTRY *tbl) {
 
-	return(statflag_read(sfh, tbl->arg1, tbl->arg2));
+	memset(tbl->arg1, 0, tbl->arg2);
+	return(statflag_read(sfh, tbl->arg1, min(tbl->arg2, sfh->hdr.size)));
 }
 
 
@@ -1264,7 +1269,9 @@ flcom_err1:
 
 static int flagcheck_versize(STFLAGH sfh, const SFENTRY *tbl) {
 
-	if ((sfh->hdr.ver == tbl->ver) && (sfh->hdr.size == tbl->arg2)) {
+	if ((sfh->hdr.ver == tbl->ver) && ((sfh->hdr.size == tbl->arg2) || 
+		((tbl->type & STATFLAG_BWD_COMPATIBLE) && sfh->hdr.size < tbl->arg2) || 
+		((tbl->type & STATFLAG_FWD_COMPATIBLE) && sfh->hdr.size > tbl->arg2))) {
 		return(STATFLAG_SUCCESS);
 	}
 	return(STATFLAG_FAILURE);
@@ -1307,7 +1314,7 @@ const SFENTRY	*tblterm;
 	tblterm = tbl + NELEMENTS(np2tbl);
 	while(tbl < tblterm) {
 		ret |= statflag_createsection(sffh, tbl);
-		switch(tbl->type) {
+		switch(tbl->type & STATFLAG_MASK) {
 			case STATFLAG_BIN:
 			case STATFLAG_TERM:
 				ret |= flagsave_common(&sffh->sfh, tbl);
@@ -1397,7 +1404,7 @@ const SFENTRY	*tblterm;
 			tbl++;
 		}
 		if (tbl < tblterm) {
-			switch(tbl->type) {
+			switch(tbl->type & STATFLAG_MASK) {
 				case STATFLAG_BIN:
 				case STATFLAG_MEM:
 					ret |= flagcheck_versize(&sffh->sfh, tbl);
@@ -1502,7 +1509,7 @@ const SFENTRY	*tblterm;
 			tbl++;
 		}
 		if (tbl < tblterm) {
-			switch(tbl->type) {
+			switch(tbl->type & STATFLAG_MASK) {
 				case STATFLAG_BIN:
 					ret |= flagload_common(&sffh->sfh, tbl);
 					break;
@@ -1573,6 +1580,9 @@ const SFENTRY	*tblterm;
 		}
 	}
 	statflag_close(sffh);
+
+	// ステートセーブ互換性維持用
+	if(pccore.maxmultiple == 0) pccore.maxmultiple = pccore.multiple;
 	
 #if defined(SUPPORT_IA32_HAXM)
 	memcpy(vramex, vramex_base, sizeof(vramex_base));

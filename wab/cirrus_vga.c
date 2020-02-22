@@ -2191,6 +2191,26 @@ cirrus_hook_read_cr(CirrusVGAState * s, unsigned reg_index, int *reg_value)
     case 0x26:			// Attribute Controller Index Readback (R)
 		*reg_value = s->ar_index & 0x3f;
 		break;
+    case 0x31:			// Video Window Horizontal Zoom Control
+    case 0x32:			// Video Window Vertical Zoom Control
+    case 0x33:			// Video Window Horizontal Region 1 Size
+    case 0x34:			// Video Window Region 2 Skip Size
+    case 0x35:			// Video Window Region 2 Active Size
+    case 0x36:			// Video Window Horizontal Overflow
+    case 0x37:			// Video Window Vertical Start
+    case 0x38:			// Video Window Vertical End
+    case 0x39:			// Video Window Vertical Overflow
+    case 0x3a:			// Video Buffer 1 Start Address Byte 0
+    case 0x3b:			// Video Buffer 1 Start Address Byte 1
+    case 0x3c:			// Video Buffer 1 Start Address Byte 2
+    case 0x3d:			// Video Window Address Offset
+    case 0x3e:			// Video Window Master Control
+    case 0x3f:			// Host Video Data Path Control
+    case 0x5d:			// Video Window Pixel Alignment
+		if(s->device_id >= CIRRUS_ID_CLGD5440){
+			*reg_value = s->cr[reg_index];
+		}
+		break;
     case 0x5e:			// Double Buffer Control (CL-GD5446)
 		if(s->device_id == CIRRUS_ID_CLGD5446){
 			*reg_value = s->cr[reg_index];
@@ -2252,6 +2272,26 @@ cirrus_hook_write_cr(CirrusVGAState * s, unsigned reg_index, int reg_value)
     case 0x24:			// Attribute Controller Toggle Readback (R)
     case 0x26:			// Attribute Controller Index Readback (R)
     case 0x27:			// Part ID (R)
+		break;
+    case 0x31:			// Video Window Horizontal Zoom Control
+    case 0x32:			// Video Window Vertical Zoom Control
+    case 0x33:			// Video Window Horizontal Region 1 Size
+    case 0x34:			// Video Window Region 2 Skip Size
+    case 0x35:			// Video Window Region 2 Active Size
+    case 0x36:			// Video Window Horizontal Overflow
+    case 0x37:			// Video Window Vertical Start
+    case 0x38:			// Video Window Vertical End
+    case 0x39:			// Video Window Vertical Overflow
+    case 0x3a:			// Video Buffer 1 Start Address Byte 0
+    case 0x3b:			// Video Buffer 1 Start Address Byte 1
+    case 0x3c:			// Video Buffer 1 Start Address Byte 2
+    case 0x3d:			// Video Window Address Offset
+    case 0x3e:			// Video Window Master Control
+    case 0x3f:			// Host Video Data Path Control
+    case 0x5d:			// Video Window Pixel Alignment
+		if(s->device_id >= CIRRUS_ID_CLGD5440){
+			s->cr[reg_index] = reg_value;
+		}
 		break;
     case 0x5e:			// Double Buffer Control (CL-GD5446)
 		if(s->device_id == CIRRUS_ID_CLGD5446){
@@ -4970,12 +5010,16 @@ LOGPALETTE * NewLogPal(const uint8_t *pCirrusPalette , int iSize) {
 	return lpPalette;
 }
 #endif
+
 //　画面表示(仮)　本当はQEMUのオリジナルのコードを移植すべきなんだけど･･･
 //  Cirrus VRAM (screen & cursor) -> GDI Device Independent Bitmap
 void cirrusvga_drawGraphic(){
+//#define DEBUG_CIRRUS_VRAM
+#if defined(DEBUG_CIRRUS_VRAM)
 	//static UINT32 kdown = 0;
 	//static UINT32 kdownc = 0;
-	//static INT32 memshift = 0; // DEBUG 
+	static INT32 memshift = 0; // DEBUG 
+#endif
 	int i, j, width, height, bpp;
 	uint32_t_ line_offset = 0;
 #if defined(_WIN32)
@@ -5025,29 +5069,31 @@ void cirrusvga_drawGraphic(){
 		}
 	//}
 	
-	//// DEBUG 
-	////////	vram_ptr = mem + 640*16*memshift;
-	////vram_ptr += 640*16*memshift;
-	//if(GetKeyState(VK_SHIFT)<0){
-	//	memshift++;
-	////	kdown = 1;
-	////}else if(kdown){
-	////	//vram_ptr = vram_ptr + 1024*768*1;
-	////	kdown = 0;
-	//}
+#if defined(DEBUG_CIRRUS_VRAM)
+	// DEBUG 
+	//////	vram_ptr = mem + 640*16*memshift;
+	//vram_ptr += 640*16*memshift;
+	if(GetKeyState(VK_SHIFT)<0){
+		memshift++;
+	//	kdown = 1;
+	//}else if(kdown){
+	//	//vram_ptr = vram_ptr + 1024*768*1;
+	//	kdown = 0;
+	}
+	if(GetKeyState(VK_CONTROL)<0){
+		memshift--;
+		if(memshift<0) memshift = 0;
+		//vram_ptr = mem + 1024*768*memshift;
+	//	kdownc = 1;
+	//}else if(kdownc){
+	//	//vram_ptr = vram_ptr + 1024*768*1;
+	//	kdownc = 0;
+	}
 	//if(GetKeyState(VK_CONTROL)<0){
-	//	memshift--;
-	//	if(memshift<0) memshift = 0;
-	//	//vram_ptr = mem + 1024*768*memshift;
-	////	kdownc = 1;
-	////}else if(kdownc){
-	////	//vram_ptr = vram_ptr + 1024*768*1;
-	////	kdownc = 0;
+		vram_ptr = vram_ptr + 1280*16*memshift;
 	//}
-	////if(GetKeyState(VK_CONTROL)<0){
-	//	vram_ptr = vram_ptr + 1280*16*memshift;
-	////}
-	//// DEBUG (END)
+	// DEBUG (END)
+#endif
 
 	// Cirrusの色数と解像度を取得
     bpp = cirrusvga->get_bpp((VGAState*)cirrusvga);
@@ -5330,6 +5376,84 @@ void cirrusvga_drawGraphic(){
 #endif
 		}
 	}
+	
+	// CL-GD544x Video Window
+	if(cirrusvga->cr[0x3e] & 0x01){ // Check Video Window Master Enable bit
+		uint32_t_* bitfleld;
+		int vidwnd_format = ((cirrusvga->cr[0x3e] >> 1) & 0x7);
+		int vidwnd_bpp = (vidwnd_format==4 || vidwnd_format==5) ? 16 : 8;
+		int vidwnd_horizontalZoom = (cirrusvga->cr[0x31]);
+		int vidwnd_verticalZoom = (cirrusvga->cr[0x32]);
+		int vidwnd_region1Adj = (cirrusvga->cr[0x5d]>>0) & 0x3;
+		int vidwnd_region2Adj = (cirrusvga->cr[0x5d]>>4) & 0x3;
+		int vidwnd_region1Size = (((cirrusvga->cr[0x36] >> 0) & 0x03) << 8)|(cirrusvga->cr[0x33]);
+		int vidwnd_region2Size = (((cirrusvga->cr[0x36] >> 2) & 0x03) << 8)|(cirrusvga->cr[0x34]);
+		int vidwnd_region2SDSize = (((cirrusvga->cr[0x36] >> 4) & 0x03) << 8)|(cirrusvga->cr[0x35]);
+		int vidwnd_verticalStart = (((cirrusvga->cr[0x39] >> 0) & 0x03) << 8)|(cirrusvga->cr[0x37]);
+		int vidwnd_verticalEnd = (((cirrusvga->cr[0x39] >> 2) & 0x03) << 8)|(cirrusvga->cr[0x38]);
+		int vidwnd_startAddress = ((cirrusvga->cr[0x3c] & 0x0f) << 18)|(cirrusvga->cr[0x3b] << 10)|(cirrusvga->cr[0x3a] << 2);
+		int vidwnd_bufAddressOffset = (((cirrusvga->cr[0x3c] >> 5) & 0x01) << 11)|(cirrusvga->cr[0x3d] << 3);
+		int vidwnd_srcwidth = vidwnd_region2SDSize * vidwnd_bpp/8;
+		int vidwnd_srcheight = vidwnd_verticalEnd - vidwnd_verticalStart;
+		int vidwnd_srcpitch = vidwnd_bufAddressOffset;
+		int vidwnd_dstwidth = vidwnd_srcwidth;//vidwnd_region2Size * bpp/8;
+		int vidwnd_dstheight = vidwnd_verticalEnd - vidwnd_verticalStart;
+		int vidwnd_dstX = vidwnd_region1Size * 32 / bpp + vidwnd_region1Adj * 8 / bpp;
+		int vidwnd_dstY = vidwnd_verticalStart;
+		if(vidwnd_horizontalZoom > 0) vidwnd_dstwidth = vidwnd_srcwidth * 256 / vidwnd_horizontalZoom;
+		if(vidwnd_verticalZoom > 0) vidwnd_srcheight = vidwnd_dstheight * vidwnd_verticalZoom / 256;
+#if defined(_WIN32)
+		switch(vidwnd_format){
+		case 4: // RGB555
+			//// XXX: RGB555になってない？？？
+			//ga_bmpInfo->bmiHeader.biCompression = BI_RGB;
+			//break;
+		case 5: // RGB565
+			// ビットフィールドでRGB565を指定
+			bitfleld = (uint32_t_*)(ga_bmpInfo->bmiColors);
+			bitfleld[0] = 0x0000F800;
+			bitfleld[1] = 0x000007E0;
+			bitfleld[2] = 0x0000001F;
+			ga_bmpInfo->bmiHeader.biCompression = BI_BITFIELDS;
+			break;
+		default:
+			// TODO: YUVとかも作らないといけない（けどどうするよ？）
+			break;
+		}
+		ga_bmpInfo->bmiHeader.biBitCount = vidwnd_bpp;
+		scanptr = vram_ptr + vidwnd_startAddress;
+#if defined(DEBUG_CIRRUS_VRAM)
+		scanptr = scanptr - 1280*16*memshift; // DEBUG
+#endif
+		if(vidwnd_dstwidth == vidwnd_srcwidth){
+			for(i=0;i<vidwnd_srcheight;i++){
+				ga_bmpInfo->bmiHeader.biWidth = width;
+				ga_bmpInfo->bmiHeader.biHeight = 1;
+				r = SetDIBitsToDevice(
+					hdc , vidwnd_dstX , vidwnd_dstY + i ,
+					vidwnd_srcwidth , 1 ,
+					0 , 0 , 0 , 1 ,
+					scanptr , ga_bmpInfo , DIB_RGB_COLORS
+				);
+				scanptr += vidwnd_srcpitch;
+			}
+		}else{
+			for(i=0;i<vidwnd_dstheight;i++){
+				ga_bmpInfo->bmiHeader.biWidth = width;
+				ga_bmpInfo->bmiHeader.biHeight = 1;
+				r = StretchDIBits(
+					hdc , vidwnd_dstX , vidwnd_dstY + i ,
+					vidwnd_dstwidth , 1 ,
+					0 , 0 , vidwnd_srcwidth , 1 ,
+					scanptr + (i * vidwnd_srcheight / vidwnd_dstheight) * vidwnd_srcpitch, ga_bmpInfo , DIB_RGB_COLORS , SRCCOPY
+				);
+			}
+		}
+#elif defined(NP2_X11)
+		// TODO: 非Windows用コードを書く
+#endif
+	}
+
     if ((cirrusvga->sr[0x12] & CIRRUS_CURSOR_SHOW)){
 		int hwcur_x = cirrusvga->hw_cursor_x + cursot_ofs_x;
 		int hwcur_y = cirrusvga->hw_cursor_y + cursot_ofs_y;

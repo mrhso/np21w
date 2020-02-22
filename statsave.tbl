@@ -84,7 +84,7 @@ static const PROCTBL dmaproc[] = {
 	};
 
 static const SFENTRY np2tbl[] = {
-	{"PCCORE",		0,	STATFLAG_BIN,	&pccore,		sizeof(pccore)},
+	{"PCCORE",		0,	STATFLAG_BIN|STATFLAG_BWD_COMPATIBLE,	&pccore,		sizeof(pccore)},
 
 	{"CPU286",		0,	STATFLAG_BIN,	&CPU_STATSAVE,	sizeof(CPU_STATSAVE)},
 #if defined(CPUCORE_IA32)

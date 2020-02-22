@@ -287,6 +287,7 @@ struct tagNP2Config
 	UINT8	usepegcplane; // PEGC プレーンモードサポート
 	
 	UINT8	usecdecc; // CD-ROM EDC/ECC エミュレーションサポート
+	UINT8	cddtskip; // CD-ROM オーディオ再生時にデータトラックをスキップ
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 
@@ -309,6 +310,8 @@ typedef struct {
 	UINT32	device;
 
 	UINT32	realclock;
+
+	UINT	maxmultiple;
 } PCCORE;
 
 enum {

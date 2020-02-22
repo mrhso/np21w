@@ -12,6 +12,7 @@ extern "C" {
 typedef struct {
 	UINT8	available; // HAXM使用可能
 	UINT8	enable; // HAXM有効
+	UINT8	emumode; // 猫CPUで代替処理中
 	HANDLE	hDevice; // HAXMデバイスのハンドル
 	HANDLE	hVMDevice; // HAXM仮想マシンデバイスのハンドル
 	HANDLE	hVCPUDevice; // HAXM仮想CPUデバイスのハンドル

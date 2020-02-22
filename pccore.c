@@ -171,7 +171,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				1,
 #endif
 				0, 0,
-				1,
+				1, 0,
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -269,6 +269,7 @@ static void pccore_set(const NP2CFG *pConfig)
 		multiple = 2048;
 	}
 	pccore.multiple = multiple;
+	pccore.maxmultiple = pccore.multiple;
 	pccore.realclock = pccore.baseclock * multiple;
 
 	// HDDの接続 (I/Oの使用状態が変わるので..
@@ -781,6 +782,8 @@ void pccore_reset(void) {
 			np2haxcore.lastclock = GetTickCounter_Clock();
 			np2haxcore.clockcount = GetTickCounter_Clock();
 			np2haxcore.I_ratio = 0;
+
+			np2haxstat.update_regs = np2haxstat.update_fpu = 0;
 		}else{
 			np2hax.enable = 1;
 		}
@@ -1038,7 +1041,7 @@ void pccore_exec(BOOL draw) {
 #endif
 		pic_irq();
 #if defined(SUPPORT_IA32_HAXM)
-		if (CPU_RESETREQ && (!np2hax.enable || np2haxcore.ready_for_reset)) {
+		if (CPU_RESETREQ && (np2hax.emumode || !np2hax.enable || np2haxcore.ready_for_reset)) {
 #else
 		if (CPU_RESETREQ) {
 #endif
@@ -1061,15 +1064,17 @@ void pccore_exec(BOOL draw) {
 			pcidev_basereset(); // XXX: Win9xの再起動で必要
 #endif
 #if defined(SUPPORT_IA32_HAXM)
-			if (np2hax.enable) {
+			if (!np2hax.emumode && np2hax.enable) {
 				//i386hax_resetVMCPU();
 				//i386haxfunc_vcpu_setREGs(&np2haxstat.state);
 				//i386haxfunc_vcpu_setFPU(&np2haxstat.fpustate);
 				//ia32hax_copyregHAXtoNP2();
 				//CPU_SHUT();
 				np2haxstat.update_regs = np2haxstat.update_fpu = 1;
+				np2haxstat.update_segment_regs = 1;
 				np2haxstat.irq_reqidx_cur = np2haxstat.irq_reqidx_end = 0;
 				pic_reset(&np2cfg);
+				np2haxcore.hltflag = 0;
 			}
 #endif
 			CPU_SHUT();
