@@ -150,6 +150,12 @@ static void ct1741_dma_transfer(DMA_MODES mode, UINT32 freq, BOOL stereo) {
 	case DSP_DMA_16:
 		// type="16-bits PCM";
 		g_sb16.dsp_info.dma.mul=(1 << SB_SH);
+		if(g_sb16.dsp_info.dmach & 0x20){
+			// なぞの1ビットずらし
+			g_sb16.dsp_info.dma.chan->adrs.w[0] = g_sb16.dsp_info.dma.chan->adrs.w[0] << 1;
+			g_sb16.dsp_info.dma.chan->startaddr = g_sb16.dsp_info.dma.chan->adrs.d;
+			g_sb16.dsp_info.dma.chan->lastaddr = g_sb16.dsp_info.dma.chan->startaddr + g_sb16.dsp_info.dma.chan->startcount;
+		}
 		break;
 	default:
 //		LOG(LOG_SB,LOG_ERROR)("DSP:Illegal transfer mode %d",mode);
@@ -187,7 +193,7 @@ static void ct1741_prepare_dma(DMA_MODES mode, UINT32 length, BOOL autoinit, BOO
 			g_sb16.dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;
 //			g_sb16.dsp_info.dma.chan = GetDMAChannel(sb.hw.dma16);
 		} else {
-		g_sb16.mixreg[0x82] |= 0x1;
+			g_sb16.mixreg[0x82] |= 0x1;
 			g_sb16.dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;
 //			g_sb16.dsp_info.dma.chan = GetDMAChannel(sb.hw.dma8);
 			mode = DSP_DMA_16_ALIASED;
@@ -478,7 +484,7 @@ printf("read 2cd2 g_sb16.dsp_info.state = %x g_sb16.dsp_info.write_busy =%x\n",g
 		case DSP_STATUS_NORMAL:
 //			g_sb16.dsp_info.write_busy++;
 //			if (g_sb16.dsp_info.write_busy & 8) return 0x80;//0xff;
-			return g_sb16.dsp_info.write_busy ? 0xff : 0x00;
+			return g_sb16.dsp_info.write_busy ? 0x80 : 0x00;
 
 		case DSP_STATUS_RESET:
 			return 0xff;
@@ -500,7 +506,7 @@ printf("read 2ed2 g_sb16.dsp_info.out.used =%x mixer[82] = %x cmd = %x\n",g_sb16
 	if(g_sb16.mixreg[0x82] & 1){
 		g_sb16.mixreg[0x82] &= ~1;
 		pic_resetirq(g_sb16.dmairq);
-		if(g_sb16.dsp_info.dma.autoinit){
+		if(g_sb16.dsp_info.dma.lastautoinit || g_sb16.dsp_info.dma.autoinit){
 			if (!(g_sb16.dsp_info.dma.chan->leng.w)) {
 			//if(g_sb16.dsp_info.dma.chan->startcount > g_sb16.dsp_info.dma.total){
 			//	if(g_sb16.dsp_info.dma.total > 0){
@@ -512,7 +518,8 @@ printf("read 2ed2 g_sb16.dsp_info.out.used =%x mixer[82] = %x cmd = %x\n",g_sb16
 			//	//g_sb16.dsp_info.dma.total -= g_sb16.dsp_info.dma.chan->startcount;
 				g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
 				g_sb16.dsp_info.dma.chan->adrs.d = g_sb16.dsp_info.dma.chan->startaddr; // 戻す
-					g_sb16.dsp_info.smpcounter2 = 0;
+				g_sb16.dsp_info.smpcounter2 = 0;
+				g_sb16.dsp_info.smpcounter = 0;
 			//}
 			}
 		}
@@ -531,18 +538,19 @@ printf("read 2ed2 g_sb16.dsp_info.out.used =%x mixer[82] = %x cmd = %x\n",g_sb16
 	if(g_sb16.mixreg[0x82] & 2){
 		g_sb16.mixreg[0x82] &= ~2;
 		pic_resetirq(g_sb16.dmairq);
-		if(g_sb16.dsp_info.dma.autoinit){
+		if(g_sb16.dsp_info.dma.lastautoinit || g_sb16.dsp_info.dma.autoinit){
 			if (!(g_sb16.dsp_info.dma.chan->leng.w)) {
 				g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
 				g_sb16.dsp_info.dma.chan->adrs.d = g_sb16.dsp_info.dma.chan->startaddr; // 戻す
 				g_sb16.dsp_info.smpcounter2 = 0;
+				g_sb16.dsp_info.smpcounter = 0;
 			}
 		}
 	}
 	return 0xff;
 }
 
-#define BUF_SPEED	(g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? (g_sb16.dsp_info.dma.stereo ? 7 : 7) : (g_sb16.dsp_info.dma.stereo ? 15 : 15)) / (g_sb16.dsp_info.freq<=12000 ? 2 : 1)
+#define BUF_SPEED	(g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? (g_sb16.dsp_info.dma.stereo ? 7 : 7) : (g_sb16.dsp_info.dma.stereo ? 15 : 15)) / (g_sb16.dsp_info.freq<=12000 ? (g_sb16.dsp_info.freq<=6000 ? 4 : 2) : 1)
 static int BUF_ALIGN[] = {
 			1,		// 0: STOP
 			1,
@@ -572,7 +580,7 @@ void ct1741_dma(NEVENTITEM item)
 	UINT	size;
 	UINT8	dmabuf[DMA_BUFSIZE];
 	int i;
-	static int dmacnt2 = 0;
+	static int zerocounter = 0;
 
 	if (item->flag & NEVENT_SETEVENT) {
 		if (g_sb16.dmach != 0xff) {
@@ -585,6 +593,9 @@ void ct1741_dma(NEVENTITEM item)
 					pos = (g_sb16.dsp_info.dma.bufpos + g_sb16.dsp_info.dma.bufdatas) & (DMA_BUFSIZE -1);
 					size = min(rem, (g_sb16.dsp_info.dma.stereo ? 64 : 32));//DMAの転送量を少量に変更
 					r = dmac_getdatas(g_sb16.dsp_info.dma.chan, dmabuf, size);
+					if(r!=0){
+						zerocounter = 0;
+					}
 					for(i=0;i<r;i++){
 						int dstpos = (pos + i) & (DMA_BUFSIZE -1);
 						if(g_sb16.dsp_info.smpcounter2 < (g_sb16.dsp_info.dma.chan->startcount & ~(BUF_ALIGN[g_sb16.dsp_info.dma.mode|g_sb16.dsp_info.dma.stereo <<3] - 1))){
@@ -593,18 +604,15 @@ void ct1741_dma(NEVENTITEM item)
 							g_sb16.dsp_info.dma.bufdatas++;
 						}
 					}
-					if(r==0){
-						g_sb16.dsp_info.write_busy = 0;
-					}
 					printf("g_sb16.dsp_info.dma.mode = %x\n",g_sb16.dsp_info.dma.mode);
 					//g_sb16.dsp_info.dma.bufdatas += r;
 					g_sb16.dsp_info.smpcounter += r;
-					if(g_sb16.dsp_info.smpcounter > (int)g_sb16.dsp_info.dma.chan->startcount){
-						g_sb16.dsp_info.smpcounter -= (int)g_sb16.dsp_info.dma.chan->startcount;
+					if(g_sb16.dsp_info.smpcounter >= (int)g_sb16.dsp_info.dma.total * (g_sb16.dsp_info.dma.mode==DSP_DMA_16 ? 2 : 1)){
+						g_sb16.dsp_info.smpcounter -= (int)g_sb16.dsp_info.dma.total * (g_sb16.dsp_info.dma.mode==DSP_DMA_16 ? 2 : 1);
 						//g_sb16.mixreg[0x82] |= 1;//(nchan & 4) ? 2 : 1;
 						g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 2 : 1);
 						pic_setirq(g_sb16.dmairq);
-						dmacnt2 = dmacnt2 & 0x1;
+						g_sb16.dsp_info.write_busy = 0;
 					}
 				//}
 				
@@ -627,19 +635,28 @@ void ct1741_dma(NEVENTITEM item)
 					}
 				}else{
 					g_sb16.dsp_info.write_busy = 0;
+					//g_sb16.dsp_info.write_busy = 0;
 					if(g_sb16.dsp_info.dma.bufdatas < 16){
 						g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 2 : 1);
 						pic_setirq(g_sb16.dmairq);
-						if(g_sb16.dsp_info.dma.lastautoinit || g_sb16.dsp_info.dma.autoinit){
-							g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
-							g_sb16.dsp_info.dma.chan->adrs.d = g_sb16.dsp_info.dma.chan->startaddr; // 戻す
-							g_sb16.dsp_info.smpcounter2 = 0;
-						}else{
-							g_sb16.dsp_info.smpcounter2 = 0;
-							if (g_sb16.dmach != 0xff) {
-								dmac.stat |= (1 << g_sb16.dmach);
+						if (g_sb16.dmach != 0xff) {
+							dmac.stat |= (1 << g_sb16.dmach);
+						}
+						if(zerocounter>32){
+							if(g_sb16.dsp_info.dma.lastautoinit || g_sb16.dsp_info.dma.autoinit){
+								g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
+								g_sb16.dsp_info.dma.chan->adrs.d = g_sb16.dsp_info.dma.chan->startaddr; // 戻す
+								g_sb16.dsp_info.smpcounter2 = 0;
+							}else{
+								g_sb16.dsp_info.smpcounter2 = 0;
+								return;
 							}
-							return;
+							if(g_sb16.dsp_info.dma.mode==DSP_DMA_NONE){
+								return;
+							}
+						}
+						if(r==0){
+							zerocounter++;
 						}
 						//g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
 						////if(g_sb16.dsp_info.dma.chan->adrs.d - g_sb16.dsp_info.dma.chan->startaddr >= g_sb16.dsp_info.dma.chan->startcount * 2){
@@ -660,6 +677,7 @@ void ct1741_dma(NEVENTITEM item)
 						}
 						//nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
 					}else{
+						g_sb16.dsp_info.write_busy = 0;
 						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * BUF_SPEED;
 						if(cnt != 0){
 							//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
@@ -676,6 +694,7 @@ void ct1741_dma(NEVENTITEM item)
 				g_sb16.dsp_info.write_busy = 0;
 				pic_setirq(g_sb16.dmairq);
 				g_sb16.dsp_info.smpcounter2 = 0;
+				g_sb16.dsp_info.smpcounter = 0;
 				if (g_sb16.dmach != 0xff) {
 					dmac.stat |= (1 << g_sb16.dmach);
 				}
@@ -723,8 +742,8 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 			//	//cnt = pccore.realclock * 32 / g_sb16.dsp_info.freq *(g_sb16.dsp_info.dma.rate2/g_sb16.dsp_info.freq);
 			//	nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_ABSOLUTE);
 			//}
-						g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 3 : 1);
-						pic_setirq(g_sb16.dmairq);
+						//g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 3 : 1);
+						//pic_setirq(g_sb16.dmairq);
 			break;
 
 		case DMAEXT_BREAK:
@@ -767,8 +786,8 @@ const UINT8	*ptr2;
 		}
 		ptr1 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
 		ptr2 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
-		samp1 = (ptr1[0] - 0x80) << 8;
-		samp2 = (ptr2[0] - 0x80) << 8;
+		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
+		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
 		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
 		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
@@ -811,8 +830,8 @@ const UINT8	*ptr2;
 		}
 		ptr1 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
 		ptr2 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
-		samp1 = (ptr1[0] - 0x80) << 8;
-		samp2 = (ptr2[0] - 0x80) << 8;
+		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
+		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
 		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
 		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
@@ -856,8 +875,8 @@ const UINT8	*ptr2;
 		}
 		ptr1 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
 		ptr2 = cs->buffer + ((cs->bufpos + samppos + 1) & DMA_BUFMASK);
-		samp1 = (ptr1[0] - 0x80) << 8;
-		samp2 = (ptr2[0] - 0x80) << 8;
+		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
+		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
 		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
 		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
@@ -902,8 +921,8 @@ const UINT8	*ptr2;
 		}
 		ptr1 = (cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK));
 		ptr2 = (cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK));
-		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
-		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
+		samp1 = ((SINT32)((SINT8)ptr1[1]) << 8) + ptr1[0];
+		samp2 = ((SINT32)((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
 		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
 		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
@@ -947,8 +966,8 @@ const UINT8	*ptr2;
 		}
 		ptr1 = (cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK));
 		ptr2 = (cs->buffer + ((cs->bufpos + samppos + 2) & DMA_BUFMASK));
-		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
-		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
+		samp1 = ((SINT32)((SINT8)ptr1[1]) << 8) + ptr1[0];
+		samp2 = ((SINT32)((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
 		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
 		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
