@@ -233,6 +233,18 @@ static void mpu98ii_int(void) {
 
 	TRACEOUT(("int!"));
 	pic_setirq(mpu98.irqnum);
+	//// Sound Blaster 16
+	//if(g_nSoundID == SOUNDID_SB16 || g_nSoundID == SOUNDID_PC_9801_86_SB16 || g_nSoundID == SOUNDID_WSS_SB16 || g_nSoundID == SOUNDID_PC_9801_86_WSS_SB16 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
+	//	pic_setirq(g_sb16.dmairq);
+	//}
+	//// PC-9801-118
+	//if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
+	//	pic_setirq(10);
+	//}
+	//// WaveStar
+	//if(g_nSoundID == SOUNDID_WAVESTAR){
+	//	pic_setirq(10);
+	//}
 }
 
 static void tr_step(void) {
@@ -1129,34 +1141,42 @@ void mpu98ii_bind(void) {
 			iocore_attachinp(cs4231.port[10], mpu98ii_i0);
 			iocore_attachout(cs4231.port[10]+1, mpu98ii_o2);
 			iocore_attachinp(cs4231.port[10]+1, mpu98ii_i2);
-			switch(np2cfg.snd118irqm){
-			case 10:
-				mpu98.irqnum = 10;
-				break;
-			}
-		}
-		// WaveStar
-		if(g_nSoundID == SOUNDID_WAVESTAR){
-			//iocore_attachout(cs4231.port[10], mpu98ii_o0);
-			//iocore_attachinp(cs4231.port[10], mpu98ii_i0);
-			//iocore_attachout(cs4231.port[10]+1, mpu98ii_o2);
-			//iocore_attachinp(cs4231.port[10]+1, mpu98ii_i2);
-			mpu98.irqnum = 10;
 		}
 	}
 }
 
+//#define MIDIIN_DEBUG
+
 void mpu98ii_callback(void) {
 
 	UINT8	data;
+#ifdef MIDIIN_DEBUG
+	static UINT8 testseq[] = {0x90, 0x3C, 0x7F};
+	static int testseqpos = 0;
+	static DWORD time = 0;
+#endif
 
 	if (cm_mpu98) {
 		while((mpu98.r.cnt < MPU98_RECVBUFS) &&
-			(cm_mpu98->read(cm_mpu98, &data))) {
+			(cm_mpu98->read(cm_mpu98, &data)
+#ifdef MIDIIN_DEBUG
+			 || (np2cfg.asynccpu)
+#endif
+			)) {
 			if (!mpu98.r.cnt) {
 				mpu98ii_int();
 			}
+#ifdef MIDIIN_DEBUG
+			data = testseq[testseqpos];
+#endif
 			setrecvdata(data);
+#ifdef MIDIIN_DEBUG
+			if(testseqpos == sizeof(testseq) - 1){
+				time = GetTickCount();
+				testseq[1] = rand() & 0x7f;
+			}
+			testseqpos = (testseqpos + 1) % sizeof(testseq);
+#endif
 		}
 	}
 }

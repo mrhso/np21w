@@ -554,6 +554,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("optsb16p", PFTYPE_HEX8,		&np2cfg.sndsb16io),
 	PFVAL("optsb16d", PFTYPE_UINT8,		&np2cfg.sndsb16dma),
 	PFVAL("optsb16i", PFTYPE_UINT8,		&np2cfg.sndsb16irq),
+	PFVAL("optsb16A", PFTYPE_BOOL,		&np2cfg.sndsb16at),
 #endif	/* SUPPORT_SOUND_SB16 */
 	
 	PFMAX("volume_M", PFTYPE_UINT8,		&np2cfg.vol_master,		100),

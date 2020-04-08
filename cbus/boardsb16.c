@@ -463,13 +463,16 @@ void boardsb16_bind(void) {
 	iocore_attachout(0xCA00 + g_sb16.base, sb16_o2200);	/* Advanced FM Music Register Address Port */
 	iocore_attachinp(0xCA00 + g_sb16.base, sb16_i2200);	/* Advanced FM Music Status Port */
 	iocore_attachout(0xCB00 + g_sb16.base, sb16_o2300);	/* Advanced FM Music Data Port */
-
-	//iocore_attachout(0x388, sb16_o2000);	/* FM Music Register Address Port */
-	//iocore_attachinp(0x388, sb16_i2000);	/* FM Music Status Port */
-	//iocore_attachout(0x389, sb16_o2100);	/* FM Music Data Port */
-	//iocore_attachout(0x38a, sb16_o2200);	/* Advanced FM Music Register Address Port */
-	//iocore_attachinp(0x38a, sb16_i2200);	/* Advanced FM Music Status Port */
-	//iocore_attachout(0x38b, sb16_o2300);	/* Advanced FM Music Data Port */
+	
+	// PC/AT互換機テスト
+	if(np2cfg.sndsb16at){
+		iocore_attachout(0x388, sb16_o2000);	/* FM Music Register Address Port */
+		iocore_attachinp(0x388, sb16_i2000);	/* FM Music Status Port */
+		iocore_attachout(0x389, sb16_o2100);	/* FM Music Data Port */
+		iocore_attachout(0x38a, sb16_o2200);	/* Advanced FM Music Register Address Port */
+		iocore_attachinp(0x38a, sb16_i2200);	/* Advanced FM Music Status Port */
+		iocore_attachout(0x38b, sb16_o2300);	/* Advanced FM Music Data Port */
+	}
 
 #if defined(SUPPORT_GAMEPORT)
 	// ゲームポート割り当て 4d2h
@@ -525,6 +528,16 @@ void boardsb16_unbind(void) {
 	iocore_detachout(0xCA00 + g_sb16.base);	/* Advanced FM Music Register Address Port */
 	iocore_detachinp(0xCA00 + g_sb16.base);	/* Advanced FM Music Status Port */
 	iocore_detachout(0xCB00 + g_sb16.base);	/* Advanced FM Music Data Port */
+	
+	// PC/AT互換機テスト
+	if(np2cfg.sndsb16at){
+		iocore_detachout(0x388);	/* FM Music Register Address Port */
+		iocore_detachinp(0x388);	/* FM Music Status Port */
+		iocore_detachout(0x389);	/* FM Music Data Port */
+		iocore_detachout(0x38a);	/* Advanced FM Music Register Address Port */
+		iocore_detachinp(0x38a);	/* Advanced FM Music Status Port */
+		iocore_detachout(0x38b);	/* Advanced FM Music Data Port */
+	}
 
 #if defined(SUPPORT_GAMEPORT)
 	// ゲームポート割り当て 4d2h

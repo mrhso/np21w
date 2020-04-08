@@ -1112,15 +1112,17 @@ void ct1741io_bind(void)
 	//iocore_attachinp(0x6f00 + g_sb16.base, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
 	
 	// PC/AT互換機テスト
-	//iocore_attachout(0x226, ct1741_write_reset);	/* DSP Reset */
-	//iocore_attachout(0x22C, ct1741_write_data);	/* DSP Write Command/Data */
+	if(np2cfg.sndsb16at){
+		iocore_attachout(0x226, ct1741_write_reset);	/* DSP Reset */
+		iocore_attachout(0x22C, ct1741_write_data);		/* DSP Write Command/Data */
 
-	//iocore_attachinp(0x226, ct1741_read_reset);	/* DSP Reset */
-	//iocore_attachinp(0x22a, ct1741_read_data);		/* DSP Read Data Port */
-	//iocore_attachinp(0x22c, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
-	//iocore_attachinp(0x22d, ct1741_read_reset);	/* DSP Reset */
-	//iocore_attachinp(0x22e, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
-	//iocore_attachinp(0x22f, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
+		iocore_attachinp(0x226, ct1741_read_reset);		/* DSP Reset */
+		iocore_attachinp(0x22a, ct1741_read_data);		/* DSP Read Data Port */
+		iocore_attachinp(0x22c, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
+		iocore_attachinp(0x22d, ct1741_read_reset);		/* DSP Reset */
+		iocore_attachinp(0x22e, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
+		iocore_attachinp(0x22f, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
+	}
 }
 void ct1741io_unbind(void)
 {
@@ -1132,6 +1134,19 @@ void ct1741io_unbind(void)
 	iocore_detachinp(0x2c00 + g_sb16.base);	/* DSP Write Buffer Status (Bit 7) */
 	iocore_detachinp(0x2e00 + g_sb16.base);	/* DSP Read Buffer Status (Bit 7) */
 	iocore_detachinp(0x2f00 + g_sb16.base);	/* DSP Read Buffer Status (Bit 7) */
+	
+	// PC/AT互換機テスト
+	if(np2cfg.sndsb16at){
+		iocore_detachout(0x226);	/* DSP Reset */
+		iocore_detachout(0x22C);	/* DSP Write Command/Data */
+
+		iocore_detachinp(0x226);	/* DSP Reset */
+		iocore_detachinp(0x22a);	/* DSP Read Data Port */
+		iocore_detachinp(0x22c);	/* DSP Write Buffer Status (Bit 7) */
+		iocore_detachinp(0x22d);	/* DSP Reset */
+		iocore_detachinp(0x22e);	/* DSP Read Buffer Status (Bit 7) */
+		iocore_detachinp(0x22f);	/* DSP Read Buffer Status (Bit 7) */
+	}
 }
 
 #endif

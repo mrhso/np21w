@@ -310,6 +310,21 @@ static void smpu98_int(void) {
 
 	TRACEOUT(("int!"));
 	pic_setirq(smpu98.irqnum);
+	
+	//if(!mpu98.enable){
+	//	// Sound Blaster 16
+	//	if(g_nSoundID == SOUNDID_SB16 || g_nSoundID == SOUNDID_PC_9801_86_SB16 || g_nSoundID == SOUNDID_WSS_SB16 || g_nSoundID == SOUNDID_PC_9801_86_WSS_SB16 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
+	//		pic_setirq(g_sb16.dmairq);
+	//	}
+	//	// PC-9801-118
+	//	if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
+	//		pic_setirq(10);
+	//	}
+	//	// WaveStar
+	//	if(g_nSoundID == SOUNDID_WAVESTAR){
+	//		pic_setirq(10);
+	//	}
+	//}
 }
 
 static void tr_step(void) {
@@ -1550,19 +1565,6 @@ void smpu98_bind(void) {
 				iocore_attachinp(cs4231.port[10], smpu98_i0);
 				iocore_attachout(cs4231.port[10]+1, smpu98_o2);
 				iocore_attachinp(cs4231.port[10]+1, smpu98_i2);
-				switch(np2cfg.snd118irqm){
-				case 10:
-					smpu98.irqnum = 10;
-					break;
-				}
-			}
-			// WaveStar
-			if(g_nSoundID == SOUNDID_WAVESTAR){
-				//iocore_attachout(cs4231.port[10], smpu98_o0);
-				//iocore_attachinp(cs4231.port[10], smpu98_i0);
-				//iocore_attachout(cs4231.port[10]+1, smpu98_o2);
-				//iocore_attachinp(cs4231.port[10]+1, smpu98_i2);
-				//smpu98.irqnum = 10;
 			}
 		}
 	}else if(!mpu98.enable){
@@ -1574,11 +1576,6 @@ void smpu98_bind(void) {
 			iocore_attachinp(cs4231.port[10], smpu98_i0);
 			iocore_attachout(cs4231.port[10]+1, smpu98_o2);
 			iocore_attachinp(cs4231.port[10]+1, smpu98_i2);
-			switch(np2cfg.snd118irqm){
-			case 10:
-				smpu98.irqnum = 10;
-				break;
-			}
 			// NULLÇ≈çÏÇ¡ÇƒÇ®Ç≠
 			cm_smpu98[0] = commng_create(COMCREATE_NULL);
 			cm_smpu98[1] = commng_create(COMCREATE_NULL);

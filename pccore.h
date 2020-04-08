@@ -166,6 +166,7 @@ struct tagNP2Config
 	UINT8	sndsb16io;
 	UINT8	sndsb16dma;
 	UINT8	sndsb16irq;
+	UINT8	sndsb16at;
 #endif	/* SUPPORT_SOUND_SB16 */
 
 	UINT8	BEEP_VOL;
