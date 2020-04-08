@@ -25,6 +25,28 @@
 
 #include "compiler.h"
 
+#if 0
+#undef	TRACEOUT
+#define USE_TRACEOUT_VS
+//#define MEM_BDA_TRACEOUT
+//#define MEM_D8_TRACEOUT
+#ifdef USE_TRACEOUT_VS
+static void trace_fmt_ex(const char *fmt, ...)
+{
+	char stmp[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsprintf(stmp, fmt, ap);
+	strcat(stmp, "\n");
+	va_end(ap);
+	OutputDebugStringA(stmp);
+}
+#define	TRACEOUT(s)	trace_fmt_ex s
+#else
+#define	TRACEOUT(s)	(void)(s)
+#endif
+#endif	/* 1 */
+
 #include <math.h>
 #include <float.h>
 
@@ -363,6 +385,7 @@ void SSE2_ADDPD(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] + data2[i];
 	}
+	TRACEOUT(("SSE2_ADDPD"));
 }
 void SSE2_ADDSD(void)
 {
@@ -371,14 +394,17 @@ void SSE2_ADDSD(void)
 	
 	SSE_PART_GETDATA1DATA2_SD(&data1, &data2, data2buf);
 	data1[0] = data1[0] + data2[0];
+	TRACEOUT(("SSE2_ADDSD"));
 }
 void SSE2_ANDNPD(void)
 {
 	SSE_ANDNPS();
+	TRACEOUT(("SSE2_ANDNPD"));
 }
 void SSE2_ANDPD(void)
 {
 	SSE_ANDPS();
+	TRACEOUT(("SSE2_ANDPD"));
 }
 void SSE2_CMPPD(void)
 {
@@ -435,6 +461,7 @@ void SSE2_CMPPD(void)
 			}
 			break;
 	}
+	TRACEOUT(("SSE2_CMPPD"));
 }
 void SSE2_CMPSD(void)
 {
@@ -474,6 +501,7 @@ void SSE2_CMPSD(void)
 			data1ui32[0] = data1ui32[1] = (!isnan(data1[0]) && !isnan(data2[0]) ? 0xffffffff : 0x00000000);
 			break;
 	}
+	TRACEOUT(("SSE2_CMPSD"));
 }
 void SSE2_COMISD(void)
 {
@@ -499,6 +527,7 @@ void SSE2_COMISD(void)
 		CPU_FLAGL = (CPU_FLAGL & ~P_FLAG) | 0;
 		CPU_FLAGL = (CPU_FLAGL & ~C_FLAG) | 0;
 	}
+	TRACEOUT(("SSE2_COMISD"));
 }
 void SSE2_CVTPI2PD(void)
 {
@@ -510,6 +539,7 @@ void SSE2_CVTPI2PD(void)
 
 	data1[0] = (double)data2[0];
 	data1[1] = (double)data2[1];
+	TRACEOUT(("SSE2_CVTPI2PD"));
 }
 void SSE2_CVTPD2PI(void)
 {
@@ -521,6 +551,7 @@ void SSE2_CVTPD2PI(void)
 
 	data1[0] = (SINT32)SSE2_ROUND_DOUBLE(data2[0]);
 	data1[1] = (SINT32)SSE2_ROUND_DOUBLE(data2[1]);
+	TRACEOUT(("SSE2_CVTPD2PI"));
 }
 void SSE2_CVTSI2SD(void)
 {
@@ -531,6 +562,7 @@ void SSE2_CVTSI2SD(void)
 	SSE_PART_GETDATA1DATA2_SD_REG2XMM(&data1, &data2, data2buf);
 
 	data1[0] = (double)data2[0];
+	TRACEOUT(("SSE2_CVTSI2SD"));
 }
 void SSE2_CVTSD2SI(void)
 {
@@ -541,6 +573,7 @@ void SSE2_CVTSD2SI(void)
 	SSE_PART_GETDATA1DATA2_SD_XMM2REG(&data1, &data2, data2buf);
 
 	data1[0] = (SINT32)SSE2_ROUND_DOUBLE(data2[0]);
+	TRACEOUT(("SSE2_CVTSD2SI"));
 }
 void SSE2_CVTTPD2PI(void)
 {
@@ -552,6 +585,7 @@ void SSE2_CVTTPD2PI(void)
 
 	data1[0] = (SINT32)(data2[0]);
 	data1[1] = (SINT32)(data2[1]);
+	TRACEOUT(("SSE2_CVTTPD2PI"));
 }
 void SSE2_CVTTSD2SI(void)
 {
@@ -562,6 +596,7 @@ void SSE2_CVTTSD2SI(void)
 	SSE_PART_GETDATA1DATA2_SD_XMM2REG(&data1, &data2, data2buf);
 	
 	data1[0] = (SINT32)(data2[0]);
+	TRACEOUT(("SSE2_CVTTSD2SI"));
 }
 void SSE2_CVTPD2PS(void)
 {
@@ -574,6 +609,7 @@ void SSE2_CVTPD2PS(void)
 	data1[0] = (float)(data2[0]);
 	data1[1] = (float)(data2[1]);
 	data1[2] = data1[3] = 0;
+	TRACEOUT(("SSE2_CVTPD2PS"));
 }
 void SSE2_CVTPS2PD(void)
 {
@@ -585,6 +621,7 @@ void SSE2_CVTPS2PD(void)
 	
 	data1[0] = (double)(data2[0]);
 	data1[1] = (double)(data2[1]);
+	TRACEOUT(("SSE2_CVTPS2PD"));
 }
 void SSE2_CVTSD2SS(void)
 {
@@ -595,6 +632,7 @@ void SSE2_CVTSD2SS(void)
 	SSE_PART_GETDATA1DATA2_SD((double**)(&data1), &data2, data2buf);
 	
 	data1[0] = (float)(data2[0]);
+	TRACEOUT(("SSE2_CVTSD2SS"));
 }
 void SSE2_CVTSS2SD(void)
 {
@@ -605,6 +643,7 @@ void SSE2_CVTSS2SD(void)
 	SSE_PART_GETDATA1DATA2_SDm64(&data1, &data2, data2buf);
 	
 	data1[0] = (double)(data2[0]);
+	TRACEOUT(("SSE2_CVTSS2SD"));
 }
 void SSE2_CVTPD2DQ(void)
 {
@@ -617,6 +656,7 @@ void SSE2_CVTPD2DQ(void)
 	data1[0] = (SINT32)SSE2_ROUND_DOUBLE(data2[0]);
 	data1[1] = (SINT32)SSE2_ROUND_DOUBLE(data2[1]);
 	data1[2] = data1[3] = 0;
+	TRACEOUT(("SSE2_CVTPD2DQ"));
 }
 void SSE2_CVTTPD2DQ(void)
 {
@@ -629,6 +669,7 @@ void SSE2_CVTTPD2DQ(void)
 	data1[0] = (SINT32)(data2[0]);
 	data1[1] = (SINT32)(data2[1]);
 	data1[2] = data1[3] = 0;
+	TRACEOUT(("SSE2_CVTTPD2DQ"));
 }
 void SSE2_CVTDQ2PD(void)
 {
@@ -640,6 +681,7 @@ void SSE2_CVTDQ2PD(void)
 	
 	data1[0] = (double)(data2[0]);
 	data1[1] = (double)(data2[1]);
+	TRACEOUT(("SSE2_CVTDQ2PD"));
 }
 void SSE2_CVTPS2DQ(void)
 {
@@ -653,6 +695,7 @@ void SSE2_CVTPS2DQ(void)
 	for(i=0;i<4;i++){
 		data1[i] = (SINT32)SSE2_ROUND_FLOAT(data2[i]);
 	}
+	TRACEOUT(("SSE2_CVTPS2DQ"));
 }
 void SSE2_CVTTPS2DQ(void)
 {
@@ -666,6 +709,7 @@ void SSE2_CVTTPS2DQ(void)
 	for(i=0;i<4;i++){
 		data1[i] = (SINT32)(data2[i]);
 	}
+	TRACEOUT(("SSE2_CVTTPS2DQ"));
 }
 void SSE2_CVTDQ2PS(void)
 {
@@ -679,6 +723,7 @@ void SSE2_CVTDQ2PS(void)
 	for(i=0;i<4;i++){
 		data1[i] = (float)(data2[i]);
 	}
+	TRACEOUT(("SSE2_CVTDQ2PS"));
 }
 void SSE2_DIVPD(void)
 {
@@ -690,6 +735,7 @@ void SSE2_DIVPD(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] / data2[i];
 	}
+	TRACEOUT(("SSE2_DIVPD"));
 }
 void SSE2_DIVSD(void)
 {
@@ -698,6 +744,7 @@ void SSE2_DIVSD(void)
 	
 	SSE_PART_GETDATA1DATA2_SD(&data1, &data2, data2buf);
 	data1[0] = data1[0] / data2[0];
+	TRACEOUT(("SSE2_DIVSD"));
 }
 void SSE2_MAXPD(void)
 {
@@ -713,6 +760,7 @@ void SSE2_MAXPD(void)
 			data1[i] = (data1[i] > data2[i] ? data1[i] : data2[i]);
 		}
 	}
+	TRACEOUT(("SSE2_MAXPD"));
 }
 void SSE2_MAXSD(void)
 {
@@ -725,6 +773,7 @@ void SSE2_MAXSD(void)
 	}else{
 		data1[0] = (data1[0] > data2[0] ? data1[0] : data2[0]);
 	}
+	TRACEOUT(("SSE2_MAXSD"));
 }
 void SSE2_MINPD(void)
 {
@@ -740,6 +789,7 @@ void SSE2_MINPD(void)
 			data1[i] = (data1[i] < data2[i] ? data1[i] : data2[i]);
 		}
 	}
+	TRACEOUT(("SSE2_MINPD"));
 }
 void SSE2_MINSD(void)
 {
@@ -752,30 +802,37 @@ void SSE2_MINSD(void)
 	}else{
 		data1[0] = (data1[0] < data2[0] ? data1[0] : data2[0]);
 	}
+	TRACEOUT(("SSE2_MINSD"));
 }
 void SSE2_MOVAPDmem2xmm(void)
 {
 	SSE_MOVAPSmem2xmm();
+	TRACEOUT(("SSE2_MOVAPDmem2xmm"));
 }
 void SSE2_MOVAPDxmm2mem(void)
 {
 	SSE_MOVAPSxmm2mem();
+	TRACEOUT(("SSE2_MOVAPDxmm2mem"));
 }
 void SSE2_MOVHPDmem2xmm(void)
 {
 	SSE_MOVHPSmem2xmm();
+	TRACEOUT(("SSE2_MOVHPDmem2xmm"));
 }
 void SSE2_MOVHPDxmm2mem(void)
 {
 	SSE_MOVHPSxmm2mem();
+	TRACEOUT(("SSE2_MOVHPDxmm2mem"));
 }
 void SSE2_MOVLPDmem2xmm(void)
 {
 	SSE_MOVLPSmem2xmm();
+	TRACEOUT(("SSE2_MOVLPDmem2xmm"));
 }
 void SSE2_MOVLPDxmm2mem(void)
 {
 	SSE_MOVLPSxmm2mem();
+	TRACEOUT(("SSE2_MOVLPDxmm2mem"));
 }
 void SSE2_MOVMSKPD(void)
 {
@@ -798,6 +855,7 @@ void SSE2_MOVMSKPD(void)
 	}
 	*data1 = ((data2[1] >> 31) & 0x1)|
 			 ((data2[3] >> 30) & 0x2);
+	TRACEOUT(("SSE2_MOVMSKPD"));
 }
 void SSE2_MOVSDmem2xmm(void)
 {
@@ -823,6 +881,7 @@ void SSE2_MOVSDmem2xmm(void)
 		*(UINT64*)(data1+1) = 0;
 	}
 	data1[0] = data2[0];
+	TRACEOUT(("SSE2_MOVSDmem2xmm"));
 }
 void SSE2_MOVSDxmm2mem(void)
 {
@@ -845,14 +904,17 @@ void SSE2_MOVSDxmm2mem(void)
 		madr = calc_ea_dst(op);
 		cpu_vmemorywrite_q(CPU_INST_SEGREG_INDEX, madr+ 0, *((UINT64*)(data1+ 0)));
 	}
+	TRACEOUT(("SSE2_MOVSDxmm2mem"));
 }
 void SSE2_MOVUPDmem2xmm(void)
 {
 	SSE2_MOVAPDmem2xmm(); // エミュレーションではアライメント制限がないのでMOVAPDと同じ
+	TRACEOUT(("SSE2_MOVUPDmem2xmm"));
 }
 void SSE2_MOVUPDxmm2mem(void)
 {
 	SSE2_MOVAPDxmm2mem(); // エミュレーションではアライメント制限がないのでMOVAPDと同じ
+	TRACEOUT(("SSE2_MOVUPDxmm2mem"));
 }
 void SSE2_MULPD(void)
 {
@@ -864,6 +926,7 @@ void SSE2_MULPD(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] * data2[i];
 	}
+	TRACEOUT(("SSE2_MULPD"));
 }
 void SSE2_MULSD(void)
 {
@@ -872,10 +935,12 @@ void SSE2_MULSD(void)
 	
 	SSE_PART_GETDATA1DATA2_SD(&data1, &data2, data2buf);
 	data1[0] = data1[0] * data2[0];
+	TRACEOUT(("SSE2_MULSD"));
 }
 void SSE2_ORPD(void)
 {
 	SSE_ORPS();
+	TRACEOUT(("SSE2_ORPD"));
 }
 void SSE2_SHUFPD(void)
 {
@@ -895,6 +960,7 @@ void SSE2_SHUFPD(void)
 	data1[0] = data1buf[imm8 & 0x1];
 	imm8 = (imm8 >> 1);
 	data1[1] = data2[imm8 & 0x1];
+	TRACEOUT(("SSE2_SHUFPD"));
 }
 void SSE2_SQRTPD(void)
 {
@@ -906,6 +972,7 @@ void SSE2_SQRTPD(void)
 	for(i=0;i<2;i++){
 		data1[i] = sqrt(data2[i]);
 	}
+	TRACEOUT(("SSE2_SQRTPD"));
 }
 void SSE2_SQRTSD(void)
 {
@@ -914,6 +981,7 @@ void SSE2_SQRTSD(void)
 	
 	SSE_PART_GETDATA1DATA2_SD(&data1, &data2, data2buf);
 	data1[0] = sqrt(data2[0]);
+	TRACEOUT(("SSE2_SQRTSD"));
 }
 //void SSE2_STMXCSR(UINT32 maddr)
 //{
@@ -929,6 +997,7 @@ void SSE2_SUBPD(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] - data2[i];
 	}
+	TRACEOUT(("SSE2_SUBPD"));
 }
 void SSE2_SUBSD(void)
 {
@@ -937,10 +1006,12 @@ void SSE2_SUBSD(void)
 	
 	SSE_PART_GETDATA1DATA2_SD(&data1, &data2, data2buf);
 	data1[0] = data1[0] - data2[0];
+	TRACEOUT(("SSE2_SUBSD"));
 }
 void SSE2_UCOMISD(void)
 {
 	SSE_COMISS(); // XXX: とりあえず例外は考えないのでCOMISSと同じ
+	TRACEOUT(("SSE2_UCOMISD"));
 }
 void SSE2_UNPCKHPD(void)
 {
@@ -955,6 +1026,7 @@ void SSE2_UNPCKHPD(void)
 	}
 	data1[0] = data1buf[1];
 	data1[1] = data2[1];
+	TRACEOUT(("SSE2_UNPCKHPD"));
 }
 void SSE2_UNPCKLPD(void)
 {
@@ -969,10 +1041,12 @@ void SSE2_UNPCKLPD(void)
 	}
 	data1[0] = data1buf[0];
 	data1[1] = data2[0];
+	TRACEOUT(("SSE2_UNPCKLPD"));
 }
 void SSE2_XORPD(void)
 {
 	SSE_XORPS();
+	TRACEOUT(("SSE2_XORPD"));
 }
 
 void SSE2_MOVDrm2xmm(void)
@@ -995,6 +1069,7 @@ void SSE2_MOVDrm2xmm(void)
 	}
 	FPU_STAT.xmm_reg[idx].ul32[0] = src;
 	FPU_STAT.xmm_reg[idx].ul32[1] = FPU_STAT.xmm_reg[idx].ul32[2] = FPU_STAT.xmm_reg[idx].ul32[3] = 0;
+	TRACEOUT(("SSE2_MOVDrm2xmm"));
 }
 void SSE2_MOVDxmm2rm(void)
 {
@@ -1014,22 +1089,27 @@ void SSE2_MOVDxmm2rm(void)
 		madr = calc_ea_dst(op);
 		cpu_vmemorywrite_d(CPU_INST_SEGREG_INDEX, madr, src);
 	}
+	TRACEOUT(("SSE2_MOVDxmm2rm"));
 }
 void SSE2_MOVDQAmem2xmm(void)
 {
 	SSE_MOVAPSmem2xmm();
+	TRACEOUT(("SSE2_MOVDQAmem2xmm"));
 }
 void SSE2_MOVDQAxmm2mem(void)
 {
 	SSE_MOVAPSxmm2mem();
+	TRACEOUT(("SSE2_MOVDQAxmm2mem"));
 }
 void SSE2_MOVDQUmem2xmm(void)
 {
 	SSE2_MOVDQAmem2xmm(); // エミュレーションではアライメント制限がないのでMOVDQAと同じ
+	TRACEOUT(("SSE2_MOVDQUmem2xmm"));
 }
 void SSE2_MOVDQUxmm2mem(void)
 {
 	SSE2_MOVDQAxmm2mem(); // エミュレーションではアライメント制限がないのでMOVDQAと同じ
+	TRACEOUT(("SSE2_MOVDQUxmm2mem"));
 }
 void SSE2_MOVQ2DQ(void)
 {
@@ -1049,6 +1129,7 @@ void SSE2_MOVQ2DQ(void)
 	} else {
 		EXCEPTION(UD_EXCEPTION, 0);
 	}
+	TRACEOUT(("SSE2_MOVQ2DQ"));
 }
 void SSE2_MOVDQ2Q(void)
 {
@@ -1067,6 +1148,7 @@ void SSE2_MOVDQ2Q(void)
 	} else {
 		EXCEPTION(UD_EXCEPTION, 0);
 	}
+	TRACEOUT(("SSE2_MOVDQ2Q"));
 }
 void SSE2_MOVQmem2xmm(void)
 {
@@ -1087,6 +1169,7 @@ void SSE2_MOVQmem2xmm(void)
 		FPU_STAT.xmm_reg[idx].ul64[0] = cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, madr);
 		FPU_STAT.xmm_reg[idx].ul64[1] = 0;
 	}
+	TRACEOUT(("SSE2_MOVQmem2xmm"));
 }
 void SSE2_MOVQxmm2mem(void)
 {
@@ -1106,6 +1189,7 @@ void SSE2_MOVQxmm2mem(void)
 		madr = calc_ea_dst(op);
 		cpu_vmemorywrite_q(CPU_INST_SEGREG_INDEX, madr, FPU_STAT.xmm_reg[idx].ul64[0]);
 	}
+	TRACEOUT(("SSE2_MOVQxmm2mem"));
 }
 void SSE2_PACKSSDW(void)
 {
@@ -1158,6 +1242,7 @@ void SSE2_PACKSSDW(void)
 	for(i=0;i<8;i++){
 		dstreg[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PACKSSDW"));
 }
 void SSE2_PACKSSWB(void)
 {
@@ -1210,6 +1295,7 @@ void SSE2_PACKSSWB(void)
 	for(i=0;i<16;i++){
 		dstreg[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PACKSSWB"));
 }
 void SSE2_PACKUSWB(void)
 {
@@ -1262,6 +1348,7 @@ void SSE2_PACKUSWB(void)
 	for(i=0;i<16;i++){
 		dstreg[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PACKUSWB"));
 }
 void SSE2_PADDQmm(void)
 {
@@ -1282,6 +1369,7 @@ void SSE2_PADDQmm(void)
 		madr = calc_ea_dst(op);
 		FPU_STAT.reg[idx].ll += (SINT64)cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, madr);
 	}
+	TRACEOUT(("SSE2_PADDQmm"));
 }
 void SSE2_PADDQxmm(void)
 {
@@ -1293,6 +1381,7 @@ void SSE2_PADDQxmm(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] + data2[i];
 	}
+	TRACEOUT(("SSE2_PADDQxmm"));
 }
 void SSE2_PADDB(void)
 {
@@ -1304,6 +1393,7 @@ void SSE2_PADDB(void)
 	for(i=0;i<16;i++){
 		data1[i] = data1[i] + data2[i];
 	}
+	TRACEOUT(("SSE2_PADDB"));
 }
 void SSE2_PADDW(void)
 {
@@ -1315,6 +1405,7 @@ void SSE2_PADDW(void)
 	for(i=0;i<8;i++){
 		data1[i] = data1[i] + data2[i];
 	}
+	TRACEOUT(("SSE2_PADDW"));
 }
 void SSE2_PADDD(void)
 {
@@ -1326,6 +1417,7 @@ void SSE2_PADDD(void)
 	for(i=0;i<4;i++){
 		data1[i] = data1[i] + data2[i];
 	}
+	TRACEOUT(("SSE2_PADDD"));
 }
 //void SSE2_PADDQ(void)
 //{
@@ -1348,6 +1440,7 @@ void SSE2_PADDSB(void)
 			data1[i] = (SINT8)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PADDSB"));
 }
 void SSE2_PADDSW(void)
 {
@@ -1366,6 +1459,7 @@ void SSE2_PADDSW(void)
 			data1[i] = (SINT16)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PADDSW"));
 }
 //void SSE2_PADDSD(void)
 //{
@@ -1390,6 +1484,7 @@ void SSE2_PADDUSB(void)
 			data1[i] = (UINT8)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PADDUSB"));
 }
 void SSE2_PADDUSW(void)
 {
@@ -1406,6 +1501,7 @@ void SSE2_PADDUSW(void)
 			data1[i] = (UINT16)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PADDUSW"));
 }
 //void SSE2_PADDUSD(void)
 //{
@@ -1418,10 +1514,12 @@ void SSE2_PADDUSW(void)
 void SSE2_PAND(void)
 {
 	SSE_ANDPS();
+	TRACEOUT(("SSE2_PAND"));
 }
 void SSE2_PANDN(void)
 {
 	SSE_ANDNPS();
+	TRACEOUT(("SSE2_PANDN"));
 }
 void SSE2_PAVGB(void)
 {
@@ -1433,6 +1531,7 @@ void SSE2_PAVGB(void)
 	for(i=0;i<16;i++){
 		data1[i] = (UINT8)(((UINT16)data1[i] + (UINT16)data2[i] + 1) / 2);
 	}
+	TRACEOUT(("SSE2_PAVGB"));
 }
 void SSE2_PAVGW(void)
 {
@@ -1444,6 +1543,7 @@ void SSE2_PAVGW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (UINT16)(((UINT32)data1[i] + (UINT32)data2[i] + 1) / 2);
 	}
+	TRACEOUT(("SSE2_PAVGW"));
 }
 void SSE2_PCMPEQB(void)
 {
@@ -1455,6 +1555,7 @@ void SSE2_PCMPEQB(void)
 	for(i=0;i<16;i++){
 		data1[i] = (data1[i] == data2[i] ? 0xff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPEQB"));
 }
 void SSE2_PCMPEQW(void)
 {
@@ -1466,6 +1567,7 @@ void SSE2_PCMPEQW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (data1[i] == data2[i] ? 0xffff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPEQW"));
 }
 void SSE2_PCMPEQD(void)
 {
@@ -1477,6 +1579,7 @@ void SSE2_PCMPEQD(void)
 	for(i=0;i<4;i++){
 		data1[i] = (data1[i] == data2[i] ? 0xffffffff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPEQD"));
 }
 //void SSE2_PCMPEQQ(void)
 //{
@@ -1492,6 +1595,7 @@ void SSE2_PCMPGTB(void)
 	for(i=0;i<16;i++){
 		data1[i] = (data1[i] > data2[i] ? 0xff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPGTB"));
 }
 void SSE2_PCMPGTW(void)
 {
@@ -1503,6 +1607,7 @@ void SSE2_PCMPGTW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (data1[i] > data2[i] ? 0xffff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPGTW"));
 }
 void SSE2_PCMPGTD(void)
 {
@@ -1514,6 +1619,7 @@ void SSE2_PCMPGTD(void)
 	for(i=0;i<4;i++){
 		data1[i] = (data1[i] > data2[i] ? 0xffffffff : 0x00);
 	}
+	TRACEOUT(("SSE2_PCMPGTD"));
 }
 //void SSE2_PCMPGTQ(void)
 //{
@@ -1541,6 +1647,7 @@ void SSE2_PEXTRW(void)
 	}
 	GET_PCBYTE((imm8));
 	*data1 = (UINT32)data2[imm8 & 0x7];
+	TRACEOUT(("SSE2_PEXTRW"));
 }
 void SSE2_PINSRW(void)
 {
@@ -1566,6 +1673,7 @@ void SSE2_PINSRW(void)
 	}
 	GET_PCBYTE((imm8));
 	data1[imm8 & 0x7] = data2;
+	TRACEOUT(("SSE2_PINSRW"));
 }
 void SSE2_PMADD(void)
 {
@@ -1585,6 +1693,7 @@ void SSE2_PMADD(void)
 	data1d[1] = data1dbuf[1];
 	data1d[2] = data1dbuf[2];
 	data1d[3] = data1dbuf[3];
+	TRACEOUT(("SSE2_PMADD"));
 }
 void SSE2_PMAXSW(void)
 {
@@ -1596,6 +1705,7 @@ void SSE2_PMAXSW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (data1[i] > data2[i] ? data1[i] : data2[i]);
 	}
+	TRACEOUT(("SSE2_PMAXSW"));
 }
 void SSE2_PMAXUB(void)
 {
@@ -1607,6 +1717,7 @@ void SSE2_PMAXUB(void)
 	for(i=0;i<16;i++){
 		data1[i] = (data1[i] > data2[i] ? data1[i] : data2[i]);
 	}
+	TRACEOUT(("SSE2_PMAXUB"));
 }
 void SSE2_PMINSW(void)
 {
@@ -1618,6 +1729,7 @@ void SSE2_PMINSW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (data1[i] < data2[i] ? data1[i] : data2[i]);
 	}
+	TRACEOUT(("SSE2_PMINSW"));
 }
 void SSE2_PMINUB(void)
 {
@@ -1629,6 +1741,7 @@ void SSE2_PMINUB(void)
 	for(i=0;i<16;i++){
 		data1[i] = (data1[i] < data2[i] ? data1[i] : data2[i]);
 	}
+	TRACEOUT(("SSE2_PMINUB"));
 }
 void SSE2_PMOVMSKB(void)
 {
@@ -1665,6 +1778,7 @@ void SSE2_PMOVMSKB(void)
 			 (((UINT32)(data2[13]>> 2) & 0x20) << 8)|
 			 (((UINT32)(data2[14]>> 1) & 0x40) << 8)|
 			 (((UINT32)(data2[15]>> 0) & 0x80) << 8);
+	TRACEOUT(("SSE2_PMOVMSKB"));
 }
 void SSE2_PMULHUW(void)
 {
@@ -1695,6 +1809,7 @@ void SSE2_PMULHUW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (UINT16)((((UINT32)data2[i] * (UINT32)data1[i]) >> 16) & 0xffff);
 	}
+	TRACEOUT(("SSE2_PMULHUW"));
 }
 void SSE2_PMULHW(void)
 {
@@ -1725,6 +1840,7 @@ void SSE2_PMULHW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (SINT16)((((SINT32)data2[i] * (SINT32)data1[i]) >> 16) & 0xffff);
 	}
+	TRACEOUT(("SSE2_PMULHW"));
 }
 void SSE2_PMULLW(void)
 {
@@ -1755,6 +1871,7 @@ void SSE2_PMULLW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (SINT16)((((SINT32)data2[i] * (SINT32)data1[i])) & 0xffff);
 	}
+	TRACEOUT(("SSE2_PMULLW"));
 }
 void SSE2_PMULUDQmm(void)
 {
@@ -1775,6 +1892,7 @@ void SSE2_PMULUDQmm(void)
 		madr = calc_ea_dst(op);
 		FPU_STAT.reg[idx].ll = ((UINT64)FPU_STAT.reg[idx].l.lower * (cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, madr) & 0xffffffff));
 	}
+	TRACEOUT(("SSE2_PMULUDQmm"));
 }
 void SSE2_PMULUDQxmm(void)
 {
@@ -1786,10 +1904,12 @@ void SSE2_PMULUDQxmm(void)
 	for(i=0;i<2;i++){
 		data1[i] = (data1[i] & 0xffffffff) * (data2[i] & 0xffffffff);
 	}
+	TRACEOUT(("SSE2_PMULUDQxmm"));
 }
 void SSE2_POR(void)
 {
 	SSE_ORPS();
+	TRACEOUT(("SSE2_POR"));
 }
 void SSE2_PSADBW(void)
 {
@@ -1820,6 +1940,7 @@ void SSE2_PSADBW(void)
 	*((UINT16*)data2 + 5) = 0;
 	*((UINT16*)data2 + 6) = 0;
 	*((UINT16*)data2 + 7) = 0;
+	TRACEOUT(("SSE2_PSADBW"));
 }
 void SSE2_PSHUFLW(void)
 {
@@ -1841,6 +1962,7 @@ void SSE2_PSHUFLW(void)
 	for(i=4;i<8;i++){
 		data1[i] = data2[i];
 	}
+	TRACEOUT(("SSE2_PSHUFLW"));
 }
 void SSE2_PSHUFHW(void)
 {
@@ -1862,6 +1984,7 @@ void SSE2_PSHUFHW(void)
 	for(i=4;i<8;i++){
 		data1[i] = dstbuf[i];
 	}
+	TRACEOUT(("SSE2_PSHUFHW"));
 }
 void SSE2_PSHUFD(void)
 {
@@ -1880,6 +2003,7 @@ void SSE2_PSHUFD(void)
 	for(i=0;i<4;i++){
 		data1[i] = dstbuf[i];
 	}
+	TRACEOUT(("SSE2_PSHUFD"));
 }
 //void SSE2_PSLLDQ(void)
 //{
@@ -1904,6 +2028,7 @@ void SSE2_PSLLW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (shift >= 16 ? 0 : (data1[i] << (UINT16)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSLLW"));
 }
 void SSE2_PSLLD(void)
 {
@@ -1920,6 +2045,7 @@ void SSE2_PSLLD(void)
 	for(i=0;i<4;i++){
 		data1[i] = (shift >= 32 ? 0 : (data1[i] << (UINT32)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSLLD"));
 }
 void SSE2_PSLLQ(void)
 {
@@ -1936,6 +2062,7 @@ void SSE2_PSLLQ(void)
 	for(i=0;i<2;i++){
 		data1[i] = (shift >= 64 ? 0 : (data1[i] << (UINT64)shift)); // XXX: MSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSLLQ"));
 }
 //void SSE2_PSLLBimm(void)
 //{
@@ -1984,6 +2111,7 @@ void SSE2_PSRAW(void)
 			data1[i] = (shift >= 16 ? 0 : (data1[i] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 		}
 	}
+	TRACEOUT(("SSE2_PSRAW"));
 }
 void SSE2_PSRAD(void)
 {
@@ -2012,6 +2140,7 @@ void SSE2_PSRAD(void)
 			data1[i] = (shift >= 32 ? 0 : (data1[i] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 		}
 	}
+	TRACEOUT(("SSE2_PSRAD"));
 }
 //void SSE2_PSRAQ(void)
 //{
@@ -2056,6 +2185,7 @@ void SSE2_PSRLW(void)
 	for(i=0;i<8;i++){
 		data1[i] = (shift >= 16 ? 0 : (data1[i] >> (UINT16)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSRLW"));
 }
 void SSE2_PSRLD(void)
 {
@@ -2072,6 +2202,7 @@ void SSE2_PSRLD(void)
 	for(i=0;i<4;i++){
 		data1[i] = (shift >= 32 ? 0 : (data1[i] >> (UINT32)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSRLD"));
 }
 void SSE2_PSRLQ(void)
 {
@@ -2088,6 +2219,7 @@ void SSE2_PSRLQ(void)
 	for(i=0;i<2;i++){
 		data1[i] = (shift >= 64 ? 0 : (data1[i] >> (UINT64)shift)); // XXX: LSBが取り残されるのでごまかし（環境依存？）
 	}
+	TRACEOUT(("SSE2_PSRLQ"));
 }
 //void SSE2_PSRLBimm(void)
 //{
@@ -2153,6 +2285,7 @@ void SSE2_PSxxWimm(void)
 	default:
 		break;
 	}
+	TRACEOUT(("SSE2_PSxxWimm"));
 }
 void SSE2_PSxxDimm(void)
 {
@@ -2202,6 +2335,7 @@ void SSE2_PSxxDimm(void)
 	default:
 		break;
 	}
+	TRACEOUT(("SSE2_PSxxDimm"));
 }
 void SSE2_PSxxQimm(void)
 {
@@ -2228,6 +2362,7 @@ void SSE2_PSxxQimm(void)
 		break;
 	case 3: // PSRLDQ
 		// 無理やり128bit右シフト 怪しいので要検証
+		shift *= 8; // シフト量はバイト数で指定
 		if(shift == 0){
 			// シフト無しなら何もしない
 		}else if(shift >= 128){
@@ -2253,6 +2388,7 @@ void SSE2_PSxxQimm(void)
 		break;
 	case 7: // PSLLDQ
 		// 無理やり128bit左シフト 怪しいので要検証
+		shift *= 8; // シフト量はバイト数で指定
 		if(shift == 0){
 			// シフト無しなら何もしない
 		}else if(shift >= 128){
@@ -2271,6 +2407,7 @@ void SSE2_PSxxQimm(void)
 	default:
 		break;
 	}
+	TRACEOUT(("SSE2_PSxxQimm"));
 }
 void SSE2_PSUBQmm(void)
 {
@@ -2291,6 +2428,7 @@ void SSE2_PSUBQmm(void)
 		madr = calc_ea_dst(op);
 		FPU_STAT.reg[idx].ll -= (SINT64)cpu_vmemoryread_q(CPU_INST_SEGREG_INDEX, madr);
 	}
+	TRACEOUT(("SSE2_PSUBQmm"));
 }
 void SSE2_PSUBQxmm(void)
 {
@@ -2302,6 +2440,7 @@ void SSE2_PSUBQxmm(void)
 	for(i=0;i<2;i++){
 		data1[i] = data1[i] - data2[i];
 	}
+	TRACEOUT(("SSE2_PSUBQxmm"));
 }
 void SSE2_PSUBB(void)
 {
@@ -2313,6 +2452,7 @@ void SSE2_PSUBB(void)
 	for(i=0;i<16;i++){
 		data1[i] = data1[i] - data2[i];
 	}
+	TRACEOUT(("SSE2_PSUBB"));
 }
 void SSE2_PSUBW(void)
 {
@@ -2324,6 +2464,7 @@ void SSE2_PSUBW(void)
 	for(i=0;i<8;i++){
 		data1[i] = data1[i] - data2[i];
 	}
+	TRACEOUT(("SSE2_PSUBW"));
 }
 void SSE2_PSUBD(void)
 {
@@ -2335,6 +2476,7 @@ void SSE2_PSUBD(void)
 	for(i=0;i<4;i++){
 		data1[i] = data1[i] - data2[i];
 	}
+	TRACEOUT(("SSE2_PSUBD"));
 }
 //void SSE2_PSUBQ(void)
 //{
@@ -2357,6 +2499,7 @@ void SSE2_PSUBSB(void)
 			data1[i] = (SINT8)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PSUBSB"));
 }
 void SSE2_PSUBSW(void)
 {
@@ -2375,6 +2518,7 @@ void SSE2_PSUBSW(void)
 			data1[i] = (SINT16)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PSUBSW"));
 }
 //void SSE2_PSUBSD(void)
 //{
@@ -2401,6 +2545,7 @@ void SSE2_PSUBUSB(void)
 			data1[i] = (UINT8)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PSUBUSB"));
 }
 void SSE2_PSUBUSW(void)
 {
@@ -2419,6 +2564,7 @@ void SSE2_PSUBUSW(void)
 			data1[i] = (UINT16)cbuf;
 		}
 	}
+	TRACEOUT(("SSE2_PSUBUSW"));
 }
 //void SSE2_PSUBUSD(void)
 //{
@@ -2445,6 +2591,7 @@ void SSE2_PUNPCKHBW(void)
 	for(i=0;i<16;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKHBW"));
 }
 void SSE2_PUNPCKHWD(void)
 {
@@ -2463,6 +2610,7 @@ void SSE2_PUNPCKHWD(void)
 	for(i=0;i<8;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKHWD"));
 }
 void SSE2_PUNPCKHDQ(void)
 {
@@ -2481,6 +2629,7 @@ void SSE2_PUNPCKHDQ(void)
 	for(i=0;i<4;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKHDQ"));
 }
 void SSE2_PUNPCKHQDQ(void)
 {
@@ -2495,6 +2644,7 @@ void SSE2_PUNPCKHQDQ(void)
 	dstregbuf[1] = data2[1];
 	data1[0] = dstregbuf[0];
 	data1[1] = dstregbuf[1];
+	TRACEOUT(("SSE2_PUNPCKHQDQ"));
 }
 void SSE2_PUNPCKLBW(void)
 {
@@ -2513,6 +2663,7 @@ void SSE2_PUNPCKLBW(void)
 	for(i=0;i<16;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKLBW"));
 }
 void SSE2_PUNPCKLWD(void)
 {
@@ -2531,6 +2682,7 @@ void SSE2_PUNPCKLWD(void)
 	for(i=0;i<8;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKLWD"));
 }
 void SSE2_PUNPCKLDQ(void)
 {
@@ -2549,6 +2701,7 @@ void SSE2_PUNPCKLDQ(void)
 	for(i=0;i<4;i++){
 		data1[i] = dstregbuf[i];
 	}
+	TRACEOUT(("SSE2_PUNPCKLDQ"));
 }
 void SSE2_PUNPCKLQDQ(void)
 {
@@ -2563,10 +2716,12 @@ void SSE2_PUNPCKLQDQ(void)
 	dstregbuf[1] = data2[0];
 	data1[0] = dstregbuf[0];
 	data1[1] = dstregbuf[1];
+	TRACEOUT(("SSE2_PUNPCKLQDQ"));
 }
 void SSE2_PXOR(void)
 {
 	SSE_XORPS();
+	TRACEOUT(("SSE2_PXOR"));
 }
 
 void SSE2_MASKMOVDQU(void)
@@ -2595,6 +2750,7 @@ void SSE2_MASKMOVDQU(void)
 	} else {
 		CPU_EDI -= 16;
 	}
+	TRACEOUT(("SSE2_MASKMOVDQU"));
 }
 //void SSE2_CLFLUSH(UINT32 op)
 //{
@@ -2603,10 +2759,12 @@ void SSE2_MASKMOVDQU(void)
 void SSE2_MOVNTPD(void)
 {
 	SSE_MOVNTPS();
+	TRACEOUT(("SSE2_MOVNTPD"));
 }
 void SSE2_MOVNTDQ(void)
 {
 	SSE_MOVNTPS();
+	TRACEOUT(("SSE2_MOVNTDQ"));
 }
 void SSE2_MOVNTI(void)
 {
@@ -2628,10 +2786,12 @@ void SSE2_MOVNTI(void)
 		maddr = calc_ea_dst((op));
 		cpu_vmemorywrite_d(CPU_INST_SEGREG_INDEX, maddr, *data1);
 	}
+	TRACEOUT(("SSE2_MOVNTI"));
 }
 void SSE2_PAUSE(void)
 {
 	// Nothing to do
+	TRACEOUT(("SSE2_PAUSE"));
 }
 //void SSE2_LFENCE(void)
 //{

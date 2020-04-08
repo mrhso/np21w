@@ -502,6 +502,10 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_I486SX_MODEL			2	/* 486SX */
 #define	CPU_I486SX_STEPPING			3
 
+#define	CPU_80386_FAMILY			3
+#define	CPU_80386_MODEL				0	/* 80386 */
+#define	CPU_80386_STEPPING			8
+
 #define	CPU_80286_FAMILY			2
 #define	CPU_80286_MODEL				1	/* 80286 */
 #define	CPU_80286_STEPPING			1
@@ -608,6 +612,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_FEATURES_PENTIUM			(CPU_FEATURE_FPU|CPU_FEATURE_CX8|CPU_FEATURE_TSC|CPU_FEATURE_VME_FLAG)
 #define	CPU_FEATURES_I486DX				(CPU_FEATURE_FPU)
 #define	CPU_FEATURES_I486SX				(0)
+#define	CPU_FEATURES_80386				(0)
 #define	CPU_FEATURES_80286				(0)
 
 #define	CPU_FEATURES_AMD_K7_ATHLON_XP	(CPU_FEATURE_FPU|CPU_FEATURE_TSC|CPU_FEATURE_VME_FLAG|CPU_FEATURE_CMOV|CPU_FEATURE_FXSR|CPU_FEATURE_MMX|CPU_FEATURE_CLFSH|CPU_FEATURE_SSE)
@@ -646,6 +651,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_FEATURES_EX_PENTIUM		(0)
 #define	CPU_FEATURES_EX_I486DX		(0)
 #define	CPU_FEATURES_EX_I486SX		(0)
+#define	CPU_FEATURES_EX_80386		(0)
 #define	CPU_FEATURES_EX_80286		(0)
 
 #define	CPU_FEATURES_EX_AMD_K6_2			(CPU_FEATURE_EX_3DNOW)
@@ -705,6 +711,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_FEATURES_ECX_PENTIUM		(0)
 #define	CPU_FEATURES_ECX_I486DX			(0)
 #define	CPU_FEATURES_ECX_I486SX			(0)
+#define	CPU_FEATURES_ECX_80386			(0)
 #define	CPU_FEATURES_ECX_80286			(0)
 
 #define	CPU_FEATURES_ECX_AMD_K6_2			(0)
@@ -723,6 +730,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_BRAND_STRING_PENTIUM			"Intel(R) Pentium(R) Processor "
 #define	CPU_BRAND_STRING_I486DX				"Intel(R) i486DX Processor "
 #define	CPU_BRAND_STRING_I486SX				"Intel(R) i486SX Processor "
+#define	CPU_BRAND_STRING_80386				"Intel(R) 80386 Processor "
 #define	CPU_BRAND_STRING_80286				"Intel(R) 80286 Processor "
 #define	CPU_BRAND_STRING_AMD_K6_2			"AMD-K6(tm) 3D processor "
 #define	CPU_BRAND_STRING_AMD_K6_III			"AMD-K6(tm) 3D+ Processor "
@@ -742,6 +750,7 @@ extern sigjmp_buf	exec_1step_jmpbuf;
 #define	CPU_BRAND_ID_PENTIUM			0
 #define	CPU_BRAND_ID_I486DX				0
 #define	CPU_BRAND_ID_I486SX				0
+#define	CPU_BRAND_ID_80386				0
 #define	CPU_BRAND_ID_80286				0
 #define	CPU_BRAND_ID_AMD_K6_2			0
 #define	CPU_BRAND_ID_AMD_K6_III			0

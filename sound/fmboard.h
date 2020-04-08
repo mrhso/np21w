@@ -12,6 +12,7 @@
 #include "opna.h"
 #include "opntimer.h"
 #include "pcm86.h"
+#include "ct1741io.h"
 
 #if defined(SUPPORT_PX)
 #define OPNA_MAX	5
@@ -31,6 +32,8 @@ typedef struct {
 	UINT16	base;
 	UINT8	mixsel;
 	UINT8	mixreg[0x100];
+
+	DSP_INFO dsp_info;
 } SB16;
 
 #ifdef __cplusplus

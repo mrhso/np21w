@@ -35,6 +35,9 @@
 #include	"makegrex.h"
 #include	"sound.h"
 #include	"fmboard.h"
+#ifdef SUPPORT_SOUND_SB16
+#include	"ct1741io.h"
+#endif
 #include	"beep.h"
 #include	"s98.h"
 #include	"tms3631.h"
@@ -360,6 +363,9 @@ static void sound_init(void)
 	pcm86gen_initialize(rate);
 	pcm86gen_setvol(np2cfg.vol_pcm);
 	cs4231_initialize(rate);
+#ifdef SUPPORT_SOUND_SB16
+	ct1741_initialize(rate);
+#endif
 	amd98_initialize(rate);
 	oplgen_initialize(rate);
 	oplgen_setvol(np2cfg.vol_fm);
@@ -580,7 +586,10 @@ void pccore_reset(void) {
 	}
 	
 #if defined(CPUCORE_IA32)
-	if(np2cfg.cpu_family == CPU_I486SX_FAMILY && np2cfg.cpu_model == CPU_I486SX_MODEL){
+	if(np2cfg.cpu_family == CPU_80386_FAMILY && np2cfg.cpu_model == CPU_80386_MODEL){
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_80386);
+	}else if(np2cfg.cpu_family == CPU_I486SX_FAMILY && np2cfg.cpu_model == CPU_I486SX_MODEL){
 		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486SX);
 	}else if(np2cfg.cpu_family == CPU_I486DX_FAMILY && np2cfg.cpu_model == CPU_I486DX_MODEL){

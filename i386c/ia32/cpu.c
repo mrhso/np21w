@@ -601,9 +601,8 @@ cpucontinue:
 									keyboard_changeclock();
 									mouseif_changeclock();
 									gdc_updateclock();
-
-									latecount = 0;
 								}
+								latecount = 0;
 							}
 							asynccpu_fastflag = 1;
 						}

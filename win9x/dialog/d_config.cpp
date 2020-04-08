@@ -67,15 +67,16 @@ static const CComboData::Entry s_baseclock[] =
 static const CComboData::Entry s_cputype[] =
 {
 	{MAKEINTRESOURCE(IDS_CPU_CUSTOM),	0},
-	{MAKEINTRESOURCE(IDS_CPU_I486SX),	1},
-	{MAKEINTRESOURCE(IDS_CPU_I486DX),	2},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUM),	3},
-	{MAKEINTRESOURCE(IDS_CPU_MMXPENTIUM),	4},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUMPRO),	5},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUMII),	6},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUMIII),	7},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUMM),		8},
-	{MAKEINTRESOURCE(IDS_CPU_PENTIUM4),		9},
+	{MAKEINTRESOURCE(IDS_CPU_80386),	1},
+	{MAKEINTRESOURCE(IDS_CPU_I486SX),	2},
+	{MAKEINTRESOURCE(IDS_CPU_I486DX),	3},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUM),	4},
+	{MAKEINTRESOURCE(IDS_CPU_MMXPENTIUM),	5},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMPRO),	6},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMII),	7},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMIII),	8},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUMM),		9},
+	{MAKEINTRESOURCE(IDS_CPU_PENTIUM4),		10},
 	{MAKEINTRESOURCE(IDS_CPU_AMD_K6_2),		15},
 	{MAKEINTRESOURCE(IDS_CPU_AMD_K6_III),	16},
 	{MAKEINTRESOURCE(IDS_CPU_AMD_K7_ATHLON),	17},
@@ -311,13 +312,23 @@ void CConfigureDlg::UpdateDeviceList()
  */
 int CConfigureDlg::GetCpuTypeIndex(){
 #if defined(CPUCORE_IA32)
+	if((CPU_FEATURES_ALL & CPU_FEATURES_80386) != CPU_FEATURES_80386) goto AMDCPUCheck;
+	if(np2cfg.cpu_family == CPU_80386_FAMILY && 
+	   np2cfg.cpu_model == CPU_80386_MODEL &&
+	   np2cfg.cpu_stepping == CPU_80386_STEPPING &&
+	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_80386 &&
+	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_80386 &&
+	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_80386){
+		return 1;
+	}
+	if((CPU_FEATURES_ALL & CPU_FEATURES_I486SX) != CPU_FEATURES_I486SX) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_I486SX_FAMILY && 
 	   np2cfg.cpu_model == CPU_I486SX_MODEL &&
 	   np2cfg.cpu_stepping == CPU_I486SX_STEPPING &&
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_I486SX &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_I486SX &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_I486SX){
-		return 1;
+		return 2;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_I486DX) != CPU_FEATURES_I486DX) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_I486DX_FAMILY && 
@@ -326,7 +337,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_I486DX &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_I486DX &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_I486DX){
-		return 2;
+		return 3;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM) != CPU_FEATURES_PENTIUM) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_FAMILY && 
@@ -335,7 +346,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM){
-		return 3;
+		return 4;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_MMX_PENTIUM) != CPU_FEATURES_MMX_PENTIUM) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_MMX_PENTIUM_FAMILY && 
@@ -344,7 +355,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_MMX_PENTIUM &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_MMX_PENTIUM &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_MMX_PENTIUM){
-		return 4;
+		return 5;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM_PRO) != CPU_FEATURES_PENTIUM_PRO) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_PRO_FAMILY && 
@@ -353,7 +364,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM_PRO &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM_PRO &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM_PRO){
-		return 5;
+		return 6;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM_II) != CPU_FEATURES_PENTIUM_II) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_II_FAMILY && 
@@ -362,7 +373,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM_II &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM_II &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM_II){
-		return 6;
+		return 7;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM_III) != CPU_FEATURES_PENTIUM_III) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_III_FAMILY && 
@@ -371,7 +382,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM_III &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM_III &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM_III){
-		return 7;
+		return 8;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM_M) != CPU_FEATURES_PENTIUM_M) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_M_FAMILY && 
@@ -380,7 +391,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM_M &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM_M &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM_M){
-		return 8;
+		return 9;
 	}
 	if((CPU_FEATURES_ALL & CPU_FEATURES_PENTIUM_4) != CPU_FEATURES_PENTIUM_4) goto AMDCPUCheck;
 	if(np2cfg.cpu_family == CPU_PENTIUM_4_FAMILY && 
@@ -389,7 +400,7 @@ int CConfigureDlg::GetCpuTypeIndex(){
 	   (np2cfg.cpu_feature & CPU_FEATURES_ALL) == CPU_FEATURES_PENTIUM_4 &&
 	   (np2cfg.cpu_feature_ecx & CPU_FEATURES_ECX_ALL) == CPU_FEATURES_ECX_PENTIUM_4 &&
 	   (np2cfg.cpu_feature_ex & CPU_FEATURES_EX_ALL) == CPU_FEATURES_EX_PENTIUM_4){
-		return 9;
+		return 10;
 	}
 
 AMDCPUCheck:
@@ -450,6 +461,17 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 #if defined(CPUCORE_IA32)
 	switch(index){
 	case 1:
+		np2cfg.cpu_family = CPU_80386_FAMILY;
+		np2cfg.cpu_model = CPU_80386_MODEL;
+		np2cfg.cpu_stepping = CPU_80386_STEPPING;
+		np2cfg.cpu_feature = CPU_FEATURES_80386;
+		np2cfg.cpu_feature_ecx = CPU_FEATURES_ECX_80386;
+		np2cfg.cpu_feature_ex = CPU_FEATURES_EX_80386;
+		strcpy(np2cfg.cpu_vendor, CPU_VENDOR_INTEL);
+		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_80386);
+		np2cfg.cpu_brandid = CPU_BRAND_ID_80386;
+		break;
+	case 2:
 		np2cfg.cpu_family = CPU_I486SX_FAMILY;
 		np2cfg.cpu_model = CPU_I486SX_MODEL;
 		np2cfg.cpu_stepping = CPU_I486SX_STEPPING;
@@ -460,7 +482,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486SX);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_I486SX;
 		break;
-	case 2:
+	case 3:
 		np2cfg.cpu_family = CPU_I486DX_FAMILY;
 		np2cfg.cpu_model = CPU_I486DX_MODEL;
 		np2cfg.cpu_stepping = CPU_I486DX_STEPPING;
@@ -471,7 +493,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_I486DX);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_I486DX;
 		break;
-	case 3:
+	case 4:
 		np2cfg.cpu_family = CPU_PENTIUM_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_STEPPING;
@@ -482,7 +504,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_PENTIUM;
 		break;
-	case 4:
+	case 5:
 		np2cfg.cpu_family = CPU_MMX_PENTIUM_FAMILY;
 		np2cfg.cpu_model = CPU_MMX_PENTIUM_MODEL;
 		np2cfg.cpu_stepping = CPU_MMX_PENTIUM_STEPPING;
@@ -493,7 +515,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_MMX_PENTIUM);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_MMX_PENTIUM;
 		break;
-	case 5:
+	case 6:
 		np2cfg.cpu_family = CPU_PENTIUM_PRO_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_PRO_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_PRO_STEPPING;
@@ -504,7 +526,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_PRO);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_PENTIUM_PRO;
 		break;
-	case 6:
+	case 7:
 		np2cfg.cpu_family = CPU_PENTIUM_II_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_II_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_II_STEPPING;
@@ -515,7 +537,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_II);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_PENTIUM_II;
 		break;
-	case 7:
+	case 8:
 		np2cfg.cpu_family = CPU_PENTIUM_III_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_III_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_III_STEPPING;
@@ -526,7 +548,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_III);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_PENTIUM_III;
 		break;
-	case 8:
+	case 9:
 		np2cfg.cpu_family = CPU_PENTIUM_M_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_M_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_M_STEPPING;
@@ -537,7 +559,7 @@ int CConfigureDlg::SetCpuTypeIndex(UINT index){
 		strcpy(np2cfg.cpu_brandstring, CPU_BRAND_STRING_PENTIUM_M);
 		np2cfg.cpu_brandid = CPU_BRAND_ID_PENTIUM_M;
 		break;
-	case 9:
+	case 10:
 		np2cfg.cpu_family = CPU_PENTIUM_4_FAMILY;
 		np2cfg.cpu_model = CPU_PENTIUM_4_MODEL;
 		np2cfg.cpu_stepping = CPU_PENTIUM_4_STEPPING;

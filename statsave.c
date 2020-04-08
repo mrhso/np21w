@@ -32,6 +32,9 @@
 #include "maketext.h"
 #include "sound.h"
 #include "fmboard.h"
+#ifdef SUPPORT_SOUND_SB16
+#include "ct1741io.h"
+#endif
 #include "beep.h"
 #include "diskimage/fddfile.h"
 #include "fdd/fdd_mtr.h"
@@ -815,7 +818,8 @@ enum
 	FLAG_AMD98		= 0x0040,
 	FLAG_PCM86		= 0x0080,
 	FLAG_CS4231		= 0x0100,
-	FLAG_OPL3		= 0x0200
+	FLAG_OPL3		= 0x0200,
+	FLAG_SB16		= 0x0400
 };
 
 /**
@@ -840,13 +844,13 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_PCM86;
 
 		case SOUNDID_PC_9801_118:
-			return FLAG_OPNA1 | FLAG_CS4231;
+			return FLAG_OPNA1 | FLAG_OPL3 | FLAG_CS4231;
 			
 		case SOUNDID_PC_9801_86_WSS:
 			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_CS4231;
 			
 		case SOUNDID_PC_9801_86_118:
-			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_PCM86 | FLAG_CS4231;
+			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_OPL3 | FLAG_PCM86 | FLAG_CS4231;
 			
 		case SOUNDID_MATE_X_PCM:
 			return FLAG_OPNA1 | FLAG_CS4231;
@@ -869,6 +873,11 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 		case SOUNDID_SOUNDORCHESTRA:
 		case SOUNDID_SOUNDORCHESTRAV:
 			return FLAG_OPNA1 | FLAG_OPL3;
+			
+#if defined(SUPPORT_SOUND_SB16)
+		case SOUNDID_SB16:
+			return FLAG_OPL3 | FLAG_SB16;
+#endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
 		case SOUNDID_PX1:
@@ -919,6 +928,10 @@ static int flagsave_fm(STFLAGH sfh, const SFENTRY *tbl)
 	{
 		ret |= opl3_sfsave(&g_opl3, sfh, tbl);
 	}
+	if (nSaveFlags & FLAG_SB16)
+	{
+		ret |= statflag_write(sfh, &g_sb16, sizeof(g_sb16));
+	}
 	return ret;
 }
 
@@ -960,6 +973,10 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 	if (nSaveFlags & FLAG_OPL3)
 	{
 		ret |= opl3_sfload(&g_opl3, sfh, tbl);
+	}
+	if (nSaveFlags & FLAG_SB16)
+	{
+		ret |= statflag_read(sfh, &g_sb16, sizeof(g_sb16));
 	}
 
 	// ïúå≥ÅB Ç±ÇÍà⁄ìÆÇ∑ÇÈÇ±Ç∆ÅI

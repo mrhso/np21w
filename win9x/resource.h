@@ -535,6 +535,7 @@
 #define IDS_CPU_AMD_K7_ATHLON           32037
 #define IDS_CPU_AMD_K7_ATHLONXP         32038
 #define IDS_CPU_80286					32040
+#define IDS_CPU_80386                   32041
 #define IDS_CPU_NEKOPRO                 32049
 #define IDS_RENDERER_DIRECTDRAW         32100
 #define IDS_RENDERER_DIRECT3D           32101

@@ -175,13 +175,14 @@ void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 #ifdef USE_MAME
 		YMF262UpdateOne(opl3, buf, 1);
 #endif
-		outbuf[0] += (SINT32)(((s1l << 1) * oplfm_volume) >> 5);
-		outbuf[1] += (SINT32)(((s1r << 1) * oplfm_volume) >> 5);
+		outbuf[0] += (SINT32)(((s1l << 1) * oplfm_volume * g_sb16.mixreg[MIXER_MIDI_LEFT]  / 255 * g_sb16.mixreg[MIXER_MASTER_LEFT]  / 255) >> 5);
+		outbuf[1] += (SINT32)(((s1r << 1) * oplfm_volume * g_sb16.mixreg[MIXER_MIDI_RIGHT] / 255 * g_sb16.mixreg[MIXER_MASTER_RIGHT] / 255) >> 5);
 		outbuf += 2;
 	}
 }
 
 void boardsb16_reset(const NP2CFG *pConfig) {
+	DSP_INFO olddsp;
 	if (opl3) {
 		if (samplerate != pConfig->samplingrate) {
 #ifdef USE_MAME
@@ -195,8 +196,10 @@ void boardsb16_reset(const NP2CFG *pConfig) {
 #endif
 		}
 	}
+	olddsp = g_sb16.dsp_info; // dsp_infoだけ初期化しない
 	ZeroMemory(&g_sb16, sizeof(g_sb16));
 	ZeroMemory(&g_opl, sizeof(g_opl));
+	g_sb16.dsp_info = olddsp;
 	// ボードデフォルト IO:D2 DMA:3 IRQ:5(INT1) 
 	g_sb16.base = np2cfg.sndsb16io; //0xd2;
 	g_sb16.dmach = np2cfg.sndsb16dma; //0x3;
