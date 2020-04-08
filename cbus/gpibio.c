@@ -106,7 +106,6 @@ static REG8 IOOUTCALL gpib_i5(UINT port) {
 #else
 	return 0xff;
 #endif
-	return 0xff;
 }
 
 // Serial Poll Mode

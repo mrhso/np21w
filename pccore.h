@@ -291,6 +291,10 @@ struct tagNP2Config
 	
 	UINT8	usecdecc; // CD-ROM EDC/ECC エミュレーションサポート
 	UINT8	cddtskip; // CD-ROM オーディオ再生時にデータトラックをスキップ
+
+#if defined(SUPPORT_GAMEPORT)
+	UINT8	gameport; // 118音源のゲームポートを使用する
+#endif
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

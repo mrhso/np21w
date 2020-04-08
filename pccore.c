@@ -175,6 +175,9 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #endif
 				0, 0,
 				1, 0,
+#if defined(SUPPORT_GAMEPORT)
+				0,
+#endif
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -1011,6 +1014,7 @@ void pccore_exec(BOOL draw) {
 	// ここでローカル変数を使うとsetjmp周りの最適化で破壊される可能性があるので注意
 	static UINT32 clockcounter = 0;
 	static UINT32 clockcounter32 = 0;
+	static UINT32 baseclk = 0;
 	//UINT32 lastclock;
 	//UINT32 mflag = 0;
 
@@ -1041,6 +1045,10 @@ void pccore_exec(BOOL draw) {
 		//lastclock = CPU_REMCLOCK;
 #if defined(TRACE)
 		resetcnt++;
+#endif
+#if defined(USE_TSC)
+		CPU_MSR_TSC += CPU_BASECLOCK * pccore.maxmultiple / pccore.multiple;
+		baseclk = CPU_BASECLOCK * pccore.maxmultiple / pccore.multiple;
 #endif
 		pic_irq();
 #if defined(SUPPORT_IA32_HAXM)
@@ -1082,11 +1090,6 @@ void pccore_exec(BOOL draw) {
 #endif
 			CPU_SHUT();
 		}
-#if defined(USE_TSC)
-#ifndef _WIN32
-		CPU_MSR_TSC += CPU_BASECLOCK;//CPU_REMCLOCK;
-#endif
-#endif
 #if defined(SUPPORT_IA32_HAXM)
 		if (np2hax.enable) {
 			i386hax_vm_exec();
@@ -1108,6 +1111,9 @@ void pccore_exec(BOOL draw) {
 			}
 #endif
 		}
+#if defined(USE_TSC)
+		CPU_MSR_TSC = CPU_MSR_TSC - baseclk + CPU_BASECLOCK * pccore.maxmultiple / pccore.multiple;
+#endif
 #if defined(SUPPORT_HRTIMER)
 		if(hrtimerclock){
 			clockcounter += CPU_BASECLOCK;

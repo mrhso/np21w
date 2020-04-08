@@ -228,6 +228,7 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 
 		case SOUNDID_AMD98:
+			amd98_reset(pConfig);
 			break;
 
 		case SOUNDID_SOUNDORCHESTRA:

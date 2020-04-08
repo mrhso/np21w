@@ -72,7 +72,7 @@ static REG8 IOINPCALL spb_i18e(UINT port)
 	nAddress = g_opna[opna_idx].s.addrh;
 	if ((nAddress == 0x08) || (nAddress == 0x0f))
 	{
-		return opna_readExtendedRegister(&g_opna[0], nAddress);
+		return opna_readExtendedRegister(&g_opna[opna_idx], nAddress);
 	}
 
 	(void)port;

@@ -191,6 +191,11 @@ BOOL SerialOptComPage::OnInitDialog()
 	m_pipename.SetWindowText(m_cfg.pipename);
 	m_pipeserv.SubclassDlgItem(IDC_COM1PIPESERV, this);
 	m_pipeserv.SetWindowText(m_cfg.pipeserv);
+	{
+		TCHAR pipecmd[MAX_PATH*3];
+		_stprintf(pipecmd, _T("\\\\%s\\pipe\\%s"), m_cfg.pipeserv, m_cfg.pipename);
+		SetDlgItemText(IDC_COM1STR32, pipecmd);
+	}
 #endif
 
 	UpdateControls();
@@ -325,6 +330,21 @@ BOOL SerialOptComPage::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_COM1PENTABFA:
 			m_pentabfa = (m_chkpentabfa.SendMessage(BM_GETCHECK , 0 , 0) ? 1 : 0);
 			return TRUE;
+			
+#if defined(SUPPORT_NAMED_PIPE)
+		case IDC_COM1PIPENAME:
+		case IDC_COM1PIPESERV:
+		{
+			TCHAR pipename[MAX_PATH];
+			TCHAR pipeserv[MAX_PATH];
+			TCHAR pipecmd[MAX_PATH*3];
+			GetDlgItemText(IDC_COM1PIPENAME, pipename, _countof(pipename));
+			GetDlgItemText(IDC_COM1PIPESERV, pipeserv, _countof(pipeserv));
+			_stprintf(pipecmd, _T("\\\\%s\\pipe\\%s"), pipeserv, pipename);
+			SetDlgItemText(IDC_COM1STR32, pipecmd);
+			return TRUE;
+		}
+#endif
 	}
 	return FALSE;
 }
@@ -389,7 +409,7 @@ void SerialOptComPage::UpdateControls()
 	static const UINT pipe[] =
 	{
 		IDC_COM1PIPENAME, IDC_COM1PIPESERV,
-		IDC_COM1STR30, IDC_COM1STR31
+		IDC_COM1STR30, IDC_COM1STR31, IDC_COM1STR32
 	};
 	for (UINT i = 0; i < _countof(pipe); i++)
 	{

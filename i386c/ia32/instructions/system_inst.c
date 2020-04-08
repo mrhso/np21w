@@ -1135,7 +1135,7 @@ WRMSR(void)
 void
 RDTSC(void)
 {
-#ifdef _WIN32
+#if defined(SUPPORT_IA32_HAXM)&&defined(_WIN32)
 	LARGE_INTEGER li = {0};
 	LARGE_INTEGER qpf;
 	QueryPerformanceCounter(&li);
@@ -1147,12 +1147,12 @@ RDTSC(void)
 #else
 	UINT64 tsc_tmp;
 	if(CPU_REMCLOCK != -1){
-		tsc_tmp = CPU_MSR_TSC - CPU_REMCLOCK;
+		tsc_tmp = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
 	}else{
 		tsc_tmp = CPU_MSR_TSC;
 	}
 	//tsc_tmp /= 1000;
-	tsc_tmp = (tsc_tmp >> 10); // XXX: ????
+	tsc_tmp = (tsc_tmp >> 8); // XXX: ????
 	CPU_EDX = ((tsc_tmp >> 32) & 0xffffffff);
 	CPU_EAX = (tsc_tmp & 0xffffffff);
 #endif

@@ -682,6 +682,9 @@ static const PFTBL s_IniItems[] =
 #if defined(SUPPORT_IDEIO)
 	PFVAL("IDEBADDR", PFRO_HEX8,		&np2cfg.idebaddr), // IDE BIOS アドレス（デフォルト：D8h(D8000h)）
 #endif
+#if defined(SUPPORT_GAMEPORT)
+	PFVAL("GAMEPORT", PFTYPE_BOOL,		&np2cfg.gameport),
+#endif
 
 	
 

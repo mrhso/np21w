@@ -9,6 +9,8 @@
 #include "iocore.h"
 #include "cbuscore.h"
 #include "cs4231io.h"
+#include "joymng.h"
+#include "cpucore.h"
 #include "sound/fmboard.h"
 #include "sound/sound.h"
 #include "sound/soundrom.h"
@@ -296,6 +298,126 @@ static REG8 IOINPCALL wss_i548f(UINT port)
 	else if(ymf701 == 0x40) return 0x20;
 	else return 0;// from PC-9821Nr166
 }
+
+#if defined(SUPPORT_GAMEPORT)
+/*********** PC-9801-118 Gameport I/O ***********/
+#define GAMEPORT_JOYCOUNTER_MGN2	(gameport_clkmax/100)
+//#define GAMEPORT_JOYCOUNTER_MGN	(gameport_clkmax/100)
+#define GAMEPORT_JOYCOUNTER_TMPCLK	10000000
+#if defined(SUPPORT_IA32_HAXM)
+LARGE_INTEGER gameport_qpf;
+int gameport_useqpc = 0;
+#endif
+UINT64 gameport_tsc;
+UINT32 gameport_clkmax;
+REG8 gameport_joyflag_base = 0x00;
+REG8 gameport_joyflag = 0x00;
+UINT32 gameport_threshold_x = 0;
+UINT32 gameport_threshold_y = 0;
+//UINT32 gameport_timeoutcounter = 0;
+//UINT32 gameport_timeoutinterval = 0;
+// joyflag	bit:0		up
+// 			bit:1		down
+// 			bit:2		left
+// 			bit:3		right
+// 			bit:4		trigger1 (rapid)
+// 			bit:5		trigger2 (rapid)
+// 			bit:6		trigger1
+// 			bit:7		trigger2
+void gameport_timeoutproc(NEVENTITEM item);
+static void IOOUTCALL gameport_o1480(UINT port, REG8 dat)
+{
+	REG8 joyflag = joymng_getstat();
+	gameport_joyflag_base = joyflag;
+	gameport_joyflag = ((joyflag >> 2) & 0x30)  | ((joyflag << 2) & 0xc0) | 0x0f;
+#if defined(SUPPORT_IA32_HAXM)
+	{
+		LARGE_INTEGER li = {0};
+		if (QueryPerformanceFrequency(&gameport_qpf)) {
+			QueryPerformanceCounter(&li);
+			li.QuadPart = li.QuadPart * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
+			gameport_tsc = li.QuadPart;
+			gameport_useqpc = 1;
+		}else{
+			gameport_tsc = CPU_MSR_TSC;
+			gameport_useqpc = 0;
+		}
+	}
+#else
+#if defined(USE_TSC)
+	if(CPU_REMCLOCK > 0){
+		gameport_tsc = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
+	}else{
+		gameport_tsc = CPU_MSR_TSC;
+	}
+#else
+	gameport_tsc = 0;
+#endif
+	//gameport_clkmax = pccore.baseclock * pccore.maxmultiple / 1000; // とりあえず1msで･･･
+	//gameport_timeoutcounter = 400;
+	//gameport_timeoutinterval = gameport_clkmax * 2 / gameport_timeoutcounter;
+	//nevent_set(NEVENT_CDWAIT, gameport_timeoutinterval, gameport_timeoutproc, NEVENT_ABSOLUTE);
+#endif
+	(void)port;
+}
+//void gameport_timeoutproc(NEVENTITEM item) {
+//	if(gameport_timeoutcounter > 0){
+//		gameport_timeoutcounter--;
+//		nevent_set(NEVENT_CDWAIT, gameport_timeoutinterval, gameport_timeoutproc, NEVENT_ABSOLUTE);
+//	}
+//}
+static REG8 IOINPCALL gameport_i1480(UINT port)
+{
+	UINT64 clockdiff;
+#if defined(SUPPORT_IA32_HAXM)
+	if(gameport_useqpc){
+		LARGE_INTEGER li = {0};
+		QueryPerformanceCounter(&li);
+		li.QuadPart = li.QuadPart * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
+		clockdiff = (unsigned long long)li.QuadPart - gameport_tsc;
+		gameport_clkmax = GAMEPORT_JOYCOUNTER_TMPCLK/2000; // とりあえず0.5msで･･･
+	}else{
+		clockdiff = CPU_MSR_TSC - gameport_tsc;
+		gameport_clkmax = pccore.realclock/2000; // とりあえず0.5msで･･･
+	}
+#else
+#if defined(USE_TSC)
+	if(CPU_REMCLOCK > 0){
+		clockdiff = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple - gameport_tsc;
+	}else{
+		clockdiff = CPU_MSR_TSC - gameport_tsc;
+	}
+	gameport_clkmax = pccore.baseclock * pccore.maxmultiple / 2000; // とりあえず0.5msで･･･
+#else
+	gameport_clkmax = 32;
+	clockdiff = gameport_tsc;
+	gameport_tsc++;
+#endif
+#endif
+	gameport_threshold_x = gameport_clkmax / 2;
+	gameport_threshold_y = gameport_clkmax / 2;
+	if(~gameport_joyflag_base & 0x1){
+		gameport_threshold_y = GAMEPORT_JOYCOUNTER_MGN2;
+	}
+	if(~gameport_joyflag_base & 0x2){
+		gameport_threshold_y = GAMEPORT_JOYCOUNTER_MGN2 + gameport_clkmax;
+	}
+	if(~gameport_joyflag_base & 0x4){
+		gameport_threshold_x = GAMEPORT_JOYCOUNTER_MGN2;
+	}
+	if(~gameport_joyflag_base & 0x8){
+		gameport_threshold_x = GAMEPORT_JOYCOUNTER_MGN2 + gameport_clkmax;
+	}
+	if(clockdiff >= (UINT64)gameport_threshold_x){
+		gameport_joyflag &= ~0x01;
+	}
+	if(clockdiff >= (UINT64)gameport_threshold_y){
+		gameport_joyflag &= ~0x02;
+	}
+	return gameport_joyflag;
+}
+#endif
+
 
 /*********** for OPL (NP2) ***********/
 
@@ -590,6 +712,8 @@ void board118_reset(const NP2CFG *pConfig)
  */
 void board118_bind(void)
 {
+	int i;
+
 	// CS4231バインド（I/Oポート割り当てとか）
 	cs4231io_bind();
 	
@@ -623,6 +747,16 @@ void board118_bind(void)
 			opna_bind(&g_opna[opna_idx]);
 			cbuscore_attachsndex(cs4231.port[4],ymf_o, ymf_i);
 		}
+
+#if defined(SUPPORT_GAMEPORT)
+		// ゲームポート割り当て 1480h～1487hどこでも良いらしい
+		if(np2cfg.gameport){
+			for(i=0;i<=7;i++){
+				iocore_attachout(0x1480+i, gameport_o1480);
+				iocore_attachinp(0x1480+i, gameport_i1480);
+			}
+		}
+#endif
 		
 		// OPL割り当て
 #ifdef USE_MAME

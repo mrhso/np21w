@@ -164,6 +164,7 @@
 #define IDC_COM1STR31                   14125
 #define IDC_COM1PIPENAME                14126
 #define IDC_COM1PIPESERV                14127
+#define IDC_COM1STR32                   14128
 #define IDC_PC9861E                     14201
 #define IDC_CH1SPEED                    14202
 #define IDC_CH1INT                      14203

@@ -1051,6 +1051,16 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 			//if(TEST_START_ADDR < address && address <= TEST_END_ADDR){
 			//	printf("%d: %d\n", address, value);
 			//}
+#if defined(SUPPORT_VGA_MODEX)
+			// PC/AT互換機 標準VGA相当 書き込み限定で許可
+			if(np2clvga.modex && vramWndAddr3==0xa0000){
+				UINT32 addr3 = address;
+				if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
+					cirrus_vga_mem_writeb(cirrusvga_opaque, addr3, value);
+					vramWndAddr3 = 0;
+				}
+			}
+#endif
 			if(np2clvga.gd54xxtype!=CIRRUS_98ID_PCI){
 				if(vramWndAddr){
 					if(vramWndAddr <= address){
@@ -1089,16 +1099,6 @@ void MEMCALL memp_write8(UINT32 address, REG8 value) {
 						//	return;
 					}
 				}
-			}else{
-#if defined(SUPPORT_VGA_MODEX)
-				// PC/AT互換機 標準VGA相当 書き込み限定で許可
-				if(np2clvga.modex && vramWndAddr3==0xa0000){
-					UINT32 addr3 = address;
-					if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
-						cirrus_vga_mem_writeb(cirrusvga_opaque, addr3, value);
-					}
-				}
-#endif
 			}
 		}
 #endif
@@ -1177,6 +1177,16 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 				//if(TEST_START_ADDR < address && address <= TEST_END_ADDR){
 				//	printf("%d: %d\n", address, value);
 				//}
+#if defined(SUPPORT_VGA_MODEX)
+				// PC/AT互換機 標準VGA相当 書き込み限定で許可
+				if(np2clvga.modex && vramWndAddr3==0xa0000){
+					UINT32 addr3 = address;
+					if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
+						cirrus_vga_mem_writew(cirrusvga_opaque, addr3, value);
+						vramWndAddr3 = 0;
+					}
+				}
+#endif
 				if(np2clvga.gd54xxtype!=CIRRUS_98ID_PCI){
 					if(vramWndAddr){
 						if(vramWndAddr <= address){
@@ -1215,16 +1225,6 @@ void MEMCALL memp_write16(UINT32 address, REG16 value) {
 							//	return;
 						}
 					}
-				}else{
-#if defined(SUPPORT_VGA_MODEX)
-					// PC/AT互換機 標準VGA相当 書き込み限定で許可
-					if(np2clvga.modex && vramWndAddr3==0xa0000){
-						UINT32 addr3 = address;
-						if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
-							cirrus_vga_mem_writew(cirrusvga_opaque, addr3, value);
-						}
-					}
-#endif
 				}
 			}
 #endif
@@ -1310,6 +1310,16 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 				//if(TEST_START_ADDR < address && address <= TEST_END_ADDR){
 				//	printf("%d: %d\n", address, value);
 				//}
+#if defined(SUPPORT_VGA_MODEX)
+				// PC/AT互換機 標準VGA相当 書き込み限定で許可
+				if(np2clvga.modex && vramWndAddr3==0xa0000){
+					UINT32 addr3 = address;
+					if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
+						cirrus_vga_mem_writel(cirrusvga_opaque, addr3, value);
+						vramWndAddr3 = 0;
+					}
+				}
+#endif
 				if(np2clvga.gd54xxtype!=CIRRUS_98ID_PCI){
 					if(vramWndAddr){
 						if(vramWndAddr <= address){
@@ -1348,16 +1358,6 @@ void MEMCALL memp_write32(UINT32 address, UINT32 value) {
 							//	return;
 						}
 					}
-				}else{
-#if defined(SUPPORT_VGA_MODEX)
-					// PC/AT互換機 標準VGA相当 書き込み限定で許可
-					if(np2clvga.modex && vramWndAddr3==0xa0000){
-						UINT32 addr3 = address;
-						if(vramWndAddr3 <= addr3 && addr3 < vramWndAddr3 + VRA3WINDOW_SIZEX){
-							cirrus_vga_mem_writel(cirrusvga_opaque, addr3, value);
-						}
-					}
-#endif
 				}
 			}
 #endif

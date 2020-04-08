@@ -5151,7 +5151,7 @@ void cirrusvga_drawGraphic(){
 	
 #if defined(SUPPORT_VGA_MODEX)
 	// PC/AT MODE X compatible
-	if (np2clvga.gd54xxtype == CIRRUS_98ID_PCI){
+	if (np2clvga.gd54xxtype <= 0xff){
 		static UINT8 lastmodex = 0;
 		if(np2clvga.modex){
 			if(!lastmodex){
@@ -6644,6 +6644,28 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 
 				iocore_attachout(0xdaa, vga_ioport_write_wrap);	// 0x3DA
 				iocore_attachinp(0xdaa, vga_ioport_read_wrap);	// 0x3DA
+
+#ifdef SUPPORT_VGA_MODEX
+				if(np2cfg.usemodex){
+					for(i=0;i<16;i++){
+						iocore_attachout(0x3c0 + i, vga_ioport_write_wrap);
+						iocore_attachinp(0x3c0 + i, vga_ioport_read_wrap);
+					}
+	
+					iocore_attachout(0x3b4, vga_ioport_write_wrap);
+					iocore_attachinp(0x3b4, vga_ioport_read_wrap);
+					iocore_attachout(0x3b5, vga_ioport_write_wrap);
+					iocore_attachinp(0x3b5, vga_ioport_read_wrap);
+					iocore_attachout(0x3ba, vga_ioport_write_wrap);
+					iocore_attachinp(0x3ba, vga_ioport_read_wrap);
+					iocore_attachout(0x3d4, vga_ioport_write_wrap);
+					iocore_attachinp(0x3d4, vga_ioport_read_wrap);
+					iocore_attachout(0x3d5, vga_ioport_write_wrap);
+					iocore_attachinp(0x3d5, vga_ioport_read_wrap);
+					iocore_attachout(0x3da, vga_ioport_write_wrap);
+					iocore_attachinp(0x3da, vga_ioport_read_wrap);
+				}
+#endif
 			}
 		}
 	}
