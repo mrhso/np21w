@@ -16,6 +16,7 @@ CComBase::CComBase(UINT nConnect)
 	this->read = cRead;
 	this->write = cWrite;
 	this->writeretry = cWriteRetry;
+	this->lastwritesuccess = cLastWriteSuccess;
 	this->getstat = cGetStat;
 	this->msg = cMessage;
 	this->release = cRelease;
@@ -58,6 +59,16 @@ UINT CComBase::cWrite(COMMNG cm, UINT8 cData)
 UINT CComBase::cWriteRetry(COMMNG cm)
 {
 	return static_cast<CComBase*>(cm)->WriteRetry();
+}
+
+/**
+ * Last Write Success
+ * @param[in] cm COMMNG インスタンス
+ * @return result
+ */
+UINT CComBase::cLastWriteSuccess(COMMNG cm)
+{
+	return static_cast<CComBase*>(cm)->LastWriteSuccess();
 }
 
 /**

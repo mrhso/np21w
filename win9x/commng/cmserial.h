@@ -23,6 +23,7 @@ protected:
 	virtual UINT Read(UINT8* pData);
 	virtual UINT Write(UINT8 cData);
 	virtual UINT WriteRetry();
+	virtual UINT LastWriteSuccess(); // 最後の書き込みが成功しているかチェック
 	virtual UINT8 GetStat();
 	virtual INTPTR Message(UINT nMessage, INTPTR nParam);
 

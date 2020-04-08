@@ -166,7 +166,8 @@ static void rs232c_writeretry() {
 	int ret;
 	if((rs232c.result & 0x1) != 0) return;
 	if (cm_rs232c) {
-		ret = cm_rs232c->writeretry(cm_rs232c);
+		cm_rs232c->writeretry(cm_rs232c);
+		ret = cm_rs232c->lastwritesuccess(cm_rs232c);
 		if(ret==0){
 			return; // ‘‚«‚İ–³‹
 		}
@@ -295,7 +296,8 @@ static void IOOUTCALL rs232c_o30(UINT port, REG8 dat) {
 	int ret;
 	if (cm_rs232c) {
 		rs232c_writeretry();
-		ret = cm_rs232c->write(cm_rs232c, (UINT8)dat);
+		cm_rs232c->write(cm_rs232c, (UINT8)dat);
+		ret = cm_rs232c->lastwritesuccess(cm_rs232c);
 		if(!ret){
 			rs232c.result &= ~0x5;
 			return; // ‚Ü‚¾‘‚«‚ß‚È‚¢‚Ì‚Å‘Ò‚Â

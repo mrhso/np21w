@@ -198,6 +198,21 @@ UINT CComPipe::WriteRetry()
 }
 
 /**
+ * 最後の書き込みが成功しているかチェック
+ * @return サイズ
+ */
+UINT CComPipe::LastWriteSuccess()
+{
+	if(m_lastdatafail && GetTickCount() - m_lastdatatime > 3000){
+		return 1; // 3秒間バッファデータが減りそうにないならあきらめる
+	}
+	if(m_lastdatafail){
+		return 0;
+	}
+	return 1;
+}
+
+/**
  * ステータスを得る
  * @return ステータス
  */

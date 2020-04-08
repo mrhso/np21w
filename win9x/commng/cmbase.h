@@ -37,6 +37,14 @@ protected:
 	virtual UINT WriteRetry(){
 		return 1; // 常時成功扱い
 	}
+	
+	/**
+	 * Last Write Success
+	 * @return result
+	 */
+	virtual UINT LastWriteSuccess(){
+		return 1; // 常時成功扱い
+	}
 
 	/**
 	 * ステータスを得る
@@ -56,6 +64,7 @@ private:
 	static UINT cRead(COMMNG cm, UINT8* pData);
 	static UINT cWrite(COMMNG cm, UINT8 cData);
 	static UINT cWriteRetry(COMMNG cm);
+	static UINT cLastWriteSuccess(COMMNG cm);
 	static UINT8 cGetStat(COMMNG cm);
 	static INTPTR cMessage(COMMNG cm, UINT nMessage, INTPTR nParam);
 	static void cRelease(COMMNG cm);
