@@ -51,6 +51,8 @@ differences between OPL2 and OPL3 shown in datasheets:
 #define PI 3.14159265358979323846
 #endif
 
+// XXX: statsave connect保存用
+static INT32 connectBuf[18*2] = {0};
 
 
 /* output final shift */
@@ -2502,16 +2504,16 @@ void * YMF262Init(int clock, int rate)
 
 void YMF262Shutdown(void *chip)
 {
-	OPL3Destroy(chip);
+	OPL3Destroy((OPL3*)chip);
 }
 void YMF262ResetChip(void *chip)
 {
-	OPL3ResetChip(chip);
+	OPL3ResetChip((OPL3*)chip);
 }
 
 int YMF262Write(void *chip, int a, int v)
 {
-	return OPL3Write(chip, a, v);
+	return OPL3Write((OPL3*)chip, a, v);
 }
 
 unsigned char YMF262Read(void *chip, int a)
@@ -2525,24 +2527,96 @@ unsigned char YMF262Read(void *chip, int a)
 
 	/* YMF278(OPL4) returns bit2 in LOW and bit1 in HIGH state ??? info from manual - not verified */
 
-	return OPL3Read(chip, a);
+	return OPL3Read((OPL3*)chip, a);
 }
 int YMF262TimerOver(void *chip, int c)
 {
-	return OPL3TimerOver(chip, c);
+	return OPL3TimerOver((OPL3*)chip, c);
 }
 
 void YMF262SetTimerHandler(void *chip, OPL3_TIMERHANDLER TimerHandler, void *param)
 {
-	OPL3SetTimerHandler(chip, TimerHandler, param);
+	OPL3SetTimerHandler((OPL3*)chip, TimerHandler, param);
 }
 void YMF262SetIRQHandler(void *chip,OPL3_IRQHANDLER IRQHandler,void *param)
 {
-	OPL3SetIRQHandler(chip, IRQHandler, param);
+	OPL3SetIRQHandler((OPL3*)chip, IRQHandler, param);
 }
 void YMF262SetUpdateHandler(void *chip,OPL3_UPDATEHANDLER UpdateHandler,void *param)
 {
-	OPL3SetUpdateHandler(chip, UpdateHandler, param);
+	OPL3SetUpdateHandler((OPL3*)chip, UpdateHandler, param);
+}
+
+int YMF262FlagSave(void *chip, void *dstbuf)
+{
+	OPL3* opl3 = (OPL3*)chip;
+	OPL3* opl3dst = (OPL3*)dstbuf;
+	if(dstbuf!=NULL){
+		*opl3dst = *opl3;
+		// XXX: イベントハンドラ系（？）はセーブしない
+		opl3dst->TimerHandler = NULL;
+		opl3dst->TimerParam = NULL;
+		opl3dst->IRQHandler = NULL;
+		opl3dst->IRQParam = NULL;
+		opl3dst->UpdateHandler = NULL;
+		opl3dst->UpdateParam = NULL;
+		// XXX: connectってなんでポインタになってるんでしょう？めんどくさい･･･
+		{
+			int ch, slot;
+			INT32 *opl3connect = (INT32 *)(&(opl3dst[1]));
+			for(ch=0;ch<18;ch++){
+				for(slot=0;slot<2;slot++){
+					int i = ch * 2 + slot;
+					if(opl3dst->P_CH[ch].SLOT[slot].connect){
+						opl3connect[i] = *(opl3dst->P_CH[ch].SLOT[slot].connect);
+					}
+				}
+			}
+		}
+	}
+	return sizeof(OPL3) + sizeof(INT32) * 18 * 2;
+}
+int YMF262FlagLoad(void *chip, void *srcbuf, int size)
+{
+	OPL3* opl3 = (OPL3*)chip;
+	OPL3* opl3src = (OPL3*)srcbuf;
+	OPL3 opl3tmp = *opl3;
+
+	OPL3_TIMERHANDLER  TimerHandler;/* TIMER handler                */
+	void *TimerParam;					/* TIMER parameter              */
+	OPL3_IRQHANDLER    IRQHandler;	/* IRQ handler                  */
+	void *IRQParam;					/* IRQ parameter                */
+	OPL3_UPDATEHANDLER UpdateHandler;/* stream update handler       */
+	void *UpdateParam;
+
+	if(srcbuf==NULL) return 0;
+	if(size != sizeof(OPL3) + sizeof(INT32) * 18 * 2) return 0;
+
+	*opl3 = *opl3src;
+	
+	// XXX: イベントハンドラ系（？）は変更しない
+	opl3->TimerHandler = opl3tmp.TimerHandler;
+	opl3->TimerParam = opl3tmp.TimerParam;
+	opl3->IRQHandler = opl3tmp.IRQHandler;
+	opl3->IRQParam = opl3tmp.IRQParam;
+	opl3->UpdateHandler = opl3tmp.UpdateHandler;
+	opl3->UpdateParam = opl3tmp.UpdateParam;
+	// XXX: connectってなんでポインタになってるんでしょう？めんどくさい･･･
+	{
+		int ch, slot;
+		INT32 *opl3connect = (INT32 *)(&(opl3src[1]));
+		for(ch=0;ch<18;ch++){
+			for(slot=0;slot<2;slot++){
+				int i = ch * 2 + slot;
+				if(opl3->P_CH[ch].SLOT[slot].connect){
+					connectBuf[i] = opl3connect[i];
+					opl3->P_CH[ch].SLOT[slot].connect = &connectBuf[i];
+				}
+			}
+		}
+	}
+
+	return size;
 }
 
 
@@ -2555,7 +2629,7 @@ void YMF262SetUpdateHandler(void *chip,OPL3_UPDATEHANDLER UpdateHandler,void *pa
 */
 void YMF262UpdateOne(void *_chip, OPL3SAMPLE **buffers, int length)
 {
-	OPL3		*chip  = _chip;
+	OPL3		*chip  = (OPL3*)_chip;
 	UINT8		rhythm = chip->rhythm&0x20;
 
 	OPL3SAMPLE	*ch_a = buffers[0];

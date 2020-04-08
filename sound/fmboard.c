@@ -29,10 +29,12 @@
 
 
 	SOUNDID g_nSoundID;
-	OPL3 g_opl3;
+	OPL3 g_opl3[OPL3_MAX]; // index: 0=PC-9891-118, 1=Sound Blaster 16, 2=Sound Orchestra
 	OPNA g_opna[OPNA_MAX];
+#ifdef USE_MAME
+	void *g_mame_opl3[OPL3_MAX] = {0};
+#endif
 	
-	OPL			g_opl;
 #if defined(SUPPORT_SOUND_SB16)
 	SB16		g_sb16;
 #endif	// defined(SUPPORT_SOUND_SB16)
@@ -119,7 +121,10 @@ void fmboard_construct(void)
 	{
 		opna_construct(&g_opna[i]);
 	}
-	opl3_construct(&g_opl3);
+	for (i = 0; i < NELEMENTS(g_opl3); i++)
+	{
+		opl3_construct(&g_opl3[i]);
+	}
 }
 
 /**
@@ -133,7 +138,10 @@ void fmboard_destruct(void)
 	{
 		opna_destruct(&g_opna[i]);
 	}
-	opl3_destruct(&g_opl3);
+	for (i = 0; i < NELEMENTS(g_opl3); i++)
+	{
+		opl3_destruct(&g_opl3[i]);
+	}
 
 	board118_finalize();
 #ifdef SUPPORT_SOUND_SB16
@@ -159,7 +167,10 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 		{
 			opna_reset(&g_opna[i], 0);
 		}
-		opl3_reset(&g_opl3, 0);
+		for (i = 0; i < NELEMENTS(g_opl3); i++)
+		{
+			opl3_reset(&g_opl3[i], 0);
+		}
 	}
 
 	extfn = NULL;
@@ -255,6 +266,18 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 			break;
 			
 		case SOUNDID_PC_9801_86_WSS_SB16:
+			boardsb16_reset(pConfig);
+			board118_reset(pConfig);
+			board86_reset(pConfig, FALSE);
+			break;
+			break;
+			
+		case SOUNDID_PC_9801_118_SB16:
+			boardsb16_reset(pConfig);
+			board118_reset(pConfig);
+			break;
+			
+		case SOUNDID_PC_9801_86_118_SB16:
 			boardsb16_reset(pConfig);
 			board118_reset(pConfig);
 			board86_reset(pConfig, FALSE);
@@ -369,6 +392,17 @@ void fmboard_bind(void) {
 			board118_bind();
 			board86_bind();
 			break;
+			
+		case SOUNDID_PC_9801_118_SB16:
+			boardsb16_bind();
+			board118_bind();
+			break;
+			
+		case SOUNDID_PC_9801_86_118_SB16:
+			boardsb16_bind();
+			board118_bind();
+			board86_bind();
+			break;
 #endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
@@ -473,6 +507,17 @@ void fmboard_unbind(void) {
 			break;
 			
 		case SOUNDID_PC_9801_86_WSS_SB16:
+			boardsb16_unbind();
+			board118_unbind();
+			board86_unbind();
+			break;
+			
+		case SOUNDID_PC_9801_118_SB16:
+			boardsb16_unbind();
+			board118_unbind();
+			break;
+			
+		case SOUNDID_PC_9801_86_118_SB16:
 			boardsb16_unbind();
 			board118_unbind();
 			board86_unbind();

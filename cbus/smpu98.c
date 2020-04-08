@@ -1172,7 +1172,7 @@ REG8 IOINPCALL smpu98_i2(UINT port) {
 		cm_smpu98[1] = commng_create(COMCREATE_SMPU98_B);
 		smpu98.portBready = (cm_smpu98[1]->connect != COMCONNECT_OFF);
 	}
-	if ((cm_smpu98[0]->connect != COMCONNECT_OFF) || g_nSoundID == SOUNDID_PC_9801_118) {
+	if ((cm_smpu98[0]->connect != COMCONNECT_OFF) || g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16) {
 
 		ret = smpu98.status;
 		if ((smpu98.r.cnt == 0) && (smpu98.intreq == 0)) {
@@ -1545,7 +1545,7 @@ void smpu98_bind(void) {
 				iocore_attachinp(0x331, smpu98_i2);
 			}
 			// PC-9801-118
-			if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118){
+			if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
 				iocore_attachout(cs4231.port[10], smpu98_o0);
 				iocore_attachinp(cs4231.port[10], smpu98_i0);
 				iocore_attachout(cs4231.port[10]+1, smpu98_o2);
@@ -1569,7 +1569,7 @@ void smpu98_bind(void) {
 		// MPU-PC98II‚àS-MPU‚à–³Œø‚ÌŽž
 
 		// PC-9801-118
-		if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118){
+		if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
 			iocore_attachout(cs4231.port[10], smpu98_o0);
 			iocore_attachinp(cs4231.port[10], smpu98_i0);
 			iocore_attachout(cs4231.port[10]+1, smpu98_o2);

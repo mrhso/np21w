@@ -6,6 +6,8 @@
 #include	"ct1745io.h"
 #include	"sound.h"
 #include	"fmboard.h"
+#include	"mpu98ii.h"
+#include	"smpu98.h"
 
 #ifdef SUPPORT_SOUND_SB16
 
@@ -13,6 +15,8 @@
  * Creative SoundBlaster16 DSP CT1741
  *
  */
+
+#define CT1741_WAVE_VOL_SHIFT	13
 
 static char * const copyright_string = "COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.";
 
@@ -84,8 +88,18 @@ UINT8 ct1741_get_dma_irq() {
 
 void ct1741_set_dma_ch(UINT8 dmach) {
 	g_sb16.dsp_info.dmach = dmach;
-	if (dmach & 0x01) g_sb16.dmach = 0;
-	if (dmach & 0x02) g_sb16.dmach = 3;
+	if (dmach & 0x01){
+		if(g_sb16.dmach != 0){
+			g_sb16.dmach = 0;
+			dmac_attach(DMADEV_CT1741, g_sb16.dmach);
+		}
+	}
+	if (dmach & 0x02){
+		if(g_sb16.dmach != 3){
+			g_sb16.dmach = 3;
+			dmac_attach(DMADEV_CT1741, g_sb16.dmach);
+		}
+	}
 }
 
 UINT8 ct1741_get_dma_ch() {
@@ -109,8 +123,9 @@ static void ct1741_reset(void)
 	g_sb16.dsp_info.cmd_len=0;
 	g_sb16.dsp_info.in.pos=0;
 	g_sb16.dsp_info.write_busy = 0;
-       g_sb16.dsp_info.dmairq = g_sb16.dmairq;
-       g_sb16.dsp_info.dmach = g_sb16.dmach;
+    g_sb16.dsp_info.dmairq = g_sb16.dmairq;
+    g_sb16.dsp_info.dmach = g_sb16.dmach;
+	g_sb16.dsp_info.uartmode = 0;
 }
 
 static void ct1741_flush_data(void)
@@ -229,11 +244,18 @@ static void ct1741_exec_command()
 		ct1741_change_mode(DSP_MODE_DAC);
 		// PIO再生のつもりだがノーチェック
 		if(g_sb16.dsp_info.dma.bufdatas < DMA_BUFSIZE){
-			g_sb16.dsp_info.dma.buffer[g_sb16.dsp_info.dma.bufpos] = (SINT8)(g_sb16.dsp_info.in.data[0] ^ 0x80);
+			g_sb16.dsp_info.dma.buffer[g_sb16.dsp_info.dma.bufpos] = g_sb16.dsp_info.in.data[0];
 			g_sb16.dsp_info.dma.bufpos++;
 			if(g_sb16.dsp_info.dma.bufpos >= DMA_BUFSIZE) g_sb16.dsp_info.dma.bufpos -= DMA_BUFSIZE;
 			g_sb16.dsp_info.dma.bufdatas++;
 			last_ct1741fn = pcm8mPIO;
+		}
+		if(g_sb16.dsp_info.dma.bufdatas > DMA_BUFSIZE / 2 && !g_sb16.dsp_info.write_busy){
+			g_sb16.dsp_info.write_busy = 1;
+			//sound_sync();
+		}
+		if(g_sb16.dsp_info.dma.bufdatas == 0){
+			playwaitcounter = DMA_BUFSIZE/2;
 		}
 //		if (sb.dac.used<DSP_DACSIZE) {
 //			sb.dac.data[sb.dac.used++]=(Bit8s(sb.dsp.in.data[0] ^ 0x80)) << 8;
@@ -255,6 +277,15 @@ static void ct1741_exec_command()
 		ct1741_prepare_dma_old(DSP_DMA_8, TRUE);
 		break;
 	case 0x38:  /* Write to SB MIDI Output */
+		if(!g_sb16.dsp_info.uartmode){
+			if(mpu98.enable){
+				mpu98.mode = 1; // force set UART mode
+				return mpu98ii_o0(0x8000 + g_sb16.base, g_sb16.dsp_info.in.data[0]);
+			}else if(smpu98.enable){
+				smpu98.mode = 1; // force set UART mode
+				return smpu98_o0(0x8000 + g_sb16.base, g_sb16.dsp_info.in.data[0]);
+			}
+		}
 //		if (sb.midi == true) MIDI_RawOutByte(g_sb16.dsp_info.in.data[0]);
 		break;
 	case 0x40:	/* Set Timeconstant */
@@ -390,9 +421,17 @@ static void ct1741_exec_command()
 		break;
 	case 0x30: case 0x31:
 //		LOG(LOG_SB,LOG_ERROR)("DSP:Unimplemented MIDI I/O command %2X",sb.dsp.cmd);
+
 		break;
+	case 0x3f:
+		g_sb16.dsp_info.uartmode = 1;
+		ct1741_flush_data();
+		ct1741_add_data(0xfe);
+		break;
+
 	case 0x34: case 0x35: case 0x36: case 0x37:
 //		LOG(LOG_SB,LOG_ERROR)("DSP:Unimplemented MIDI UART command %2X",sb.dsp.cmd);
+
 		break;
 	case 0x7d: case 0x7f: case 0x1f:
 //		LOG(LOG_SB,LOG_ERROR)("DSP:Unimplemented auto-init DMA ADPCM command %2X",sb.dsp.cmd);
@@ -605,7 +644,7 @@ void ct1741_dma(NEVENTITEM item)
 					rem = g_sb16.dsp_info.dma.bufsize * BUF_ALIGN[g_sb16.dsp_info.dma.mode|g_sb16.dsp_info.dma.stereo <<3] / 4 * g_sb16.dsp_info.freq / 44100 - g_sb16.dsp_info.dma.bufdatas;
 				}
 				pos = (g_sb16.dsp_info.dma.bufpos + g_sb16.dsp_info.dma.bufdatas) & (DMA_BUFSIZE -1);
-				size = min(rem, (g_sb16.dsp_info.dma.stereo ? 64 : 32)); // DMAの転送量を少量に変更（値に根拠はない）
+				size = min(rem, (g_sb16.dsp_info.freq==8000 ? 64 : 32) * (g_sb16.dsp_info.dma.stereo ? 2 : 1)); // DMAの転送量を少量に変更（値に根拠はない）
 				r = dmac_getdatas(g_sb16.dsp_info.dma.chan, dmabuf, size);
 				if(r!=0){
 					zerocounter = 0;
@@ -665,11 +704,13 @@ void ct1741_dma(NEVENTITEM item)
 						}
 					}else{
 						// 無反応なら再送。終わった直後に出した割り込みがスルーされる場合があるので無理矢理
-						if(g_sb16.dsp_info.dma.bufdatas < DMA_BUFSIZE/4){
-							g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 2 : 1);
-							pic_setirq(g_sb16.dmairq);
-							if (g_sb16.dmach != 0xff) {
-								dmac.stat |= (1 << g_sb16.dmach);
+						if((zerocounter % 4) == 2 || zerocounter>32){
+							if(g_sb16.dsp_info.dma.bufdatas < DMA_BUFSIZE/4){
+								g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 2 : 1);
+								pic_setirq(g_sb16.dmairq);
+								if (g_sb16.dmach != 0xff) {
+									dmac.stat |= (1 << g_sb16.dmach);
+								}
 							}
 						}
 						// それでも無反応ならごり押し
@@ -682,9 +723,9 @@ void ct1741_dma(NEVENTITEM item)
 								g_sb16.dsp_info.smpcounter2 = 0;
 								return;
 							}
-							if(g_sb16.dsp_info.dma.mode==DSP_DMA_NONE){
-								return;
-							}
+							//if(g_sb16.dsp_info.dma.mode==DSP_DMA_NONE){
+							//	return;
+							//}
 						}
 						nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
 					}
@@ -767,7 +808,7 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 	return(0);
 }
 
-// PIO 8bit モノラル（ノーチェック）
+// PIO 8bit モノラル
 static void SOUNDCALL pcm8mPIO(DMA_INFO *cs, SINT32 *pcm, UINT count) {
 	UINT32	leng;
 	UINT32	pos12;
@@ -796,14 +837,17 @@ const UINT8	*ptr2;
 		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
 		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> CT1741_WAVE_VOL_SHIFT;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> CT1741_WAVE_VOL_SHIFT;
 		pcm += 2;
 	}
 
 	leng = min(leng, samppos);
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+	cs->bufpos = (cs->bufpos + (leng << 0)) & DMA_BUFMASK;
+	if(g_sb16.dsp_info.dma.bufdatas < DMA_BUFSIZE / 2){
+		g_sb16.dsp_info.write_busy = 0;
+	}
 }
 
 // 8bit モノラル
@@ -822,6 +866,8 @@ const UINT8	*ptr2;
 	// 何故かDMAで送られてきたデータのサンプリングレートがいかれているので無理矢理修正する。謎
 	if(g_sb16.dsp_info.freq==44100){
 		samplen_src = g_sb16.dsp_info.freq * 110/ 100;
+	}else if(g_sb16.dsp_info.freq==8000){
+		samplen_src = g_sb16.dsp_info.freq * 104/ 100;
 	}else{
 		samplen_src = g_sb16.dsp_info.freq * 102/ 100;
 	}
@@ -841,14 +887,14 @@ const UINT8	*ptr2;
 		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
 		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> CT1741_WAVE_VOL_SHIFT;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> CT1741_WAVE_VOL_SHIFT;
 		pcm += 2;
 	}
 
 	leng = min(leng, samppos);
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+	cs->bufpos = (cs->bufpos + (leng << 0)) & DMA_BUFMASK;
 }
 
 // 8bit ステレオ
@@ -887,8 +933,8 @@ const UINT8	*ptr2;
 		samp1 = ((SINT32)ptr1[0] - 0x80) << 8;
 		samp2 = ((SINT32)ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> CT1741_WAVE_VOL_SHIFT;
+		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> CT1741_WAVE_VOL_SHIFT;
 		pcm += 2;
 	}
 
@@ -934,8 +980,8 @@ const UINT8	*ptr2;
 		samp1 = ((SINT32)((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = ((SINT32)((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> CT1741_WAVE_VOL_SHIFT;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> CT1741_WAVE_VOL_SHIFT;
 		pcm += 2;
 	}
 
@@ -980,8 +1026,8 @@ const UINT8	*ptr2;
 		samp1 = ((SINT32)((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = ((SINT32)((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> CT1741_WAVE_VOL_SHIFT;
+		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> CT1741_WAVE_VOL_SHIFT;
 		pcm += 2;
 	}
 
@@ -1053,6 +1099,28 @@ void ct1741io_bind(void)
 	iocore_attachinp(0x2d00 + g_sb16.base, ct1741_read_reset);	/* DSP Reset */
 	iocore_attachinp(0x2e00 + g_sb16.base, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
 	iocore_attachinp(0x2f00 + g_sb16.base, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
+	
+	// Canopus PowerWindow T64S/98 音源部テスト
+	//iocore_attachout(0x6600 + g_sb16.base, ct1741_write_reset);	/* DSP Reset */
+	//iocore_attachout(0x6C00 + g_sb16.base, ct1741_write_data);	/* DSP Write Command/Data */
+
+	//iocore_attachinp(0x6600 + g_sb16.base, ct1741_read_reset);	/* DSP Reset */
+	//iocore_attachinp(0x6a00 + g_sb16.base, ct1741_read_data);		/* DSP Read Data Port */
+	//iocore_attachinp(0x6c00 + g_sb16.base, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
+	//iocore_attachinp(0x6d00 + g_sb16.base, ct1741_read_reset);	/* DSP Reset */
+	//iocore_attachinp(0x6e00 + g_sb16.base, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
+	//iocore_attachinp(0x6f00 + g_sb16.base, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
+	
+	// PC/AT互換機テスト
+	//iocore_attachout(0x226, ct1741_write_reset);	/* DSP Reset */
+	//iocore_attachout(0x22C, ct1741_write_data);	/* DSP Write Command/Data */
+
+	//iocore_attachinp(0x226, ct1741_read_reset);	/* DSP Reset */
+	//iocore_attachinp(0x22a, ct1741_read_data);		/* DSP Read Data Port */
+	//iocore_attachinp(0x22c, ct1741_read_wstatus);	/* DSP Write Buffer Status (Bit 7) */
+	//iocore_attachinp(0x22d, ct1741_read_reset);	/* DSP Reset */
+	//iocore_attachinp(0x22e, ct1741_read_rstatus);	/* DSP Read Buffer Status (Bit 7) */
+	//iocore_attachinp(0x22f, ct1741_read_rstatus16);	/* DSP Read Buffer Status (Bit 7) */
 }
 void ct1741io_unbind(void)
 {

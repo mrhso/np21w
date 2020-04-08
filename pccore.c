@@ -79,6 +79,7 @@
 #define	CPU_BRAND_STRING	"Intel(R) 80286 Processor "
 #define	CPU_FEATURES_ECX	(0)
 #define	CPU_BRAND_ID_AUTO	(0xffffffff)
+#define	CPU_EFLAGS_MASK		(0)
 #endif
 #if defined(SUPPORT_IA32_HAXM)
 #include	"i386hax/haxfunc.h"
@@ -171,7 +172,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0, 0xff00, 
 				0, 0, 0,
 				1,
-				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_FEATURES_EX, CPU_BRAND_STRING, OEMTEXT(""), OEMTEXT(""), CPU_BRAND_ID_AUTO, CPU_FEATURES_ECX,
+				CPU_VENDOR, CPU_FAMILY, CPU_MODEL, CPU_STEPPING, CPU_FEATURES, CPU_FEATURES_EX, CPU_BRAND_STRING, OEMTEXT(""), OEMTEXT(""), CPU_BRAND_ID_AUTO, CPU_FEATURES_ECX, CPU_EFLAGS_MASK,
 				FPU_TYPE_SOFTFLOAT,
 #if defined(SUPPORT_FAST_MEMORYCHECK)
 				1,
@@ -673,6 +674,7 @@ void pccore_reset(void) {
 		i386cpuid.cpu_feature = CPU_FEATURES_ALL;
 		i386cpuid.cpu_feature_ex = CPU_FEATURES_EX_ALL;
 		i386cpuid.cpu_feature_ecx = CPU_FEATURES_ALL;
+		i386cpuid.cpu_eflags_mask = 0;
 		i386cpuid.cpu_brandid = 0;
 	}else{
 		i386cpuid.cpu_family = np2cfg.cpu_family;
@@ -681,6 +683,7 @@ void pccore_reset(void) {
 		i386cpuid.cpu_feature = CPU_FEATURES_ALL & np2cfg.cpu_feature;
 		i386cpuid.cpu_feature_ex = CPU_FEATURES_EX_ALL & np2cfg.cpu_feature_ex;
 		i386cpuid.cpu_feature_ecx = CPU_FEATURES_ECX_ALL & np2cfg.cpu_feature_ecx;
+		i386cpuid.cpu_eflags_mask = (AC_FLAG) & np2cfg.cpu_eflags_mask;
 		i386cpuid.cpu_brandid = np2cfg.cpu_brandid;
 	}
 	strcpy(i386cpuid.cpu_brandstring, np2cfg.cpu_brandstring);

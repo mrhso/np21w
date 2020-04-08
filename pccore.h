@@ -56,6 +56,8 @@ enum tagSoundId
 	SOUNDID_PC_9801_86_WSS_SB16	= 0x42,		/*!< PC-9801-86 + Mate-X PCM(B460) + Sound Blaster 16 */
 	SOUNDID_WSS_SB16			= 0x43,		/*!< Mate-X PCM(B460) + Sound Blaster 16 */
 	SOUNDID_PC_9801_86_SB16		= 0x44,		/*!< PC-9801-86 + Sound Blaster 16 */
+	SOUNDID_PC_9801_118_SB16	= 0x45,		/*!< PC-9801-118 + Sound Blaster 16 */
+	SOUNDID_PC_9801_86_118_SB16 = 0x46,		/*!< PC-9801-86 + PC-9801-118(B460) + Sound Blaster 16 */
 	SOUNDID_MATE_X_PCM			= 0x60,		/*!< Mate-X PCM */
 	SOUNDID_PC_9801_86_WSS		= 0x64,		/*!< PC-9801-86 + Mate-X PCM(B460) */
 	SOUNDID_PC_9801_86_118		= 0x68,		/*!< PC-9801-86 + PC-9801-118(B460) */
@@ -282,6 +284,7 @@ struct tagNP2Config
 	OEMCHAR	cpu_brandstring_o[64]; // ブランド名（48byte）OEMCHAR
 	UINT32	cpu_brandid; // ブランドID
 	UINT32  cpu_feature_ecx; // ECX機能フラグ
+	UINT32  cpu_eflags_mask; // EFLAGSマスク
 	
 	UINT8	fpu_type; // FPU種類（0=Berkeley SoftFloat, 1=DOSBox FPU, 2=DOSBox FPU+INT64）
 	

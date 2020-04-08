@@ -84,6 +84,7 @@ typedef struct {
 	int smpcounter; // DMA転送開始以降に送られたDMAデータ数の合計（無効なデータも含む）
 	
 	UINT8 speaker;
+	UINT8 uartmode;
 } DSP_INFO;
 
 extern 

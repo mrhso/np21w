@@ -19,6 +19,7 @@
 #else	/* defined(SUPPORT_PX) */
 #define OPNA_MAX	3
 #endif	/* defined(SUPPORT_PX) */
+#define OPL3_MAX	8
 
 typedef struct {
 	UINT	addr;
@@ -43,11 +44,13 @@ extern "C"
 #endif
 
 extern	SOUNDID		g_nSoundID;
-extern	OPL3		g_opl3;
+extern	OPL3		g_opl3[OPL3_MAX];
 extern	OPNA		g_opna[OPNA_MAX];
+#ifdef USE_MAME
+extern	void		*g_mame_opl3[OPL3_MAX];
+#endif
 extern	_PCM86		g_pcm86;
 extern	_CS4231		cs4231;
-extern	OPL			g_opl;
 extern	SB16		g_sb16;
 
 REG8 fmboard_getjoy(POPNA opna);

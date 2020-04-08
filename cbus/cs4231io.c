@@ -201,7 +201,7 @@ void cs4231io_reset(void) {
 		snddma = np2cfg.sndwssdma;
 		//cs4231.adrs = 0x0a;////0b00 001 010  INT0 DMA1
 		//cs4231.adrs = 0x22;////0b00 100 010  INT5 DMA1
-	}else if(g_nSoundID==SOUNDID_PC_9801_86_118){
+	}else if(g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		UINT8 irq86table[4] = {0x03, 0x0d, 0x0a, 0x0c};
 		UINT8 nIrq86 = (np2cfg.snd86opt & 0x10) | ((np2cfg.snd86opt & 0x4) << 5) | ((np2cfg.snd86opt & 0x8) << 3);
 		UINT8 irq86 = irq86table[nIrq86 >> 6];
@@ -258,7 +258,7 @@ void cs4231io_reset(void) {
 	cs4231.dmairq = cs4231irq[(cs4231.adrs >> 3) & 7]; // IRQをセット
 	cs4231.dmach = cs4231dma[cs4231.adrs & 7]; // DMAチャネルをセット
 	cs4231.port[0] = 0x0f40; //WSS BASE I/O port
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		cs4231.port[1] = 0xb460; // Sound ID I/O port (A460hは86音源が使うのでB460hに変更)
 	}else{
 		cs4231.port[1] = 0xa460; // Sound ID I/O port
@@ -287,7 +287,7 @@ void cs4231io_reset(void) {
 	cs4231.reg.line_r = 0x88;//13
 	cs4231.reg.reserved1=0x80; //16 from PC-9821Nr166
 	cs4231.reg.reserved2=0x80; //17 from PC-9821Nr166
-	if(g_nSoundID==SOUNDID_PC_9801_118 || g_nSoundID==SOUNDID_PC_9801_86_118){
+	if(g_nSoundID==SOUNDID_PC_9801_118 || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
 		cs4231.reg.chipid	=0xa2;//19 from PC-9801-118 CS4231
 	}else{
 		cs4231.reg.chipid	=0x80;//19 from PC-9821Nr166 YMF715

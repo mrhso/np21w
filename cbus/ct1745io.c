@@ -9,6 +9,26 @@
 
 #include	<math.h>
 
+#if 0
+#undef	TRACEOUT
+#define USE_TRACEOUT_VS
+#ifdef USE_TRACEOUT_VS
+static void trace_fmt_ex(const char *fmt, ...)
+{
+	char stmp[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsprintf(stmp, fmt, ap);
+	strcat(stmp, "\n");
+	va_end(ap);
+	OutputDebugStringA(stmp);
+}
+#define	TRACEOUT(s)	trace_fmt_ex s
+#else
+#define	TRACEOUT(s)	(void)(s)
+#endif
+#endif	/* 1 */
+
 #ifdef SUPPORT_SOUND_SB16
 
 /**
@@ -41,11 +61,12 @@ static void IOOUTCALL sb16_o2400(UINT port, REG8 dat) {
 	g_sb16.mixsel = dat;
 }
 static void IOOUTCALL sb16_o2500(UINT port, REG8 dat) {
-printf("mixer port write %x %x\n",dat,g_sb16.mixsel);
+//printf("mixer port write %x %x\n",dat,g_sb16.mixsel);
 	if (g_sb16.mixsel >= MIXER_VOL_START &&
 		g_sb16.mixsel <= MIXER_VOL_END) {
 		g_sb16.mixreg[g_sb16.mixsel] = dat;
-		g_sb16.mixregexp[g_sb16.mixsel] = (int)(pow(dat / 255.0, 2) * 255);
+		g_sb16.mixregexp[g_sb16.mixsel] = (int)(pow(((dat >> 3) & 0x1f) / 32.0, 2) * 255);//(int)(pow(dat / 255.0, 4) * 255);
+		TRACEOUT(("CT1745 MIXER ID=0x%02x, DATA=0x%02x", g_sb16.mixsel, dat));
 		return;
 	}
 
@@ -78,9 +99,11 @@ printf("mixer port write %x %x\n",dat,g_sb16.mixsel);
 			
 		case 0x80:			// Write irq num
 			ct1741_set_dma_irq(dat);
+			TRACEOUT(("CT1745 MIXER SET IRQ ID=0x%02x", dat));
 			break;
 		case 0x81:			// Write dma num
 			ct1741_set_dma_ch(dat);
+			TRACEOUT(("CT1745 MIXER SET DMA ID=0x%02x", dat));
 			break;
 		case 0x83:
 		default:
@@ -93,7 +116,7 @@ static REG8 IOINPCALL sb16_i2400(UINT port) {
 	return g_sb16.mixsel;
 }
 static REG8 IOINPCALL sb16_i2500(UINT port) {
-printf("mixer port read %x %x\n",g_sb16.mixreg[g_sb16.mixsel],g_sb16.mixsel);
+//printf("mixer port read %x %x\n",g_sb16.mixreg[g_sb16.mixsel],g_sb16.mixsel);
 	if (g_sb16.mixsel >= MIXER_VOL_START && g_sb16.mixsel <= MIXER_VOL_END) {
 		return g_sb16.mixreg[g_sb16.mixsel];
 	}
@@ -137,6 +160,12 @@ void ct1745io_bind(void)
 	iocore_attachout(0x2500 + g_sb16.base, sb16_o2500);	/* Mixer Chip Data Port */
 	iocore_attachinp(0x2400 + g_sb16.base, sb16_i2400);	/* Mixer Chip Register Address Port */
 	iocore_attachinp(0x2500 + g_sb16.base, sb16_i2500);	/* Mixer Chip Data Port */
+	
+	// PC/AT互換機テスト
+	//iocore_attachout(0x224, sb16_o2400);	/* Mixer Chip Register Address Port */
+	//iocore_attachout(0x225, sb16_o2500);	/* Mixer Chip Data Port */
+	//iocore_attachinp(0x224, sb16_i2400);	/* Mixer Chip Register Address Port */
+	//iocore_attachinp(0x225, sb16_i2500);	/* Mixer Chip Data Port */
 }
 void ct1745io_unbind(void)
 {

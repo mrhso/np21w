@@ -68,6 +68,13 @@
 #include	"i386hax/haxcore.h"
 #endif
 
+#ifdef USE_MAME
+UINT8 YMF262Read(void *chip, INT a);
+INT YMF262Write(void *chip, INT a, INT v);
+int YMF262FlagSave(void *chip, void *dstbuf);
+int YMF262FlagLoad(void *chip, void *srcbuf, int size);
+#endif
+
 extern int sxsi_unittbl[];
 
 #if defined(MACOS)
@@ -886,6 +893,13 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 			
 		case SOUNDID_PC_9801_86_WSS_SB16:
 			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_CS4231 | FLAG_OPL3 | FLAG_SB16;
+			
+		case SOUNDID_PC_9801_118_SB16:
+			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_OPL3 | FLAG_PCM86 | FLAG_CS4231 | FLAG_SB16;
+
+		case SOUNDID_PC_9801_86_118_SB16:
+			return FLAG_OPNA1 | FLAG_OPNA2 | FLAG_PCM86 | FLAG_CS4231 | FLAG_OPL3 | FLAG_SB16;
+			
 #endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
@@ -935,7 +949,30 @@ static int flagsave_fm(STFLAGH sfh, const SFENTRY *tbl)
 	}
 	if (nSaveFlags & FLAG_OPL3)
 	{
-		ret |= opl3_sfsave(&g_opl3, sfh, tbl);
+		for (i = 0; i < NELEMENTS(g_opl3); i++)
+		{
+			ret |= opl3_sfsave(&g_opl3[i], sfh, tbl);
+		}
+#ifdef USE_MAME
+		{
+			void* buffer;
+			SINT32 bufsize = 0;
+			bufsize = YMF262FlagSave(NULL, NULL);
+			buffer = malloc(bufsize);
+			for (i = 0; i < NELEMENTS(g_mame_opl3); i++)
+			{
+				if(g_mame_opl3[i]){
+					YMF262FlagSave(g_mame_opl3[i], buffer);
+					ret |= statflag_write(sfh, &bufsize, sizeof(SINT32));
+					ret |= statflag_write(sfh, buffer, bufsize);
+				}else{
+					SINT32 tmpsize = 0;
+					ret |= statflag_write(sfh, &tmpsize, sizeof(SINT32));
+				}
+			}
+			free(buffer);
+		}
+#endif
 	}
 	if (nSaveFlags & FLAG_SB16)
 	{
@@ -981,7 +1018,31 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 	}
 	if (nSaveFlags & FLAG_OPL3)
 	{
-		ret |= opl3_sfload(&g_opl3, sfh, tbl);
+		for (i = 0; i < NELEMENTS(g_opl3); i++)
+		{
+			ret |= opl3_sfload(&g_opl3[i], sfh, tbl);
+		}
+#ifdef USE_MAME
+		for (i = 0; i < NELEMENTS(g_mame_opl3); i++)
+		{
+			void* buffer;
+			int bufsize = 0;
+			ret |= statflag_read(sfh, &bufsize, sizeof(SINT32));
+			if(bufsize!=0){
+				if(YMF262FlagSave(NULL, NULL) != bufsize){
+					ret = STATFLAG_FAILURE;
+					break;
+				}else{
+					buffer = malloc(bufsize);
+					ret |= statflag_read(sfh, buffer, bufsize);
+					if(g_mame_opl3[i]){
+						YMF262FlagLoad(g_mame_opl3[i], buffer, bufsize);
+					}
+					free(buffer);
+				}
+			}
+		}
+#endif
 	}
 	if (nSaveFlags & FLAG_SB16)
 	{

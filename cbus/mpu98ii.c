@@ -9,7 +9,25 @@
 #include	"mpu98ii.h"
 #include	"fmboard.h"
 
-
+#if 0
+#undef	TRACEOUT
+#define USE_TRACEOUT_VS
+#ifdef USE_TRACEOUT_VS
+static void trace_fmt_ex(const char *fmt, ...)
+{
+	char stmp[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsprintf(stmp, fmt, ap);
+	strcat(stmp, "\n");
+	va_end(ap);
+	OutputDebugStringA(stmp);
+}
+#define	TRACEOUT(s)	trace_fmt_ex s
+#else
+#define	TRACEOUT(s)	(void)(s)
+#endif
+#endif	/* 1 */
 
 enum {
 	MIDI_STOP			= 0xfc,
@@ -993,7 +1011,7 @@ TRACEOUT(("mpu98ii out %.4x %.2x", port, dat));
 }
 
 REG8 IOINPCALL mpu98ii_i0(UINT port) {
-
+	
 	if (cm_mpu98 == NULL) {
 		cm_mpu98 = commng_create(COMCREATE_MPU98II);
 	}
@@ -1033,16 +1051,17 @@ TRACEOUT(("mpu98ii inp %.4x %.2x", port, mpu98.data));
 REG8 IOINPCALL mpu98ii_i2(UINT port) {
 
 	REG8	ret;
-
+	
 	if (cm_mpu98 == NULL) {
 		cm_mpu98 = commng_create(COMCREATE_MPU98II);
 	}
-	if (cm_mpu98->connect != COMCONNECT_OFF || g_nSoundID == SOUNDID_PC_9801_118) {
+	if (cm_mpu98->connect != COMCONNECT_OFF || g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16) {
 		ret = mpu98.status;
 		if ((mpu98.r.cnt == 0) && (mpu98.intreq == 0)) {
 			ret |= MIDIIN_AVAIL;
 		}
 // TRACEOUT(("mpu98ii inp %.4x %.2x", port, ret));
+TRACEOUT(("mpu98ii inp %.4x %.2x", port, mpu98.data));
 		return(ret);
 	}
 	(void)port;
@@ -1091,6 +1110,8 @@ void mpu98ii_bind(void) {
 		iocore_attachinp(port, mpu98ii_i0);
 		//iocore_attachout(port+1, mpu98ii_o2);
 		//iocore_attachinp(port+1, mpu98ii_i2);
+		//iocore_attachout(port+0x100, mpu98ii_o2);
+		//iocore_attachinp(port+0x100, mpu98ii_i2);
 		port |= 2;
 		iocore_attachout(port, mpu98ii_o2);
 		iocore_attachinp(port, mpu98ii_i2);
@@ -1103,7 +1124,7 @@ void mpu98ii_bind(void) {
 			iocore_attachinp(0x331, mpu98ii_i2);
 		}
 		// PC-9801-118
-		if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118){
+		if(g_nSoundID == SOUNDID_PC_9801_118 || g_nSoundID == SOUNDID_PC_9801_86_118 || g_nSoundID == SOUNDID_PC_9801_118_SB16 || g_nSoundID == SOUNDID_PC_9801_86_118_SB16){
 			iocore_attachout(cs4231.port[10], mpu98ii_o0);
 			iocore_attachinp(cs4231.port[10], mpu98ii_i0);
 			iocore_attachout(cs4231.port[10]+1, mpu98ii_o2);

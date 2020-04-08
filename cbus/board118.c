@@ -22,8 +22,9 @@ static int a460_soundid = 0x80;
 
 /*********** for OPL (MAME) ***********/
 
+#define G_OPL3_INDEX	0
+
 #ifdef USE_MAME
-static void *opl3 = NULL;
 static int samplerate;
 void *YMF262Init(INT clock, INT rate);
 void YMF262ResetChip(void *chip);
@@ -34,31 +35,26 @@ void YMF262UpdateOne(void *chip, INT16 **buffer, INT length);
 
 static void IOOUTCALL sb16_o20d2(UINT port, REG8 dat) {
 	(void)port;
-	g_opl.addr = dat;
-	g_opl3.s.addrl = dat; // Key Display用
-	YMF262Write(opl3, 0, dat);
+	g_opl3[G_OPL3_INDEX].s.addrl = dat; // Key Display用
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 0, dat);
 }
 
 static void IOOUTCALL sb16_o21d2(UINT port, REG8 dat) {
 	(void)port;
-	g_opl.reg[g_opl.addr] = dat;
-	//S98_put(NORMAL2608, g_opl.addr, dat);
-	opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat); // Key Display用
-	YMF262Write(opl3, 1, dat);
+	opl3_writeRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrl, dat); // Key Display用
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 1, dat);
 }
 static void IOOUTCALL sb16_o22d2(UINT port, REG8 dat) {
 	(void)port;
-	g_opl.addr2 = dat;
-	g_opl3.s.addrh = dat; // Key Display用
-	YMF262Write(opl3, 2, dat);
+	g_opl3[G_OPL3_INDEX].s.addrh = dat; // Key Display用
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 2, dat);
 }
 
 static void IOOUTCALL sb16_o23d2(UINT port, REG8 dat) {
 	(void)port;
-	g_opl.reg[g_opl.addr2 + 0x100] = dat;
-	opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat); // Key Display用
+	opl3_writeExtendedRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrh, dat); // Key Display用
 	//S98_put(EXTEND2608, opl.addr2, dat);
-	YMF262Write(opl3, 3, dat);
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 3, dat);
 }
 
 static void IOOUTCALL sb16_o28d2(UINT port, REG8 dat) {
@@ -67,17 +63,17 @@ static void IOOUTCALL sb16_o28d2(UINT port, REG8 dat) {
 	 * UltimaUnderWorldではこちらを叩く
 	 */
 	port = dat;
-	YMF262Write(opl3, 0, dat);
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 0, dat);
 }
 static void IOOUTCALL sb16_o29d2(UINT port, REG8 dat) {
 	port = dat;
-	YMF262Write(opl3, 1, dat);
+	YMF262Write(g_mame_opl3[G_OPL3_INDEX], 1, dat);
 }
 
 static REG8 IOINPCALL sb16_i20d2(UINT port) {
 	
 	REG8 ret;
-	ret = YMF262Read(opl3, 0);
+	ret = YMF262Read(g_mame_opl3[G_OPL3_INDEX], 0);
 	////if(g_opl.reg[0x4] == 1) return 0x02;
 	////if(g_opl.reg[0x4] == 1){
 	//	if ((cs4231.reg.pinctrl & IEN) && (cs4231.dmairq != 0xff)) {
@@ -90,12 +86,12 @@ static REG8 IOINPCALL sb16_i20d2(UINT port) {
 
 static REG8 IOINPCALL sb16_i22d2(UINT port) {
 	(void)port;
-	return YMF262Read(opl3, 1);
+	return YMF262Read(g_mame_opl3[G_OPL3_INDEX], 1);
 }
 
 static REG8 IOINPCALL sb16_i28d2(UINT port) {
 	(void)port;
-	return YMF262Read(opl3, 0);
+	return YMF262Read(g_mame_opl3[G_OPL3_INDEX], 0);
 }
 #endif
 
@@ -117,7 +113,7 @@ static void IOOUTCALL ymf_o18a(UINT port, REG8 dat)
 	}
 
 	if (g_opna[opna_idx].s.addrl == 0x27) {
-		/* OPL3-LにCSMモードは無い */
+		/* g_mame_opl3[G_OPL3_INDEX]-LにCSMモードは無い */
 		dat &= ~0x80;
 		g_opna[opna_idx].opngen.opnch[2].extop = dat & 0xc0;
 	}
@@ -423,13 +419,13 @@ static REG8 IOINPCALL gameport_i1480(UINT port)
 
 static void IOOUTCALL ym_o1488(UINT port, REG8 dat) //FM Music Register Address Port
 {
-	g_opl3.s.addrl = dat;
+	g_opl3[G_OPL3_INDEX].s.addrl = dat;
 	(void)port;
 }
 REG8 opl_data;
 static void IOOUTCALL ym_o1489(UINT port, REG8 dat) //FM Music Data Port
 {
-	opl3_writeRegister(&g_opl3, g_opl3.s.addrl, dat);
+	opl3_writeRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrl, dat);
 	opl_data = dat;
 	(void)port;
 }
@@ -437,12 +433,12 @@ static void IOOUTCALL ym_o1489(UINT port, REG8 dat) //FM Music Data Port
 
 static void IOOUTCALL ym_o148a(UINT port, REG8 dat) // Advanced FM Music Register Address	 Port
 {
-	g_opl3.s.addrh = dat;
+	g_opl3[G_OPL3_INDEX].s.addrh = dat;
 	(void)port;
 }
 static void IOOUTCALL ym_o148b(UINT port, REG8 dat) //Advanced FM Music Data Port
 {
-	opl3_writeExtendedRegister(&g_opl3, g_opl3.s.addrh, dat);
+	opl3_writeExtendedRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrh, dat);
 	(void)port;
 }
 
@@ -457,18 +453,18 @@ static REG8 IOINPCALL ym_i1488(UINT port) //FM Music Status Port
 static REG8 IOINPCALL ym_i1489(UINT port) //  ???
 {
 	TRACEOUT(("%x read",port));
-	return opl3_readRegister(&g_opl3, g_opl3.s.addrl);
+	return opl3_readRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrl);
 }
 static REG8 IOINPCALL ym_i148a(UINT port) //Advanced FM Music Status Port
 {
 	TRACEOUT(("%x read",port));
-	return opl3_readStatus(&g_opl3);
+	return opl3_readStatus(&g_opl3[G_OPL3_INDEX]);
 }
 
 static REG8 IOINPCALL ym_i148b(UINT port) //  ???
 {
 	TRACEOUT(("%x read",port));
-	return opl3_readExtendedRegister(&g_opl3, g_opl3.s.addrh);
+	return opl3_readExtendedRegister(&g_opl3[G_OPL3_INDEX], g_opl3[G_OPL3_INDEX].s.addrh);
 }
 
 /*********** PC-9801-118 config I/O ? ***********/
@@ -532,7 +528,7 @@ static SINT32 oplfm_softvolume_L = 0;
 static SINT32 oplfm_softvolume_R = 0;
 static SINT32 oplfm_softvolumereg_L = 0xff;
 static SINT32 oplfm_softvolumereg_R = 0xff;
-void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
+static void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 	UINT i;
 	INT16 *buf[4];
 	INT16 s1l,s1r,s2l,s2r;
@@ -589,7 +585,7 @@ void board118_reset(const NP2CFG *pConfig)
 {
 
 	// 86音源と共存させる場合、使用するNP2 OPNA番号を変える
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		opna_idx = 1;
 	}else{
 		opna_idx = 0;
@@ -604,7 +600,7 @@ void board118_reset(const NP2CFG *pConfig)
 		// OPNAタイマーをセット
 		UINT irqval = 0x00;
 		UINT8 irqf = np2cfg.snd118irqf;
-		if(g_nSoundID==SOUNDID_PC_9801_86_118){
+		if(g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 			UINT8 irq86table[4] = {0x03, 0x0d, 0x0a, 0x0c};
 			UINT8 nIrq86 = (np2cfg.snd86opt & 0x10) | ((np2cfg.snd86opt & 0x4) << 5) | ((np2cfg.snd86opt & 0x8) << 3);
 			UINT8 irq86 = irq86table[nIrq86 >> 6];
@@ -638,7 +634,7 @@ void board118_reset(const NP2CFG *pConfig)
 		}
 
 		// OPLリセット
-		opl3_reset(&g_opl3, OPL3_HAS_OPL3L|OPL3_HAS_OPL3);
+		opl3_reset(&g_opl3[G_OPL3_INDEX], OPL3_HAS_OPL3L|OPL3_HAS_OPL3);
 		opngen_setcfg(&g_opna[opna_idx].opngen, 3, OPN_STEREO | 0x038);
 	}
 	
@@ -646,7 +642,7 @@ void board118_reset(const NP2CFG *pConfig)
 	cs4231io_reset();
 
 	// 86+118の場合、被らないように修正
-	if(g_nSoundID==SOUNDID_PC_9801_86_118){
+	if(g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		UINT16 snd86iobase = (pConfig->snd86opt & 0x01) ? 0x000 : 0x100;
 		if(np2cfg.snd118io == 0x188 + snd86iobase){
 			cs4231.port[4] += 0x100;
@@ -654,7 +650,7 @@ void board118_reset(const NP2CFG *pConfig)
 	}
 	
 	// 86音源+118音源の場合、118側をはじめからFM6音にする
-	if(g_nSoundID==SOUNDID_PC_9801_86_118){
+	if(g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		cs4231.extfunc |= 1;
 		extendchannel(1);
 	}
@@ -662,23 +658,22 @@ void board118_reset(const NP2CFG *pConfig)
 	// 色々設定
 	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 	}else{
-		if(pConfig->snd118rom && g_nSoundID!=SOUNDID_PC_9801_86_118){
+		if(pConfig->snd118rom && g_nSoundID!=SOUNDID_PC_9801_86_118 && g_nSoundID!=SOUNDID_PC_9801_86_118_SB16){
 			soundrom_load(0xcc000, OEMTEXT("118"));
 		}
 		fmboard_extreg(extendchannel);
 #ifdef SUPPORT_SOUND_SB16
 #ifdef USE_MAME
-		if (opl3) {
+		if (g_mame_opl3[G_OPL3_INDEX]) {
 			if (samplerate != pConfig->samplingrate) {
-				YMF262Shutdown(opl3);
-				opl3 = YMF262Init(14400000, pConfig->samplingrate);
+				YMF262Shutdown(g_mame_opl3[G_OPL3_INDEX]);
+				g_mame_opl3[G_OPL3_INDEX] = YMF262Init(14400000, pConfig->samplingrate);
 				samplerate = pConfig->samplingrate;
 			} else {
-				YMF262ResetChip(opl3);
+				YMF262ResetChip(g_mame_opl3[G_OPL3_INDEX]);
 			}
 		}
 		//ZeroMemory(&g_sb16, sizeof(g_sb16));
-		ZeroMemory(&g_opl, sizeof(g_opl));
 		//// ボードデフォルト IO:D2 DMA:3 INT:5 
 		//g_sb16.base = 0xd2;
 		//g_sb16.dmach = 0x3;
@@ -718,7 +713,7 @@ void board118_bind(void)
 	cs4231io_bind();
 	
 	// 86音源と共存させる場合、使用するNP2 OPNA番号を変える
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_118_SB16){
 		opna_idx = 1;
 	}else{
 		opna_idx = 0;
@@ -767,11 +762,11 @@ void board118_bind(void)
 		iocore_attachinp(cs4231.port[9]+2, sb16_i22d2);
 		iocore_attachout(cs4231.port[9]+3, sb16_o23d2);
 
-		if (!opl3) {
-			opl3 = YMF262Init(14400000, np2cfg.samplingrate);
+		if (!g_mame_opl3[G_OPL3_INDEX]) {
+			g_mame_opl3[G_OPL3_INDEX] = YMF262Init(14400000, np2cfg.samplingrate);
 			samplerate = np2cfg.samplingrate;
 		}
-		sound_streamregist(opl3, (SOUNDCB)opl3gen_getpcm2);
+		sound_streamregist(g_mame_opl3[G_OPL3_INDEX], (SOUNDCB)opl3gen_getpcm2);
 #else
 		iocore_attachout(cs4231.port[9], ym_o1488);
 		iocore_attachinp(cs4231.port[9], ym_i1488);
@@ -779,7 +774,7 @@ void board118_bind(void)
 		iocore_attachout(cs4231.port[9]+2, ym_o148a);
 		iocore_attachout(cs4231.port[9]+3, ym_o148b);
 #endif
-		opl3_bind(&g_opl3); // MAME使用の場合Key Display用
+		opl3_bind(&g_opl3[G_OPL3_INDEX]); // MAME使用の場合Key Display用
 		
 		// Sound ID I/O port割り当て
 		iocore_attachout(cs4231.port[1], ymf_oa460);
@@ -889,9 +884,9 @@ void board118_unbind(void)
 void board118_finalize(void)
 {
 #ifdef USE_MAME
-	if (opl3) {
-		YMF262Shutdown(opl3);
-		opl3 = NULL;
+	if (g_mame_opl3[G_OPL3_INDEX]) {
+		YMF262Shutdown(g_mame_opl3[G_OPL3_INDEX]);
+		g_mame_opl3[G_OPL3_INDEX] = NULL;
 	}
 #endif
 }
