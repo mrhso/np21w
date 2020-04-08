@@ -32,6 +32,7 @@ typedef struct {
 	UINT16	base;
 	UINT8	mixsel;
 	UINT8	mixreg[0x100];
+	UINT32	mixregexp[0x100];
 
 	DSP_INFO dsp_info;
 } SB16;

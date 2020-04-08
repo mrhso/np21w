@@ -40,6 +40,13 @@ static const UINT8 ct1741_cmd_len[256] = {
 
 static UINT ct1741_np2_rate = 0; 
 
+static void SOUNDCALL pcm8mPIO(DMA_INFO *cs, SINT32 *pcm, UINT count);
+static void SOUNDCALL nomake(DMA_INFO *ct, SINT32 *pcm, UINT count);
+
+typedef void (SOUNDCALL * CT1741FN)(DMA_INFO *ct, SINT32 *pcm, UINT count);
+
+static CT1741FN last_ct1741fn = nomake;
+
 void ct1741_initialize(UINT rate) {
 
 	g_sb16.dsp_info.dma.rate2 = ct1741_np2_rate = rate;
@@ -153,6 +160,7 @@ static void ct1741_dma_transfer(DMA_MODES mode, UINT32 freq, BOOL stereo) {
 	g_sb16.dsp_info.dma.min = (g_sb16.dsp_info.dma.rate * 3) / 1000;
 //	g_sb16.dsp_info.chan->SetFreq(freq);
 	g_sb16.dsp_info.dma.mode = mode;
+	g_sb16.dsp_info.dma.lastautoinit = g_sb16.dsp_info.dma.autoinit;
 //	PIC_RemoveEvents(END_DMA_Event);
 //	g_sb16.dsp_info.dma.chan->Register_Callback(DSP_DMA_CallBack);
 	g_sb16.dsp_info.dma.chan->ready = 1;
@@ -161,8 +169,9 @@ static void ct1741_dma_transfer(DMA_MODES mode, UINT32 freq, BOOL stereo) {
 
 static void ct1741_prepare_dma_old(DMA_MODES mode, BOOL autoinit) {
 	g_sb16.dsp_info.dma.autoinit = autoinit;
-	if (!autoinit)
+	if (!autoinit){
 		g_sb16.dsp_info.dma.total = 1 + g_sb16.dsp_info.in.data[0] + (g_sb16.dsp_info.in.data[1] << 8);
+	}
 	g_sb16.dsp_info.dma.chan = dmac.dmach + g_sb16.dmach;	// 8bit dma irq
 	ct1741_dma_transfer(mode, g_sb16.dsp_info.freq / 1, FALSE);
 //	ct1741_dma_transfer(mode, g_sb16.dsp_info.freq / (sb.mixer.stereo ? 2 : 1), sb.mixer.stereo);
@@ -216,6 +225,13 @@ static void ct1741_exec_command()
 		break;
 	case 0x10:	/* Direct DAC */
 		ct1741_change_mode(DSP_MODE_DAC);
+		if(g_sb16.dsp_info.dma.bufdatas < DMA_BUFSIZE){
+			g_sb16.dsp_info.dma.buffer[g_sb16.dsp_info.dma.bufpos] = (SINT8)(g_sb16.dsp_info.in.data[0] ^ 0x80);
+			g_sb16.dsp_info.dma.bufpos++;
+			if(g_sb16.dsp_info.dma.bufpos >= DMA_BUFSIZE) g_sb16.dsp_info.dma.bufpos -= DMA_BUFSIZE;
+			g_sb16.dsp_info.dma.bufdatas++;
+			last_ct1741fn = pcm8mPIO;
+		}
 //		if (sb.dac.used<DSP_DACSIZE) {
 //			sb.dac.data[sb.dac.used++]=(Bit8s(sb.dsp.in.data[0] ^ 0x80)) << 8;
 //			sb.dac.data[sb.dac.used++]=(Bit8s(sb.dsp.in.data[0] ^ 0x80)) << 8;
@@ -293,15 +309,17 @@ static void ct1741_exec_command()
 //		PIC_RemoveEvents(END_DMA_Event);
 		break;
 	case 0xd1:	/* Enable Speaker */
+		g_sb16.dsp_info.speaker = 0xff;
 //		DSP_SetSpeaker(true);
 		break;
 	case 0xd3:	/* Disable Speaker */
+		g_sb16.dsp_info.speaker = 0x00;
 //		DSP_SetSpeaker(false);
 		break;
 	case 0xd8:  /* Speaker status */
 		ct1741_flush_data();
 //		if (sb.speaker)
-			ct1741_add_data(0xff);
+			ct1741_add_data(g_sb16.dsp_info.speaker);
 //		else
 //			ct1741_add_data(0x00);
 		break;
@@ -460,7 +478,7 @@ printf("read 2cd2 g_sb16.dsp_info.state = %x g_sb16.dsp_info.write_busy =%x\n",g
 		case DSP_STATUS_NORMAL:
 //			g_sb16.dsp_info.write_busy++;
 //			if (g_sb16.dsp_info.write_busy & 8) return 0x80;//0xff;
-			return 0x0;//x7f;
+			return g_sb16.dsp_info.write_busy ? 0xff : 0x00;
 
 		case DSP_STATUS_RESET:
 			return 0xff;
@@ -500,7 +518,7 @@ printf("read 2ed2 g_sb16.dsp_info.out.used =%x mixer[82] = %x cmd = %x\n",g_sb16
 		}
 	}
 
-	if (g_sb16.dsp_info.dma.mode!=DSP_DMA_16)
+	if (g_sb16.dsp_info.out.used && g_sb16.dsp_info.dma.mode!=DSP_DMA_16)
 		return 0x80;
 	else
 		return 0x00;
@@ -524,7 +542,7 @@ printf("read 2ed2 g_sb16.dsp_info.out.used =%x mixer[82] = %x cmd = %x\n",g_sb16
 	return 0xff;
 }
 
-#define BUF_SPEED	(g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? (g_sb16.dsp_info.dma.stereo ? 7 : 7) : (g_sb16.dsp_info.dma.stereo ? 15 : 15)) / (g_sb16.dsp_info.freq==11025 ? 2 : 1)
+#define BUF_SPEED	(g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? (g_sb16.dsp_info.dma.stereo ? 7 : 7) : (g_sb16.dsp_info.dma.stereo ? 15 : 15)) / (g_sb16.dsp_info.freq<=12000 ? 2 : 1)
 static int BUF_ALIGN[] = {
 			1,		// 0: STOP
 			1,
@@ -575,6 +593,9 @@ void ct1741_dma(NEVENTITEM item)
 							g_sb16.dsp_info.dma.bufdatas++;
 						}
 					}
+					if(r==0){
+						g_sb16.dsp_info.write_busy = 0;
+					}
 					printf("g_sb16.dsp_info.dma.mode = %x\n",g_sb16.dsp_info.dma.mode);
 					//g_sb16.dsp_info.dma.bufdatas += r;
 					g_sb16.dsp_info.smpcounter += r;
@@ -607,12 +628,18 @@ void ct1741_dma(NEVENTITEM item)
 				}else{
 					g_sb16.dsp_info.write_busy = 0;
 					if(g_sb16.dsp_info.dma.bufdatas < 16){
-						g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 3 : 1);
+						g_sb16.mixreg[0x82] |= (g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED ? 2 : 1);
 						pic_setirq(g_sb16.dmairq);
-						if(!g_sb16.dsp_info.dma.autoinit){
+						if(g_sb16.dsp_info.dma.lastautoinit || g_sb16.dsp_info.dma.autoinit){
 							g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
 							g_sb16.dsp_info.dma.chan->adrs.d = g_sb16.dsp_info.dma.chan->startaddr; // 戻す
-					g_sb16.dsp_info.smpcounter2 = 0;
+							g_sb16.dsp_info.smpcounter2 = 0;
+						}else{
+							g_sb16.dsp_info.smpcounter2 = 0;
+							if (g_sb16.dmach != 0xff) {
+								dmac.stat |= (1 << g_sb16.dmach);
+							}
+							return;
 						}
 						//g_sb16.dsp_info.dma.chan->leng.w = g_sb16.dsp_info.dma.chan->startcount; // 戻す
 						////if(g_sb16.dsp_info.dma.chan->adrs.d - g_sb16.dsp_info.dma.chan->startaddr >= g_sb16.dsp_info.dma.chan->startcount * 2){
@@ -623,31 +650,35 @@ void ct1741_dma(NEVENTITEM item)
 						//	g_sb16.dsp_info.dma.chan->adrs.d -= g_sb16.dsp_info.dma.chan->lastaddr - g_sb16.dsp_info.dma.chan->startaddr;
 						//}
 						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * BUF_SPEED;
-					if(cnt != 0){
-						//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
-						nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
-						//g_sb16.dsp_info.write_busy = 1;
-					}else{
-						//g_sb16.dsp_info.write_busy = 0;
-						nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
-					}
+						if(cnt != 0){
+							//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
+							nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
+							//g_sb16.dsp_info.write_busy = 1;
+						}else{
+							//g_sb16.dsp_info.write_busy = 0;
+							nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
+						}
 						//nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
 					}else{
 						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * BUF_SPEED;
-					if(cnt != 0){
-						//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
-						nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
-						//g_sb16.dsp_info.write_busy = 1;
-					}else{
-						//g_sb16.dsp_info.write_busy = 0;
-						nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
-					}
+						if(cnt != 0){
+							//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
+							nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
+							//g_sb16.dsp_info.write_busy = 1;
+						}else{
+							//g_sb16.dsp_info.write_busy = 0;
+							nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
+						}
 						//nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
 					}
 				}
 			}else{
 				g_sb16.dsp_info.write_busy = 0;
 				pic_setirq(g_sb16.dmairq);
+				g_sb16.dsp_info.smpcounter2 = 0;
+				if (g_sb16.dmach != 0xff) {
+					dmac.stat |= (1 << g_sb16.dmach);
+				}
 				//nevent_setbyms(NEVENT_CT1741, 1, ct1741_dma, NEVENT_RELATIVE);
 			}
 		}
@@ -665,6 +696,7 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 			//cnt = pccore.realclock * 32 / g_sb16.dsp_info.freq *(g_sb16.dsp_info.dma.rate2/g_sb16.dsp_info.freq);;
 		g_sb16.mixreg[0x82] &= ~3;
 		pic_resetirq(g_sb16.dmairq);
+		g_sb16.dsp_info.write_busy = 0;
 						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * BUF_SPEED;
 					if(cnt != 0){
 						//nevent_set(NEVENT_CT1741, 100, ct1741_dma, NEVENT_RELATIVE);
@@ -699,14 +731,56 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 			nevent_reset(NEVENT_CT1741);
 			g_sb16.mixreg[0x82] &= ~3;
 			pic_resetirq(g_sb16.dmairq);
+			g_sb16.dsp_info.write_busy = 0;
+			if (g_sb16.dmach != 0xff) {
+				dmac.stat |= (1 << g_sb16.dmach);
+			}
 
 			break;
 	}
 	return(0);
 }
 
+// PIO 8bit モノラル
+static void SOUNDCALL pcm8mPIO(DMA_INFO *cs, SINT32 *pcm, UINT count) {
+	UINT32	leng;
+	UINT32	pos12;
+	SINT32	fract;
+	UINT32	samppos = 0;
+const UINT8	*ptr1;
+const UINT8	*ptr2;
+	SINT32	samp1;
+	SINT32	samp2;
+	int i;
+	int	samplen_dst = soundcfg.rate;
+	int	samplen_src = g_sb16.dsp_info.freq;
+
+	leng = cs->bufdatas;
+	if (!leng) {
+		return;
+	}
+	
+	for(i=0;i<count;i++){
+		samppos = (i * samplen_src / samplen_dst);
+		if(samppos >= leng){
+			break;
+		}
+		ptr1 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
+		ptr2 = cs->buffer + ((cs->bufpos + samppos + 0) & DMA_BUFMASK);
+		samp1 = (ptr1[0] - 0x80) << 8;
+		samp2 = (ptr2[0] - 0x80) << 8;
+		//samp1 += ((samp2 - samp1) * fract) >> 12;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
+		pcm += 2;
+	}
+
+	leng = min(leng, samppos);
+	cs->bufdatas -= (leng << 0);
+	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+}
+
 // 8bit モノラル
-int position = 0;
 static void SOUNDCALL pcm8m(DMA_INFO *cs, SINT32 *pcm, UINT count) {
 	UINT32	leng;
 	UINT32	pos12;
@@ -740,8 +814,8 @@ const UINT8	*ptr2;
 		samp1 = (ptr1[0] - 0x80) << 8;
 		samp2 = (ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
 		pcm += 2;
 	}
 
@@ -785,8 +859,8 @@ const UINT8	*ptr2;
 		samp1 = (ptr1[0] - 0x80) << 8;
 		samp2 = (ptr2[0] - 0x80) << 8;
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
+		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
 		pcm += 2;
 	}
 
@@ -831,8 +905,8 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
+		pcm[1] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
 		pcm += 2;
 	}
 
@@ -876,8 +950,8 @@ const UINT8	*ptr2;
 		samp1 = (((SINT8)ptr1[1]) << 8) + ptr1[0];
 		samp2 = (((SINT8)ptr2[1]) << 8) + ptr2[0];
 		//samp1 += ((samp2 - samp1) * fract) >> 12;
-		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_LEFT] ) >> 14;
-		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixreg[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixreg[MIXER_MASTER_RIGHT]) >> 14;
+		pcm[0] += (samp1 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_LEFT]  / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_LEFT] ) >> 14;
+		pcm[1] += (samp2 * np2cfg.vol_pcm * (SINT32)g_sb16.mixregexp[MIXER_VOC_RIGHT] / 255 * (SINT32)g_sb16.mixregexp[MIXER_MASTER_RIGHT]) >> 14;
 		pcm += 2;
 	}
 
@@ -892,8 +966,6 @@ static void SOUNDCALL nomake(DMA_INFO *ct, SINT32 *pcm, UINT count) {
 	ct->bufdatas = 0;
 	if(g_sb16.dsp_info.dma.chan) g_sb16.dsp_info.dma.chan->leng.w = 0;
 }
-typedef void (SOUNDCALL * CT1741FN)(DMA_INFO *ct, SINT32 *pcm, UINT count);
-
 static const CT1741FN ct1741fn[16] = {
 			nomake,		// 0: STOP
 			nomake,
@@ -913,8 +985,6 @@ static const CT1741FN ct1741fn[16] = {
 			nomake,
 			nomake
 };
-
-static CT1741FN last_ct1741fn = nomake;
 
 static void SOUNDCALL ct1741_getpcm(DMA_INFO *ct, SINT32 *pcm, UINT count) {
 	// 再生用バッファに送る

@@ -289,8 +289,9 @@ static REG8 IOINPCALL dmac_i03(UINT port) {
 
 static REG8 IOINPCALL dmac_i11(UINT port) {
 
-	(void)port;
-	return(dmac.stat &= 0xf0);												// ToDo!!
+	REG8 ret = dmac.stat;
+	dmac.stat &= 0xf0;
+	return(ret);												// ToDo!!
 }
 static void IOOUTCALL dmac_oe05(UINT port, REG8 dat) {
 

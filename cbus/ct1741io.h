@@ -54,6 +54,8 @@ typedef struct {
 	UINT32		step12;
 	UINT8		buffer[DMA_BUFSIZE];
 	UINT32		rate2;
+	
+	UINT8 lastautoinit;
 } DMA_INFO;
 
 typedef struct {
@@ -77,6 +79,8 @@ typedef struct {
 	
 	int smpcounter2;
 	int smpcounter;
+	
+	UINT8 speaker;
 } DSP_INFO;
 
 extern 

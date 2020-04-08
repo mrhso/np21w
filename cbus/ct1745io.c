@@ -18,21 +18,21 @@
 static void ct1745_mixer_reset() {
 	ZeroMemory(g_sb16.mixreg, sizeof(g_sb16.mixreg));
 
-	g_sb16.mixreg[MIXER_MASTER_LEFT] =
-	g_sb16.mixreg[MIXER_MASTER_RIGHT] =
-	g_sb16.mixreg[MIXER_VOC_LEFT] =
-	g_sb16.mixreg[MIXER_VOC_RIGHT] =
-	g_sb16.mixreg[MIXER_MIDI_LEFT] =
-	g_sb16.mixreg[MIXER_MIDI_RIGHT] = 0xff;
-	g_sb16.mixreg[MIXER_OUT_SW] = 0x1f;
-	g_sb16.mixreg[MIXER_IN_SW_LEFT] = 0x15;
-	g_sb16.mixreg[MIXER_IN_SW_RIGHT] = 0x0b;
+	g_sb16.mixregexp[MIXER_MASTER_LEFT]  = g_sb16.mixreg[MIXER_MASTER_LEFT]  =
+	g_sb16.mixregexp[MIXER_MASTER_RIGHT] = g_sb16.mixreg[MIXER_MASTER_RIGHT] =
+	g_sb16.mixregexp[MIXER_VOC_LEFT]     = g_sb16.mixreg[MIXER_VOC_LEFT]     =
+	g_sb16.mixregexp[MIXER_VOC_RIGHT]    = g_sb16.mixreg[MIXER_VOC_RIGHT]    =
+	g_sb16.mixregexp[MIXER_MIDI_LEFT]    = g_sb16.mixreg[MIXER_MIDI_LEFT]    =
+	g_sb16.mixregexp[MIXER_MIDI_RIGHT]   = g_sb16.mixreg[MIXER_MIDI_RIGHT]   = 0xff;
+	g_sb16.mixregexp[MIXER_OUT_SW]       = g_sb16.mixreg[MIXER_OUT_SW]       = 0x1f;
+	g_sb16.mixregexp[MIXER_IN_SW_LEFT]   = g_sb16.mixreg[MIXER_IN_SW_LEFT]   = 0x15;
+	g_sb16.mixregexp[MIXER_IN_SW_RIGHT]  = g_sb16.mixreg[MIXER_IN_SW_RIGHT]  = 0x0b;
 
-	g_sb16.mixreg[MIXER_TREBLE_LEFT] =
-	g_sb16.mixreg[MIXER_TREBLE_RIGHT] =
-	g_sb16.mixreg[MIXER_BASS_LEFT] =
-	g_sb16.mixreg[MIXER_BASS_RIGHT] = 8;
-	g_sb16.mixreg[0x82] = 2<<5; 
+	g_sb16.mixregexp[MIXER_TREBLE_LEFT]  = g_sb16.mixreg[MIXER_TREBLE_LEFT]  =
+	g_sb16.mixregexp[MIXER_TREBLE_RIGHT] = g_sb16.mixreg[MIXER_TREBLE_RIGHT] =
+	g_sb16.mixregexp[MIXER_BASS_LEFT]    = g_sb16.mixreg[MIXER_BASS_LEFT]    =
+	g_sb16.mixregexp[MIXER_BASS_RIGHT]   = g_sb16.mixreg[MIXER_BASS_RIGHT]   = 8;
+	g_sb16.mixregexp[0x82] = g_sb16.mixreg[0x82] = 2<<5; 
 
 }
 
@@ -45,6 +45,7 @@ printf("mixer port write %x %x\n",dat,g_sb16.mixsel);
 	if (g_sb16.mixsel >= MIXER_VOL_START &&
 		g_sb16.mixsel <= MIXER_VOL_END) {
 		g_sb16.mixreg[g_sb16.mixsel] = dat;
+		g_sb16.mixregexp[g_sb16.mixsel] = (int)(pow(dat / 255.0, 2) * 255);
 		return;
 	}
 
@@ -53,27 +54,27 @@ printf("mixer port write %x %x\n",dat,g_sb16.mixsel);
 			ct1745_mixer_reset();
 			break;
 		case 0x04:			// Voice volume(old)
-			g_sb16.mixreg[MIXER_VOC_LEFT]  = (dat & 0x0f) << 4;
-			g_sb16.mixreg[MIXER_VOC_RIGHT] = (dat & 0xf0);
+			g_sb16.mixregexp[MIXER_VOC_LEFT] = g_sb16.mixreg[MIXER_VOC_LEFT]  = (dat & 0x0f) << 4;
+			g_sb16.mixregexp[MIXER_VOC_RIGHT] = g_sb16.mixreg[MIXER_VOC_RIGHT] = (dat & 0xf0);
 			break;
 		case 0x0a:			// Mic volume(old)
-			g_sb16.mixreg[MIXER_MIC] = dat & 0x7;
+			g_sb16.mixregexp[MIXER_MIC] = g_sb16.mixreg[MIXER_MIC] = dat & 0x7;
 			break;
 		case 0x22:			// Master volume(old)
-			g_sb16.mixreg[MIXER_MASTER_LEFT]  = (dat & 0x0f) << 4;
-			g_sb16.mixreg[MIXER_MASTER_RIGHT] = (dat & 0xf0);
+			g_sb16.mixregexp[MIXER_MASTER_LEFT] = g_sb16.mixreg[MIXER_MASTER_LEFT]  = (dat & 0x0f) << 4;
+			g_sb16.mixregexp[MIXER_MASTER_RIGHT] = g_sb16.mixreg[MIXER_MASTER_RIGHT] = (dat & 0xf0);
 			break;
 		case 0x26:			// MIDI volume(old)
-			g_sb16.mixreg[MIXER_MIDI_LEFT]  = (dat & 0x0f) << 4;
-			g_sb16.mixreg[MIXER_MIDI_RIGHT] = (dat & 0xf0);
+			g_sb16.mixregexp[MIXER_MIDI_LEFT] = g_sb16.mixreg[MIXER_MIDI_LEFT]  = (dat & 0x0f) << 4;
+			g_sb16.mixregexp[MIXER_MIDI_RIGHT] = g_sb16.mixreg[MIXER_MIDI_RIGHT] = (dat & 0xf0);
 			break;
 		case 0x28:			// CD volume(old)
-			g_sb16.mixreg[MIXER_CD_LEFT]  = (dat & 0x0f) << 4;
-			g_sb16.mixreg[MIXER_CD_RIGHT] = (dat & 0xf0);
+			g_sb16.mixregexp[MIXER_CD_LEFT] = g_sb16.mixreg[MIXER_CD_LEFT]  = (dat & 0x0f) << 4;
+			g_sb16.mixregexp[MIXER_CD_RIGHT] = g_sb16.mixreg[MIXER_CD_RIGHT] = (dat & 0xf0);
 			break;
 		case 0x2e:			// Line volume(old)
-			g_sb16.mixreg[MIXER_LINE_LEFT]  = (dat & 0x0f) << 4;
-			g_sb16.mixreg[MIXER_LINE_RIGHT] = (dat & 0xff);
+			g_sb16.mixregexp[MIXER_LINE_LEFT] = g_sb16.mixreg[MIXER_LINE_LEFT]  = (dat & 0x0f) << 4;
+			g_sb16.mixregexp[MIXER_LINE_RIGHT] = g_sb16.mixreg[MIXER_LINE_RIGHT] = (dat & 0xff);
 			
 		case 0x80:			// Write irq num
 			ct1741_set_dma_irq(dat);
@@ -94,7 +95,7 @@ static REG8 IOINPCALL sb16_i2400(UINT port) {
 static REG8 IOINPCALL sb16_i2500(UINT port) {
 printf("mixer port read %x %x\n",g_sb16.mixreg[g_sb16.mixsel],g_sb16.mixsel);
 	if (g_sb16.mixsel >= MIXER_VOL_START && g_sb16.mixsel <= MIXER_VOL_END) {
-		return 	g_sb16.mixreg[g_sb16.mixsel];
+		return g_sb16.mixreg[g_sb16.mixsel];
 	}
 
 	switch (g_sb16.mixsel) {
