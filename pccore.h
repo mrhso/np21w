@@ -53,6 +53,9 @@ enum tagSoundId
 	SOUNDID_86_SPEAKBOARD		= 0x24,		/*!< PC-9801-86 + Speak board */
 	SOUNDID_SPARKBOARD			= 0x40,		/*!< Spark board */
 	SOUNDID_SB16				= 0x41,		/*!< Sound Blaster 16 */
+	SOUNDID_PC_9801_86_WSS_SB16	= 0x42,		/*!< PC-9801-86 + Mate-X PCM(B460) + Sound Blaster 16 */
+	SOUNDID_WSS_SB16			= 0x43,		/*!< Mate-X PCM(B460) + Sound Blaster 16 */
+	SOUNDID_PC_9801_86_SB16		= 0x44,		/*!< PC-9801-86 + Sound Blaster 16 */
 	SOUNDID_MATE_X_PCM			= 0x60,		/*!< Mate-X PCM */
 	SOUNDID_PC_9801_86_WSS		= 0x64,		/*!< PC-9801-86 + Mate-X PCM(B460) */
 	SOUNDID_PC_9801_86_118		= 0x68,		/*!< PC-9801-86 + PC-9801-118(B460) */

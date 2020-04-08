@@ -706,6 +706,9 @@
 #define IDM_PC9801_86_118               49650
 #define IDM_86SPEAKBOARD                49651
 #define IDM_WAVESTAR                    49652
+#define IDM_PC9801_86_WSS_SB16          49657
+#define IDM_WSS_SB16					49658
+#define IDM_PC9801_86_SB16              49659
 #define IDM_MEM640                      40661
 #define IDM_MEM16                       40662
 #define IDM_MEM36                       40663

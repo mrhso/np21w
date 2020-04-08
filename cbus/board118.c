@@ -264,7 +264,7 @@ static REG8 IOINPCALL wavestar_i4d2(UINT port)
 
 static REG8 IOINPCALL wss_i881e(UINT port)
 {
-	if(g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_PC_9801_86_WSS){
+	if(g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		int ret = 0x64;
 		ret |= (cs4231.dmairq-1) << 3;
 		if((cs4231.dmairq-1)==0x1 || (cs4231.dmairq-1)==0x2){
@@ -305,15 +305,15 @@ static REG8 IOINPCALL wss_i548f(UINT port)
 //#define GAMEPORT_JOYCOUNTER_MGN	(gameport_clkmax/100)
 #define GAMEPORT_JOYCOUNTER_TMPCLK	10000000
 #if defined(SUPPORT_IA32_HAXM)
-LARGE_INTEGER gameport_qpf;
-int gameport_useqpc = 0;
+static LARGE_INTEGER gameport_qpf;
+static int gameport_useqpc = 0;
 #endif
-UINT64 gameport_tsc;
-UINT32 gameport_clkmax;
-REG8 gameport_joyflag_base = 0x00;
-REG8 gameport_joyflag = 0x00;
-UINT32 gameport_threshold_x = 0;
-UINT32 gameport_threshold_y = 0;
+static UINT64 gameport_tsc;
+static UINT32 gameport_clkmax;
+static REG8 gameport_joyflag_base = 0x00;
+static REG8 gameport_joyflag = 0x00;
+static UINT32 gameport_threshold_x = 0;
+static UINT32 gameport_threshold_y = 0;
 //UINT32 gameport_timeoutcounter = 0;
 //UINT32 gameport_timeoutinterval = 0;
 // joyflag	bit:0		up
@@ -324,7 +324,7 @@ UINT32 gameport_threshold_y = 0;
 // 			bit:5		trigger2 (rapid)
 // 			bit:6		trigger1
 // 			bit:7		trigger2
-void gameport_timeoutproc(NEVENTITEM item);
+//void gameport_timeoutproc(NEVENTITEM item);
 static void IOOUTCALL gameport_o1480(UINT port, REG8 dat)
 {
 	REG8 joyflag = joymng_getstat();
@@ -589,7 +589,7 @@ void board118_reset(const NP2CFG *pConfig)
 {
 
 	// 86音源と共存させる場合、使用するNP2 OPNA番号を変える
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		opna_idx = 1;
 	}else{
 		opna_idx = 0;
@@ -597,7 +597,7 @@ void board118_reset(const NP2CFG *pConfig)
 	
 	// OPNAリセット
 	opna_reset(&g_opna[opna_idx], OPNA_MODE_2608 | OPNA_HAS_TIMER | OPNA_S98);
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		// OPNAタイマーをセットしない
 		//opna_timer(&g_opna[opna_idx], 0x10, NEVENT_FMTIMERA, NEVENT_FMTIMERB);
 	}else{
@@ -660,7 +660,7 @@ void board118_reset(const NP2CFG *pConfig)
 	}
 	
 	// 色々設定
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 	}else{
 		if(pConfig->snd118rom && g_nSoundID!=SOUNDID_PC_9801_86_118){
 			soundrom_load(0xcc000, OEMTEXT("118"));
@@ -718,13 +718,13 @@ void board118_bind(void)
 	cs4231io_bind();
 	
 	// 86音源と共存させる場合、使用するNP2 OPNA番号を変える
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_PC_9801_86_118 || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		opna_idx = 1;
 	}else{
 		opna_idx = 0;
 	}
 
-	if(g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_PC_9801_86_WSS){
+	if(g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		a460_soundid = np2cfg.sndwssid;//0x70;
 	}else if(g_nSoundID==SOUNDID_WAVESTAR){
 		a460_soundid = 0x41;
@@ -732,7 +732,7 @@ void board118_bind(void)
 		a460_soundid = np2cfg.snd118id;//0x80;
 	}
 
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WAVESTAR){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		// Mate-X PCMの場合、CS4231だけ
 		if(g_nSoundID!=SOUNDID_WAVESTAR){
 			iocore_attachout(cs4231.port[1], ymf_oa460);
@@ -824,7 +824,7 @@ void board118_unbind(void)
 {
 	cs4231io_unbind();
 	
-	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WAVESTAR){
+	if(g_nSoundID==SOUNDID_PC_9801_86_WSS || g_nSoundID==SOUNDID_MATE_X_PCM || g_nSoundID==SOUNDID_WAVESTAR || g_nSoundID==SOUNDID_WSS_SB16 || g_nSoundID==SOUNDID_PC_9801_86_WSS_SB16){
 		// Mate-X PCMの場合、CS4231だけ
 		iocore_detachout(cs4231.port[1]);
 		iocore_detachinp(cs4231.port[1]);
@@ -836,6 +836,17 @@ void board118_unbind(void)
 		if(cs4231.port[4]){
 			cbuscore_detachsndex(cs4231.port[4]);
 		}
+		
+#if defined(SUPPORT_GAMEPORT)
+		// ゲームポート割り当て 1480h～1487hどこでも良いらしい
+		if(np2cfg.gameport){
+			int i;
+			for(i=0;i<=7;i++){
+				iocore_detachout(0x1480+i);
+				iocore_detachinp(0x1480+i);
+			}
+		}
+#endif
 		
 		// OPL割り当て
 		iocore_detachout(cs4231.port[9]);

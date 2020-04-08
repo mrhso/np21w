@@ -877,6 +877,15 @@ static UINT GetSoundFlags(SOUNDID nSoundID)
 #if defined(SUPPORT_SOUND_SB16)
 		case SOUNDID_SB16:
 			return FLAG_OPL3 | FLAG_SB16;
+			
+		case SOUNDID_PC_9801_86_SB16:
+			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_OPL3 | FLAG_SB16;
+			
+		case SOUNDID_WSS_SB16:
+			return FLAG_CS4231 | FLAG_OPL3 | FLAG_SB16;
+			
+		case SOUNDID_PC_9801_86_WSS_SB16:
+			return FLAG_OPNA1 | FLAG_PCM86 | FLAG_CS4231 | FLAG_OPL3 | FLAG_SB16;
 #endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)

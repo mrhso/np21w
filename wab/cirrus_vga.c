@@ -5021,23 +5021,44 @@ LOGPALETTE * NewLogPal(const uint8_t *pCirrusPalette , int iSize) {
 void ConvertYUV2RGB(int width, unsigned char *srcYUV16, unsigned char *dstRGB32Line){
 	int j;
 	int offset = 128;
-	for(j=0;j<width/2;j++){
-		int u0 = srcYUV16[j * 4 + 0];
-		int y0 = srcYUV16[j * 4 + 1];
-		int v0 = srcYUV16[j * 4 + 2];
-		int y1 = srcYUV16[j * 4 + 3];
-		int r0 = (298 * (y0 - 16) + 409 * (v0 - offset) + 128) >> 8;
-		int g0 = (298 * (y0 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
-		int b0 = (298 * (y0 - 16) + 516 * (u0 - offset) + 128) >> 8;
-		int r1 = (298 * (y1 - 16) + 409 * (v0 - offset) + 128) >> 8;
-		int g1 = (298 * (y1 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
-		int b1 = (298 * (y1 - 16) + 516 * (u0 - offset) + 128) >> 8;
-		dstRGB32Line[j*8 + 0] = (b0 < 0 ? 0 : (b0 > 255 ? 255 : b0));
-		dstRGB32Line[j*8 + 1] = (g0 < 0 ? 0 : (g0 > 255 ? 255 : g0));
-		dstRGB32Line[j*8 + 2] = (r0 < 0 ? 0 : (r0 > 255 ? 255 : r0));
-		dstRGB32Line[j*8 + 4] = (b1 < 0 ? 0 : (b1 > 255 ? 255 : b1));
-		dstRGB32Line[j*8 + 5] = (g1 < 0 ? 0 : (g1 > 255 ? 255 : g1));
-		dstRGB32Line[j*8 + 6] = (r1 < 0 ? 0 : (r1 > 255 ? 255 : r1));
+	if(cirrusvga->cr[0x3f] & 0x10){
+		for(j=0;j<width/2;j++){
+			int u0 = srcYUV16[j * 4 + 0];
+			int v0 = srcYUV16[j * 4 + 1];
+			int y1 = srcYUV16[j * 4 + 2];
+			int y0 = srcYUV16[j * 4 + 3];
+			int r0 = (298 * (y0 - 16) + 409 * (v0 - offset) + 128) >> 8;
+			int g0 = (298 * (y0 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+			int b0 = (298 * (y0 - 16) + 516 * (u0 - offset) + 128) >> 8;
+			int r1 = (298 * (y1 - 16) + 409 * (v0 - offset) + 128) >> 8;
+			int g1 = (298 * (y1 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+			int b1 = (298 * (y1 - 16) + 516 * (u0 - offset) + 128) >> 8;
+			dstRGB32Line[j*8 + 0] = (b0 < 0 ? 0 : (b0 > 255 ? 255 : b0));
+			dstRGB32Line[j*8 + 1] = (g0 < 0 ? 0 : (g0 > 255 ? 255 : g0));
+			dstRGB32Line[j*8 + 2] = (r0 < 0 ? 0 : (r0 > 255 ? 255 : r0));
+			dstRGB32Line[j*8 + 4] = (b1 < 0 ? 0 : (b1 > 255 ? 255 : b1));
+			dstRGB32Line[j*8 + 5] = (g1 < 0 ? 0 : (g1 > 255 ? 255 : g1));
+			dstRGB32Line[j*8 + 6] = (r1 < 0 ? 0 : (r1 > 255 ? 255 : r1));
+		}
+	}else{
+		for(j=0;j<width/2;j++){
+			int u0 = srcYUV16[j * 4 + 0];
+			int y0 = srcYUV16[j * 4 + 1];
+			int v0 = srcYUV16[j * 4 + 2];
+			int y1 = srcYUV16[j * 4 + 3];
+			int r0 = (298 * (y0 - 16) + 409 * (v0 - offset) + 128) >> 8;
+			int g0 = (298 * (y0 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+			int b0 = (298 * (y0 - 16) + 516 * (u0 - offset) + 128) >> 8;
+			int r1 = (298 * (y1 - 16) + 409 * (v0 - offset) + 128) >> 8;
+			int g1 = (298 * (y1 - 16) - 100 * (u0 - offset) - 208 * (v0 - offset) + 128) >> 8;
+			int b1 = (298 * (y1 - 16) + 516 * (u0 - offset) + 128) >> 8;
+			dstRGB32Line[j*8 + 0] = (b0 < 0 ? 0 : (b0 > 255 ? 255 : b0));
+			dstRGB32Line[j*8 + 1] = (g0 < 0 ? 0 : (g0 > 255 ? 255 : g0));
+			dstRGB32Line[j*8 + 2] = (r0 < 0 ? 0 : (r0 > 255 ? 255 : r0));
+			dstRGB32Line[j*8 + 4] = (b1 < 0 ? 0 : (b1 > 255 ? 255 : b1));
+			dstRGB32Line[j*8 + 5] = (g1 < 0 ? 0 : (g1 > 255 ? 255 : g1));
+			dstRGB32Line[j*8 + 6] = (r1 < 0 ? 0 : (r1 > 255 ? 255 : r1));
+		}
 	}
 }
 
@@ -5477,7 +5498,6 @@ void cirrusvga_drawGraphic(){
 #if defined(_WIN32)
 		switch(vidwnd_format){
 		case 0: // YUV 4:2:2 UYVY
-			// TODO: YUVÇ∆Ç©Ç‡çÏÇÁÇ»Ç¢Ç∆Ç¢ÇØÇ»Ç¢ÅiÇØÇ«Ç«Ç§Ç∑ÇÈÇÊÅHÅj
 			vidwnd_yuv = 1;
 			vidwnd_bpp = 32;
 			break;

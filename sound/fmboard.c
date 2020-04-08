@@ -243,6 +243,22 @@ void fmboard_reset(const NP2CFG *pConfig, SOUNDID nSoundID)
 		case SOUNDID_SB16:
 			boardsb16_reset(pConfig);
 			break;
+			
+		case SOUNDID_PC_9801_86_SB16:
+			boardsb16_reset(pConfig);
+			board86_reset(pConfig, FALSE);
+			break;
+			
+		case SOUNDID_WSS_SB16:
+			boardsb16_reset(pConfig);
+			board118_reset(pConfig);
+			break;
+			
+		case SOUNDID_PC_9801_86_WSS_SB16:
+			boardsb16_reset(pConfig);
+			board118_reset(pConfig);
+			board86_reset(pConfig, FALSE);
+			break;
 #endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
@@ -337,6 +353,22 @@ void fmboard_bind(void) {
 		case SOUNDID_SB16:
 			boardsb16_bind();
 			break;
+			
+		case SOUNDID_PC_9801_86_SB16:
+			boardsb16_bind();
+			board86_bind();
+			break;
+			
+		case SOUNDID_WSS_SB16:
+			boardsb16_bind();
+			board118_bind();
+			break;
+			
+		case SOUNDID_PC_9801_86_WSS_SB16:
+			boardsb16_bind();
+			board118_bind();
+			board86_bind();
+			break;
 #endif	// defined(SUPPORT_SOUND_SB16)
 
 #if defined(SUPPORT_PX)
@@ -385,6 +417,11 @@ void fmboard_unbind(void) {
 			board86_unbind();
 			break;
 			
+		case SOUNDID_PC_9801_86_118:
+			board118_unbind();
+			board86_unbind();
+			break;
+			
 		case SOUNDID_MATE_X_PCM:
 			board118_unbind();
 			break;
@@ -423,6 +460,22 @@ void fmboard_unbind(void) {
 #if defined(SUPPORT_SOUND_SB16)
 		case SOUNDID_SB16:
 			boardsb16_unbind();
+			break;
+			
+		case SOUNDID_PC_9801_86_SB16:
+			boardsb16_unbind();
+			board86_unbind();
+			break;
+			
+		case SOUNDID_WSS_SB16:
+			boardsb16_unbind();
+			board118_unbind();
+			break;
+			
+		case SOUNDID_PC_9801_86_WSS_SB16:
+			boardsb16_unbind();
+			board118_unbind();
+			board86_unbind();
 			break;
 #endif	// defined(SUPPORT_SOUND_SB16)
 

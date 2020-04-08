@@ -56,6 +56,9 @@ typedef struct {
 	UINT32		rate2;
 	
 	UINT8 lastautoinit;
+	UINT8 last16mode;
+	UINT32 laststartcount;
+	UINT32 laststartaddr;
 } DMA_INFO;
 
 typedef struct {
@@ -77,8 +80,8 @@ typedef struct {
 	UINT8 dmach;
 	UINT8 cmd_o;
 	
-	int smpcounter2;
-	int smpcounter;
+	int smpcounter2; // DMA転送開始以降に送られた有効なデータ数の合計
+	int smpcounter; // DMA転送開始以降に送られたDMAデータ数の合計（無効なデータも含む）
 	
 	UINT8 speaker;
 } DSP_INFO;
