@@ -1379,6 +1379,7 @@ void scrnmngD3D_update(void) {
 	RECT	*scrn;
 	HRESULT	r;
 	D3DTEXTUREFILTERTYPE d3dtexf;
+	int		scrnoffset;
 
 	if(current_d3d_imode == D3D_IMODE_NEAREST_NEIGHBOR){
 		d3dtexf = D3DTEXF_POINT;
@@ -1414,6 +1415,9 @@ void scrnmngD3D_update(void) {
 					rect = &d3d.rectclip;
 					scrn = &d3d.scrnclip;
 				}
+				scrnoffset = (scrn->right - scrn->left)/(rect->right - rect->left);
+				rect->right++; // ‚È‚¼‚Ì’²®
+				scrn->left -= scrnoffset; // ‚È‚¼‚Ì’²®
 
 				rectbuf.right = (rect->right - rect->left) * d3d.backsurf2mul;
 				rectbuf.bottom = (rect->bottom - rect->top) * d3d.backsurf2mul;
@@ -1448,6 +1452,8 @@ void scrnmngD3D_update(void) {
 				}else{
 					r = d3d.d3ddev->StretchRect(d3d.backsurf, rect, d3d.d3dbacksurf, scrn, D3DTEXF_LINEAR);
 				}
+				rect->right--; // ‚È‚¼‚Ì’²®
+				scrn->left += scrnoffset; // ‚È‚¼‚Ì’²®
 			}
 			else {
 				if (scrnmng.allflash) {
@@ -1516,8 +1522,16 @@ void scrnmngD3D_update(void) {
 					rect = &d3d.rectclip;
 					scrn = &d3d.scrnclip;
 				}
-
+				scrnoffset = (scrn->right - scrn->left)/(rect->right - rect->left);
+				rect->right++; // ‚È‚¼‚Ì’²®
+				scrn->left -= scrnoffset; // ‚È‚¼‚Ì’²®
+				scrn->right -= ((1 << (scrnoffset-1)) >> 1);
+				scrn->bottom -= ((1 << (scrnoffset-1)) >> 1);
 				r = d3d.d3ddev->StretchRect(d3d.backsurf, rect, d3d.d3dbacksurf, scrn, d3dtexf);
+				rect->right--; // ‚È‚¼‚Ì’²®
+				scrn->left += scrnoffset; // ‚È‚¼‚Ì’²®
+				scrn->right += ((1 << (scrnoffset-1)) >> 1);
+				scrn->bottom += ((1 << (scrnoffset-1)) >> 1);
 			}
 			else {
 				if (scrnmng.allflash) {
