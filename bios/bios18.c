@@ -332,7 +332,7 @@ const CRTDATA	*p;
 #if defined(SUPPORT_PC9821)
 		//if (rate & 4) {
 		if (rate & 0xc) { // np21w ver0.86 rev47 workaround
-//#if defined(BIOS_IO_EMULATION)
+//#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 //			// XXX: Windows3.1 DOSプロンプト用 無理やり
 //			if (CPU_STAT_PM && CPU_STAT_VM86) {
 //				biosioemu_enq8(0x6a, 0x21);
@@ -380,7 +380,7 @@ const CRTDATA	*p;
 		}
 #if defined(SUPPORT_PC9821)
 		else {
-//#if defined(BIOS_IO_EMULATION)
+//#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 //			// XXX: Windows3.1 DOSプロンプト用 無理やり
 //			if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 //				biosioemu_enq8(0x6a, 0x20); // これは駄目
@@ -391,7 +391,7 @@ const CRTDATA	*p;
 			}
 			mem[MEMB_PRXDUPD] &= ~0x80;
 		}
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 		// XXX: Windows3.1 DOSプロンプト用 無理やり
 		if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 			biosioemu_enq8(0x6a, 0x68);
@@ -404,7 +404,7 @@ const CRTDATA	*p;
 	}
 	crt += (scrn & 3);
 	
-//#if defined(BIOS_IO_EMULATION)
+//#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 //	// XXX: Windows3.1 DOSプロンプト用 無理やり
 //	if (CPU_STAT_PM && CPU_STAT_VM86) {
 //		if (rate & 4) {
@@ -442,7 +442,7 @@ const CRTDATA	*p;
 	CopyMemory(gdc.s.para + GDC_SYNC, gdcslavesync[slave], 8);
 	ZeroMemory(gdc.s.para + GDC_SCROLL, 4);
 	if (slave & 1) {
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 		// XXX: Windows3.1 DOSプロンプト用 無理やり
 		if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 			biosioemu_enq8(0xa2, CMD_PITCH);
@@ -457,7 +457,7 @@ const CRTDATA	*p;
 		gdc.s.para[GDC_SCROLL+3] = 0x40;
 	}
 	else {
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 		// XXX: Windows3.1 DOSプロンプト用 無理やり
 		if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 			biosioemu_enq8(0xa2, CMD_PITCH);
@@ -483,7 +483,7 @@ const CRTDATA	*p;
 		gdc.s.para[GDC_CSRFORM] = 1;
 	}
 
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 	// XXX: Windows3.1 DOSプロンプト用 無理やり
 	if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 		biosioemu_enq8(0x6a, 0x40 | ((gdc.display & (1 << GDCDISP_PLAZMA)) ? 1 : 0)); // gdcs.textdisp |= GDCSCRN_EXT; の代わり・・・
@@ -591,7 +591,7 @@ void bios0x18_42(REG8 mode) {
 				gdcs.grphdisp |= GDCSCRN_EXT;
 				mem[MEMB_PRXDUPD] |= 0x08;
 			}
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 			if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 				biosioemu_enq8(0x6a, 0x83);
 				biosioemu_enq8(0x6a, 0x85);
@@ -611,7 +611,7 @@ void bios0x18_42(REG8 mode) {
 				gdc.s.para[GDC_PITCH] = 40;
 				gdcs.grphdisp |= GDCSCRN_EXT;
 				mem[MEMB_PRXDUPD] |= 0x08;
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 				if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 					biosioemu_enq8(0x6a, 0x82);
 					biosioemu_enq8(0x6a, 0x84);
@@ -627,7 +627,7 @@ void bios0x18_42(REG8 mode) {
 			gdc.s.para[GDC_SCROLL+3] = 0x40;
 		}
 		if ((crtmode == 2) || (!(mem[MEMB_PRXCRT] & 0x40))) {
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 			if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 				biosioemu_enq8(0x68, 0x08);
 				biosioemu_enq8(0xa2, CMD_CSRFORM);
@@ -642,7 +642,7 @@ void bios0x18_42(REG8 mode) {
 			}
 		}
 		else {
-#if defined(BIOS_IO_EMULATION)
+#if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 			if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
 				biosioemu_enq8(0x68, 0x09);
 				biosioemu_enq8(0xa2, CMD_CSRFORM);
