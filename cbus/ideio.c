@@ -486,7 +486,14 @@ static void IOOUTCALL ideio_o430(UINT port, REG8 dat) {
 									(port >> 1) & 1, dat, CPU_CS, CPU_EIP));
 	if (!(dat & 0x80)) {
 		//char buf[100] = {0};
-		ideio.bank[(port >> 1) & 1] = dat & 0x71;
+		if ((port >> 1) & 1) {
+			// 432h
+			ideio.bank[(port >> 1) & 1] = dat & 0x71;
+		}
+		else {
+			// 430h
+			//ideio.bank[(port >> 1) & 1] = dat & 0x71;
+		}
 		//sprintf(buf, "0x%x\n", dat);
 		//OutputDebugStringA(buf);
 	}
@@ -504,8 +511,10 @@ static REG8 IOINPCALL ideio_i430(UINT port) {
 	}
 	else {
 		// 430h
+		int compmode = (sxsi_getdevtype(0)!=SXSIDEV_CDROM && sxsi_getdevtype(1)!=SXSIDEV_CDROM && sxsi_getdevtype(2)==SXSIDEV_CDROM && sxsi_getdevtype(3)!=SXSIDEV_CDROM); // 旧機種互換モード？
 		IDEDEV	dev;
 		dev = getidedev();
+		ret = (compmode ? 0 : 1);
 		//
 		// Win2000はbit6が1の時スレーブデバイスを見に行く
 		//
