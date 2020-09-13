@@ -288,14 +288,16 @@ static void bios_reinitbyswitch(void) {
 		mem[0xF8E80+0x0010] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 								(sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
 
-		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。
+		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。　ideio.cのideio_basereset()も参照のこと
+		mem[0x05bb] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+						(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0); // XXX: 未使用って書いてあったので勝手に借りる
 		if(compmode){
-			mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
-							(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
+			mem[0x05ba] = mem[0x05bb];
 		}else{
 			mem[0x05ba] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
 							(sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
 		}
+
 		if(np2cfg.winntfix){
 			// WinNT3.50で必要
 			if(sxsi_getdevtype(1)==SXSIDEV_NC && sxsi_getdevtype(3)==SXSIDEV_NC){
@@ -1083,7 +1085,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			CPU_REMCLOCK -= 200;
 #if defined(BIOS_IO_EMULATION)
 			oldEIP = CPU_EIP;
-			biosioemu.count = 0; 
+			biosioemu.count = 0;
 #endif
 			bios0x1b();
 #if defined(BIOS_IO_EMULATION)

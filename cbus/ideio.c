@@ -492,7 +492,7 @@ static void IOOUTCALL ideio_o430(UINT port, REG8 dat) {
 		}
 		else {
 			// 430h
-			//ideio.bank[(port >> 1) & 1] = dat & 0x71;
+			ideio.bank[(port >> 1) & 1] = dat & 0x71;
 		}
 		//sprintf(buf, "0x%x\n", dat);
 		//OutputDebugStringA(buf);
@@ -1551,6 +1551,19 @@ void ideio_basereset() {
 	for (i=0; i<4; i++) {
 		drv = ideio.dev[i >> 1].drv + (i & 1);
 		devinit(drv, i);
+	}
+
+	if (pccore.hddif & PCHDD_IDE) {
+		int compmode = (sxsi_getdevtype(0)!=SXSIDEV_CDROM && sxsi_getdevtype(1)!=SXSIDEV_CDROM && sxsi_getdevtype(2)==SXSIDEV_CDROM && sxsi_getdevtype(3)!=SXSIDEV_CDROM); // 旧機種互換モード？
+
+		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。
+		if(compmode){
+			mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
+							(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);
+		}else{
+			mem[0x05ba] = (sxsi_getdevtype(3)!=SXSIDEV_NC ? 0x8 : 0x0)|(sxsi_getdevtype(2)!=SXSIDEV_NC ? 0x4 : 0x0)|
+							(sxsi_getdevtype(1)!=SXSIDEV_NC ? 0x2 : 0x0)|(sxsi_getdevtype(0)!=SXSIDEV_NC ? 0x1 : 0x0);
+		}
 	}
 }
 void ideio_reset(const NP2CFG *pConfig) {
