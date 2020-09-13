@@ -1752,8 +1752,10 @@ void ideio_mediachange(REG8 sxsidrv) {
 	//
 	//drv->status |= IDESTAT_ERR;
 	//drv->error |= IDEERR_MCNG;
+	//drv->error &= ~IDEERR_MCNG; // 一旦フラグクリア
+	//drv->media |= IDEIO_MEDIA_CHANGED;
 	//setintr(drv);
-	////ideio_mediachangeflag[sxsidrv] = 1;
+	//ideio_mediachangeflag[sxsidrv] = 1;
 }
 
 #endif	/* SUPPORT_IDEIO */
