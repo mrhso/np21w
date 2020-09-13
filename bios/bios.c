@@ -1028,6 +1028,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			CPU_REMCLOCK -= 200;
 #if defined(BIOS_IO_EMULATION)
 			oldEIP = CPU_EIP;
+			biosioemu.count = 0; 
 #endif
 			bios0x18();
 #if defined(BIOS_IO_EMULATION)
@@ -1075,6 +1076,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			CPU_REMCLOCK -= 200;
 #if defined(BIOS_IO_EMULATION)
 			oldEIP = CPU_EIP;
+			biosioemu.count = 0; 
 #endif
 			bios0x1b();
 #if defined(BIOS_IO_EMULATION)
@@ -1097,6 +1099,7 @@ UINT MEMCALL biosfunc(UINT32 adrs) {
 			CPU_REMCLOCK -= 200;
 #if defined(BIOS_IO_EMULATION)
 			oldEIP = CPU_EIP;
+			biosioemu.count = 0; 
 #endif
 			bios0x1c();
 #if defined(BIOS_IO_EMULATION)
