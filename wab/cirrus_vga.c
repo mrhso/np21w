@@ -3140,6 +3140,17 @@ void cirrus_linear_writew(void *opaque, target_phys_addr_t addr,
 void cirrus_linear_writel(void *opaque, target_phys_addr_t addr,
 				 uint32_t_ val)
 {
+	// XXX: Workaround for Win9x Driver
+	CirrusVGAState *s = (CirrusVGAState *) opaque;
+	if(s->device_id == CIRRUS_ID_CLGD5446){
+		if (((s->sr[0x17] & 0x44) == 0x44) &&
+			((addr & s->cirrus_addr_mask & s->linear_mmio_mask) == s->linear_mmio_mask)) {
+			if((addr & 0xff) == 0x0c && val==0){
+				return;
+			}
+		}
+	}
+
 #ifdef TARGET_WORDS_BIGENDIAN
     cirrus_linear_writeb(opaque, addr, (val >> 24) & 0xff);
     cirrus_linear_writeb(opaque, addr + 1, (val >> 16) & 0xff);

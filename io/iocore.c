@@ -793,6 +793,13 @@ void IOOUTCALL iocore_out32(UINT port, UINT32 dat) {
 		}
 	}
 #endif
+//#if defined(SUPPORT_IDEIO)
+//	if (port == 0x0640) {
+//		ideio_w16(port, (UINT16)dat);
+//		ideio_w16(port, (UINT16)(dat >> 16));
+//		return;
+//	}
+//#endif
 	iocore_out16(port, (UINT16)dat);
 	iocore_out16(port+2, (UINT16)(dat >> 16));
 }
@@ -816,6 +823,13 @@ UINT32 IOINPCALL iocore_inp32(UINT port) {
 		}
 	}
 #endif
+//#if defined(SUPPORT_IDEIO)
+//	if (port == 0x0640) {
+//		ret = ideio_r16(port);
+//		ret |= ideio_r16(port) << 16;
+//		return ret;
+//	}
+//#endif
 	ret = iocore_inp16(port);
 	return(ret + (iocore_inp16(port+2) << 16));
 }

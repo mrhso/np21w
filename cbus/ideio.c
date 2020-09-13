@@ -514,12 +514,14 @@ static REG8 IOINPCALL ideio_i430(UINT port) {
 		int compmode = (sxsi_getdevtype(0)!=SXSIDEV_CDROM && sxsi_getdevtype(1)!=SXSIDEV_CDROM && sxsi_getdevtype(2)==SXSIDEV_CDROM && sxsi_getdevtype(3)!=SXSIDEV_CDROM); // 旧機種互換モード？
 		IDEDEV	dev;
 		dev = getidedev();
-		ret = (compmode ? 0 : 1);
-		//
-		// Win2000はbit6が1の時スレーブデバイスを見に行く
-		//
-		if (dev->drv[1].device != IDETYPE_NONE) {
-			ret |= 0x40;
+		if(dev){
+			ret = (compmode ? 0 : 1);
+			//
+			// Win2000はbit6が1の時スレーブデバイスを見に行く
+			//
+			if (dev->drv[1].device != IDETYPE_NONE) {
+				ret |= 0x40;
+			}
 		}
 	}
 	ideio.bank[bank] = ret & (~0x80);
