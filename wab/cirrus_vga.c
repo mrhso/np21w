@@ -1904,7 +1904,11 @@ cirrus_hook_write_sr(CirrusVGAState * s, unsigned reg_index, int reg_value)
     case 0x1d:			// VCLK 2 Denominator & Post
     case 0x1e:			// VCLK 3 Denominator & Post
     case 0x1f:			// BIOS Write Enable and MCLK select
-		s->sr[reg_index] = reg_value;
+		if(reg_index==0x07 && np2clvga.gd54xxtype < 0xff && np2clvga.gd54xxtype != CIRRUS_98ID_PCI){
+			s->sr[reg_index] = (s->sr[reg_index] & 0xf0) | (reg_value & 0x0f);
+		}else{
+			s->sr[reg_index] = reg_value;
+		}
 		cirrus_update_memory_access(s);
 #ifdef DEBUG_CIRRUS
 		printf("cirrus: handled outport sr_index %02x, sr_value %02x\n",
@@ -3841,10 +3845,15 @@ static void cirrus_update_memory_access(CirrusVGAState *s)
 	// sr7[7-4] =0:gr6[3-2]=00,01:A0000‚ÉŠ„‚è“–‚Ä 10,11:B0000‚ÉŠ„‚è“–‚Ä
 	// WSN‚Í42e1h‚ª‚©‚©‚í‚Á‚Ä‚¢‚é‚©‚à?????
 
-	////if ((s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK) != 0) {
-	////	np2clvga.VRAMWindowAddr3 = (s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK) << 20;
 	if (np2clvga.gd54xxtype > 0xff && (cirrusvga_wab_42e1 & 0x18) == 0x18){
 		np2clvga.VRAMWindowAddr3 = 0xf00000;
+	}
+	else if (
+#if defined(SUPPORT_VGA_MODEX)
+		!np2clvga.modex && 
+#endif
+		(s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK) != 0) {
+		np2clvga.VRAMWindowAddr3 = (s->sr[0x07] & CIRRUS_SR7_ISAADDR_MASK & ~((s->gr[0x0b] >> 1) & 0x10)) << 16;
 	}
 	else {
 #if defined(SUPPORT_VGA_MODEX)
@@ -6491,6 +6500,11 @@ void pc98_cirrus_vga_setvramsize(){
 	cirrusvga->cirrus_addr_mask = cirrusvga->real_vram_size - 1;
 	cirrusvga->linear_mmio_mask = cirrusvga->real_vram_size - 256;
 
+}
+void pc98_cirrus_vga_setVRAMWindowAddr3(UINT32 addr)
+{
+	cirrusvga->sr[0x07] = (cirrusvga->sr[0x07] & 0x0f) | ((addr >> 16) & 0xf0);
+	cirrus_update_memory_access(cirrusvga);
 }
 static void pc98_cirrus_reset(CirrusVGAState * s, int device_id, int is_pci)
 {
