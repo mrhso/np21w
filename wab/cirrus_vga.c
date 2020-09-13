@@ -1218,7 +1218,11 @@ static void cirrus_bitblt_cputovideo_next(CirrusVGAState * s)
 				if(copy_count >= 0 && s->cirrus_blt_srcpitch + copy_count <= sizeof(s->cirrus_bltbuf)) // 範囲外になっていないかチェック
 					memmove(s->cirrus_bltbuf, end_ptr, copy_count);
                 s->cirrus_srcptr = s->cirrus_bltbuf + copy_count;
-                s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+				if(s->cirrus_blt_srcpitch <= sizeof(s->cirrus_bltbuf)){
+					s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+				}else{
+					s->cirrus_srcptr_end = s->cirrus_bltbuf + sizeof(s->cirrus_bltbuf);
+				}
             } while (s->cirrus_srcptr >= s->cirrus_srcptr_end);
         }
     }
@@ -1249,7 +1253,11 @@ static void cirrus_bitblt_videotocpu_next(CirrusVGAState * s)
                             (s->cirrus_blt_srcaddr & s->cirrus_addr_mask),
                             0, 0, s->cirrus_blt_width, 1);
 			s->cirrus_srcptr = s->cirrus_bltbuf;
-			s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+			if(s->cirrus_blt_srcpitch <= sizeof(s->cirrus_bltbuf)){
+				s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+			}else{
+				s->cirrus_srcptr_end = s->cirrus_bltbuf + sizeof(s->cirrus_bltbuf);
+			}
         }
     }
 }
@@ -1306,7 +1314,11 @@ static int cirrus_bitblt_cputovideo(CirrusVGAState * s)
         s->cirrus_srccounter = s->cirrus_blt_srcpitch * s->cirrus_blt_height;
     }
     s->cirrus_srcptr = s->cirrus_bltbuf;
-    s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+	if(s->cirrus_blt_srcpitch <= sizeof(s->cirrus_bltbuf)){
+		s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_srcpitch;
+	}else{
+		s->cirrus_srcptr_end = s->cirrus_bltbuf + sizeof(s->cirrus_bltbuf);
+	}
     cirrus_update_memory_access(s);
     return 1;
 }
@@ -1342,7 +1354,11 @@ static int cirrus_bitblt_videotocpu(CirrusVGAState * s)
         s->cirrus_srccounter = s->cirrus_blt_dstpitch * s->cirrus_blt_height;
     }
     s->cirrus_srcptr = s->cirrus_bltbuf;
-    s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_dstpitch;
+	if(s->cirrus_blt_dstpitch <= sizeof(s->cirrus_bltbuf)){
+		s->cirrus_srcptr_end = s->cirrus_bltbuf + s->cirrus_blt_dstpitch;
+	}else{
+		s->cirrus_srcptr_end = s->cirrus_bltbuf + sizeof(s->cirrus_bltbuf);
+	}
 	if(s->cirrus_blt_dstpitch<0){
 		cirrus_update_memory_access(s);
 	}
@@ -1990,7 +2006,7 @@ cirrus_hook_read_gr(CirrusVGAState * s, unsigned reg_index, int *reg_value)
     case 0x02:			// Standard VGA
     case 0x03:			// Standard VGA
     case 0x04:			// Standard VGA
-		return CIRRUS_HOOK_HANDLED;
+		return CIRRUS_HOOK_NOT_HANDLED;
     case 0x06:			// Standard VGA
 		*reg_value = s->gr[0x06];
 		return CIRRUS_HOOK_HANDLED;
@@ -6116,6 +6132,18 @@ static REG8 IOINPCALL cirrusvga_iff82(UINT port) {
 		pc98_cirrus_vga_initVRAMWindowAddr();
 	}
 	return cirrusvga_videoenable;
+}
+
+int cirrusvga_reg0904 = 0x00;
+static void IOOUTCALL cirrusvga_o0904(UINT port, REG8 dat) {
+	TRACEOUT(("CIRRUS VGA: out %04X d=%02X", port, dat));
+	cirrusvga_reg0904 = dat;
+	(void)port;
+	(void)dat;
+}
+static REG8 IOINPCALL cirrusvga_i0904(UINT port) {
+	TRACEOUT(("CIRRUS VGA: inp %04X", port));
+	return cirrusvga_reg0904;
 }
 
 // WAB, WSN用

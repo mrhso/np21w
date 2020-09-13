@@ -289,7 +289,6 @@ exec_allstep(void)
 	static int remclock_mul = 1000;
 	int remclockb = 0;
 	int remclkcnt = 0x100;
-	int repflag = 0;
 	static int latecount = 0;
 	static int latecount2 = 0;
 	static int hltflag = 0;
@@ -392,7 +391,6 @@ exec_allstep(void)
 		}
 
 		/* rep */
-		repflag = CPU_ECX;
 		CPU_WORKCLOCK(5);
 	#if defined(DEBUG)
 		if (!cpu_debug_rep_cont) {
