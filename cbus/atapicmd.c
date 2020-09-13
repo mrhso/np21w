@@ -566,6 +566,8 @@ void atapi_dataread(IDEDRV drv) {
 	if(np2cfg.useasynccd){
 		if(atapi_thread){
 			atapi_thread_drv = drv;
+			drv->status &= ~IDESTAT_DRQ;
+			SleepEx(0, TRUE); // ƒLƒ…[‚É—­‚Ü‚Á‚Ä‚¢‚é•¨‚ğÌ‚Ä‚é
 			ResumeThread(atapi_thread);
 			SleepEx(1, TRUE);
 		}else{

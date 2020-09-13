@@ -18,22 +18,22 @@ section .bss
 _mem	resb	0x200000
 
 
-MAINMEMORY		equ		_mem
-EXTMEMORY		equ		0
-VIDEOMEMORY		equ		_mem
-USERSMEMORY_R	equ		0a8000h
-USERSMEMORY_W	equ		0a0000h
-_extmemmng_ptr	equ		_i286core + cpucore_t.ext
-_extmemmng_size	equ		_i286core + cpucore_t.extsize
+%define MAINMEMORY			_mem
+%define EXTMEMORY			0
+%define VIDEOMEMORY			_mem
+%define USERSMEMORY_R		0a8000h
+%define USERSMEMORY_W		0a0000h
+%define _extmemmng_ptr		_i286core + cpucore_t.ext
+%define _extmemmng_size		_i286core + cpucore_t.extsize
 
 %if 1
-_font			equ		_mem + FONT_ADRS
+%define _font				_mem + FONT_ADRS
 %else
-_font			equ		___font + 100h
+%define _font				___font + 100h
 %endif
 
-MEMTRACEMODE	equ		0
-VRAMTRACEMODE	equ		0
+%define MEMTRACEMODE		0
+%define VRAMTRACEMODE		0
 
 
 %if MEMTRACEMODE
