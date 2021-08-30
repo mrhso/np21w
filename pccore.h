@@ -70,6 +70,8 @@ enum tagSoundId
 	SOUNDID_PX1					= 0x30,
 	SOUNDID_PX2					= 0x50,
 #endif	/* defined(SUPPORT_PX) */
+	
+	SOUNDID_INVALID				= 0xff,		/*!< for new statesave checker */
 };
 typedef enum tagSoundId		SOUNDID;
 

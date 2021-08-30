@@ -1052,6 +1052,7 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_CL_GD5430)
 			np2clvga.gd54xxtype = np2clvga.defgd54xxtype; // Auto Select—p
+			pc98_cirrus_vga_initVRAMWindowAddr();
 			pc98_cirrus_vga_resetresolution();
 #endif
 #if defined(SUPPORT_IDEIO)

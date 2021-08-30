@@ -48,7 +48,7 @@ void pcm86_reset(void)
 	pcm86->dactrl = 0x32;
 	pcm86->stepmask = (1 << 2) - 1;
 	pcm86->stepbit = 2;
-	pcm86->stepclock = (pccore.baseclock << 6);
+	pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 	pcm86->stepclock /= 44100;
 	pcm86->stepclock *= pccore.multiple;
 	pcm86->rescue = (PCM86_RESCUE * 32) << 2;
@@ -68,8 +68,8 @@ void pcm86_setpcmrate(REG8 val)
 	PCM86 pcm86 = &g_pcm86;
 	SINT32	rate;
 
-	rate = pcm86rate8[val & 7];
-	pcm86->stepclock = (pccore.baseclock << 6);
+	pcm86->rateval = rate = pcm86rate8[val & 7];
+	pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 	pcm86->stepclock /= rate;
 	pcm86->stepclock *= (pccore.multiple << 3);
 	if (pcm86cfg.rate)
@@ -137,11 +137,28 @@ void pcm86_setnextintr(void) {
 	}
 }
 
+void pcm86_changeclock(void)
+{
+	UINT64	past;
+	PCM86 pcm86 = &g_pcm86;
+	if(pcm86){
+		if(pcm86->rateval){
+			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
+			pcm86->stepclock /= pcm86->rateval;
+			pcm86->stepclock *= (pccore.multiple << 3);
+		}else{
+			//pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
+			//pcm86->stepclock /= 44100;
+			//pcm86->stepclock *= pccore.multiple;
+		}
+	}
+}
+
 void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 {
 	int smpsize[0x8] = {0, 2, 2, 4, 0, 1, 1, 2};
 	long	bufs;
-	UINT32	past;
+	UINT64	past;
 	static SINT32 lastvirbuf = 0;
 	static UINT32 lastvirbufcnt = 0;
 

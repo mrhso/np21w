@@ -2636,6 +2636,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				winuileave();
 			}
 			if (b) {
+				// 初期画面サイズに戻す
+				scrnmng_setsize(0, 0, 640, 400);
+
 				CDebugUtyView::AllClose();
 				CDebugUtyView::DisposeAllClosedWindow();
 				DestroyWindow(hWnd);
@@ -3235,7 +3238,20 @@ void loadNP2INI(const OEMCHAR *fname){
 	
 	SetTickCounterMode(np2oscfg.tickmode);
 	pccore_reset();
-
+	
+	// スナップ位置の復元のため先に作成
+	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
+		if (np2oscfg.toolwin) {
+			toolwin_create();
+		}
+		if (np2oscfg.keydisp) {
+			kdispwin_create();
+		}
+		if (np2oscfg.skbdwin) {
+			skbdwin_create();
+		}
+	}
+	
 	// れじうむ
 #if defined(SUPPORT_RESUME)
 	if (np2oscfg.resume) {
@@ -3306,18 +3322,6 @@ void loadNP2INI(const OEMCHAR *fname){
 	}
 #endif
 	
-	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
-		if (np2oscfg.toolwin) {
-			toolwin_create();
-		}
-		if (np2oscfg.keydisp) {
-			kdispwin_create();
-		}
-		if (np2oscfg.skbdwin) {
-			skbdwin_create();
-		}
-	}
-	
 	scrndraw_redraw();
 	
 	np2opening = 0;
@@ -3341,6 +3345,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	UINT32		tick;
 #endif
 	BOOL		xrollkey;
+	int			winx, winy;
 	
 #ifdef _DEBUG
 	// 使うときはstdlib.hとcrtdbg.hをインクルードする
@@ -3470,11 +3475,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	if (np2oscfg.thickframe) {
 		style |= WS_THICKFRAME;
 	}
+	
+	winx = np2oscfg.winx;
+	winy = np2oscfg.winy;
 	hWnd = CreateWindowEx(0, szClassName, np2oscfg.titles, style,
-						np2oscfg.winx, np2oscfg.winy, 640, 400,
+						winx, winy, 640, 400,
 						NULL, NULL, hInstance, NULL);
 	g_hWndMain = hWnd;
-
+	
 	mousemng_initialize(); // 場所移動 np21w ver0.96 rev13
 
 	scrnmng_initialize();
@@ -3484,6 +3492,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
+	
+	SetWindowPos(hWnd, NULL, winx, winy, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOZORDER|SWP_NOACTIVATE); // Win10環境でウィンドウ位置がずれる問題の対策
 	
 #ifdef OPENING_WAIT
 	tick = GetTickCount();
@@ -3584,6 +3594,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	SetTickCounterMode(np2oscfg.tickmode);
 	pccore_reset();
+	
+	// スナップ位置の復元のため先に作成
+	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
+		if (np2oscfg.toolwin) {
+			toolwin_create();
+		}
+		if (np2oscfg.keydisp) {
+			kdispwin_create();
+		}
+		if (np2oscfg.skbdwin) {
+			skbdwin_create();
+		}
+	}
 
 	// れじうむ
 #if defined(SUPPORT_RESUME)
@@ -3647,18 +3670,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 
 	scrndraw_redraw();
 	
-	if (!(g_scrnmode & SCRNMODE_FULLSCREEN)) {
-		if (np2oscfg.toolwin) {
-			toolwin_create();
-		}
-		if (np2oscfg.keydisp) {
-			kdispwin_create();
-		}
-		if (np2oscfg.skbdwin) {
-			skbdwin_create();
-		}
-	}
-
 	sysmng_workclockreset();
 	sysmng_updatecaption(SYS_UPDATECAPTION_ALL);
 	

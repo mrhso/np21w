@@ -14,10 +14,12 @@
 #if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 #include	"bios.h"
 #endif
-// XXX: WORKAROUND for Win9x boot menu
+// XXX: WORKAROUND for Win9x boot menu & PC-98 HDD boot menu
 #include	"keystat.h"
 
 extern int sxsi_unittbl[];
+
+extern int sxsi_workaround_bootwait;
 
 typedef REG8 (*SXSIFUNC)(UINT type, SXSIDEV sxsi);
 
@@ -454,9 +456,12 @@ REG8 sasibios_operate(void) {
 	if (sxsi == NULL) {
 		return(0x60);
 	}
-	// XXX: WORKAROUND for Win9x boot menu
-	if(keystat.ref[0x1c] != NKEYREF_NC){
-		CPU_REMCLOCK = -1;
+	// XXX: WORKAROUND for Win9x boot menu & PC-98 HDD boot menu
+	if(sxsi_workaround_bootwait > 0){
+		sxsi_workaround_bootwait--;
+		if(keystat.ref[0x1c] != NKEYREF_NC || keystat.ref[0x0f] != NKEYREF_NC){
+			CPU_REMCLOCK = -1;
+		}
 	}
 	return((*sasifunc[CPU_AH & 0x0f])(type, sxsi));
 }

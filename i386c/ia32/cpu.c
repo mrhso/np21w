@@ -564,6 +564,7 @@ cpucontinue:
 									nevent_changeclock(oldmultiple, pccore.multiple);
 		
 									sound_changeclock();
+									pcm86_changeclock();
 									beep_changeclock();
 									mpu98ii_changeclock();
 #if defined(SUPPORT_SMPU98)
@@ -596,6 +597,7 @@ cpucontinue:
 									nevent_changeclock(oldmultiple, pccore.multiple);
 		
 									sound_changeclock();
+									pcm86_changeclock();
 									beep_changeclock();
 									mpu98ii_changeclock();
 #if defined(SUPPORT_SMPU98)

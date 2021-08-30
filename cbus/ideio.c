@@ -66,6 +66,7 @@ static IDEDRV getidedrv(void) {
 static const char serial[] = "824919341192        ";
 static const char firm[] = "A5U.1200";
 static const char model[] = "QUANTUM FIREBALL CR                     ";
+static const char model48[] = "NYANTUM YARNBALL CR                     ";
 
 static const char cdrom_serial[] = "1.0                 ";
 static const char cdrom_firm[]   = "        ";
@@ -144,6 +145,9 @@ static BRESULT setidentify(IDEDRV drv) {
 			size = (FILELEN)tmp[54] * tmp[55] * tmp[56];
 			tmp[57] = (UINT16)size;
 			tmp[58] = (UINT16)(size >> 16);
+			for (i=0; i<20; i++) {
+				tmp[27+i] = (model48[i*2] << 8) + model48[i*2+1];
+			}
 		}
 #endif
 		{

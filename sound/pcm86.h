@@ -16,7 +16,7 @@ enum {
 	PCM86_DIVBIT		= 10,
 	PCM86_DIVENV		= (1 << PCM86_DIVBIT),
 
-	PCM86_RESCUE		= 20
+	PCM86_RESCUE		= 0x1000
 };
 
 #define	PCM86_EXTBUF		g_pcm86.rescue					/* 救済延滞… */
@@ -53,6 +53,48 @@ typedef struct {
 	SINT32	volume;
 	SINT32	vol5;
 
+	UINT32	lastclock_obsolate;
+	UINT32	stepclock_obsolate;
+	UINT	stepmask;
+
+	UINT8	fifo;
+	UINT8	soundflags;			/*!< サウンド フラグ (A460) */
+	UINT8	dactrl;
+	UINT8	_write;
+	UINT8	stepbit;
+	UINT8	irq;
+	UINT8	reqirq;
+	UINT8	irqflag;
+
+	UINT8	buffer[PCM86_BUFSIZE];
+	
+	UINT	rateval;
+	
+	UINT64	lastclock;
+	UINT64	stepclock;
+} _PCM86, *PCM86;
+
+typedef struct { // ステートセーブ互換性維持用（変更禁止）
+	SINT32	divremain;
+	SINT32	div;
+	SINT32	div2;
+	SINT32	smp;
+	SINT32	lastsmp;
+	SINT32	smp_l;
+	SINT32	lastsmp_l;
+	SINT32	smp_r;
+	SINT32	lastsmp_r;
+
+	UINT32	readpos;			/* DSOUND再生位置 */
+	UINT32	wrtpos;				/* 書込み位置 */
+	SINT32	realbuf;			/* DSOUND用のデータ数 */
+	SINT32	virbuf;				/* 86PCM(bufsize:0x8000)のデータ数 */
+	SINT32	rescue;
+
+	SINT32	fifosize;
+	SINT32	volume;
+	SINT32	vol5;
+
 	UINT32	lastclock;
 	UINT32	stepclock;
 	UINT	stepmask;
@@ -67,7 +109,7 @@ typedef struct {
 	UINT8	irqflag;
 
 	UINT8	buffer[PCM86_BUFSIZE];
-} _PCM86, *PCM86;
+} _PCM86_OLD, *PCM86_OLD;
 
 typedef struct {
 	UINT	rate;
@@ -91,6 +133,7 @@ void pcm86_reset(void);
 void pcm86gen_update(void);
 void pcm86_setpcmrate(REG8 val);
 void pcm86_setnextintr(void);
+void pcm86_changeclock(void);
 
 void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86);
 void SOUNDCALL pcm86gen_getpcm(PCM86 pcm86, SINT32 *lpBuffer, UINT nCount);
