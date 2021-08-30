@@ -629,7 +629,8 @@ static int BUF_ALIGN[] = {
 			1,
 			1
 };
-
+// ↓なんやこれ
+#define DMAPLAY_ADJUST_VALUE	((soundcfg.rate < 22050 ? 192 : 96) * 44100 / soundcfg.rate)
 void ct1741_dma(NEVENTITEM item)
 {
 	UINT	r;
@@ -705,7 +706,7 @@ void ct1741_dma(NEVENTITEM item)
 				
 				if ((g_sb16.dsp_info.dma.chan->leng.w) && (g_sb16.dsp_info.freq)) {
 					// 再度イベント設定
-					cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (128 * g_sb16.dsp_info.freq / 44100);
+					cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (DMAPLAY_ADJUST_VALUE * g_sb16.dsp_info.freq / 44100);
 						//if(g_sb16.dsp_info.dma.mode==DSP_DMA_16 || g_sb16.dsp_info.dma.mode==DSP_DMA_16_ALIASED){
 						//}else{
 						//	cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * BUF_SPEED;
@@ -725,7 +726,7 @@ void ct1741_dma(NEVENTITEM item)
 						if (g_sb16.dmach != 0xff) {
 							dmac.stat |= (1 << g_sb16.dmach);
 						}
-						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (128 * g_sb16.dsp_info.freq / 44100);
+						cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (DMAPLAY_ADJUST_VALUE * g_sb16.dsp_info.freq / 44100);
 						if(cnt != 0){
 							nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
 						}else{
@@ -805,7 +806,7 @@ REG8 DMACCALL ct1741dmafunc(REG8 func)
 			g_sb16.dsp_info.dma.bufdatas = 0;
 			g_sb16.dsp_info.dma.bufpos = 0;
 			playwaitcounter = DMA_BUFSIZE * BUF_ALIGN[g_sb16.dsp_info.dma.mode|g_sb16.dsp_info.dma.stereo <<3] * g_sb16.dsp_info.freq / 44100 / 16;
-			cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (128 * g_sb16.dsp_info.freq / 44100);
+			cnt = pccore.realclock / g_sb16.dsp_info.freq * g_sb16.dsp_info.dma.rate2 / g_sb16.dsp_info.freq * (DMAPLAY_ADJUST_VALUE * g_sb16.dsp_info.freq / 44100);
 			if(cnt != 0){
 				nevent_set(NEVENT_CT1741, cnt, ct1741_dma, NEVENT_RELATIVE);
 			}else{
@@ -971,7 +972,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, samppos);
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+	cs->bufpos = (cs->bufpos + (leng << 0)) & DMA_BUFMASK;
 }
 
 
@@ -1019,7 +1020,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, samppos);
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+	cs->bufpos = (cs->bufpos + (leng << 0)) & DMA_BUFMASK;
 }
 
 // 16bit ステレオ(little endian)
@@ -1066,7 +1067,7 @@ const UINT8	*ptr2;
 
 	leng = min(leng, samppos);
 	cs->bufdatas -= (leng << 0);
-	cs->bufpos = (cs->bufpos + (leng << 0)) & CS4231_BUFMASK;
+	cs->bufpos = (cs->bufpos + (leng << 0)) & DMA_BUFMASK;
 }
 static void SOUNDCALL nomake(DMA_INFO *ct, SINT32 *pcm, UINT count) {
 	(void)ct;

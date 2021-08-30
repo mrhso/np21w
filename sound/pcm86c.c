@@ -190,7 +190,7 @@ void pcm86_changeclock(void)
 	}
 }
 
-void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
+void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86, UINT nCount)
 {
 	int smpsize[0x8] = {0, 2, 2, 4, 0, 1, 1, 2};
 	long	bufs;
@@ -198,6 +198,11 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	static SINT32 lastvirbuf = 0;
 	static UINT32 lastvirbufcnt = 0;
 	static UINT32 bufundercounter = 0;
+	static UINT32 bufundertimevalid = 0;
+	static UINT32 bufundertime = 0;
+	//UINT32 bufundertime_interval = (pccore.baseclock >> 6) * pccore.multiple;
+	UINT32 bufunder_threshold = pcm86->fifosize * smpsize[(pcm86->dactrl >> 4) & 0x7] / 4;
+	//UINT32 newtime;
 
 	past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
 	past <<= 6;
@@ -227,51 +232,61 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	}else{
 		lastvirbufcnt = 0;
 	}
+	//newtime = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
+	//if(!bufundertimevalid){
+	//	bufundertime = newtime;
+	//	bufundertimevalid = 1;
+	//}
 	
 	bufs = pcm86->realbuf - pcm86->virbuf;
 	if (bufs < smpsize[(pcm86->dactrl >> 4) & 0x7])									/* ˆ——Ž‚¿‚Ä‚éc */
 	{
 		bufs &= ~3;
 		pcm86->virbuf += bufs;
-		if(bufundercounter > pcm86->fifosize / 512){
-			if (pcm86->virbuf < pcm86->fifosize / 8)
-			{
-				pcm86->reqirq = 0;
-				pcm86->irqflag = 1;
-				if (pcm86->irq != 0xff)
+
+		//if(newtime - bufundertime > bufundertime_interval){
+			//if(newtime - bufundertime > bufundertime_interval * 2){
+			//	TRACEOUT(("XXX: %d", (newtime - bufundertime) / bufundertime_interval));
+			//}
+			if(bufundercounter >= bufunder_threshold){
+				if (pcm86->virbuf < pcm86->fifosize)
 				{
-					//int i;
-					//for(i=0;i<OPNA_MAX;i++){
-					//	if(g_opna[i].s.irq == pcm86->irq){
-					//		if(((g_opna[i].s.status & 0x01)) || ((g_opna[i].s.status & 0x02))){
-					//			break;
-					//		}
-					//	}
-					//}
-					//if(i==OPNA_MAX){
-						pic_setirq(pcm86->irq);
-					//}
+					pcm86->reqirq = 0;
+					pcm86->irqflag = 1;
+					if (pcm86->irq != 0xff)
+					{
+						//int i;
+						//for(i=0;i<OPNA_MAX;i++){
+						//	if(g_opna[i].s.irq == pcm86->irq){
+						//		if(((g_opna[i].s.status & 0x01)) || ((g_opna[i].s.status & 0x02))){
+						//			break;
+						//		}
+						//	}
+						//}
+						//if(i==OPNA_MAX){
+							pic_setirq(pcm86->irq);
+						//}
+					}
+					//bufundercounter = 0;
+					//TRACEOUT(("buf: %d, (FIFOSIZE: %d) FORCE IRQ", pcm86->virbuf, pcm86->fifosize));
 				}
-				//bufundercounter = 0;
-				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) FORCE IRQ", pcm86->virbuf, pcm86->fifosize));
-			}
-			else if (pcm86->virbuf < pcm86->fifosize)
-			{
-				pcm86_setnextintr();
-				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) UNDER", pcm86->virbuf, pcm86->fifosize));
-			}
-			else
-			{
-				if(bufundercounter > 0) bufundercounter--;
-				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) WARNING", pcm86->virbuf, pcm86->fifosize));
-			}
-		}else{
-			if(pcm86->virbuf < pcm86->fifosize) {
-				bufundercounter++;
+				else
+				{
+					pcm86_setnextintr();
+					//TRACEOUT(("buf: %d, (FIFOSIZE: %d) WARNING", pcm86->virbuf, pcm86->fifosize));
+				}
 			}else{
-				if(bufundercounter > 0) bufundercounter--;
+				if(pcm86->virbuf < pcm86->fifosize) {
+					bufundercounter += nCount;
+				}else{
+					if(bufundercounter >= nCount) {
+						bufundercounter -= nCount;
+					}else{
+						bufundercounter = 0;
+					}
+				}
 			}
-		}
+		//}
 	}
 	else
 	{
@@ -284,6 +299,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 		}
 		bufundercounter = 0;
 	}
+	//bufundertime += bufundertime_interval * ((newtime - bufundertime) / bufundertime_interval);
 }
 
 BOOL pcm86gen_intrq(void)
