@@ -35,7 +35,7 @@ void joymng_initialize(void) {
 	int			i;
 
 	if ((!joyGetNumDevs()) ||
-		(joyGetPos(JOYSTICKID1, &ji) == JOYERR_UNPLUGGED)) {
+		(joyGetPos(JOYSTICKID1 + np2oscfg.JOYPAD1ID, &ji) == JOYERR_UNPLUGGED)) {
 		np2oscfg.JOYPAD1 |= 2;
 	}
 	for (i=0; i<4; i++) {
@@ -59,7 +59,7 @@ REG8 joymng_getstat(void) {
 		if(nojoy_time == 0 || GetTickCount() - nojoy_time > 5000){
 			ji.dwSize = sizeof(JOYINFOEX);
 			ji.dwFlags = JOY_RETURNALL;
-			if(joyGetPosEx(JOYSTICKID1, &ji) == JOYERR_NOERROR) {
+			if(joyGetPosEx(JOYSTICKID1 + np2oscfg.JOYPAD1ID, &ji) == JOYERR_NOERROR) {
 				joyavailable = 1;
 				np2oscfg.JOYPAD1 |= 0x80;
 				joyflag = 0xff;

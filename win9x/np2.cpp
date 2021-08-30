@@ -130,7 +130,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						OEMTEXT("NP2"),
 						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 0, 0, 1, 0, 1,
 						0, 0, KEY_UNKNOWN, 0, 0,
-						0, 0, 0, {1, 2, 2, 1},
+						0, 0, 0, {1, 2, 2, 1}, {1, 2, 2, 1}, 0, 1,
 						{5, 0, 0x3e, 19200,
 						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 
 #if defined(SUPPORT_NAMED_PIPE)
@@ -3006,7 +3006,7 @@ static void processwait(UINT cnt) {
 		if(lateframecount){
 			SleepEx(0, TRUE);
 		}else{
-			Sleep(1);
+			Sleep(0);
 		}
 	}
 	soundmng_sync();
@@ -3493,6 +3493,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 						winx, winy, 640, 400,
 						NULL, NULL, hInstance, NULL);
 	g_hWndMain = hWnd;
+
+	//{
+	//	HMODULE modUsedr32 = LoadLibraryA("User32.dll");
+	//	if(modUsedr32){
+	//		BOOL (WINAPI *pfnRegisterTouchWindow)(__in HWND hwnd, __in ULONG ulFlags);
+	//		pfnRegisterTouchWindow = (BOOL (WINAPI *)(__in HWND hwnd, __in ULONG ulFlags))GetProcAddress(modUsedr32, "RegisterTouchWindow");
+	//		if(pfnRegisterTouchWindow){
+	//			(*pfnRegisterTouchWindow)(g_hWndMain, 0x00000001);
+	//		}
+	//		FreeLibrary(modUsedr32);
+	//	}
+	//}
 	
 	mousemng_initialize(); // èÍèäà⁄ìÆ np21w ver0.96 rev13
 

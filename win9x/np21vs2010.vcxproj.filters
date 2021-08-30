@@ -1371,6 +1371,9 @@
     <ClCompile Include="..\i386hax\haxfunc.c">
       <Filter>ソース ファイル\i386hax</Filter>
     </ClCompile>
+    <ClCompile Include="..\wab\tgui9680.c">
+      <Filter>ソース ファイル\wab</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">
@@ -2413,6 +2416,15 @@
     </ClInclude>
     <ClInclude Include="..\i386hax\haxfunc.h">
       <Filter>ヘッダー ファイル\i386hax</Filter>
+    </ClInclude>
+    <ClInclude Include="..\wab\tgui9680.h">
+      <Filter>ヘッダー ファイル\wab</Filter>
+    </ClInclude>
+    <ClInclude Include="..\wab\tgui9680_extern.h">
+      <Filter>ヘッダー ファイル\wab</Filter>
+    </ClInclude>
+    <ClInclude Include="..\wab\tgui9680_wrapper.h">
+      <Filter>ヘッダー ファイル\wab</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

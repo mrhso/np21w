@@ -126,7 +126,7 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[64] = 0x0003;		// device supports PIO mode 3, 4
 		
 		tmp[81] = 0;
-		tmp[82] = 0x4220;		// support NOP, DEVICE RESET and Write Cache
+		tmp[82] = 0x4200;		// support NOP, DEVICE RESET and Write Cache
 
 #if defined(SUPPORT_IDEIO_48BIT)
 		if(sxsi->totals > 65535*16*255){
@@ -981,6 +981,9 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xe0:		// STANDBY IMMEDIATE
 			TRACEOUT(("ideio: STANDBY IMMEDIATE dr = %.2x", drv->dr));
+			if(!(drv->status & IDESTAT_BSY)){
+				setintr(drv);
+			}
 			//cmdabort(drv);
 			break;
 
@@ -1051,10 +1054,16 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 					// nothing to do
 					drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 					drv->error = 0;
+					if(!(drv->status & IDESTAT_BSY)){
+						setintr(drv);
+					}
 					break;
 				case 0x03: // Set transfer mode based on value in Sector Count register
 					drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 					drv->error = 0;
+					if(!(drv->status & IDESTAT_BSY)){
+						setintr(drv);
+					}
 					break;
 				default:
 					cmdabort(drv);
@@ -1084,12 +1093,26 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xde:		// media lock
 			TRACEOUT(("ideio: media lock dev=%d", drv->device));
-			//cmdabort(drv);
+			if (drv->device == IDETYPE_HDD) {
+				cmdabort(drv);
+			}
+			else {
+				drv->status |= IDESTAT_DRDY;
+				drv->status &= ~(IDESTAT_BSY|IDESTAT_DWF|IDESTAT_DRQ|IDESTAT_ERR);
+				setintr(drv);
+			}
 			break;
 
 		case 0xdf:		// media unlock
 			TRACEOUT(("ideio: media unlock dev=%d", drv->device));
-			//cmdabort(drv);
+			if (drv->device == IDETYPE_HDD) {
+				cmdabort(drv);
+			}
+			else {
+				drv->status |= IDESTAT_DRDY;
+				drv->status &= ~(IDESTAT_BSY|IDESTAT_DWF|IDESTAT_DRQ|IDESTAT_ERR);
+				setintr(drv);
+			}
 			break;
 
 		case 0xf8:		// READ NATIVE MAX ADDRESS
@@ -1101,7 +1124,9 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				drv->cy = (sxsi->totals >> 8) & 0xffff;
 				drv->hd = (drv->hd & 0xf0) | ((sxsi->totals >> 24) & 0xf);
 
-				
+				if(!(drv->status & IDESTAT_BSY)){
+					setintr(drv);
+				}
 			}
 			
 #if defined(SUPPORT_IDEIO_48BIT)
@@ -1164,9 +1189,11 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xea:		// flush cache EXT
 			TRACEOUT(("ideio: flush cache EXT"));
-			drv->status = IDESTAT_DRDY;
+			if(!(drv->status & IDESTAT_BSY)){
+				drv->status = IDESTAT_DRDY|IDESTAT_BSY;
+				setdintr2(drv, 0, 0, 20000);
+			}
 			drv->error = 0;
-			setintr(drv);
 			break;
 
 		case 0x27:		// READ NATIVE MAX ADDRESS EXT
@@ -1180,6 +1207,9 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 				}else{
 					drv->sn = sxsi->totals & 0xff;
 					drv->cy = (sxsi->totals >> 8) & 0xffff;
+				}
+				if(!(drv->status & IDESTAT_BSY)){
+					setintr(drv);
 				}
 			}
 			//cmdabort(drv);

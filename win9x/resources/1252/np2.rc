@@ -543,6 +543,8 @@ BEGIN
     CONTROL         "B",IDC_PAD1_RB,"Button",BS_AUTOCHECKBOX,86,60,21,10
     CONTROL         "C",IDC_PAD1_RC,"Button",BS_AUTOCHECKBOX,108,60,21,10
     CONTROL         "D",IDC_PAD1_RD,"Button",BS_AUTOCHECKBOX,130,60,21,10
+    LTEXT           "JoyPad ID",IDC_STATIC,24,81,40,8
+    COMBOBOX        IDC_PAD1_ID,64,79,120,52,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_SNDFMGEN DIALOG 0, 0, 184, 124
@@ -1234,26 +1236,34 @@ BEGIN
         MENUITEM "&Open...",                    IDM_IDE0OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE0EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE0STATE
     END
     POPUP "IDE #1"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE1OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE1EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE1STATE
     END
     POPUP "IDE #2"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE2OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE2EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE2STATE
     END
     POPUP "IDE #3"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE3OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE3EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE3STATE
     END
-    MENUITEM "&IDE option...",              IDM_IDEOPT
+    MENUITEM "&IDE option...",                  IDM_IDEOPT
 END
 
 IDR_SASIMENU MENU
@@ -1263,12 +1273,16 @@ BEGIN
         MENUITEM "&Open...",                    IDM_IDE0OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE0EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE0STATE
     END
     POPUP "SASI #1"
     BEGIN
         MENUITEM "&Open...",                    IDM_IDE1OPEN
         MENUITEM SEPARATOR
         MENUITEM "&Remove",                     IDM_IDE1EJECT
+        MENUITEM SEPARATOR
+        MENUITEM " ",							IDM_IDE1STATE
     END
 END
 

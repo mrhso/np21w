@@ -37,11 +37,25 @@ static SINT32 g_lastPosX = 0;
 static SINT32 g_lastPosY = 0;
 static bool g_lastPosValid = false;
 
+static HCTX g_fakeContext = NULL; // “ü—Í‚ª•Ï‚É‚È‚é‚Ì‚ðC³
+
 void cmwacom_initialize(void){
 	if(!g_wacom_initialized){
 		if ( LoadWintab( ) ){
 			g_datatime = GetTickCount();
 			g_wacom_initialized = true;
+			
+			if(!g_fakeContext){
+				LOGCONTEXTA lcMine;
+				gpWTInfoA(WTI_DEFSYSCTX, 0, &lcMine);
+				lcMine.lcOptions |= CXO_MARGIN;// | CXO_MESSAGES;
+				lcMine.lcMsgBase = WT_DEFBASE;
+				lcMine.lcPktData = PACKETDATA;
+				lcMine.lcPktMode = PACKETMODE;
+				lcMine.lcMoveMask = PACKETDATA;
+				lcMine.lcBtnUpMask = lcMine.lcBtnDnMask;
+				g_fakeContext = gpWTOpenA(g_hWndMain, &lcMine, TRUE);
+			}
 		}else{
 			g_wacom_initialized = false;
 		}
@@ -61,6 +75,10 @@ void cmwacom_finalize(void){
 		g_cmwacom->FinalizeTabletDevice();
 	}
 	if(g_wacom_initialized){
+		if(g_fakeContext){
+			gpWTClose(g_fakeContext);
+			g_fakeContext = NULL;
+		}
 		UnloadWintab();
 	}
 	g_cmwacom = NULL;
@@ -109,8 +127,8 @@ LRESULT CALLBACK tabletWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			break;
 		case WM_ACTIVATE:
 			if (wParam) {
-				gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
 				gpWTEnable(g_cmwacom->GetHTab(), TRUE);
+				gpWTOverlap(g_cmwacom->GetHTab(), TRUE);
 				{
 					SINT16 x, y;
 					mousemng_getstat(&x, &y, false);
@@ -285,6 +303,9 @@ void CComWacom::InitializeTabletDevice(){
 		m_maxX = lcMine.lcOutExtX;
 		m_maxY = lcMine.lcOutExtY;
 	}
+	if(g_fakeContext){
+		gpWTEnable(g_fakeContext, FALSE);
+	}
 	m_hTab = gpWTOpenA(m_hwndMain, &lcMine, GetForegroundWindow()==m_hwndMain ? TRUE : FALSE);
 	if (!m_hTab)
 	{
@@ -334,6 +355,10 @@ void CComWacom::FinalizeTabletDevice(){
 		gpWTClose(m_hTab);
 		m_hTab = NULL;
 		g_wacom_allocated = false;
+		
+		if(g_fakeContext){
+			gpWTEnable(g_fakeContext, TRUE);
+		}
 	}
 }
 

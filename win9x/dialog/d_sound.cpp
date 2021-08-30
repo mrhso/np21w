@@ -26,6 +26,11 @@
 #include "sound/opna.h"
 #endif	/* SUPPORT_FMGEN */
 
+#include <regstr.h>
+#if !defined(__GNUC__)
+#pragma comment(lib, "winmm.lib")
+#endif	// !defined(__GNUC__)
+
 // ---- mixer
 
 /**
@@ -1890,6 +1895,9 @@ public:
 protected:
 	virtual BOOL OnInitDialog();
 	virtual void OnOK();
+
+private:
+	CComboData m_cmbid;				//!< ID
 };
 
 //! ƒ{ƒ^ƒ“
@@ -1925,7 +1933,71 @@ BOOL SndOptPadPage::OnInitDialog()
 			CheckDlgButton(s_pad[i][j], (np2oscfg.JOY1BTN[i] & (1 << j)) ? BST_CHECKED : BST_UNCHECKED);
 		}
 	}
+	
+	m_cmbid.SubclassDlgItem(IDC_PAD1_ID, this);
+	OEMCHAR strbuf[256] = {0};
+	JOYCAPS joycaps;
+	for(int i=0;i<16;i++)
+	{
+		if(joyGetDevCaps(i, &joycaps, sizeof(joycaps)) == JOYERR_NOERROR)
+		{
+			OEMCHAR szKey[256];
+			OEMCHAR szValue[256];
+			OEMCHAR szOEMKey[256];
+			OEMCHAR szOEMName[256];
+			HKEY hKey;
+			DWORD dwcb;
+			LONG lret;
+			bool hkcu = false;
 
+			OEMSPRINTF(szKey, OEMTEXT("%s\\%s\\%s"), REGSTR_PATH_JOYCONFIG, joycaps.szRegKey, REGSTR_KEY_JOYCURR);
+			lret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, (LPTSTR) &szKey, 0, KEY_READ, &hKey);
+			if(lret != ERROR_SUCCESS){
+				lret = RegOpenKeyEx(HKEY_CURRENT_USER, (LPTSTR) &szKey, 0, KEY_READ, &hKey);
+				hkcu = true;
+			}
+			if (lret == ERROR_SUCCESS) 
+			{
+				dwcb = sizeof(szOEMKey);
+				OEMSPRINTF(szValue, OEMTEXT("Joystick%d%s"), i+1, REGSTR_VAL_JOYOEMNAME);
+				lret = RegQueryValueEx(hKey, szValue, 0, 0, (LPBYTE) &szOEMKey, (LPDWORD) &dwcb);
+				RegCloseKey(hKey);
+				if (lret == ERROR_SUCCESS)
+				{
+					OEMSPRINTF(szKey, OEMTEXT("%s\\%s"), REGSTR_PATH_JOYOEM, szOEMKey);
+					lret = RegOpenKeyEx(hkcu ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE, szKey, 0, KEY_READ, &hKey);
+
+					if (lret == ERROR_SUCCESS) 
+					{
+						// Get OEM Name
+						dwcb = sizeof(szValue);
+						lret = RegQueryValueEx(hKey, REGSTR_VAL_JOYOEMNAME, 0, 0, (LPBYTE)szOEMName, (LPDWORD) &dwcb);
+						RegCloseKey(hKey);
+						OEMSPRINTF(strbuf, OEMTEXT("%d - %s"), i, szOEMName);
+					}
+					else
+					{
+						OEMSPRINTF(strbuf, OEMTEXT("%d - Controller #%d"), i, i+1);
+					}
+				}
+				else
+				{
+					OEMSPRINTF(strbuf, OEMTEXT("%d - Controller #%d"), i, i+1);
+				}
+			}
+			else
+			{
+				OEMSPRINTF(strbuf, OEMTEXT("%d - Controller #%d"), i, i+1);
+			}
+		}
+		else
+		{
+			OEMSPRINTF(strbuf, OEMTEXT("%d"), i);
+		}
+		m_cmbid.Add(strbuf, i);
+	}
+	m_cmbid.SetCurSel(np2oscfg.JOYPAD1ID);
+	
 	return TRUE;
 }
 
@@ -1957,6 +2029,13 @@ void SndOptPadPage::OnOK()
 				bUpdated = true;
 			}
 		}
+	}
+	
+	const UINT8 cJoyID = (UINT8)m_cmbid.GetCurItemData(np2oscfg.JOYPAD1ID);
+	if(cJoyID != np2oscfg.JOYPAD1ID)
+	{
+		np2oscfg.JOYPAD1ID = cJoyID;
+		bUpdated = true;
 	}
 
 	if (bUpdated)

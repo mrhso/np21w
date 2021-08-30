@@ -463,6 +463,10 @@ REG8 sasibios_operate(void) {
 		sxsi_workaround_bootwait--;
 		if(keystat.ref[0x1c] != NKEYREF_NC || keystat.ref[0x0f] != NKEYREF_NC){
 			CPU_REMCLOCK = -1;
+			if((CPU_AH & 0x0f) == 4){ // sasibios_sense
+				keystat.ref[0x1c] = NKEYREF_NC;//keystat_keyup(0x1c);
+				sxsi_workaround_bootwait = 0;
+			}
 		}
 	}
 	return((*sasifunc[CPU_AH & 0x0f])(type, sxsi));
