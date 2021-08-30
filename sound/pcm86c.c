@@ -10,6 +10,22 @@
 #include "iocore.h"
 #include "fmboard.h"
 
+//#if 1
+//#undef	TRACEOUT
+//#define	TRACEOUT(s)	(void)(s)
+//static void trace_fmt_ex(const char *fmt, ...)
+//{
+//	char stmp[2048];
+//	va_list ap;
+//	va_start(ap, fmt);
+//	vsprintf(stmp, fmt, ap);
+//	strcat(stmp, "\n");
+//	va_end(ap);
+//	OutputDebugStringA(stmp);
+//}
+//#define	TRACEOUT(s)	trace_fmt_ex s
+//#endif	/* 1 */
+
 /* サンプリングレートに8掛けた物 */
 const UINT pcm86rate8[] = {352800, 264600, 176400, 132300,
 							88200,  66150,  44010,  33075};
@@ -72,7 +88,7 @@ void pcm86_setpcmrate(REG8 val)
 	pcm86->rateval = rate = pcm86rate8[val & 7];
 	pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 	pcm86->stepclock /= rate;
-	pcm86->stepclock *= (pccore.multiple << 3); // XXX: クロック数が大きいときに特別加算
+	pcm86->stepclock *= (pccore.multiple << 3);
 	if (pcm86cfg.rate)
 	{
 		pcm86->div = (rate << (PCM86_DIVBIT - 3)) / pcm86cfg.rate;
@@ -95,7 +111,17 @@ void pcm86_cb(NEVENTITEM item)
 			pcm86->irqflag = 1;
 			if (pcm86->irq != 0xff)
 			{
-				pic_setirq(pcm86->irq);
+				//int i;
+				//for(i=0;i<OPNA_MAX;i++){
+				//	if(g_opna[i].s.irq == pcm86->irq){
+				//		if(((g_opna[i].s.status & 0x01)) || ((g_opna[i].s.status & 0x02))){
+				//			break;
+				//		}
+				//	}
+				//}
+				//if(i==OPNA_MAX){
+					pic_setirq(pcm86->irq);
+				//}
 			}
 		}
 		else
@@ -143,9 +169,19 @@ void pcm86_changeclock(void)
 	PCM86 pcm86 = &g_pcm86;
 	if(pcm86){
 		if(pcm86->rateval){
+			UINT64	past;
+			past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
+			past <<= 6;
+			past -= pcm86->lastclock;
+			if (past >= pcm86->stepclock)
+			{
+				past = past / pcm86->stepclock;
+				pcm86->lastclock += (past * pcm86->stepclock);
+				RECALC_NOWCLKWAIT(past);
+			}
 			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			pcm86->stepclock /= pcm86->rateval;
-			pcm86->stepclock *= (pccore.multiple << 3); // XXX: クロック数が大きいときに特別加算
+			pcm86->stepclock *= (pccore.multiple << 3);
 		}else{
 			//pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			//pcm86->stepclock /= 44100;
@@ -161,7 +197,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	UINT64	past;
 	static SINT32 lastvirbuf = 0;
 	static UINT32 lastvirbufcnt = 0;
-	static UINT32 reqirqwait = 0;
+	static UINT32 bufundercounter = 0;
 
 	past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
 	past <<= 6;
@@ -170,7 +206,9 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		past = past / pcm86->stepclock;
 		pcm86->lastclock += (past * pcm86->stepclock);
-		RECALC_NOWCLKWAIT(past);
+		//if (g_pcm86.fifo & 0x80) {
+			RECALC_NOWCLKWAIT(past);
+		//}
 	}
 	
 	// XXX: Windowsでフリーズする問題の暫定対症療法（ある程度時間が経った小さいバッファを捨てる）
@@ -195,20 +233,43 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		bufs &= ~3;
 		pcm86->virbuf += bufs;
-		if (pcm86->virbuf <= pcm86->fifosize / 8 && reqirqwait==0)
-		{
-			pcm86->reqirq = 0;
-			pcm86->irqflag = 1;
-			if (pcm86->irq != 0xff)
+		if(bufundercounter > 8){
+			if (pcm86->virbuf < pcm86->fifosize / 8)
 			{
-				pic_setirq(pcm86->irq);
-				reqirqwait = 16;
+				pcm86->reqirq = 0;
+				pcm86->irqflag = 1;
+				if (pcm86->irq != 0xff)
+				{
+					//int i;
+					//for(i=0;i<OPNA_MAX;i++){
+					//	if(g_opna[i].s.irq == pcm86->irq){
+					//		if(((g_opna[i].s.status & 0x01)) || ((g_opna[i].s.status & 0x02))){
+					//			break;
+					//		}
+					//	}
+					//}
+					//if(i==OPNA_MAX){
+						pic_setirq(pcm86->irq);
+					//}
+				}
+				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) FORCE IRQ", pcm86->virbuf, pcm86->fifosize));
 			}
-		}
-		else
-		{
-			pcm86_setnextintr();
-			if(reqirqwait > 0) reqirqwait--;
+			else if (pcm86->virbuf < pcm86->fifosize)
+			{
+				pcm86_setnextintr();
+				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) UNDER", pcm86->virbuf, pcm86->fifosize));
+			}
+			else
+			{
+				if(bufundercounter > 0) bufundercounter--;
+				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) WARNING", pcm86->virbuf, pcm86->fifosize));
+			}
+		}else{
+			if(pcm86->virbuf < pcm86->fifosize) {
+				bufundercounter++;
+			}else{
+				if(bufundercounter > 0) bufundercounter--;
+			}
 		}
 	}
 	else
@@ -220,7 +281,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 			pcm86->realbuf -= bufs;
 			pcm86->readpos += bufs;
 		}
-		if(reqirqwait > 0) reqirqwait--;
+		bufundercounter = 0;
 	}
 }
 
@@ -235,7 +296,7 @@ BOOL pcm86gen_intrq(void)
 	if (pcm86->fifo & 0x20)
 	{
 		sound_sync();
-		if ((pcm86->reqirq) && (pcm86->virbuf <= pcm86->fifosize / 2))
+		if ((pcm86->reqirq) && (pcm86->virbuf <= pcm86->fifosize))
 		{
 			pcm86->reqirq = 0;
 			pcm86->irqflag = 1;
