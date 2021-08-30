@@ -570,6 +570,8 @@ static void IOOUTCALL ideio_o430(UINT port, REG8 dat) {
 
 	TRACEOUT(("ideio setbank%d %.2x [%.4x:%.8x]",
 									(port >> 1) & 1, dat, CPU_CS, CPU_EIP));
+	atapi_dataread_asyncwait(INFINITE);
+
 	if (!(dat & 0x80)) {
 		//char buf[100] = {0};
 		if ((port >> 1) & 1) {
@@ -741,6 +743,8 @@ static void IOOUTCALL ideio_o64c(UINT port, REG8 dat) {
 
 	IDEDEV	dev;
 	UINT	drvnum;
+	
+	atapi_dataread_asyncwait(INFINITE);
 
 	dev = getidedev();
 	if (dev == NULL) {
@@ -780,6 +784,8 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 	IDEDRV	drv, d;
 	IDEDEV	dev;
 	int		i;
+	
+	atapi_dataread_asyncwait(INFINITE);
 
 	// execute device diagnostic
 	if (dat == 0x90) {

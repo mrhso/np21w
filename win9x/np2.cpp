@@ -2306,22 +2306,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 
 		case WM_ACTIVATE:
-			np2_multithread_EnterCriticalSection();
 			if (LOWORD(wParam) != WA_INACTIVE) {
 				np2break &= ~NP2BREAK_MAIN;
 				scrndraw_redraw();
 				if (np2stopemulate || np2userpause) {
 					scrndraw_draw(1);
 				}
+				np2_multithread_EnterCriticalSection();
 				keystat_allrelease();
 				mousemng_enable(MOUSEPROC_BG);
+				np2_multithread_LeaveCriticalSection();
 			}
 			else {
 				np2break |= NP2BREAK_MAIN;
+				np2_multithread_EnterCriticalSection();
 				mousemng_disable(MOUSEPROC_BG);
+				np2_multithread_LeaveCriticalSection();
 			}
 			np2active_renewal();
-			np2_multithread_LeaveCriticalSection();
 			break;
 
 		case WM_PAINT:
@@ -2883,6 +2885,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				np2_multithread_EnterCriticalSection();
 				scrnmng_setsize(0, 0, 640, 400);
 				np2_multithread_LeaveCriticalSection();
+				if (np2oscfg.WINSNAP) {
+					RECT currect;
+					GetWindowRect(hWnd, &currect);
+					winlocex_moving(smwlex, &currect);
+				}
 
 				CDebugUtyView::AllClose();
 				CDebugUtyView::DisposeAllClosedWindow();
@@ -4108,7 +4115,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 				((msg.message != WM_SYSKEYDOWN) &&
 				(msg.message != WM_SYSKEYUP))) {
 				if(msg.message == WM_TIMER && msg.wParam == tmrID){
-					framereset_MT_UIThread(60 * tmrInterval / 1000);
+					framereset_MT_UIThread(1);
 #if defined(SUPPORT_DCLOCK)
 					DispClock::GetInstance()->Update();
 #endif

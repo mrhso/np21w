@@ -62,6 +62,7 @@
 #endif
 #if defined(SUPPORT_IDEIO)
 #include	"ideio.h"
+#include	"atapicmd.h"
 #endif
 #if defined(SUPPORT_GPIB)
 #include	"cbus/gpibio.h"
@@ -1125,6 +1126,9 @@ void pccore_exec(BOOL draw) {
 #endif
 #if defined(SUPPORT_HRTIMER)
 		upd4990_hrtimer_count();
+#endif
+#if defined(SUPPORT_IDEIO)
+		atapi_dataread_asyncwait(0);
 #endif
 		nevent_progress();
 	}
