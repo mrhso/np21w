@@ -3493,7 +3493,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 	
-	SetWindowPos(hWnd, NULL, winx, winy, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOZORDER|SWP_NOACTIVATE); // Win10環境でウィンドウ位置がずれる問題の対策
+	SetWindowPos(hWnd, NULL, winx, winy, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED); // Win10環境でウィンドウ位置がずれる問題の対策
 	
 #ifdef OPENING_WAIT
 	tick = GetTickCount();

@@ -564,7 +564,7 @@ cpucontinue:
 									nevent_changeclock(oldmultiple, pccore.multiple);
 		
 									sound_changeclock();
-									pcm86_changeclock();
+									pcm86_changeclock(oldmultiple);
 									beep_changeclock();
 									mpu98ii_changeclock();
 #if defined(SUPPORT_SMPU98)
@@ -589,7 +589,7 @@ cpucontinue:
 						//oldremclock = CPU_REMCLOCK;
 						if(!asynccpu_fastflag){
 							latecount--;
-							if(latecount < -LATECOUNTER_THRESHOLDM){
+							if(latecount < -LATECOUNTER_THRESHOLDM * ((g_pcm86.fifo & 0x80) ? 10 : 1)){
 								if(pccore.multiple < pccore.maxmultiple){
 									UINT32 oldmultiple = pccore.multiple;
 									pccore.multiple+=1;
@@ -597,7 +597,7 @@ cpucontinue:
 									nevent_changeclock(oldmultiple, pccore.multiple);
 		
 									sound_changeclock();
-									pcm86_changeclock();
+									pcm86_changeclock(oldmultiple);
 									beep_changeclock();
 									mpu98ii_changeclock();
 #if defined(SUPPORT_SMPU98)

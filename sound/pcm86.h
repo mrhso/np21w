@@ -16,7 +16,7 @@ enum {
 	PCM86_DIVBIT		= 10,
 	PCM86_DIVENV		= (1 << PCM86_DIVBIT),
 
-	PCM86_RESCUE		= 0x1000
+	PCM86_RESCUE		= 20
 };
 
 #define	PCM86_EXTBUF		g_pcm86.rescue					/* ‹~Ï‰„‘Øc */
@@ -133,7 +133,7 @@ void pcm86_reset(void);
 void pcm86gen_update(void);
 void pcm86_setpcmrate(REG8 val);
 void pcm86_setnextintr(void);
-void pcm86_changeclock(void);
+void pcm86_changeclock(UINT oldmultiple);
 
 void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86, UINT nCount);
 void SOUNDCALL pcm86gen_getpcm(PCM86 pcm86, SINT32 *lpBuffer, UINT nCount);

@@ -1054,8 +1054,8 @@ void dialog_newdisk_ex(HWND hWnd, int mode)
 			if (dlg2.DoModal() != IDOK)
 			{
 				_mt_cancel = 1;
-				WaitForSingleObject(newdisk_ThreadFunc, INFINITE);
-				CloseHandle(newdisk_ThreadFunc);
+				WaitForSingleObject(newdisk_hThread, INFINITE);
+				CloseHandle(newdisk_hThread);
 			}
 			_mt_cancel = 1;
 		}
@@ -1114,8 +1114,8 @@ void dialog_newdisk_ex(HWND hWnd, int mode)
 			if (dlg2.DoModal() != IDOK)
 			{
 				_mt_cancel = 1;
-				WaitForSingleObject(newdisk_ThreadFunc, INFINITE);
-				CloseHandle(newdisk_ThreadFunc);
+				WaitForSingleObject(newdisk_hThread, INFINITE);
+				CloseHandle(newdisk_hThread);
 			}
 			_mt_cancel = 1;
 		}

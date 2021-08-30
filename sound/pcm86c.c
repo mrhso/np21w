@@ -158,30 +158,26 @@ void pcm86_setnextintr(void) {
 			clk *= cnt;
 			clk >>= 7;
 //			clk++;						/* roundup */
+			//clk--;						/* roundup */
 			clk *= pccore.multiple;
 			nevent_set(NEVENT_86PCM, clk, pcm86_cb, NEVENT_ABSOLUTE);
 		}
 	}
 }
 
-void pcm86_changeclock(void)
+void pcm86_changeclock(UINT oldmultiple)
 {
 	PCM86 pcm86 = &g_pcm86;
 	if(pcm86){
 		if(pcm86->rateval){
-			//UINT64	past;
-			//past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
-			//past <<= 6;
-			//past -= pcm86->lastclock;
-			//if (past >= pcm86->stepclock)
-			//{
-			//	past = past / pcm86->stepclock;
-			//	pcm86->lastclock += (past * pcm86->stepclock);
-			//	RECALC_NOWCLKWAIT(past);
-			//}
+			UINT64	past;
+			past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
+			past <<= 6;
+			past -= pcm86->lastclock;
 			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			pcm86->stepclock /= pcm86->rateval;
 			pcm86->stepclock *= (pccore.multiple << 3);
+			pcm86->lastclock += past - past * pccore.multiple / oldmultiple;
 		}else{
 			//pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			//pcm86->stepclock /= 44100;
@@ -203,6 +199,9 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86, UINT nCount)
 	//UINT32 bufundertime_interval = (pccore.baseclock >> 6) * pccore.multiple;
 	UINT32 bufunder_threshold = pcm86->fifosize * smpsize[(pcm86->dactrl >> 4) & 0x7] / 4;
 	//UINT32 newtime;
+	if(pcm86->fifosize < 1024){
+		bufunder_threshold /= 4;
+	}
 
 	past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
 	past <<= 6;
