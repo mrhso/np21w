@@ -10,21 +10,21 @@
 #include "iocore.h"
 #include "fmboard.h"
 
-//#if 1
-//#undef	TRACEOUT
-//#define	TRACEOUT(s)	(void)(s)
-//static void trace_fmt_ex(const char *fmt, ...)
-//{
-//	char stmp[2048];
-//	va_list ap;
-//	va_start(ap, fmt);
-//	vsprintf(stmp, fmt, ap);
-//	strcat(stmp, "\n");
-//	va_end(ap);
-//	OutputDebugStringA(stmp);
-//}
-//#define	TRACEOUT(s)	trace_fmt_ex s
-//#endif	/* 1 */
+#if 0
+#undef	TRACEOUT
+#define	TRACEOUT(s)	(void)(s)
+static void trace_fmt_ex(const char *fmt, ...)
+{
+	char stmp[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsprintf(stmp, fmt, ap);
+	strcat(stmp, "\n");
+	va_end(ap);
+	OutputDebugStringA(stmp);
+}
+#define	TRACEOUT(s)	trace_fmt_ex s
+#endif	/* 1 */
 
 /* サンプリングレートに8掛けた物 */
 const UINT pcm86rate8[] = {352800, 264600, 176400, 132300,
@@ -169,16 +169,16 @@ void pcm86_changeclock(void)
 	PCM86 pcm86 = &g_pcm86;
 	if(pcm86){
 		if(pcm86->rateval){
-			UINT64	past;
-			past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
-			past <<= 6;
-			past -= pcm86->lastclock;
-			if (past >= pcm86->stepclock)
-			{
-				past = past / pcm86->stepclock;
-				pcm86->lastclock += (past * pcm86->stepclock);
-				RECALC_NOWCLKWAIT(past);
-			}
+			//UINT64	past;
+			//past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
+			//past <<= 6;
+			//past -= pcm86->lastclock;
+			//if (past >= pcm86->stepclock)
+			//{
+			//	past = past / pcm86->stepclock;
+			//	pcm86->lastclock += (past * pcm86->stepclock);
+			//	RECALC_NOWCLKWAIT(past);
+			//}
 			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			pcm86->stepclock /= pcm86->rateval;
 			pcm86->stepclock *= (pccore.multiple << 3);
@@ -233,7 +233,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		bufs &= ~3;
 		pcm86->virbuf += bufs;
-		if(bufundercounter > 8){
+		if(bufundercounter > pcm86->fifosize / 512){
 			if (pcm86->virbuf < pcm86->fifosize / 8)
 			{
 				pcm86->reqirq = 0;
@@ -252,6 +252,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 						pic_setirq(pcm86->irq);
 					//}
 				}
+				//bufundercounter = 0;
 				//TRACEOUT(("buf: %d, (FIFOSIZE: %d) FORCE IRQ", pcm86->virbuf, pcm86->fifosize));
 			}
 			else if (pcm86->virbuf < pcm86->fifosize)
