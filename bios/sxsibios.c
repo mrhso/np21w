@@ -29,13 +29,23 @@ static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, FILEPOS *ppos) {
 	ret = 0;
 	pos = 0;
 	if (CPU_AL & 0x80) {
-		if ((CPU_DL >= sxsi->sectors) ||
-			(CPU_DH >= sxsi->surfaces) ||
-			(CPU_CX >= sxsi->cylinders)) {
-			ret = 0xd0;
+#if defined(SUPPORT_IDEIO_48BIT)
+		if(sxsi->totals > 0xfffffff){
+			if (CPU_CX >= sxsi->totals / 255 / 255) {
+				ret = 0xd0;
+			}
+			pos = ((FILEPOS)(CPU_CX * 255) + CPU_DH) * 255 + CPU_DL;
+		}else
+#endif
+		{
+			if ((CPU_DL >= sxsi->sectors) ||
+				(CPU_DH >= sxsi->surfaces) ||
+				(CPU_CX >= sxsi->cylinders)) {
+				ret = 0xd0;
+			}
+			pos = (((FILEPOS)CPU_CX * sxsi->surfaces) + CPU_DH) * sxsi->sectors
+																+ CPU_DL;
 		}
-		pos = ((CPU_CX * sxsi->surfaces) + CPU_DH) * sxsi->sectors
-															+ CPU_DL;
 	}
 	else {
 		if(sxsi->totals > 0xffffff){
@@ -155,29 +165,59 @@ static REG8 sasibios_read(UINT type, SXSIDEV sxsi) {
 	if((oldAL & 0xf0) == 0x80){
 #if defined(BIOS_IO_EMULATION) && defined(CPUCORE_IA32)
 		if (CPU_STAT_PM && CPU_STAT_VM86 && biosioemu.enable) {
-			// for Windows 9x IDE Driver
-			UINT8 sn;
-			UINT16 cy;
-			UINT8 hd;
-			sn = (posbase % sxsi->sectors) + 1;
-			posbase /= sxsi->sectors;
-			hd = (posbase % sxsi->surfaces);
-			posbase /= sxsi->surfaces;
-			cy = posbase & 0xffff;
-			// LIFOなので逆順注意
-			biosioemu_push8(0x644, (CPU_BX / 512) & 0xff); 
-			biosioemu_push8(0x646, sn); 
-			biosioemu_push8(0x64a, ((cy >> 8) & 0xff)); 
-			biosioemu_push8(0x648, (cy & 0xff)); 
-			biosioemu_push8_read(0x64e); 
-			biosioemu_push8(0x64c, 0xA0|((sxsi_unittbl[oldAL & 0x3] & 0x1) << 4)|(hd & 0x0f)); 
-			biosioemu_push8_read(0x432);
-			if ((sxsi_unittbl[oldAL & 0x3] & 0xf) >= 0x2) {
-				biosioemu_push8(0x432, 0x01); // BANK #2
-			}else{
-				biosioemu_push8(0x432, 0x00); // BANK #1 
+#if defined(SUPPORT_IDEIO_48BIT)
+			if(sxsi->totals > 0xffffff){
+				// 大容量ディスク用
+				// for Windows 9x IDE Driver
+				UINT8 sn;
+				UINT16 cy;
+				UINT8 hd;
+				sn = (posbase % 255) + 1;
+				posbase /= 255;
+				hd = (posbase % 255);
+				posbase /= 255;
+				cy = posbase & 0xffff;
+				// LIFOなので逆順注意
+				biosioemu_push8(0x644, (CPU_BX / 512) & 0xff); 
+				biosioemu_push8(0x646, sn); 
+				biosioemu_push8(0x64a, ((cy >> 8) & 0xff)); 
+				biosioemu_push8(0x648, (cy & 0xff)); 
+				biosioemu_push8_read(0x64e); 
+				biosioemu_push8(0x64c, 0xA0|((sxsi_unittbl[oldAL & 0x3] & 0x1) << 4)|(hd & 0x0f)); 
+				biosioemu_push8_read(0x432);
+				if ((sxsi_unittbl[oldAL & 0x3] & 0xf) >= 0x2) {
+					biosioemu_push8(0x432, 0x01); // BANK #2
+				}else{
+					biosioemu_push8(0x432, 0x00); // BANK #1 
+				}
+				biosioemu_push8_read(0x430);
+			}else
+#endif
+			{
+				// for Windows 9x IDE Driver
+				UINT8 sn;
+				UINT16 cy;
+				UINT8 hd;
+				sn = (posbase % sxsi->sectors) + 1;
+				posbase /= sxsi->sectors;
+				hd = (posbase % sxsi->surfaces);
+				posbase /= sxsi->surfaces;
+				cy = posbase & 0xffff;
+				// LIFOなので逆順注意
+				biosioemu_push8(0x644, (CPU_BX / 512) & 0xff); 
+				biosioemu_push8(0x646, sn); 
+				biosioemu_push8(0x64a, ((cy >> 8) & 0xff)); 
+				biosioemu_push8(0x648, (cy & 0xff)); 
+				biosioemu_push8_read(0x64e); 
+				biosioemu_push8(0x64c, 0xA0|((sxsi_unittbl[oldAL & 0x3] & 0x1) << 4)|(hd & 0x0f)); 
+				biosioemu_push8_read(0x432);
+				if ((sxsi_unittbl[oldAL & 0x3] & 0xf) >= 0x2) {
+					biosioemu_push8(0x432, 0x01); // BANK #2
+				}else{
+					biosioemu_push8(0x432, 0x00); // BANK #1 
+				}
+				biosioemu_push8_read(0x430);
 			}
-			biosioemu_push8_read(0x430);
 			
 			// XXX: Win9x用 Workaround 接続フラグ切り替え（NT系はプロテクトモードでBIOSコールしないはず） 
 			mem[0x05ba] = mem[0x05bb];
@@ -355,10 +395,21 @@ static REG8 sasibios_sense(UINT type, SXSIDEV sxsi) {
 	}
 	else {
 		if (CPU_AH == 0x84) {
-			CPU_BX = sxsi->size;
-			CPU_CX = sxsi->cylinders;
-			CPU_DH = sxsi->surfaces;
-			CPU_DL = sxsi->sectors;
+#if defined(SUPPORT_IDEIO_48BIT)
+			if(sxsi->totals > 0xfffffff){
+				FILELEN tmpCyl = (UINT32)(sxsi->totals / 255 / 255);
+				CPU_BX = sxsi->size;
+				CPU_CX = (UINT16)(tmpCyl < 0xffff ? tmpCyl : 0xffff);
+				CPU_DH = 255;
+				CPU_DL = 255;
+			}else
+#endif
+			{
+				CPU_BX = sxsi->size;
+				CPU_CX = sxsi->cylinders;
+				CPU_DH = sxsi->surfaces;
+				CPU_DL = sxsi->sectors;
+			}
 		}
 		return(0x0f);
 	}
