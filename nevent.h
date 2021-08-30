@@ -45,6 +45,7 @@ enum tagNEventId
 	NEVENT_SCSIIO		= 27,
 	NEVENT_CDWAIT		= 28, // XXX: 勝手に使ってOK?
 	NEVENT_CT1741		= 29, // np2sより 28を使っちゃったので29に np21w ver0.86 rev29
+	NEVENT_HRTIMER		= 30,
 	/* ---- */
 	NEVENT_MAXEVENTS	= 32
 };
@@ -117,6 +118,9 @@ void nevent_waitreset(NEVENTID id);
 
 // イベントの動作状態取得
 BOOL nevent_iswork(NEVENTID id);
+
+// イベントコールバックの強制実行（注:既存の待ちイベントの無効化は行われない）
+void nevent_forceexecute(NEVENTID id);
 
 // イベント実行までのクロック数の取得
 SINT32 nevent_getremain(NEVENTID id);

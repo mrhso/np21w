@@ -180,6 +180,7 @@ struct tagNP2Config
 	UINT8	vol_adpcm;
 	UINT8	vol_pcm;
 	UINT8	vol_rhythm;
+	UINT8	vol_midi;
 
 	UINT8	mpuenable;
 	UINT8	mpuopt;
@@ -375,11 +376,6 @@ void pccore_reset(void);
 void pccore_exec(BOOL draw);
 
 void pccore_postevent(UINT32 event);
-
-#ifdef SUPPORT_HRTIMER
-extern UINT32 hrtimerdiv;
-extern UINT32 hrtimerclock;
-#endif
 
 #ifdef SUPPORT_ASYNC_CPU
 extern int asynccpu_lateflag;

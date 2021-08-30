@@ -213,7 +213,7 @@ UINT CSoundDeviceDSound3::CreateStream(UINT nSamplingRate, UINT nChannels, UINT 
 	dsbdesc.dwSize = sizeof(dsbdesc);
 	dsbdesc.dwFlags = DSBCAPS_CTRLPAN /*| (s_mastervol_available ? DSBCAPS_CTRLVOLUME : 0)*/ |
 						DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPOSITIONNOTIFY |
-						DSBCAPS_STICKYFOCUS | DSBCAPS_GETCURRENTPOSITION2;
+						DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2;
 	dsbdesc.lpwfxFormat = reinterpret_cast<LPWAVEFORMATEX>(&pcmwf);
 	dsbdesc.dwBufferBytes = m_dwHalfBufferSize * 2;
 	HRESULT hr = m_lpDSound->CreateSoundBuffer(&dsbdesc, &m_lpDSStream, NULL);
@@ -359,9 +359,6 @@ void CSoundDeviceDSound3::SetMasterVolume(int nVolume)
 		}
 		for(i=0; i<numlen; i++) {
 			int nNum = nums[i];
-			if(nNum	< PCMVOLUME_MAXCOUNT){
-				m_pcmvolume[nNum] = nVolume;
-			}
 			ReloadPCM(nNum);
 		}
 		delete[] nums;
@@ -604,7 +601,7 @@ LPDIRECTSOUNDBUFFER CSoundDeviceDSound3::CreateWaveBuffer(LPCTSTR lpFilename, in
 		DSBUFFERDESC dsbdesc;
 		ZeroMemory(&dsbdesc, sizeof(dsbdesc));
 		dsbdesc.dwSize = sizeof(dsbdesc);
-		dsbdesc.dwFlags = DSBCAPS_CTRLPAN /*| (s_mastervol_available ? DSBCAPS_CTRLVOLUME : 0) */| DSBCAPS_CTRLFREQUENCY | DSBCAPS_STATIC | DSBCAPS_STICKYFOCUS | DSBCAPS_GETCURRENTPOSITION2;
+		dsbdesc.dwFlags = DSBCAPS_CTRLPAN /*| (s_mastervol_available ? DSBCAPS_CTRLVOLUME : 0) */| DSBCAPS_CTRLFREQUENCY | DSBCAPS_STATIC | DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2;
 		dsbdesc.dwBufferBytes = chunk.nSize;
 		dsbdesc.lpwfxFormat = reinterpret_cast<LPWAVEFORMATEX>(&pcmwf);
 

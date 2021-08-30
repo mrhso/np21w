@@ -563,6 +563,7 @@ static const PFTBL s_IniItems[] =
 	PFMAX("volume_A", PFTYPE_UINT8,		&np2cfg.vol_adpcm,		128),
 	PFMAX("volume_P", PFTYPE_UINT8,		&np2cfg.vol_pcm,		128),
 	PFMAX("volume_R", PFTYPE_UINT8,		&np2cfg.vol_rhythm,		128),
+	PFMAX("volume_V", PFTYPE_UINT8,		&np2cfg.vol_midi,		128),
 
 	PFVAL("Seek_Snd", PFTYPE_BOOL,		&np2cfg.MOTOR),
 	PFMAX("Seek_Vol", PFTYPE_UINT8,		&np2cfg.MOTORVOL,		100),
@@ -666,7 +667,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("cpu_fecx", PFTYPE_HEX32,		&np2cfg.cpu_feature_ecx),
 	PFVAL("cpu_eflg", PFTYPE_HEX32,		&np2cfg.cpu_eflags_mask),
 
-	PFMAX("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type,		0), // FPU種類
+	PFVAL("FPU_TYPE", PFTYPE_UINT8,		&np2cfg.fpu_type), // FPU種類
 	
 #if defined(SUPPORT_FAST_MEMORYCHECK)
 	PFVAL("memckspd", PFTYPE_UINT8,		&np2cfg.memcheckspeed),
@@ -814,6 +815,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("USEWHEEL", PFRO_BOOL,		&np2oscfg.usewheel), // マウスホイールによる音量・マウス速度設定を使用する
 	//PFVAL("USE_MVOL", PFRO_BOOL,		&np2oscfg.usemastervolume), // マスタボリューム設定を使用する
 	PFVAL("USEMIDIV", PFRO_BOOL,		&np2oscfg.usemidivolume), // MIDI疑似ボリューム設定を使用する
+	PFMAX("MVOL_MAX", PFRO_UINT8,		&np2oscfg.mastervolumemax, 255), // マスタボリュームの最大値を設定する
 	
 	PFVAL("TWNDHIST", PFRO_UINT8,		&np2oscfg.toolwndhistory), // ツールウィンドウのFDファイル履歴の記憶数
 	

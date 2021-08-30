@@ -107,9 +107,9 @@ static BRESULT setidentify(IDEDRV drv) {
 #if IDEIO_MULTIPLE_MAX > 0
 		tmp[47] = 0x8000 | IDEIO_MULTIPLE_MAX;	// multiple
 #endif
-		tmp[49] = 0x0200;		// support LBA
-		tmp[51] = 0x0200;
-		tmp[53] = 0x0001;
+		tmp[49] = 0x0A00;		// support LBA
+		tmp[51] = 0x0278;
+		tmp[53] = 0x0003;
 		size = (FILELEN)sxsi->cylinders * sxsi->surfaces * sxsi->sectors;
 		tmp[54] = (UINT16)(size / drv->surfaces / drv->sectors);//sxsi->cylinders;
 		tmp[55] = drv->surfaces;//sxsi->surfaces;
@@ -123,14 +123,16 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[60] = (UINT16)size;
 		tmp[61] = (UINT16)(size >> 16);
 		tmp[63] = 0x0000;		// no support multiword DMA
+		tmp[64] = 0x0003;		// device supports PIO mode 3, 4
 		
+		tmp[81] = 0;
+		tmp[82] = 0x4220;		// support NOP, DEVICE RESET and Write Cache
+
 #if defined(SUPPORT_IDEIO_48BIT)
 		if(sxsi->totals > 65535*16*255){
 			// 48-bit LBA
 			FILELEN tmpCyl = (UINT32)(sxsi->totals / 255 / 255);
 			tmp[80] = 0x007e;		// support ATA-1 to 6
-			tmp[81] = 0;
-			tmp[82] = 0x0200;		// support DEVICE RESET
 			tmp[83] = 0x4400;		// 48-bit Address feature set supported
 			tmp[86] = 0x4400;		// 48-bit Address feature set supported
 			tmp[100] = (UINT16)(sxsi->totals);			// Maximum user LBA for 48-bit Address feature set 1
@@ -157,8 +159,6 @@ static BRESULT setidentify(IDEDRV drv) {
 #endif
 		{
 			tmp[80] = 0x003e;		// support ATA-1 to 5
-			tmp[81] = 0;
-			tmp[82] = 0x0200;		// support DEVICE RESET
 		}
 	}
 	else if (drv->device == IDETYPE_CDROM) {
@@ -173,9 +173,11 @@ static BRESULT setidentify(IDEDRV drv) {
 		for (i=0; i<20; i++) {
 			tmp[27+i] = (cdrom_model[i*2] << 8) + cdrom_model[i*2+1];
 		}
-		tmp[49] = 0x0200;		// support LBA
-		tmp[53] = 0x0001;
+		tmp[49] = 0x0A00;		// support LBA
+		tmp[51] = 0x0278;
+		tmp[53] = 0x0003;
 		tmp[63] = 0x0000;		// no support multiword DMA
+		tmp[64] = 0x0003;		// device supports PIO mode 3, 4
 		tmp[80] = 0x003e;		// support ATA-1 to 5
 		tmp[82] = 0x0214;		// support PACKET/DEVICE RESET
 		tmp[126] = 0x0000;		// ATAPI byte count
@@ -484,19 +486,24 @@ static void readsec(IDEDRV drv) {
 	drv->bufpos = 0;
 	drv->bufsize = 512;
 	// READはI/Oポートで読み取るデータが準備できたら割り込み
-	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
+	if (1) {
 		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 		drv->error = 0;
-		if(ideio.rwait > 0){
-			drv->status |= IDESTAT_BSY;
-			drv->status &= ~IDESTAT_DRQ;
-			setdintr(drv, 0, 0, ideio.rwait);
-		}else{
-			setintr(drv);
+		if(drv->mulcnt == 0){ // READ MULTIPLEではブロック単位で割り込み
+			if(ideio.rwait > 0){
+				drv->status |= IDESTAT_BSY;
+				drv->status &= ~IDESTAT_DRQ;
+				setdintr(drv, 0, 0, ideio.rwait);
+			}else{
+				setintr(drv);
+			}
+			//setintr(drv);
 		}
-		//setintr(drv);
 	}
 	drv->mulcnt++;
+	if(drv->mulcnt >= drv->multhr){
+		drv->mulcnt = 0;
+	}
 	return;
 
 read_err:
@@ -513,7 +520,7 @@ static void writeinit(IDEDRV drv) {
 	drv->bufpos = 0;
 	drv->bufsize = 512;
 
-	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
+	if (1) {
 		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
 		drv->error = 0;
 	}
@@ -535,19 +542,20 @@ static void writesec(IDEDRV drv) {
 	drv->bufsize = 512;
 	
 	// WRITEはデータ書き込みが完了したら割り込み
-	if ((drv->mulcnt & (drv->multhr - 1)) == 0) {
-		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
-		drv->error = 0;
-		setintr(drv);
-		//if(ideio.bios == IDETC_BIOS && ideio.wwait > 0){
-		//	drv->status &= ~IDESTAT_DRQ;
-		//	drv->status |= IDESTAT_BSY;
-		//	setdintr(drv, 0, 0, ideio.wwait);
-		//}else{
-		//	setintr(drv);
-		//}
-	}else{
-		drv->status &= ~IDESTAT_BSY;
+	drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+	drv->error = 0;
+	drv->mulcnt++;
+	if(drv->mulcnt >= drv->multhr){
+		drv->mulcnt = 0;
+	}
+	if(drv->mulcnt == 0){ // WRITE MULTIPLEの時はブロック書き込み完了時に割り込み -> 最後の割り込みはideio_w16()内に存在
+		if(ideio.wwait > 0){
+			drv->status |= IDESTAT_BSY;
+			drv->status &= ~IDESTAT_DRQ;
+			setdintr(drv, 0, 0, ideio.wwait);
+		}else{
+			setintr(drv);
+		}
 	}
 	return;
 
@@ -941,7 +949,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 			if (drv->device == IDETYPE_HDD) {
 				drv->mulcnt = 0;
 				drv->multhr = drv->mulmode;
-				writesec(drv);
+				writeinit(drv);
 				break;
 			}
 #endif
@@ -996,9 +1004,11 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xe7:		// flush cache
 			TRACEOUT(("ideio: flush cache"));
-			drv->status = IDESTAT_DRDY;
+			if(!(drv->status & IDESTAT_BSY)){
+				drv->status = IDESTAT_DRDY|IDESTAT_BSY;
+				setdintr2(drv, 0, 0, 20000);
+			}
 			drv->error = 0;
-			setintr(drv);
 			break;
 
 		case 0xec:		// identify device
@@ -1019,24 +1029,37 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 
 		case 0xef:		// set features
 			TRACEOUT(("ideio: set features reg = %.2x", drv->wp));
-			//if(drv->device == IDETYPE_CDROM){
-			//	switch(drv->wp) {
-			//	case 0x95: // Enable Media Status Notification
-			//		ideio_mediastatusnotification[drv->sxsidrv] = 1;
-			//		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
-			//		drv->error = 0;
-			//		break;
-			//	case 0x31: // Disable Media Status Notification
-			//		ideio_mediastatusnotification[drv->sxsidrv] = 0;
-			//		drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
-			//		drv->error = 0;
-			//		break;
-			//	default:
-			//		cmdabort(drv);
-			//	}
-			//}else{
-				cmdabort(drv);
-			//}
+			if(drv->device == IDETYPE_CDROM){
+				switch(drv->wp) {
+				//case 0x95: // Enable Media Status Notification
+				//	ideio_mediastatusnotification[drv->sxsidrv] = 1;
+				//	drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+				//	drv->error = 0;
+				//	break;
+				//case 0x31: // Disable Media Status Notification
+				//	ideio_mediastatusnotification[drv->sxsidrv] = 0;
+				//	drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+				//	drv->error = 0;
+				//	break;
+				default:
+					cmdabort(drv);
+				}
+			}else{
+				switch(drv->wp) {
+				case 0x02: // Enable write cache
+				case 0x82: // Disable write cache
+					// nothing to do
+					drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+					drv->error = 0;
+					break;
+				case 0x03: // Set transfer mode based on value in Sector Count register
+					drv->status = IDESTAT_DRDY | IDESTAT_DSC | IDESTAT_DRQ;
+					drv->error = 0;
+					break;
+				default:
+					cmdabort(drv);
+				}
+			}
 			break;
 			
 		case 0xda:		// GET MEDIA STATUS
@@ -1447,7 +1470,6 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						cmdabort(drv);
 						break;
 					}
-					drv->mulcnt++;
 					incsec(drv);
 					drv->sc--;
 #if defined(SUPPORT_IDEIO_48BIT)
@@ -1458,7 +1480,7 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 							writesec(drv);
 						}else{
 							// セクタ書き込み完了
-							if(ideio.bios == IDETC_BIOS && ideio.wwait > 0){
+							if(ideio.wwait > 0){
 								setdintr2(drv, 0, 0, ideio.wwait);
 							}else{
 								setintr(drv);
@@ -1474,7 +1496,7 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 							writesec(drv);
 						}else{
 							// セクタ書き込み完了
-							if(ideio.bios == IDETC_BIOS && ideio.wwait > 0){
+							if(ideio.wwait > 0){
 								setdintr2(drv, 0, 0, ideio.wwait);
 							}else{
 								setintr(drv);

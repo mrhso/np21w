@@ -125,7 +125,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 				0xd2, 3, 5, 0,
 #endif	/* SUPPORT_FMGEN */
 
-				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 100, 64, 64, 64, 64, 64,
+				3, {0x0c, 0x0c, 0x08, 0x06, 0x03, 0x0c}, 100, 64, 64, 64, 64, 64, 128,
 				1, 0x82, 0,
 #if defined(SUPPORT_SMPU98)
 				0, 0x82, 0,
@@ -134,7 +134,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_FMGEN)
 				1,
 #endif	/* SUPPORT_FMGEN */
-				3, 0, 80, 0, 0, 1,
+				3, 0, 50, 0, 0, 1,
 
 				0, {OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT("")},
 #if defined(SUPPORT_IDEIO)
@@ -1142,6 +1142,9 @@ void pccore_exec(BOOL draw) {
 	if (pcstat.hardwarereset) {
 		pcstat.hardwarereset = FALSE;
 		pccore_cfgupdate();
+		if(nevent_iswork(NEVENT_CDWAIT)){
+			nevent_forceexecute(NEVENT_CDWAIT);
+		}
 		pccore_reset();
 	}
 

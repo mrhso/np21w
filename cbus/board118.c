@@ -365,19 +365,9 @@ static void IOOUTCALL gameport_o1480(UINT port, REG8 dat)
 #else
 	gameport_tsc = 0;
 #endif
-	//gameport_clkmax = pccore.baseclock * pccore.maxmultiple / 1000; // とりあえず1msで･･･
-	//gameport_timeoutcounter = 400;
-	//gameport_timeoutinterval = gameport_clkmax * 2 / gameport_timeoutcounter;
-	//nevent_set(NEVENT_CDWAIT, gameport_timeoutinterval, gameport_timeoutproc, NEVENT_ABSOLUTE);
 #endif
 	(void)port;
 }
-//void gameport_timeoutproc(NEVENTITEM item) {
-//	if(gameport_timeoutcounter > 0){
-//		gameport_timeoutcounter--;
-//		nevent_set(NEVENT_CDWAIT, gameport_timeoutinterval, gameport_timeoutproc, NEVENT_ABSOLUTE);
-//	}
-//}
 static REG8 IOINPCALL gameport_i1480(UINT port)
 {
 	REG8 retval = 0xff;

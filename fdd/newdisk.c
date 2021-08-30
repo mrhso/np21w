@@ -305,6 +305,52 @@ const SASIHDD	*sasi;
 ndhdi_err:
 	return;
 }
+void newdisk_hdi_ex_CHS(const OEMCHAR *fname, UINT32 C, UINT16 H, UINT16 S, UINT16 SS, int blank, int *progress, int *cancel) {
+
+	FILEH	fh;
+	HDIHDR	hdi;
+	FILELEN	hddsize;
+	BRESULT	r;
+
+	hddsize = (FILELEN)C * H * S * SS / 1024 / 1024;
+	
+	if ((fname == NULL) || (hddsize < 1) || (hddsize > NHD_MAXSIZE2)) {
+		goto ndhdi_err;
+	}
+	fh = file_create(fname);
+	if (fh == FILEH_INVALID) {
+		goto ndhdi_err;
+	}
+	ZeroMemory(&hdi, sizeof(hdi));
+	hddsize = SS * S * H * C;
+	STOREINTELDWORD(hdi.headersize, 4096);
+	STOREINTELDWORD(hdi.hddsize, hddsize);
+	STOREINTELDWORD(hdi.sectorsize, SS);
+	STOREINTELDWORD(hdi.sectors, S);
+	STOREINTELDWORD(hdi.surfaces, H);
+	STOREINTELDWORD(hdi.cylinders, C);
+	r = (file_write(fh, &hdi, sizeof(hdi)) == sizeof(hdi)) ? SUCCESS : FAILURE;
+	r |= writezero(fh, 4096 - sizeof(hdi));
+	r |= writehddiplex2(fh, SS, (FILELEN)C * H * S * SS, blank, progress, cancel);
+	file_close(fh);
+	if (r != SUCCESS) {
+		file_delete(fname);
+	}
+
+ndhdi_err:
+	return;
+}
+void newdisk_hdi_ex(const OEMCHAR *fname, UINT hddsize, int blank, int *progress, int *cancel) {
+	
+	UINT32 C;
+	UINT16 H;
+	UINT16 S;
+	UINT16 SS;
+	
+	hddsize2CHS(hddsize, &C, &H, &S, &SS);
+
+	newdisk_hdi_ex_CHS(fname, C, H, S, SS, blank, progress, cancel);
+}
 
 void newdisk_vhd(const OEMCHAR *fname, UINT hddsize) {
 

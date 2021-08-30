@@ -123,6 +123,7 @@ typedef struct {
 	UINT8	tickmode; // Force Set Tick Counter Mode
 	//UINT8	usemastervolume; // Use Master Volume
 	UINT8	usemidivolume; // Use MIDI Volume
+	UINT8	mastervolumemax; // Maxmum Master Volume
 	
 	UINT8	toolwndhistory; // Number of data of recently opened FD image list in Tool Window
 	

@@ -483,8 +483,15 @@ UINT CComMidi::Write(UINT8 cData)
 				switch (m_sBuffer[0] & 0xf0)
 				{
 					case 0x90:
-						if(np2oscfg.usemidivolume){
-							m_sBuffer[2] = (UINT8)((UINT32)m_sBuffer[2] * np2cfg.vol_master / 100); // –³—–î—
+						if(np2cfg.vol_midi != 128 || (np2oscfg.usemidivolume && np2cfg.vol_master != 100)){
+							UINT32 val;
+							if(np2oscfg.usemidivolume){
+								val = (UINT32)m_sBuffer[2] * np2cfg.vol_midi / 128 * np2cfg.vol_master / 100;
+							}else{
+								val = (UINT32)m_sBuffer[2] * np2cfg.vol_midi / 128;
+							}
+							if(val > 127) val = 127;
+							m_sBuffer[2] = (UINT8)val; // –³—–î—
 						}
 						break;
 

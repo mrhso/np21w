@@ -51,6 +51,8 @@ private:
 	CSliderValue m_pcm;			//!< PCM ヴォリューム
 	CSliderValue m_rhythm;		//!< RHYTHM ヴォリューム
 	CSliderValue m_cdda;		//!< CD-DA ヴォリューム
+	CSliderValue m_midi;		//!< MIDI ヴォリューム
+	CSliderValue m_hardware;	//!< ハード関係（シーク・リレー） ヴォリューム
 };
 
 /**
@@ -77,7 +79,7 @@ BOOL SndOptMixerPage::OnInitDialog()
 {
 	m_master.SubclassDlgItem(IDC_VOLMASTER, this);
 	m_master.SetStaticId(IDC_VOLMASTERSTR);
-	m_master.SetRange(0, 100);
+	m_master.SetRange(0, np2oscfg.mastervolumemax);
 	m_master.SetPos(np2cfg.vol_master);
 	//if(!np2oscfg.usemastervolume){
 	//	m_master.SetPos(100);
@@ -113,6 +115,16 @@ BOOL SndOptMixerPage::OnInitDialog()
 	m_cdda.SetStaticId(IDC_VOLCDDASTR);
 	m_cdda.SetRange(0, 255);
 	m_cdda.SetPos(np2cfg.davolume);
+	
+	m_midi.SubclassDlgItem(IDC_VOLMIDI, this);
+	m_midi.SetStaticId(IDC_VOLMIDISTR);
+	m_midi.SetRange(0, 128);
+	m_midi.SetPos(np2cfg.vol_midi);
+	
+	m_hardware.SubclassDlgItem(IDC_VOLHW, this);
+	m_hardware.SetStaticId(IDC_VOLHWSTR);
+	m_hardware.SetRange(0, 100);
+	m_hardware.SetPos(np2cfg.MOTORVOL);
 
 	return TRUE;
 }
@@ -208,6 +220,23 @@ void SndOptMixerPage::OnOK()
 		//ideio_setdavol(cCDDA);
 		bUpdated = true;
 	}
+	
+	const UINT8 cMIDI = static_cast<UINT8>(m_midi.GetPos());
+	if (np2cfg.vol_midi != cMIDI || bMasterChange)
+	{
+		np2cfg.vol_midi = cMIDI;
+		bUpdated = true;
+	}
+	
+	const UINT8 cHardware = static_cast<UINT8>(m_hardware.GetPos());
+	if (np2cfg.MOTORVOL != cHardware || bMasterChange)
+	{
+		np2cfg.MOTORVOL = cHardware;
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_PCMSEEK, np2cfg.MOTORVOL);
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_PCMSEEK1, np2cfg.MOTORVOL);
+		CSoundMng::GetInstance()->SetPCMVolume(SOUND_RELAY1, np2cfg.MOTORVOL);
+		bUpdated = true;
+	}
 
 	if (bUpdated)
 	{
@@ -231,6 +260,7 @@ BOOL SndOptMixerPage::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_pcm.SetPos(64);
 		m_rhythm.SetPos(64);
 		m_cdda.SetPos(128);
+		m_midi.SetPos(128);
 		return TRUE;
 	}
 	else if (LOWORD(wParam) == IDC_SNDMIXDEF2)
@@ -241,6 +271,7 @@ BOOL SndOptMixerPage::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_pcm.SetPos(90);
 		m_rhythm.SetPos(64);
 		m_cdda.SetPos(128);
+		m_midi.SetPos(128);
 		return TRUE;
 	}
 
@@ -286,6 +317,14 @@ LRESULT SndOptMixerPage::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				
 			case IDC_VOLCDDA:
 				m_cdda.UpdateValue();
+				break;
+				
+			case IDC_VOLMIDI:
+				m_midi.UpdateValue();
+				break;
+				
+			case IDC_VOLHW:
+				m_hardware.UpdateValue();
 				break;
 
 			default:

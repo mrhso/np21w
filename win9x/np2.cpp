@@ -190,7 +190,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 1, 0, 1, 1, 
 						0, 0, 
 						0, 8, 
-						0, 0, 0, TCMODE_DEFAULT, 0, 0,
+						0, 0, 0, 0, TCMODE_DEFAULT, 0, 100,
 						0,
 #if defined(SUPPORT_WACOM_TABLET)
 						0,
@@ -771,6 +771,9 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 				stop_hook_systemkey();
 #endif
 				pccore_cfgupdate();
+				if(nevent_iswork(NEVENT_CDWAIT)){
+					nevent_forceexecute(NEVENT_CDWAIT);
+				}
 				pccore_reset();
 				sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
 #ifdef SUPPORT_PHYSICAL_CDDRV
@@ -1971,6 +1974,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef HOOK_SYSKEY
 					stop_hook_systemkey();
 #endif
+					if(nevent_iswork(NEVENT_CDWAIT)){
+						nevent_forceexecute(NEVENT_CDWAIT);
+					}
 					pccore_reset();
 #ifdef HOOK_SYSKEY
 					start_hook_systemkey();
@@ -2593,7 +2599,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						int cMaster = np2cfg.vol_master;
 						cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 2;
 						if(cMaster < 0) cMaster = 0;
-						if(cMaster > 100) cMaster = 100;
+						if(cMaster > np2oscfg.mastervolumemax) cMaster = np2oscfg.mastervolumemax;
 						if (np2cfg.vol_master != cMaster)
 						{
 							np2cfg.vol_master = cMaster;
@@ -2669,6 +2675,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #ifdef HOOK_SYSKEY
 					stop_hook_systemkey();
 #endif
+					if(nevent_iswork(NEVENT_CDWAIT)){
+						nevent_forceexecute(NEVENT_CDWAIT);
+					}
 					pccore_reset();
 #ifdef HOOK_SYSKEY
 					start_hook_systemkey();

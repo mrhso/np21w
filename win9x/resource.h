@@ -207,6 +207,10 @@
 #define IDC_VOLMASTERSTR                15214
 #define IDC_VOLCDDA                     15220
 #define IDC_VOLCDDASTR                  15221
+#define IDC_VOLMIDI                     15222
+#define IDC_VOLMIDISTR                  15223
+#define IDC_VOLHW                       15224
+#define IDC_VOLHWSTR                    15225
 #define IDC_VOL14L                      15301
 #define IDC_VOL14LSTR                   15302
 #define IDC_VOL14R                      15303

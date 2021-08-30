@@ -3286,10 +3286,22 @@ void cirrus_linear_memwnd_addr_convert(void *opaque, target_phys_addr_t *addrval
 		addr += (offset);
 	}else{
 		addr &= 0x7fff;
-		if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
-			offset = s->gr[0x09/* + bank_index*/];
-		else			/* single bank */
+		if ((s->gr[0x0b] & 0x01) != 0){
+			/* dual bank */
+			if(addr < 0x4000){
+				offset = s->gr[0x09];
+			}else{
+				addr -= 0x4000;
+				offset = s->gr[0x0a];
+			}
+		}else{
+			/* single bank */
 			offset = s->gr[0x09];
+		}
+		//if ((s->gr[0x0b] & 0x01) != 0)	/* dual bank */
+		//	offset = s->gr[0x09/* + bank_index*/];
+		//else			/* single bank */
+		//	offset = s->gr[0x09];
 
 		if ((s->gr[0x0b] & 0x20) != 0)
 			addr += (offset) << 14L;
@@ -5192,13 +5204,13 @@ void cirrusvga_drawGraphic(){
 	//if(GetKeyState(VK_CONTROL)<0){
 	switch(sysmemmode){
 	case 0:
-		vram_ptr = vram_ptr + 1280*16*memshift;
+		vram_ptr = vram_ptr + 256*16*memshift;
 		break;
 	case 1:
-		vram_ptr = mem + 1280*16*memshift;
+		vram_ptr = mem + 256*16*memshift;
 		break;
 	case 2:
-		vram_ptr = CPU_EXTMEMBASE + 1280*16*memshift;
+		vram_ptr = CPU_EXTMEMBASE + 256*16*memshift;
 		break;
 	}
 	//}
