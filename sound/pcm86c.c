@@ -139,7 +139,6 @@ void pcm86_setnextintr(void) {
 
 void pcm86_changeclock(void)
 {
-	UINT64	past;
 	PCM86 pcm86 = &g_pcm86;
 	if(pcm86){
 		if(pcm86->rateval){
@@ -224,10 +223,10 @@ BOOL pcm86gen_intrq(void)
 {
 	PCM86 pcm86 = &g_pcm86;
 
-	if (pcm86->irqflag)
-	{
-		return TRUE;
-	}
+	//if (pcm86->irqflag)
+	//{
+	//	return TRUE;
+	//}
 	if (pcm86->fifo & 0x20)
 	{
 		sound_sync();

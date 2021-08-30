@@ -75,6 +75,8 @@ static const OEMCHAR str_mhz[] = OEMTEXT("%uMHz");
 #define NP21W_SWITCH_PCIENABLE			4
 #define NP21W_SWITCH_ASYNCCPU			5
 #define NP21W_SWITCH_DISABLESOUNDROM	6
+#define NP21W_SWITCH_SETIDEWAIT_R		7
+#define NP21W_SWITCH_SETIDEWAIT_W		8
 
 
 static void setoutstr(const OEMCHAR *str) {
@@ -218,6 +220,14 @@ static void np2sysp_getconfig(const void *arg1, long arg2) {
 	case NP21W_SWITCH_DISABLESOUNDROM:
 		configvalue = 0; // èÌéû0
 		break;
+#if defined(SUPPORT_IDEIO)
+	case NP21W_SWITCH_SETIDEWAIT_R:
+		configvalue = (UINT8)(ideio.rwait >> 8);
+		break;
+	case NP21W_SWITCH_SETIDEWAIT_W:
+		configvalue = (UINT8)(ideio.wwait >> 8);
+		break;
+#endif
 	case NP21W_SWITCH_DUMMY:
 	default:
 		break;
@@ -333,6 +343,14 @@ static void np2sysp_cngconfig(const void *arg1, long arg2) {
 			soundrom_reset(); // ÉTÉEÉìÉhROMÇè¡Ç∑
 		}
 		break;
+#if defined(SUPPORT_IDEIO)
+	case NP21W_SWITCH_SETIDEWAIT_R:
+		ideio.rwait = configvalue << 8;
+		break;
+	case NP21W_SWITCH_SETIDEWAIT_W:
+		ideio.wwait = configvalue << 8;
+		break;
+#endif
 	case NP21W_SWITCH_DUMMY:
 	default:
 		break;
