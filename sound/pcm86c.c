@@ -168,7 +168,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		past = past / pcm86->stepclock;
 		pcm86->lastclock += (past * pcm86->stepclock);
-		RECALC_NOWCLKWAIT(past);
+		//RECALC_NOWCLKWAIT(past);
 	}
 	
 	// XXX: Windowsでフリーズする問題の暫定対症療法（ある程度時間が経った小さいバッファを捨てる）
