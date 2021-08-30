@@ -223,8 +223,11 @@ static REG8 sasibios_read(UINT type, SXSIDEV sxsi) {
 				biosioemu_push8_read(0x430);
 			}
 			
-			// XXX: Win9x用 Workaround 接続フラグ切り替え（NT系はプロテクトモードでBIOSコールしないはず） 
-			mem[0x05ba] = mem[0x05bb];
+			// XXX: WORKAROUND for WinNT4.0 正常な接続フラグに書き戻す
+			if(mem[0x05bb]){
+				mem[0x05ba] = mem[0x05bb];
+				mem[0x05bb] = 0;
+			}
 		}
 #endif
 	}

@@ -67,9 +67,20 @@ static int doWriteTap(HANDLE hTap, const UCHAR *pSendBuf, DWORD len)
 	if (!WriteFile(hTap, pSendBuf, len, &dwWriteLen, &np2net_write_ovl)) {
 		DWORD err = GetLastError();
 		if (err == ERROR_IO_PENDING) {
-			if(WaitForSingleObject(np2net_write_hEvent, 3000)!=WAIT_TIMEOUT){ // 完了待ち
-				GetOverlappedResult(hTap, &np2net_write_ovl, &dwWriteLen, FALSE);
-			} 
+			// 完了待ち
+			while(!GetOverlappedResult(np2net_hTap, &np2net_write_ovl, &dwWriteLen, FALSE)){
+				err = GetLastError();
+				if (err != ERROR_IO_PENDING) {
+					break;
+				}
+				//if(np2net_hThreadexit){
+				//	break;
+				//}
+				Sleep(0);
+			}
+			if(dwWriteLen==0){
+				return 1;
+			}
 		} else {
 			TRACEOUT(("LGY-98: WriteFile err=0x%08X\n", err));
 			return -1;
@@ -180,14 +191,20 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
 			DWORD err = GetLastError();
 			if (err == ERROR_IO_PENDING) {
 				// 読み取り待ち
-				if(WaitForSingleObject(hEvent, 3000)!=WAIT_TIMEOUT){ // 受信完了待ち
-					GetOverlappedResult(np2net_hTap, &ovl, &dwLen, FALSE);
-					if(dwLen>0){
-						//TRACEOUT(("LGY-98: recieve %u bytes\n", dwLen));
-						np2net.recieve_packet((UINT8*)np2net_Buf, dwLen); // 受信できたので通知する
-						np2net_highspeeddatacount += dwLen;
+				while(!GetOverlappedResult(np2net_hTap, &ovl, &dwLen, FALSE)){
+					if (err != ERROR_IO_PENDING) {
+						break;
 					}
-				} 
+					//if(np2net_hThreadexit){
+					//	break;
+					//}
+					Sleep(0);
+				}
+				if(dwLen>0){
+					//TRACEOUT(("LGY-98: recieve %u bytes\n", dwLen));
+					np2net.recieve_packet((UINT8*)np2net_Buf, dwLen); // 受信できたので通知する
+					np2net_highspeeddatacount += dwLen;
+				}
 			} else {
 				// 読み取りエラー
 				printf("TAP-Win32: ReadFile err=0x%08X\n", err);
@@ -224,10 +241,10 @@ static void np2net_closeTAP(){
     if (np2net_hTap != INVALID_HANDLE_VALUE) {
 		if(np2net_hThreadR){
 			np2net_hThreadexit = 1;
-			if(WaitForSingleObject(np2net_hThreadR, 5000) == WAIT_TIMEOUT){
+			if(WaitForSingleObject(np2net_hThreadR, 10000) == WAIT_TIMEOUT){
 				TerminateThread(np2net_hThreadR, 0);
 			}
-			if(WaitForSingleObject(np2net_hThreadW, 5000) == WAIT_TIMEOUT){
+			if(WaitForSingleObject(np2net_hThreadW, 10000) == WAIT_TIMEOUT){
 				TerminateThread(np2net_hThreadW, 0);
 			}
 			np2net_membuf_readpos = np2net_membuf_writepos;

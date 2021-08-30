@@ -1311,6 +1311,7 @@ void atapi_deinitialize(void) {
 #if defined(_WINDOWS)
 	if(atapi_thread_initialized){
 		atapi_thread_initialized = 0;
+		SleepEx(0, TRUE); // ƒLƒ…[‚É—­‚Ü‚Á‚Ä‚¢‚é•¨‚ðŽÌ‚Ä‚é
 		while(((int)ResumeThread(atapi_thread)) > 0);
 		if(WaitForSingleObject(atapi_thread, 5000) == WAIT_TIMEOUT){
 			TerminateThread(atapi_thread, 0);

@@ -583,6 +583,12 @@ static void IOOUTCALL ideio_o430(UINT port, REG8 dat) {
 		//sprintf(buf, "0x%x\n", dat);
 		//OutputDebugStringA(buf);
 	}
+	
+	// XXX: WORKAROUND for WinNT4.0 正常な接続フラグに書き戻す
+	if(mem[0x05bb]){
+		mem[0x05ba] = mem[0x05bb];
+		mem[0x05bb] = 0;
+	}
 }
 
 static REG8 IOINPCALL ideio_i430(UINT port) {
@@ -1849,7 +1855,7 @@ void ideio_basereset() {
 	if (pccore.hddif & PCHDD_IDE) {
 		int compmode = (sxsi_getdevtype(0)!=SXSIDEV_CDROM && sxsi_getdevtype(1)!=SXSIDEV_CDROM && sxsi_getdevtype(2)==SXSIDEV_CDROM && sxsi_getdevtype(3)!=SXSIDEV_CDROM); // 旧機種互換モード？
 
-		// WinNT4.0でHDDが認識するようになる。Win9xもBIOS I/Oエミュレーションで対応。
+		// WORKAROUND for WinNT4.0
 		if(compmode){
 			mem[0x05ba] = (sxsi_getdevtype(3)==SXSIDEV_HDD ? 0x8 : 0x0)|(sxsi_getdevtype(2)==SXSIDEV_HDD ? 0x4 : 0x0)|
 							(sxsi_getdevtype(1)==SXSIDEV_HDD ? 0x2 : 0x0)|(sxsi_getdevtype(0)==SXSIDEV_HDD ? 0x1 : 0x0);

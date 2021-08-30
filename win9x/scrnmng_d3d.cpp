@@ -1224,6 +1224,11 @@ void scrnmngD3D_setwidth(int posx, int width) {
 #endif
 	if(scrnstat.width != width){
 		scrnstat.width = width;
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 		if(d3d.d3dbacksurf){
 			if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {
 				renewalclientsize(TRUE);
@@ -1252,6 +1257,11 @@ void scrnmngD3D_setextend(int extend) {
 	if(scrnstat.extend != extend){
 		scrnstat.extend = extend;
 		scrnmng.allflash = TRUE;
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 		if(d3d.d3dbacksurf){
 			if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {
 				renewalclientsize(TRUE);
@@ -1278,6 +1288,11 @@ void scrnmngD3D_setheight(int posy, int height) {
 #endif
 	if(scrnstat.height != height){
 		scrnstat.height = height;
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 		if(d3d.d3dbacksurf){
 			if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {
 				renewalclientsize(TRUE);
@@ -1314,6 +1329,11 @@ void scrnmngD3D_setsize(int posx, int posy, int width, int height) {
 	if(scrnstat.width != width || scrnstat.height != height){
 		scrnstat.width = width;
 		scrnstat.height = height;
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 		if(d3d.d3dbacksurf){
 			if (d3d.scrnmode & SCRNMODE_FULLSCREEN) {
 				renewalclientsize(TRUE);
@@ -1753,6 +1773,8 @@ void scrnmngD3D_sizing(UINT side, RECT *rect) {
 	int		mul;
 	const int	mul_max = 32;
 
+	if(scrnsizing.cx==0 || scrnsizing.cy==0) return;
+
 	if ((side != WMSZ_TOP) && (side != WMSZ_BOTTOM)) {
 		width = rect->right - rect->left - scrnsizing.bx + SIZING_ADJUST;
 		width /= scrnsizing.cx;
@@ -1935,6 +1957,12 @@ void scrnmngD3D_blthdc(HDC hdc) {
 		}
 		mt_wabdrawing = 0;
 		d3d_leave_criticalsection();
+	}else{
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 	}
 #endif
 }
@@ -1975,6 +2003,12 @@ void scrnmngD3D_bltwab() {
 		d3d_enter_criticalsection();
 		d3d.d3ddev->StretchRect(d3d.wabsurf, &src, d3d.backsurf, &dstmp, D3DTEXF_POINT);
 		d3d_leave_criticalsection();
+	}else{
+		if(!d3d.d3dbacksurf){
+			d3d_enter_criticalsection();
+			scrnmngD3D_create(g_scrnmode);
+			d3d_leave_criticalsection();
+		}
 	}
 #endif
 }

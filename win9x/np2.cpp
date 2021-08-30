@@ -2309,7 +2309,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			np2_multithread_EnterCriticalSection();
 			if (LOWORD(wParam) != WA_INACTIVE) {
 				np2break &= ~NP2BREAK_MAIN;
-				scrnmng_update();
+				scrndraw_redraw();
+				if (np2stopemulate || np2userpause) {
+					scrndraw_draw(1);
+				}
 				keystat_allrelease();
 				mousemng_enable(MOUSEPROC_BG);
 			}
@@ -3267,6 +3270,10 @@ static void (*framereset)(UINT cnt) = framereset_ALL;
 
 static void processwait(UINT cnt) {
 
+	static int averageskipcounter = 0;
+	static int skipnext = 0;
+	static int incskip = 0;
+
 	UINT count = timing_getcount();
 	if (count+lateframecount >= cnt) {
 		lateframecount = lateframecount + count - cnt;
@@ -3279,12 +3286,29 @@ static void processwait(UINT cnt) {
 		if(lateframecount > np2oscfg.cpustabf) lateframecount = np2oscfg.cpustabf;
 		timing_setcount(0);
 		framereset(cnt);
+		if(skipnext > 0){
+			if(averageskipcounter <= 1){
+				skipnext = 0;
+			}
+		}
+		incskip = 0;
+		averageskipcounter = 0;
 	}
 	else {
 		if(lateframecount){
 			Sleep(0);
+			if(skipnext > 0) skipnext--;
 		}else{
-			Sleep(0);
+			if(skipnext > 0 && averageskipcounter==0){
+				Sleep(skipnext); // ‹x‚ß‚é‚¾‚¯‹x‚Þ
+			}else{
+				Sleep(0);
+			}
+			if(averageskipcounter>1){
+				if(!incskip && skipnext < 10) skipnext++;
+				incskip = 1;
+			}
+			averageskipcounter++;
 		}
 	}
 }
@@ -3313,16 +3337,6 @@ void unloadNP2INI(){
 	}
 #endif
 
-#ifdef SUPPORT_CL_GD5430
-	//pc98_cirrus_vga_shutdown();
-#endif
-#ifdef SUPPORT_WAB
-	//np2wab_shutdown();
-#endif
-#ifdef SUPPORT_NET
-	//np2net_shutdown();
-#endif
-	
 	sxsi_alltrash();
 	pccore_term();
 
@@ -4237,14 +4251,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #ifdef SUPPORT_CL_GD5430
 	pc98_cirrus_vga_shutdown();
 #endif
+
+	pccore_term();
+
 #ifdef SUPPORT_WAB
 	np2wab_shutdown();
 #endif
 #ifdef SUPPORT_NET
 	np2net_shutdown();
 #endif
-
-	pccore_term();
 
 	CSoundMng::GetInstance()->Close();
 	CSoundMng::Deinitialize();
