@@ -1908,13 +1908,18 @@ const SFENTRY	*tblterm;
 	soundmng_play();
 
 #if defined(SUPPORT_WAB)
-	np2wab.relay = 0;
-	np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
-	np2wab.realWidth = np2wab.wndWidth; // XXX: ???
-	np2wab.realHeight = np2wab.wndHeight; // XXX: ???
-	np2wab.lastWidth = 0;
-	np2wab.lastHeight = 0;
-	np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
+	{
+		UINT8 wabaswtmp = np2cfg.wabasw;
+		np2cfg.wabasw = 1; // ƒŠƒŒ[‰¹‚ð–Â‚ç‚³‚È‚¢
+		np2wab.relay = 0;
+		np2wab_setRelayState(np2wab.relaystateint|np2wab.relaystateext);
+		np2wab.realWidth = np2wab.wndWidth; // XXX: ???
+		np2wab.realHeight = np2wab.wndHeight; // XXX: ???
+		np2wab.lastWidth = 0;
+		np2wab.lastHeight = 0;
+		np2wab_setScreenSize(np2wab.wndWidth, np2wab.wndHeight);
+		np2cfg.wabasw = wabaswtmp;
+	}
 #endif
 	
 	pit_setrs232cspeed((pit.ch + 2)->value);

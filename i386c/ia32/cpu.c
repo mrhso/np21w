@@ -589,7 +589,7 @@ cpucontinue:
 						//oldremclock = CPU_REMCLOCK;
 						if(!asynccpu_fastflag){
 							latecount--;
-							if(latecount < -LATECOUNTER_THRESHOLDM * ((g_pcm86.fifo & 0x80) ? 10 : 1)){
+							if(latecount < -LATECOUNTER_THRESHOLDM * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)){
 								if(pccore.multiple < pccore.maxmultiple){
 									UINT32 oldmultiple = pccore.multiple;
 									pccore.multiple+=1;

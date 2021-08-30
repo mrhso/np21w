@@ -13,6 +13,7 @@
 #endif
 #include "resource.h"
 #include "np2.h"
+#include "np2mt.h"
 #include "winloc.h"
 #include "mousemng.h"
 #include "scrnmng.h"
@@ -644,13 +645,13 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 #endif
 		bitcolor = np2oscfg.fscrnbpp;
 		fscrnmod = FSCRNCFG_fscrnmod;
-		if ((fscrnmod & (FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP)) &&
+		if (((fscrnmod & (FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP)) || np2_multithread_Enabled()) &&
 			(dd_displayName[0] ? EnumDisplaySettings(dd_displayName, ENUM_REGISTRY_SETTINGS, &devmode) : EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &devmode))) {
-			if (fscrnmod & FSCRNMOD_SAMERES) {
+			if ((fscrnmod & FSCRNMOD_SAMERES) || np2_multithread_Enabled()) {
 				width = devmode.dmPelsWidth;
 				height = devmode.dmPelsHeight;
 			}
-			if (fscrnmod & FSCRNMOD_SAMEBPP) {
+			if ((fscrnmod & FSCRNMOD_SAMEBPP) || np2_multithread_Enabled()) {
 				bitcolor = devmode.dmBitsPerPel;
 			}
 		}
@@ -696,7 +697,7 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 #ifdef SUPPORT_WAB
 		if(!np2wabwnd.multiwindow){
-			if(FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES){
+			if((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) || np2_multithread_Enabled()){
 				int maxx = GetSystemMetrics(SM_CXSCREEN);
 				int maxy = GetSystemMetrics(SM_CYSCREEN);
 				ddsd.dwWidth = (WAB_MAX_WIDTH > maxx ? maxx : WAB_MAX_WIDTH);
@@ -1378,7 +1379,7 @@ void scrnmngDD_updatefsres(void) {
 	ddbf.dwSize = sizeof(ddbf);
 	ddbf.dwFillColor = 0;
 
-	if((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
+	if(((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) || np2_multithread_Enabled()) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		dd_enter_criticalsection();
 		ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		ddraw.backsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
@@ -1410,6 +1411,7 @@ void scrnmngDD_updatefsres(void) {
 			else {
 				if (scrnmngDD_create(g_scrnmode) != SUCCESS) {
 					PostQuitMessage(0);
+					dd_leave_criticalsection();
 					return;
 				}
 			}
@@ -1418,6 +1420,7 @@ void scrnmngDD_updatefsres(void) {
 			if (scrnmngDD_create(g_scrnmode) != SUCCESS) {
 				if (scrnmngDD_create(g_scrnmode | SCRNMODE_FULLSCREEN) != SUCCESS) { // フルスクリーンでリトライ
 					PostQuitMessage(0);
+					dd_leave_criticalsection();
 					return;
 				}
 				g_scrnmode = g_scrnmode | SCRNMODE_FULLSCREEN;
@@ -1440,7 +1443,6 @@ void scrnmngDD_blthdc(HDC hdc) {
 	if (np2wabwnd.multiwindow) return;
 	if (mt_wabpausedrawing) return;
 	if (np2wab.wndWidth < 32 || np2wab.wndHeight < 32) return;
-	if (mt_wabpausedrawing) return;
 	if (ddraw.wabsurf != NULL) {
 		while(req_enter_criticalsection){
 			Sleep(1);

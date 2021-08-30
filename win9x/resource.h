@@ -579,6 +579,7 @@
 #define IDM_LOADVMCFG                   40107
 #define IDM_NEWDISKFD                   40108
 #define IDM_NEWDISKHD                   40109
+#define IDM_PAUSE                       40110
 #define IDM_FLAGSAVE                    40201
 #define IDM_FLAGSAVE0                   40201
 #define IDM_FLAGSAVE1                   40202

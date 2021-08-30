@@ -980,6 +980,7 @@ BEGIN
     POPUP "&Emulate"
     BEGIN
         MENUITEM "&Reset",                      IDM_RESET
+        MENUITEM "&Pause",                      IDM_PAUSE
         MENUITEM SEPARATOR
         MENUITEM "&Configure...",               IDM_CONFIG
         POPUP "&New disk"
@@ -1032,6 +1033,7 @@ BEGIN
             MENUITEM "mechanical &GRPH",            IDM_XGRPH
             MENUITEM SEPARATOR
             MENUITEM "Send Ctrl+Alt+Del",           IDM_SENDCAD
+            MENUITEM "Paste Clipboard Text",		IDM_COPYPASTE_PASTE
             MENUITEM SEPARATOR
             MENUITEM "F12 = &Mouse",                IDM_F12MOUSE
             MENUITEM "F12 = Co&py",                 IDM_F12COPY

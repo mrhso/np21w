@@ -3,6 +3,7 @@
 #include	"toolwnd.h"
 #include	"strres.h"
 #include	"np2.h"
+#include	"np2mt.h"
 #include	"winloc.h"
 #include	"dosio.h"
 #include	"soundmng.h"
@@ -778,7 +779,8 @@ LRESULT CToolWnd::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 				case IDM_TOOL_SKINSEL:
 					{
-						CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
+						if(!np2_multithread_Enabled())
+							CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
 
 						std::tstring rExt(LoadTString(IDS_SKINEXT));
 						std::tstring rFilter(LoadTString(IDS_SKINFILTER));
@@ -788,8 +790,9 @@ LRESULT CToolWnd::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 						dlg.m_ofn.lpstrTitle = rTitle.c_str();
 						dlg.m_ofn.nFilterIndex = 1;
 						const BOOL r = dlg.DoModal();
-
-						CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
+						
+						if(!np2_multithread_Enabled())
+							CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
 
 						if (r)
 						{
@@ -856,15 +859,18 @@ LRESULT CToolWnd::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 #if 0
 		case WM_ENTERMENULOOP:
-			CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
+			if(!np2_multithread_Enabled())
+				CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
 			break;
 
 		case WM_EXITMENULOOP:
-			CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
+			if(!np2_multithread_Enabled())
+				CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
 			break;
 
 		case WM_ENTERSIZEMOVE:
-			CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
+			if(!np2_multithread_Enabled())
+				CSoundMng::GetInstance()->Disable(SNDPROC_TOOL);
 			winlocex_destroy(toolwin.wlex);
 			toolwin.wlex = np2_winlocexallwin(hWnd);
 			break;
@@ -876,7 +882,8 @@ LRESULT CToolWnd::WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 		case WM_EXITSIZEMOVE:
 			winlocex_destroy(toolwin.wlex);
 			toolwin.wlex = NULL;
-			CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
+			if(!np2_multithread_Enabled())
+				CSoundMng::GetInstance()->Enable(SNDPROC_TOOL);
 			break;
 #endif
 

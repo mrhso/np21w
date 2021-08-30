@@ -15,6 +15,7 @@
 #endif
 #include "resource.h"
 #include "np2.h"
+#include "np2mt.h"
 #include "winloc.h"
 #include "mousemng.h"
 #include "scrnmng.h"
@@ -33,6 +34,7 @@
 #ifdef SUPPORT_WAB
 #include "wab/wab.h"
 #endif
+
 
 #include <shlwapi.h>
 
@@ -733,6 +735,8 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 	int				bufwidth, bufheight;
 	int				k = 0;
 
+	np2oscfg.d3d_exclusive = 0;// 排他モードは廃止
+
 	if(devicelostflag) return(FAILURE);
 	
 	if(!d3d_cs_initialized){
@@ -871,6 +875,9 @@ BRESULT scrnmngD3D_create(UINT8 scrnmode) {
 			}
 			MoveWindow(g_hWndMain, mondata.monitorrect.left, mondata.monitorrect.top, 
 				mondata.monitorrect.right - mondata.monitorrect.left, mondata.monitorrect.bottom - mondata.monitorrect.top, TRUE); // ウィンドウサイズを全画面に変える
+		}
+		if(np2_multithread_Enabled()){
+			fscrnmod |= FSCRNMOD_SAMERES | FSCRNMOD_SAMEBPP; // マルチスレッドモードのときも解像度変更しないことにする（手抜き）
 		}
 
 		if(!(fscrnmod & FSCRNMOD_SAMERES)){
@@ -1524,9 +1531,9 @@ void scrnmngD3D_update(void) {
 					r = d3d.d3ddev->StretchRect(d3d.backsurf, &d3d.rect, d3d.d3dbacksurf, &dst, D3DTEXF_LINEAR);
 				}
 			}
-			if((d3d.scrnmode & SCRNMODE_FULLSCREEN) && d3d.menudisp){
-				DrawMenuBar(g_hWndMain);
-			}
+			//if((d3d.scrnmode & SCRNMODE_FULLSCREEN) && d3d.menudisp){
+			//	DrawMenuBar(g_hWndMain);
+			//}
 			if(d3d.d3ddev->Present(NULL, NULL, NULL, NULL)==D3DERR_DEVICELOST){
 				restoresurfaces();
 			}
@@ -1576,9 +1583,9 @@ void scrnmngD3D_update(void) {
 				dst.bottom = clip.y + d3d.scrn.bottom;
 				r = d3d.d3ddev->StretchRect(d3d.backsurf, &d3d.rect, d3d.d3dbacksurf, &dst, d3dtexf);
 			}
-			if((d3d.scrnmode & SCRNMODE_FULLSCREEN) && d3d.menudisp){
-				DrawMenuBar(g_hWndMain);
-			}
+			//if((d3d.scrnmode & SCRNMODE_FULLSCREEN) && d3d.menudisp){
+			//	DrawMenuBar(g_hWndMain);
+			//}
 			if(d3d.d3ddev->Present(NULL, NULL, NULL, NULL)==D3DERR_DEVICELOST){
 				restoresurfaces();
 			}
@@ -1825,7 +1832,7 @@ void scrnmngD3D_updatefsres(void) {
 	rect.right = width;
 	rect.bottom = height;
 
-	if((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
+	if(((FSCRNCFG_fscrnmod & FSCRNMOD_SAMERES) || !np2oscfg.d3d_exclusive || np2_multithread_Enabled()) && (g_scrnmode & SCRNMODE_FULLSCREEN)){
 		d3d_enter_criticalsection();
 		d3d.d3ddev->ColorFill(d3d.wabsurf, NULL, D3DCOLOR_XRGB(0, 0, 0));
 		d3d.d3ddev->ColorFill(d3d.backsurf, NULL, D3DCOLOR_XRGB(0, 0, 0));

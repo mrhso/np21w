@@ -58,6 +58,7 @@ void np2wab_init(HINSTANCE hInstance, HWND g_hWndMain);
 void np2wab_reset(const NP2CFG *pConfig);
 void np2wab_bind(void);
 void np2wab_drawframe(void);
+void np2wab_drawframeUIthread(void);
 void np2wab_shutdown(void);
 
 void np2wab_setRelayState(REG8 state);

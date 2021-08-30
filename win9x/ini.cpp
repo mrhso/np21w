@@ -827,6 +827,9 @@ static const PFTBL s_IniItems[] =
 #if defined(SUPPORT_WACOM_TABLET)
 	PFVAL("PENTABFA", PFTYPE_BOOL,		&np2oscfg.pentabfa), // ペンタブレット アスペクト比固定モード
 #endif
+#if defined(SUPPORT_MULTITHREAD)
+	PFVAL("MTENABLE", PFRO_BOOL,		&np2oscfg.multithread), // マルチスレッドモード
+#endif
 };
 
 //! .ini 拡張子

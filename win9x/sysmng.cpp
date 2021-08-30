@@ -13,6 +13,8 @@
 #include	"win9x/menu.h"
 #endif
 
+extern UINT8	np2userpause;
+
 extern "C" REG8 cdchange_drv;
 
 	UINT	sys_updates;
@@ -263,6 +265,7 @@ void sysmng_updatecaption(UINT8 flag) {
 		}
 #endif
 	}
+	
 	if (flag & 2) {
 		clock[0] = '\0';
 		if (np2oscfg.DISPCLK & 2) {
@@ -274,7 +277,7 @@ void sysmng_updatecaption(UINT8 flag) {
 				milstr_ncpy(clock, OEMTEXT(" - 0FPS"), NELEMENTS(clock));
 			}
 		}
-		if (np2oscfg.DISPCLK & 1) {
+		if (!np2userpause && (np2oscfg.DISPCLK & 1)) {
 			OEMSPRINTF(work, OEMTEXT(" %2u.%03uMHz"),
 								workclock.khz / 1000, workclock.khz % 1000);
 			if (clock[0] == '\0') {
@@ -303,6 +306,9 @@ void sysmng_updatecaption(UINT8 flag) {
 
 	milstr_ncpy(work, np2oscfg.titles, NELEMENTS(work));
 	milstr_ncat(work, misc, NELEMENTS(work));
+	if(np2userpause){
+		milstr_ncat(work, OEMTEXT(" [PAUSED]"), NELEMENTS(work));
+	}
 	milstr_ncat(work, title, NELEMENTS(work));
 	milstr_ncat(work, clock, NELEMENTS(work));
 	SetWindowText(g_hWndMain, work);

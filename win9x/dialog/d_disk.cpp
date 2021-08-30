@@ -9,6 +9,7 @@
 #include "c_combodata.h"
 #include "dosio.h"
 #include "np2.h"
+#include "np2mt.h"
 #include "sysmng.h"
 #include "misc/DlgProc.h"
 #include "subwnd/toolwnd.h"
@@ -60,8 +61,10 @@ void dialog_changefdd(HWND hWnd, REG8 drv)
 
 			file_cpyname(fddfolder, lpImage, _countof(fddfolder));
 			sysmng_update(SYS_UPDATEOSCFG);
+			np2_multithread_Suspend();
 			diskdrv_setfdd(drv, lpImage, bReadOnly);
 			toolwin_setfdd(drv, lpImage);
+			np2_multithread_Resume();
 		}
 	}
 }

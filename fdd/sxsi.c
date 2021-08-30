@@ -9,6 +9,9 @@
 #if defined(SUPPORT_IDEIO)
 #include	"ideio.h"
 #endif
+#if defined(SUPPORT_MULTITHREAD)
+#include	"np2mt.h"
+#endif
 
 	_SXSIDEV	sxsi_dev[SASIHDD_MAX + SCSIHDD_MAX];
 
@@ -240,7 +243,13 @@ void cdchange_timeoutproc(NEVENTITEM item) {
 #if defined(SUPPORT_IDEIO)
 	ideio_mediachange(cdchange_drv);
 #endif
+#if defined(SUPPORT_MULTITHREAD)
+	np2_multithread_EnterCriticalSection();
+#endif
 	sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
+#if defined(SUPPORT_MULTITHREAD)
+	np2_multithread_LeaveCriticalSection();
+#endif
 }
 static void cdchange_timeoutset(void) {
 
