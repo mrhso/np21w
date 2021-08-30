@@ -1466,6 +1466,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
 			break;
 			
+#if defined(SUPPORT_LARGE_MEMORY)
 		case IDM_MEM5126:
 			np2cfg.EXTMEM = 512;
 			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
@@ -1475,6 +1476,7 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			np2cfg.EXTMEM = 1024;
 			update |= SYS_UPDATECFG | SYS_UPDATEMEMORY;
 			break;
+#endif
 			
 		case IDM_FPU80:
 			np2cfg.fpu_type = FPU_TYPE_SOFTFLOAT;

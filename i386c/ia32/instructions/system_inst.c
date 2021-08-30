@@ -1147,14 +1147,31 @@ RDTSC(void)
 	CPU_EDX = li.HighPart;
 	CPU_EAX = li.LowPart;
 #else
-	UINT64 tsc_tmp;
-	if(CPU_REMCLOCK != -1){
-		tsc_tmp = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
+	if(np2cfg.consttsc){
+		// CPUクロックに依存しないカウンタ値にする
+		UINT64 tsc_tmp;
+		if(CPU_REMCLOCK != -1){
+			tsc_tmp = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
+		}else{
+			tsc_tmp = CPU_MSR_TSC;
+		}
+		CPU_EDX = ((tsc_tmp >> 32) & 0xffffffff);
+		CPU_EAX = (tsc_tmp & 0xffffffff);
 	}else{
-		tsc_tmp = CPU_MSR_TSC;
+		// CPUクロックに依存するカウンタ値にする
+		static UINT64 tsc_last = 0;
+		static UINT64 tsc_cur = 0;
+		UINT64 tsc_tmp;
+		if(CPU_REMCLOCK != -1){
+			tsc_tmp = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
+		}else{
+			tsc_tmp = CPU_MSR_TSC;
+		}
+		tsc_cur += (tsc_tmp - tsc_last) * pccore.multiple / pccore.maxmultiple;
+		tsc_last = tsc_tmp;
+		CPU_EDX = ((tsc_cur >> 32) & 0xffffffff);
+		CPU_EAX = (tsc_cur & 0xffffffff);
 	}
-	CPU_EDX = ((tsc_tmp >> 32) & 0xffffffff);
-	CPU_EAX = (tsc_tmp & 0xffffffff);
 #endif
 //	ia32_panic("RDTSC: not implemented yet!");
 }
