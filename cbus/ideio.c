@@ -107,7 +107,7 @@ static BRESULT setidentify(IDEDRV drv) {
 #if IDEIO_MULTIPLE_MAX > 0
 		tmp[47] = 0x8000 | IDEIO_MULTIPLE_MAX;	// multiple
 #endif
-		tmp[49] = 0x0A00;		// support LBA
+		tmp[49] = 0x0200;		// support LBA
 		tmp[51] = 0x0278;
 		tmp[53] = 0x0003;
 		size = (FILELEN)sxsi->cylinders * sxsi->surfaces * sxsi->sectors;
@@ -173,7 +173,7 @@ static BRESULT setidentify(IDEDRV drv) {
 		for (i=0; i<20; i++) {
 			tmp[27+i] = (cdrom_model[i*2] << 8) + cdrom_model[i*2+1];
 		}
-		tmp[49] = 0x0A00;		// support LBA
+		tmp[49] = 0x0200;		// support LBA
 		tmp[51] = 0x0278;
 		tmp[53] = 0x0003;
 		tmp[63] = 0x0000;		// no support multiword DMA
