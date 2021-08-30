@@ -53,7 +53,7 @@ static REG8 IOINPCALL sysp_i33(UINT port) {
 	REG8	ret;
 
 	ret = ((~pccore.dipsw[0]) & 1) << 3;
-	ret |= rs232c_stat();
+	ret |= rs232c_stat() & 0xe0;
 	ret |= uPD4990.cdat;
 	(void)port;
 	return(ret);

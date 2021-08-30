@@ -116,6 +116,7 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixed
 	}
 	dcb.fOutX = FALSE;
 	dcb.fInX = FALSE;
+	dcb.fDsrSensitivity = TRUE;
 	::SetCommState(m_hSerial, &dcb);
 	return true;
 }
@@ -213,19 +214,46 @@ UINT CComSerial::LastWriteSuccess()
 
 /**
  * ステータスを得る
- * @return ステータス
+ * bit 7: ~CI (RI, RING)
+ * bit 6: ~CS (CTS)
+ * bit 5: ~CD (DCD, RLSD)
+ * bit 4: reserved
+ * bit 3: reserved
+ * bit 2: reserved
+ * bit 1: reserved
+ * bit 0: ~DSR (DR)
+ * @return ステータス 
  */
 UINT8 CComSerial::GetStat()
 {
-	DCB dcb;
-	::GetCommState(m_hSerial, &dcb);
-	if (!dcb.fDsrSensitivity)
-	{
-		return 0x20;
-	}
-	else
-	{
-		return 0x00;
+	DWORD modemStat;
+	if(::GetCommModemStatus(m_hSerial, &modemStat)){
+		UINT8 ret = 0;
+		if(!(modemStat & MS_DSR_ON)){
+			ret |= 0x01;
+		}
+		if(!(modemStat & MS_CTS_ON)){
+			ret |= 0x40;
+		}
+		if(!(modemStat & MS_RING_ON)){
+			ret |= 0x80;
+		}
+		if(!(modemStat & MS_RLSD_ON)){
+			ret |= 0x20;
+		}
+		return ret;
+	}else{
+		DWORD err;
+		COMSTAT ct;
+		::ClearCommError(m_hSerial, &err, &ct);
+		if (ct.fDsrHold)
+		{
+			return 0x01;
+		}
+		else
+		{
+			return 0x00;
+		}
 	}
 }
 

@@ -58,7 +58,7 @@ REG16 MEMCALL pegc_memvgaplane_rd16(UINT32 address){
 	}else{
 		if(pegc.remain == blocklength + 1){
 		}else{
-			addr += dstbitshift;
+			addr -= dstbitshift;
 		}
 	}
 	addr &= 0x80000-1; // ˆÀ‘S‚Ì‚½‚ß

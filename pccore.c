@@ -183,6 +183,7 @@ const OEMCHAR np2version[] = OEMTEXT(NP2VER_CORE);
 #if defined(SUPPORT_GAMEPORT)
 				0,
 #endif
+				0,
 	};
 
 	PCCORE	pccore = {	PCBASECLOCK25, PCBASEMULTIPLE,
@@ -680,6 +681,9 @@ void pccore_reset(void) {
 			CPU_EBX = 0;
 		}
 	}
+	
+	// mov cs,xxãñâ¬ÉtÉâÉO
+	i386cpuid.allow_movCS = np2cfg.allowMOVCS;
 
 	// FPUéÌóﬁÇê›íË
 	i386cpuid.fpu_type = np2cfg.fpu_type;

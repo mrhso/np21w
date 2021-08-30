@@ -306,6 +306,7 @@ struct tagNP2Config
 #if defined(SUPPORT_GAMEPORT)
 	UINT8	gameport; // 118音源のゲームポートを使用する
 #endif
+	UINT8	allowMOVCS; // mov cs,xx命令の実行を許可する（8086）
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

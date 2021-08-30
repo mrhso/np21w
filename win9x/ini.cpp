@@ -689,6 +689,7 @@ static const PFTBL s_IniItems[] =
 #if defined(SUPPORT_GAMEPORT)
 	PFVAL("GAMEPORT", PFTYPE_BOOL,		&np2cfg.gameport),
 #endif
+	PFVAL("USEMOVCS", PFRO_BOOL,		&np2cfg.allowMOVCS),
 
 	
 

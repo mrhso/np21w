@@ -32,7 +32,7 @@
 #define TAP_IOCTL_SET_MEDIA_STATUS \
   TAP_CONTROL_CODE (6, METHOD_BUFFERED)
  
-#define NET_BUFLEN (10*1024) // バッファ1つの長さ（XXX: パケットサイズの最大値にしないと無駄。もっと言えば可変長で大きな1つのバッファに入れるべき？）
+#define NET_BUFLEN (16*1024) // バッファ1つの長さ（XXX: パケットサイズの最大値にしないと無駄。もっと言えば可変長で大きな1つのバッファに入れるべき？）
 #define NET_ARYLEN (128) // バッファの数
 
 	NP2NET	np2net;
@@ -209,7 +209,7 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
 		if(!np2net_highspeedmode) {
 			Sleep(50);
 		}else{
-			Sleep(1);
+			Sleep(0);
 		}
 	}
 	CloseHandle(hEvent);

@@ -432,12 +432,12 @@ static REG8 IOINPCALL rs232c_i32(UINT port) {
 	rs232c_writeretry();
 
 	ret = rs232c.result;
-	if (!(rs232c_stat() & 0x20)) {
+	if (!(rs232c_stat() & 0x01)) {
 		return(ret | 0x80);
 	}
 	else {
 		(void)port;
-		return(ret);
+		return(ret | 0x00);
 	}
 }
 
@@ -450,21 +450,45 @@ static REG8 IOINPCALL rs232c_i132(UINT port) {
 	ret = rs232c.result;
 	ret = (ret & ~0xf7) | ((rs232c.result << 1) & 0x6) | ((rs232c.result >> 2) & 0x1);
 
-	if (!(rs232c_stat() & 0x20)) {
+	if (!(rs232c_stat() & 0x01)) {
 		return(ret | 0x80);
 	}
 	else {
 		(void)port;
-		return(ret);
+		return(ret | 0x00);
 	}
 }
 
 // FIFOƒ‚[ƒh
-
 #if defined(SUPPORT_RS232C_FIFO)
 static REG8 IOINPCALL rs232c_i134(UINT port) {
-
-	return(0x00);
+	
+	REG8	ret = 0;
+	static UINT8	lastret = 0;
+	UINT8	stat = rs232c_stat();
+	
+	/* stat
+	 * bit 7: ~CI (RI, RING)
+	 * bit 6: ~CS (CTS)
+	 * bit 5: ~CD (DCD, RLSD)
+	 * bit 0: ~DSR (DR)
+	 */
+	if(~stat & 0x20){
+		ret |= 0x80; // CD
+	}
+	if(~stat & 0x80){
+		ret |= 0x40; // CI
+	}
+	if(~stat & 0x01){
+		ret |= 0x20; // DR
+	}
+	if(~stat & 0x40){
+		ret |= 0x10; // CS
+	}
+	ret |= ((lastret >> 4) ^ ret) & 0xf; // diff
+	lastret = ret;
+	(void)port;
+	return(ret);
 }
 
 static REG8 IOINPCALL rs232c_i136(UINT port) {
