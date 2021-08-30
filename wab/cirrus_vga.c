@@ -6717,6 +6717,9 @@ static void pc98_cirrus_init_common(CirrusVGAState * s, int device_id, int is_pc
 			if((np2clvga.gd54xxtype & CIRRUS_98ID_AUTOMSK) == CIRRUS_98ID_AUTOMSK || np2clvga.gd54xxtype != CIRRUS_98ID_96){
 				iocore_attachout(0xff82, cirrusvga_off82);
 				iocore_attachinp(0xff82, cirrusvga_iff82);
+				
+				//iocore_attachout(0x904, cirrusvga_o0904);
+				//iocore_attachinp(0x904, cirrusvga_i0904);	
 
 				for(i=0;i<16;i++){
 					iocore_attachout(0xca0 + i, vga_ioport_write_wrap);	// 0x3C0 to 0x3CF

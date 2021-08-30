@@ -537,7 +537,7 @@ protected:
 	 */
 	virtual void OnOK()
 	{
-		UINT nSize = GetDlgItemInt(IDC_HDDSIZE, NULL, FALSE);
+		UINT nSize = m_nHddSize;
 		nSize = max(nSize, m_nHddMinSize);
 		nSize = min(nSize, m_nHddMaxSize);
 		m_nHddSize = nSize;
@@ -588,6 +588,7 @@ protected:
 								m_HddS = s_sasihddtbl[selindex].sectors;
 								m_HddSS = 256;
 								m_nHddSize = (UINT32)((FILELEN)m_HddC * m_HddH * m_HddS * m_HddSS / 1024 / 1024);
+								m_nHddSize = (m_nHddSize + 4) / 5 * 5; // 5MB’PˆÊ‚É‚·‚é
 								SetDlgItemInt(IDC_HDDADVANCED_C, m_HddC, FALSE);
 								SetDlgItemInt(IDC_HDDADVANCED_H, m_HddH, FALSE);
 								SetDlgItemInt(IDC_HDDADVANCED_S, m_HddS, FALSE);
