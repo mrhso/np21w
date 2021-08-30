@@ -53,6 +53,7 @@ void pcm86_reset(void)
 	pcm86->stepclock *= pccore.multiple;
 	pcm86->rescue = (PCM86_RESCUE * 32) << 2;
 	pcm86->irq = 0xff;
+	pcm86_setpcmrate(pcm86->fifo); // デフォルト値をセット
 }
 
 void pcm86gen_update(void)
@@ -71,7 +72,7 @@ void pcm86_setpcmrate(REG8 val)
 	pcm86->rateval = rate = pcm86rate8[val & 7];
 	pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 	pcm86->stepclock /= rate;
-	pcm86->stepclock *= (pccore.multiple << 3);
+	pcm86->stepclock *= (pccore.multiple << 5) * (1 << (pccore.multiple >> 5)); // XXX: クロック数が大きいときに特別加算
 	if (pcm86cfg.rate)
 	{
 		pcm86->div = (rate << (PCM86_DIVBIT - 3)) / pcm86cfg.rate;
@@ -144,7 +145,7 @@ void pcm86_changeclock(void)
 		if(pcm86->rateval){
 			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			pcm86->stepclock /= pcm86->rateval;
-			pcm86->stepclock *= (pccore.multiple << 3);
+			pcm86->stepclock *= (pccore.multiple << 5) * (1 << (pccore.multiple >> 5)); // XXX: クロック数が大きいときに特別加算
 		}else{
 			//pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			//pcm86->stepclock /= 44100;
@@ -168,7 +169,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		past = past / pcm86->stepclock;
 		pcm86->lastclock += (past * pcm86->stepclock);
-		//RECALC_NOWCLKWAIT(past);
+		RECALC_NOWCLKWAIT(past);
 	}
 	
 	// XXX: Windowsでフリーズする問題の暫定対症療法（ある程度時間が経った小さいバッファを捨てる）
