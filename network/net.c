@@ -109,7 +109,7 @@ static int doWriteTap(HANDLE hTap, const UCHAR *pSendBuf, DWORD len, OVERLAPPED 
 					}
 				}
 				if(!cancel && GETTICK() - beginTime > 3000){
-					CancelIoEx(np2net_hTap, ovl); // 秒単位で終わらないのはおかしいのでキャンセル
+					//CancelIoEx(np2net_hTap, ovl); // 秒単位で終わらないのはおかしいのでキャンセル
 					cancel = 1;
 				}
 				if(np2net_hThreadexit){
