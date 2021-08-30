@@ -79,10 +79,10 @@ BOOL SndOptMixerPage::OnInitDialog()
 	m_master.SetStaticId(IDC_VOLMASTERSTR);
 	m_master.SetRange(0, 100);
 	m_master.SetPos(np2cfg.vol_master);
-	if(!np2oscfg.usemastervolume){
-		m_master.SetPos(100);
-		m_master.EnableWindow(FALSE);
-	}
+	//if(!np2oscfg.usemastervolume){
+	//	m_master.SetPos(100);
+	//	m_master.EnableWindow(FALSE);
+	//}
 
 	m_fm.SubclassDlgItem(IDC_VOLFM, this);
 	m_fm.SetStaticId(IDC_VOLFMSTR);
@@ -123,50 +123,52 @@ BOOL SndOptMixerPage::OnInitDialog()
 void SndOptMixerPage::OnOK()
 {
 	bool bUpdated = false;
+	bool bMasterChange = false;
 	
-	if(np2oscfg.usemastervolume){
+	//if(np2oscfg.usemastervolume){
 		const UINT8 cMaster = static_cast<UINT8>(m_master.GetPos());
 		if (np2cfg.vol_master != cMaster)
 		{
 			np2cfg.vol_master = cMaster;
+			bMasterChange = true;
 			soundmng_setvolume(cMaster);
 			bUpdated = true;
 		}
-	}
+	//}
 
 	UINT volex = 15;
 	if(g_nSoundID==SOUNDID_WAVESTAR){
 		volex = cs4231.devvolume[0xff];
 	}
 	const UINT8 cFM = static_cast<UINT8>(m_fm.GetPos());
-	if (np2cfg.vol_fm != cFM)
+	if (np2cfg.vol_fm != cFM || bMasterChange)
 	{
 		np2cfg.vol_fm = cFM;
-		opngen_setvol(cFM * volex / 15);
+		opngen_setvol(cFM * volex / 15 * np2cfg.vol_master / 100);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumeFM_linear(cFM * volex / 15);
+		opna_fmgen_setallvolumeFM_linear(cFM * volex / 15 * np2cfg.vol_master / 100);
 #endif	/* SUPPORT_FMGEN */
 		bUpdated = true;
 	}
 
 	const UINT8 cPSG = static_cast<UINT8>(m_psg.GetPos());
-	if (np2cfg.vol_ssg != cPSG)
+	if (np2cfg.vol_ssg != cPSG || bMasterChange)
 	{
 		np2cfg.vol_ssg = cPSG;
-		psggen_setvol(cPSG * volex / 15);
+		psggen_setvol(cPSG * volex / 15 * np2cfg.vol_master / 100);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumePSG_linear(cPSG * volex / 15);
+		opna_fmgen_setallvolumePSG_linear(cPSG * volex / 15 * np2cfg.vol_master / 100);
 #endif	/* SUPPORT_FMGEN */
 		bUpdated = true;
 	}
 
 	const UINT8 cADPCM = static_cast<UINT8>(m_adpcm.GetPos());
-	if (np2cfg.vol_adpcm != cADPCM)
+	if (np2cfg.vol_adpcm != cADPCM || bMasterChange)
 	{
 		np2cfg.vol_adpcm = cADPCM;
-		adpcm_setvol(cADPCM);
+		adpcm_setvol(cADPCM * np2cfg.vol_master / 100);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumeADPCM_linear(cADPCM);
+		opna_fmgen_setallvolumeADPCM_linear(cADPCM * np2cfg.vol_master / 100);
 #endif	/* SUPPORT_FMGEN */
 		for (UINT i = 0; i < _countof(g_opna); i++)
 		{
@@ -176,21 +178,21 @@ void SndOptMixerPage::OnOK()
 	}
 
 	const UINT8 cPCM = static_cast<UINT8>(m_pcm.GetPos());
-	if (np2cfg.vol_pcm != cPCM)
+	if (np2cfg.vol_pcm != cPCM || bMasterChange)
 	{
 		np2cfg.vol_pcm = cPCM;
-		pcm86gen_setvol(cPCM);
+		pcm86gen_setvol(cPCM * np2cfg.vol_master / 100);
 		pcm86gen_update();
 		bUpdated = true;
 	}
 
 	const UINT8 cRhythm = static_cast<UINT8>(m_rhythm.GetPos());
-	if (np2cfg.vol_rhythm != cRhythm)
+	if (np2cfg.vol_rhythm != cRhythm || bMasterChange)
 	{
 		np2cfg.vol_rhythm = cRhythm;
-		rhythm_setvol(cRhythm * volex / 15);
+		rhythm_setvol(cRhythm * volex / 15 * np2cfg.vol_master / 100);
 #if defined(SUPPORT_FMGEN)
-		opna_fmgen_setallvolumeRhythmTotal_linear(cRhythm * volex / 15);
+		opna_fmgen_setallvolumeRhythmTotal_linear(cRhythm * volex / 15 * np2cfg.vol_master / 100);
 #endif	/* SUPPORT_FMGEN */
 		for (UINT i = 0; i < _countof(g_opna); i++)
 		{
@@ -200,7 +202,7 @@ void SndOptMixerPage::OnOK()
 	}
 	
 	const UINT8 cCDDA = static_cast<UINT8>(m_cdda.GetPos());
-	if (np2cfg.davolume != cCDDA)
+	if (np2cfg.davolume != cCDDA || bMasterChange)
 	{
 		np2cfg.davolume = cCDDA;
 		//ideio_setdavol(cCDDA);

@@ -17,6 +17,8 @@
 // XXX: WORKAROUND for Win9x boot menu & PC-98 HDD boot menu
 #include	"keystat.h"
 
+#define SXSIBIOS_WORKSIZE	4096
+
 extern int sxsi_unittbl[];
 
 extern int sxsi_workaround_bootwait;
@@ -65,7 +67,7 @@ static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, FILEPOS *ppos) {
 	}
 
 	*ppos = pos;
-	if (sxsi->size > 1024) {
+	if (sxsi->size > SXSIBIOS_WORKSIZE) {
 		ret = 0xd0;
 	}
 	return(ret);
@@ -78,7 +80,7 @@ static REG8 sasibios_write(UINT type, SXSIDEV sxsi) {
 	FILEPOS	pos;
 	UINT32	addr;
 	UINT	r;
-	UINT8	work[1024];
+	UINT8	work[SXSIBIOS_WORKSIZE];
 
 	size = CPU_BX;
 	if (!size) {
@@ -108,7 +110,7 @@ static REG8 scsibios_write(UINT type, SXSIDEV sxsi) {
 	FILEPOS	pos;
 	UINT32	addr;
 	UINT	r;
-	UINT8	work[1024];
+	UINT8	work[SXSIBIOS_WORKSIZE];
 
 	size = CPU_BX;
 	if (!size) {
@@ -139,7 +141,7 @@ static REG8 sasibios_read(UINT type, SXSIDEV sxsi) {
 	FILEPOS	pos;
 	UINT32	addr;
 	UINT	r;
-	UINT8	work[1024];
+	UINT8	work[SXSIBIOS_WORKSIZE];
 	FILEPOS	posbase;
 	UINT8	oldAL = CPU_AL;
 
@@ -236,7 +238,7 @@ static REG8 scsibios_read(UINT type, SXSIDEV sxsi) {
 	FILEPOS	pos;
 	UINT32	addr;
 	UINT	r;
-	UINT8	work[1024];
+	UINT8	work[SXSIBIOS_WORKSIZE];
 	FILEPOS	posbase;
 	UINT8	oldAL = CPU_AL;
 

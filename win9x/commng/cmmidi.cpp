@@ -6,6 +6,7 @@
 #include "compiler.h"
 #include "cmmidi.h"
 #include "np2.h"
+#include "pccore.h"
 
 #include "cmmidiin32.h"
 #include "cmmidiout32.h"
@@ -481,6 +482,12 @@ UINT CComMidi::Write(UINT8 cData)
 				MIDICH* mch = m_midich + (m_sBuffer[0] & 0xf);
 				switch (m_sBuffer[0] & 0xf0)
 				{
+					case 0x90:
+						if(np2oscfg.usemidivolume){
+							m_sBuffer[2] = (UINT8)((UINT32)m_sBuffer[2] * np2cfg.vol_master / 100); // ñ≥óùñÓóù
+						}
+						break;
+
 					case 0xb0:
 						if (m_sBuffer[1] == 123)
 						{

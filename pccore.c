@@ -342,22 +342,22 @@ static void sound_init(void)
 	tms3631_initialize(rate);
 	tms3631_setvol(np2cfg.vol14);
 	opngen_initialize(rate);
-	opngen_setvol(np2cfg.vol_fm);
+	opngen_setvol(np2cfg.vol_fm * np2cfg.vol_master / 100);
 	psggen_initialize(rate);
-	psggen_setvol(np2cfg.vol_ssg);
+	psggen_setvol(np2cfg.vol_ssg * np2cfg.vol_master / 100);
 	rhythm_initialize(rate);
-	rhythm_setvol(np2cfg.vol_rhythm);
+	rhythm_setvol(np2cfg.vol_rhythm * np2cfg.vol_master / 100);
 	adpcm_initialize(rate);
-	adpcm_setvol(np2cfg.vol_adpcm);
+	adpcm_setvol(np2cfg.vol_adpcm * np2cfg.vol_master / 100);
 	pcm86gen_initialize(rate);
-	pcm86gen_setvol(np2cfg.vol_pcm);
+	pcm86gen_setvol(np2cfg.vol_pcm * np2cfg.vol_master / 100);
 	cs4231_initialize(rate);
 #ifdef SUPPORT_SOUND_SB16
 	ct1741_initialize(rate);
 #endif
 	amd98_initialize(rate);
 	oplgen_initialize(rate);
-	oplgen_setvol(np2cfg.vol_fm);
+	oplgen_setvol(np2cfg.vol_fm * np2cfg.vol_master / 100);
 }
 
 static void sound_term(void) {

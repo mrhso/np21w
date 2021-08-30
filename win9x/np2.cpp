@@ -94,6 +94,7 @@
 #if defined(SUPPORT_CL_GD5430)
 #include "wab/cirrus_vga_extern.h"
 #endif
+#include "fmboard.h"
 #include "pcm86.h"
 #if defined(SUPPORT_PHYSICAL_CDDRV)
 #include "Dbt.h"
@@ -189,7 +190,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 1, 0, 1, 1, 
 						0, 0, 
 						0, 8, 
-						0, 0, 0, TCMODE_DEFAULT, 0, 1, 
+						0, 0, 0, TCMODE_DEFAULT, 0, 0,
 						0,
 #if defined(SUPPORT_WACOM_TABLET)
 						0,
@@ -2588,7 +2589,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					sysmng_updatecaption(SYS_UPDATECAPTION_MISC);
 					tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
 				}else{
-					if(np2oscfg.usemastervolume){
+					//if(np2oscfg.usemastervolume){
 						int cMaster = np2cfg.vol_master;
 						cMaster += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 2;
 						if(cMaster < 0) cMaster = 0;
@@ -2597,11 +2598,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 						{
 							np2cfg.vol_master = cMaster;
 							soundmng_setvolume(cMaster);
+							fmboard_updatevolume();
 						}
 						sys_miscinfo.showvolume = 1;
 						sysmng_updatecaption(SYS_UPDATECAPTION_MISC);
 						tmrSysMngHide = SetTimer(hWnd, TMRSYSMNG_ID, 5000, SysMngHideTimerProc);
-					}
+					//}
 				}
 			}
 			break;

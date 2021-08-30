@@ -998,6 +998,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "CPUウェイト無し(&N)",         IDM_NOWAIT
         MENUITEM "CPUクロック安定化(&C)",       IDM_CPUSTABILIZER
+        MENUITEM "CPUクロック可変[実験中](&A)", IDM_ASYNCCPU
         MENUITEM SEPARATOR
         MENUITEM "自動フレームスキップ(&A)",    IDM_AUTOFPS
         MENUITEM "フレームスキップ無し(&U)",    IDM_60FPS

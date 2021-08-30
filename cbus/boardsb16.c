@@ -399,7 +399,7 @@ static void SOUNDCALL opl3gen_getpcm(void* opl3, SINT32 *pcm, UINT count) {
 	SINT32 oplfm_volume;
 	SINT32 midivolL = g_sb16.mixregexp[MIXER_MIDI_LEFT];
 	SINT32 midivolR = g_sb16.mixregexp[MIXER_MIDI_RIGHT];
-	oplfm_volume = np2cfg.vol_fm;
+	oplfm_volume = np2cfg.vol_fm * np2cfg.vol_master / 100;
 	buf[0] = &s1l;
 	buf[1] = &s1r;
 	buf[2] = &s2l;

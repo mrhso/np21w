@@ -1685,6 +1685,9 @@ static void cirrus_get_resolution(VGAState *s, int *pwidth, int *pheight)
 	if(width==320) height /= 2; // XXX: Win98で表示がおかしくなるのでとりあえず仮
 	if(width==400) height = 300; // XXX: Win98で表示がおかしくなるのでとりあえず仮
 	if(width==512) height = 384; // XXX: Win98で表示がおかしくなるのでとりあえず仮
+	if(height >= width * 3 / 4 * 2){
+		height /= 2; // XXX: 縦長過ぎるとき、高さ半分にしておく
+	}
 	
 	// WSN 1280x1024
 	if(np2clvga.gd54xxtype == CIRRUS_98ID_WSN || np2clvga.gd54xxtype == CIRRUS_98ID_WAB || np2clvga.gd54xxtype == CIRRUS_98ID_WSN_A2F){

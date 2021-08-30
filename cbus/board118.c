@@ -571,7 +571,7 @@ static void SOUNDCALL opl3gen_getpcm2(void* opl3, SINT32 *pcm, UINT count) {
 	buf[3] = &s2r;
 
 	// NP2グローバルFMボリューム(0～127)
-	oplfm_volume = np2cfg.vol_fm; 
+	oplfm_volume = np2cfg.vol_fm * np2cfg.vol_master / 100; 
 
 	// Canbe/ValueStarミキサー FMボリューム(0～31) bit7:1=mute, bit6-5:reserved, bit4-0:volume(00000b max, 11111b min)
 	if(oplfm_softvolumereg_L != cs4231.devvolume[0x30]){
@@ -719,14 +719,14 @@ void board118_reset(const NP2CFG *pConfig)
 	if(g_nSoundID==SOUNDID_WAVESTAR){
 		// FM音量
 		cs4231.devvolume[0xff] = 0xf;
-		opngen_setvol(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
-		psggen_setvol(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
-		rhythm_setvol(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+		opngen_setvol(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
+		psggen_setvol(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
+		rhythm_setvol(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
 #if defined(SUPPORT_FMGEN)
 		if(np2cfg.usefmgen) {
-			opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15);
-			opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15);
-			opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15);
+			opna_fmgen_setallvolumeFM_linear(np2cfg.vol_fm * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
+			opna_fmgen_setallvolumePSG_linear(np2cfg.vol_ssg * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
+			opna_fmgen_setallvolumeRhythmTotal_linear(np2cfg.vol_rhythm * cs4231.devvolume[0xff] / 15 * np2cfg.vol_master / 100);
 		}
 #endif
 	}

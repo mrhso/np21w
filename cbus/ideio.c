@@ -1637,14 +1637,14 @@ static SINT32	sampcount2_n = 0;
 					sampr = ((SINT8)ptr[3] << 8) + ptr[2];
 					ptr += 4;
 					sampcount2_n += samplen_n;
-					buf_l += (SINT)((int)(sampl)*np2cfg.davolume*cdda_softvolume_L/255/31);
-					buf_r += (SINT)((int)(sampr)*np2cfg.davolume*cdda_softvolume_R/255/31);
+					buf_l += (SINT)((int)(sampl)*((int)np2cfg.davolume * np2cfg.vol_master / 100)*cdda_softvolume_L/255/31);
+					buf_r += (SINT)((int)(sampr)*((int)np2cfg.davolume * np2cfg.vol_master / 100)*cdda_softvolume_R/255/31);
 					buf_count++;
 					if(sampcount2_n > sampcount2_d){
 						pcm[0] += buf_l / buf_count;
 						pcm[1] += buf_r / buf_count;
-						//pcm[0] += (SINT)((int)(sampl)*np2cfg.davolume/255);
-						//pcm[1] += (SINT)((int)(sampr)*np2cfg.davolume/255);
+						//pcm[0] += (SINT)((int)(sampl)*((int)np2cfg.davolume * np2cfg.vol_master / 100)/255);
+						//pcm[1] += (SINT)((int)(sampr)*((int)np2cfg.davolume * np2cfg.vol_master / 100)/255);
 						pcm += 2 * (sampcount2_n / sampcount2_d);
 						--r;
 						sampcount2_n = sampcount2_n % sampcount2_d;
@@ -1657,8 +1657,8 @@ static SINT32	sampcount2_n = 0;
 				do {
 					sampl = ((SINT8)ptr[1] << 8) + ptr[0];
 					sampr = ((SINT8)ptr[3] << 8) + ptr[2];
-					pcm[0] += (SINT)((int)(sampl)*np2cfg.davolume*cdda_softvolume_L/255/31);
-					pcm[1] += (SINT)((int)(sampr)*np2cfg.davolume*cdda_softvolume_L/255/31);
+					pcm[0] += (SINT)((int)(sampl)*((int)np2cfg.davolume * np2cfg.vol_master / 100)*cdda_softvolume_L/255/31);
+					pcm[1] += (SINT)((int)(sampr)*((int)np2cfg.davolume * np2cfg.vol_master / 100)*cdda_softvolume_L/255/31);
 					sampcount2_n -= sampcount2_d;
 					if(sampcount2_n <= 0){
 						sampcount2_n += samplen_n;
