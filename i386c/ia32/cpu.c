@@ -537,7 +537,7 @@ cpucontinue:
 		// ”ñ“¯ŠúCPUˆ—
 		if(np2cfg.asynccpu){
 #define LATECOUNTER_THRESHOLD	6
-#define LATECOUNTER_THRESHOLDM	6
+#define LATECOUNTER_THRESHOLDM	2
 			int realclock = 0;
 			if(CPU_STAT_HLT){
 				hltflag = pccore.multiple;

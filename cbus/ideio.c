@@ -77,7 +77,7 @@ static BRESULT setidentify(IDEDRV drv) {
 	UINT16	tmp[256];
 	UINT8	*p;
 	UINT	i;
-	UINT32	size;
+	FILELEN	size;
 
 	sxsi = sxsi_getptr(drv->sxsidrv);
 	if ((sxsi == NULL) || (!(sxsi->flag & SXSIFLAG_READY) && drv->device != IDETYPE_CDROM)) {
@@ -109,11 +109,11 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[49] = 0x0200;		// support LBA
 		tmp[51] = 0x0200;
 		tmp[53] = 0x0001;
-		size = sxsi->cylinders * sxsi->surfaces * sxsi->sectors;
-		tmp[54] = size / drv->surfaces / drv->sectors;//sxsi->cylinders;
+		size = (FILELEN)sxsi->cylinders * sxsi->surfaces * sxsi->sectors;
+		tmp[54] = (UINT16)(size / drv->surfaces / drv->sectors);//sxsi->cylinders;
 		tmp[55] = drv->surfaces;//sxsi->surfaces;
 		tmp[56] = drv->sectors;//sxsi->sectors;
-		size = (UINT32)tmp[54] * tmp[55] * tmp[56];
+		size = (FILELEN)tmp[54] * tmp[55] * tmp[56];
 		tmp[57] = (UINT16)size;
 		tmp[58] = (UINT16)(size >> 16);
 #if IDEIO_MULTIPLE_MAX > 0
@@ -326,7 +326,7 @@ static void incsec(IDEDRV drv) {
 
 	if (!(drv->dr & IDEDEV_LBA)) {
 		drv->sn++;
-		if (drv->sn <= drv->sectors) {
+		if (drv->sn <= drv->sectors && drv->sn!=0) {
 			return;
 		}
 		drv->sn = 1;

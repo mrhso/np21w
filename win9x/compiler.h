@@ -211,7 +211,7 @@ typedef	signed __int64		SINT64;
 typedef INT64	FILEPOS;
 typedef INT64	FILELEN;
 #define	NHD_MAXSIZE		8000
-#define	NHD_MAXSIZE2	32000
+#define	NHD_MAXSIZE2	130558
 #else
 typedef long	FILEPOS;
 typedef long	FILELEN;

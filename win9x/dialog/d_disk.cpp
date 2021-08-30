@@ -230,7 +230,7 @@ static const UINT32 s_hddsizetbl[] = {20, 41, 65, 80, 127, 255, 511, 1023, 2047}
 #endif
 
 /** HDD ÉTÉCÉY */
-static const UINT32 s_hddCtbl[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536};
+static const UINT32 s_hddCtbl[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65535};
 static const UINT32 s_hddHtbl[] = { 8, 15, 16};
 static const UINT32 s_hddStbl[] = {17, 63, 255};
 static const UINT32 s_hddSStbl[] = {256, 512};

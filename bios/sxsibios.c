@@ -38,7 +38,12 @@ static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, FILEPOS *ppos) {
 															+ CPU_DL;
 	}
 	else {
-		pos = (CPU_DL << 16) | CPU_CX;
+		if(sxsi->totals > 0xffffff){
+			// 大容量ディスク用
+			pos = ((FILEPOS)CPU_DX << 16) | CPU_CX;
+		}else{
+			pos = (CPU_DL << 16) | CPU_CX;
+		}
 		if (type == SXSIBIOS_SASI) {
 			pos &= 0x1fffff;
 		}
