@@ -41,7 +41,7 @@ static TCHAR *GetNetWorkDeviceGuid(CONST TCHAR *, TCHAR *, DWORD); // TAPƒfƒoƒCƒ
 
 static TCHAR np2net_tapName[MAX_PATH]; // TAPƒfƒoƒCƒX–¼
 
-static HANDLE	np2net_hTap = NULL; // TAPƒfƒoƒCƒX‚Ì“Ç‚İ‘‚«ƒnƒ“ƒhƒ‹
+static HANDLE	np2net_hTap = INVALID_HANDLE_VALUE; // TAPƒfƒoƒCƒX‚Ì“Ç‚İ‘‚«ƒnƒ“ƒhƒ‹
 static HANDLE	np2net_hThreadR = NULL; // Read—pƒXƒŒƒbƒh
 static HANDLE	np2net_hThreadW = NULL; // Write—pƒXƒŒƒbƒh
 static int		np2net_hThreadexit = 0; // ƒXƒŒƒbƒhI—¹ƒtƒ‰ƒO
@@ -219,13 +219,15 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
 
 //  TAPƒfƒoƒCƒX‚ğ•Â‚¶‚é
 static void np2net_closeTAP(){
-    if (np2net_hTap != NULL) {
+	ULONG status = FALSE;
+	DWORD dwLen;
+    if (np2net_hTap != INVALID_HANDLE_VALUE) {
 		if(np2net_hThreadR){
 			np2net_hThreadexit = 1;
 			if(WaitForSingleObject(np2net_hThreadR, 5000) == WAIT_TIMEOUT){
 				TerminateThread(np2net_hThreadR, 0);
 			}
-			if(WaitForSingleObject(np2net_hThreadW, 1000) == WAIT_TIMEOUT){
+			if(WaitForSingleObject(np2net_hThreadW, 5000) == WAIT_TIMEOUT){
 				TerminateThread(np2net_hThreadW, 0);
 			}
 			np2net_membuf_readpos = np2net_membuf_writepos;
@@ -235,14 +237,23 @@ static void np2net_closeTAP(){
 			np2net_hThreadR = NULL;
 			np2net_hThreadW = NULL;
 		}
+		
+		// TAP ƒfƒoƒCƒX‚ğ”ñƒAƒNƒeƒBƒu‚É
+		status = FALSE;
+		if (!DeviceIoControl(np2net_hTap,TAP_IOCTL_SET_MEDIA_STATUS,
+					&status, sizeof(status), &status, sizeof(status),
+					&dwLen, NULL)) {
+			TRACEOUT(("LGY-98: TAP_IOCTL_SET_MEDIA_STATUS err"));
+		}
+ 
 		CloseHandle(np2net_hTap);
 		TRACEOUT(("LGY-98: TAP is closed"));
-		np2net_hTap = NULL;
+		np2net_hTap = INVALID_HANDLE_VALUE;
     }
 }
 //  TAPƒfƒoƒCƒX‚ğŠJ‚­
 static int np2net_openTAP(const TCHAR* tapname){
-	DWORD dwID;
+	unsigned int dwID;
 	DWORD dwLen;
 	ULONG status = TRUE;
 	TCHAR Buf[2048];

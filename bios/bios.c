@@ -321,6 +321,11 @@ static void bios_reinitbyswitch(void) {
 	
 #if defined(SUPPORT_PCI)
 	mem[0xF8E80+0x0004] |= 0x2c;
+	if(pcidev.enable){
+		mem[0xF8E80+0x0004] |= 0x20;
+	}else{
+		mem[0xF8E80+0x0004] &= ~0x20;
+	}
 	//mem[0x5B7] = (0x277 >> 2); // READ_DATA port address
 	mem[0x5B8] = 0x00; // No C-Bus PnP boards
 #endif
@@ -330,6 +335,7 @@ static void bios_reinitbyswitch(void) {
 #else
 	mem[0xF8E80+0x0011] &= ~0x10; // clear 115200bps support flag
 #endif
+	mem[0xF8E80+0x0011] &= ~0x08; // clear 2nd serial interface flag
 	
 #if defined(SUPPORT_HRTIMER)
 	{

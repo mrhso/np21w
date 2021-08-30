@@ -9,9 +9,28 @@
 
 static void IOOUTCALL sysp_o35(UINT port, REG8 dat) {
 
+	//int intreq = 0;
 	if ((sysport.c ^ dat) & 0x04) {					// ver0.29
 		rs232c.send = 1;
 	}
+	//if((sysport.c & 1) && !(dat & 1)){
+	//	if(rs232c.result & 2){
+	//		intreq = 1;
+	//	}
+	//}
+	//if((sysport.c & 2) && !(dat & 2)){
+	//	if(rs232c.result & 4){
+	//		intreq = 1;
+	//	}
+	//}
+	//if((sysport.c & 4) && !(dat & 4)){
+	//	if(rs232c.result & 1){
+	//		intreq = 1;
+	//	}
+	//}
+	//if(intreq){
+	//	pic_setirq(4);
+	//}
 	sysport.c = dat;
 	beep_oneventset();
 	(void)port;

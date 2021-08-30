@@ -48,7 +48,7 @@ UINT CComNull::Write(UINT8 cData)
  */
 UINT8 CComNull::GetStat()
 {
-	return 0xf0;
+	return 0xf1;
 }
 
 /**

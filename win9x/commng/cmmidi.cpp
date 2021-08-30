@@ -584,7 +584,7 @@ UINT CComMidi::Write(UINT8 cData)
  */
 UINT8 CComMidi::GetStat()
 {
-	return 0x00;
+	return 0xa0;
 }
 
 /**

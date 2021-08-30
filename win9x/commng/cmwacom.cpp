@@ -741,11 +741,11 @@ UINT CComWacom::Write(UINT8 cData)
 				m_config.start = true; // Start sending coordinates
 				m_config.mode19200 = false;
 			}else if(strcmp(m_cmdbuf, "$")==0){
-				// Reset to 9600 bps (sent at 19200 bps) & Disable Pressure
+				// Reset to 9600 bps (sent at 19200 bps)? & Disable Pressure
 				m_sBuffer_rpos = m_sBuffer_wpos; // データ放棄
 				m_config.scrnsizemode = false;
 				m_config.disablepressure = true;
-				m_config.mode19200 = false;
+				m_config.mode19200 = false; // 違うかも
 			}else if(strncmp(m_cmdbuf, "ST", 2)==0){
 				m_config.start = true; // Start sending coordinates
 			}else if(strncmp(m_cmdbuf, "@ST", 2)==0){
@@ -810,7 +810,7 @@ UINT CComWacom::Write(UINT8 cData)
 					sprintf(data, "KT-0405-R00 V1.3-2 95/04/28 by WACOM\r\n%.4s\r\nI AM FINE.\r\n", m_cmdbuf + 2);
 				}
 				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
-				SendDataToReadBuffer(data, strlen(data));
+				SendDataToReadBuffer(data, (int)strlen(data));
 				m_lastdatalen = 0;
 				m_wait = sizeof(data);
 				m_config.enable = true;

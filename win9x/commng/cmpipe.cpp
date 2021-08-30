@@ -226,7 +226,27 @@ UINT CComPipe::LastWriteSuccess()
  */
 UINT8 CComPipe::GetStat()
 {
-	return 0x00;
+	UINT8 ret = 0xa0;
+	DWORD dwReadSize;
+	if (m_hSerial == INVALID_HANDLE_VALUE) {
+		ret = 0xe1;
+	}else if (!PeekNamedPipe(m_hSerial, NULL, 0, NULL, &dwReadSize, NULL)){
+		DWORD err = GetLastError();
+		if(err==ERROR_BAD_PIPE){
+			ret = 0xe1;
+		}else{
+			if(m_isserver){
+				if(err==ERROR_BROKEN_PIPE){
+					ret = 0xe1;
+				}
+			}else{
+				if(err==ERROR_PIPE_NOT_CONNECTED){
+					ret = 0xe1;
+				}
+			}
+		}
+	}
+	return ret;
 }
 
 /**

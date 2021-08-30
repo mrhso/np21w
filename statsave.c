@@ -1434,26 +1434,26 @@ static int flagload_com(STFLAGH sfh, const SFENTRY *tbl) {
 	switch(device) {
 		case 0:
 			commng_destroy(cm_mpu98);
-			cm = commng_create(COMCREATE_MPU98II);
+			cm = commng_create(COMCREATE_MPU98II, FALSE);
 			cm_mpu98 = cm;
 			break;
 
 		case 1:
 			commng_destroy(cm_rs232c);
-			cm = commng_create(COMCREATE_SERIAL);
+			cm = commng_create(COMCREATE_SERIAL, FALSE);
 			cm_rs232c = cm;
 			break;
 			
 #if defined(SUPPORT_SMPU98)
 		case 2:
 			commng_destroy(cm_smpu98[0]);
-			cm = commng_create(COMCREATE_SMPU98_A);
+			cm = commng_create(COMCREATE_SMPU98_A, FALSE);
 			cm_smpu98[0] = cm;
 			break;
 
 		case 3:
 			commng_destroy(cm_smpu98[1]);
-			cm = commng_create(COMCREATE_SMPU98_B);
+			cm = commng_create(COMCREATE_SMPU98_B, FALSE);
 			cm_smpu98[1] = cm;
 			break;
 #endif

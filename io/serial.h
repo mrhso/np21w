@@ -70,6 +70,8 @@ void rs232c_open(void);
 void rs232c_callback(void);
 
 UINT8 rs232c_stat(void);
+UINT8 rs232c_geterror(void);
+void rs232c_clearerror(void);
 void rs232c_midipanic(void);
 
 #if defined(SUPPORT_RS232C_FIFO)
