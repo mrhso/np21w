@@ -1179,6 +1179,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 			if (drv->device == IDETYPE_HDD) {
 				drv->mulcnt = 0;
 				drv->multhr = drv->mulmode;
+				drv->lba48mode = 1;
 				readsec(drv);
 				break;
 			}
@@ -1192,6 +1193,7 @@ static void IOOUTCALL ideio_o64e(UINT port, REG8 dat) {
 			if (drv->device == IDETYPE_HDD) {
 				drv->mulcnt = 0;
 				drv->multhr = drv->mulmode;
+				drv->lba48mode = 1;
 				writesec(drv);
 				break;
 			}
@@ -1513,7 +1515,6 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 						break;
 					}
 					incsec(drv);
-					drv->sc--;
 #if defined(SUPPORT_IDEIO_48BIT)
 					if(drv->lba48mode){
 						drv->lba48sc--;
@@ -1534,6 +1535,7 @@ void IOOUTCALL ideio_w16(UINT port, REG16 value) {
 					}else
 #endif
 					{
+						drv->sc--;
 						if (drv->sc) {
 							writesec(drv);
 						}else{
@@ -1586,7 +1588,6 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 				case 0xc4:
 				case 0x29:
 					incsec(drv);
-					drv->sc--;
 #if defined(SUPPORT_IDEIO_48BIT)
 					if(drv->lba48mode){
 						drv->lba48sc--;
@@ -1600,6 +1601,7 @@ REG16 IOINPCALL ideio_r16(UINT port) {
 					}else
 #endif
 					{
+						drv->sc--;
 						if (drv->sc) {
 							readsec(drv);
 						}else{

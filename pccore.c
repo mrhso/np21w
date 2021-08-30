@@ -398,6 +398,10 @@ void pccore_mem_free(void) {
 	
 void pccore_init(void) {
 	
+#if defined(SUPPORT_MULTITHREAD)
+	nevent_initialize();
+#endif
+	
 #if defined(SUPPORT_IA32_HAXM)
 	i386hax_check();
 	np2hax.enable = 1;
@@ -502,7 +506,10 @@ void pccore_term(void) {
 #if defined(SUPPORT_IA32_HAXM)
 	pccore_mem_free();
 #endif
-
+	
+#if defined(SUPPORT_MULTITHREAD)
+	nevent_shutdown();
+#endif
 }
 
 

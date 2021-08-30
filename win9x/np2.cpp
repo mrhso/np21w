@@ -3258,6 +3258,7 @@ static void framereset_MT_UIThread(UINT cnt) {
 	scrnmng_dispclock();
 #endif
 	kdispwin_draw((UINT8)cnt);
+	sysmng_requestupdatecheck();
 	skbdwin_process();
 	mdbgwin_process();
 	toolwin_draw((UINT8)cnt);

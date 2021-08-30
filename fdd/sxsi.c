@@ -243,7 +243,7 @@ void cdchange_timeoutproc(NEVENTITEM item) {
 #if defined(SUPPORT_IDEIO)
 	ideio_mediachange(cdchange_drv);
 #endif
-	sysmng_updatecaption(SYS_UPDATECAPTION_FDD);
+	sysmng_requestupdatecaption(SYS_UPDATECAPTION_FDD);
 }
 static void cdchange_timeoutset(void) {
 

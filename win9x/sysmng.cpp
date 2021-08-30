@@ -24,6 +24,8 @@ extern "C" REG8 cdchange_drv;
 
 // ----
 
+static	UINT8 requestupdate = 0;
+
 static	OEMCHAR	title[2048] = {0};
 static	OEMCHAR	clock[256] = {0};
 static	OEMCHAR	misc[256] = {0};
@@ -314,3 +316,12 @@ void sysmng_updatecaption(UINT8 flag) {
 	SetWindowText(g_hWndMain, work);
 }
 
+void sysmng_requestupdatecaption(UINT8 flag) {
+	requestupdate |= flag; // マルチスレッド呼び出し対策･･･
+}
+void sysmng_requestupdatecheck() {
+	if(requestupdate != 0){
+		sysmng_updatecaption(requestupdate);
+		requestupdate = 0;	
+	};
+}

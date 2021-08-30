@@ -72,6 +72,8 @@ void sysmng_hddaccess(UINT8 drv);
 void sysmng_workclockreset(void);
 BOOL sysmng_workclockrenewal(void);
 void sysmng_updatecaption(UINT8 flag);
+void sysmng_requestupdatecaption(UINT8 flag);
+void sysmng_requestupdatecheck(void);
 
 void toolwin_fddaccess(UINT8 drv);
 void toolwin_hddaccess(UINT8 drv);

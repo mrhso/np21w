@@ -96,6 +96,13 @@ extern "C" {
 
 extern	_NEVENT		g_nevent;
 
+#if defined(SUPPORT_MULTITHREAD)
+// ‘S‘Ì‚Ì‰Šú‰»ˆ—
+void nevent_initialize(void);
+// ‘S‘Ì‚Ì‰ğ•úˆ—
+void nevent_shutdown(void);
+#endif
+
 // ‰Šú‰»
 void nevent_allreset(void);
 
