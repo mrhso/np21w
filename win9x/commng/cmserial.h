@@ -15,7 +15,7 @@ extern const UINT32 cmserial_speed[11];
 class CComSerial : public CComBase
 {
 public:
-	static CComSerial* CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed);
+	static CComSerial* CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed, UINT8 DSRcheck);
 
 protected:
 	CComSerial();
@@ -35,5 +35,5 @@ private:
 	UINT8 m_lastdatafail; // データを送るのに失敗していたら0以外
 	DWORD m_lastdatatime; // データを送るのに失敗した時間（あまりにも失敗し続けるようなら無視する）
 
-	bool Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed);
+	bool Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed, UINT8 DSRcheck);
 };

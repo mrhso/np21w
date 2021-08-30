@@ -19,10 +19,10 @@ const UINT32 cmserial_speed[11] = {110, 300, 600, 1200, 2400, 4800,
  * @param[in] nSpeed スピード
  * @return インスタンス
  */
-CComSerial* CComSerial::CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed)
+CComSerial* CComSerial::CreateInstance(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed, UINT8 DSRcheck)
 {
 	CComSerial* pSerial = new CComSerial;
-	if (!pSerial->Initialize(nPort, cParam, nSpeed, fixedspeed))
+	if (!pSerial->Initialize(nPort, cParam, nSpeed, fixedspeed, DSRcheck))
 	{
 		delete pSerial;
 		pSerial = NULL;
@@ -61,7 +61,7 @@ CComSerial::~CComSerial()
  * @retval true 成功
  * @retval false 失敗
  */
-bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed)
+bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixedspeed, UINT8 DSRcheck)
 {
 	TCHAR szName[16];
 	wsprintf(szName, TEXT("COM%u"), nPort);
@@ -85,6 +85,8 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixed
 			break;
 		}
 	}
+	dcb.fDtrControl = DTR_CONTROL_ENABLE;
+	dcb.fRtsControl = RTS_CONTROL_ENABLE;
 	dcb.ByteSize = (UINT8)(((cParam >> 2) & 3) + 5);
 	switch (cParam & 0x30)
 	{
@@ -116,7 +118,9 @@ bool CComSerial::Initialize(UINT nPort, UINT8 cParam, UINT32 nSpeed, UINT8 fixed
 	}
 	dcb.fOutX = FALSE;
 	dcb.fInX = FALSE;
-	dcb.fDsrSensitivity = TRUE;
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fOutxDsrFlow = FALSE;
+	dcb.fDsrSensitivity = (DSRcheck ? TRUE : FALSE);
 	::SetCommState(m_hSerial, &dcb);
 	return true;
 }

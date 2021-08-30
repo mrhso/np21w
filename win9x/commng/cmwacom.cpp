@@ -801,11 +801,16 @@ UINT CComWacom::Write(UINT8 cData)
 						m_config.scrnsizemode = true;
 					}
 				}
-			}else if(strcmp(m_cmdbuf, "TEFINE")==0){
-				// I'm Fine!
-				char data[] = "KT-0405-R00 V1.3-2 95/04/28 by WACOM\r\nFINE\r\nI AM FINE.\r\n";
+			}else if(strncmp(m_cmdbuf, "TE", 2)==0){
+				// I'm fine!
+				char data[256];
+				if(strlen(m_cmdbuf) <= 2){ // TE only
+					sprintf(data, "KT-0405-R00 V1.3-2 95/04/28 by WACOM\r\nI AM FINE.\r\n");
+				}else{ // TExxxx 4文字を越えた部分は捨てる
+					sprintf(data, "KT-0405-R00 V1.3-2 95/04/28 by WACOM\r\n%.4s\r\nI AM FINE.\r\n", m_cmdbuf + 2);
+				}
 				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
-				SendDataToReadBuffer(data, sizeof(data));
+				SendDataToReadBuffer(data, strlen(data));
 				m_lastdatalen = 0;
 				m_wait = sizeof(data);
 				m_config.enable = true;

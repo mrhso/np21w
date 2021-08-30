@@ -21,6 +21,7 @@ typedef struct {
 	OEMCHAR	mdl[64];
 	OEMCHAR	def[MAX_PATH];
 	UINT8	fixedspeed;
+	UINT8	DSRcheck;
 #if defined(SUPPORT_NAMED_PIPE)
 	OEMCHAR	pipename[MAX_PATH]; // The name of the named-pipe
 	OEMCHAR	pipeserv[MAX_PATH]; // The server name of the named-pipe
