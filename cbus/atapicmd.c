@@ -528,7 +528,7 @@ void atapi_dataread_threadfunc_part(IDEDRV drv) {
 	atapi_dataread_error = 0;
 }
 void atapi_dataread_asyncwait(int wait) {
-	if(atapi_dataread_error!=-1 && atapi_thread_drv && WaitForSingleObject(atapi_thread_event_complete, wait) == WAIT_OBJECT_0){
+	if(atapi_dataread_error!=-1 && atapi_thread_drv && (!np2cfg.useasynccd || !atapi_thread || WaitForSingleObject(atapi_thread_event_complete, wait) == WAIT_OBJECT_0)){
 		IDEDRV drv = atapi_thread_drv;
 		SXSIDEV	sxsi;
 		sxsi = sxsi_getptr(drv->sxsidrv);
@@ -625,13 +625,19 @@ void atapi_dataread(IDEDRV drv) {
 			SetEvent(atapi_thread_event_request);
 			atapi_dataread_asyncwait(2);
 		}else{
+			atapi_dataread_error = -1;
+			atapi_thread_drv = drv;
 			atapi_dataread_threadfunc_part(drv);
+			atapi_dataread_asyncwait(0);
 		}
 	}else{
 		if(atapi_thread){
 			atapi_dataread_asyncwait(INFINITE);
 		}
+		atapi_dataread_error = -1;
+		atapi_thread_drv = drv;
 		atapi_dataread_threadfunc_part(drv);
+		atapi_dataread_asyncwait(0);
 	}
 }
 #else
