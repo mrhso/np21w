@@ -32,7 +32,7 @@ static REG8 sxsi_pos(UINT type, SXSIDEV sxsi, FILEPOS *ppos) {
 	pos = 0;
 	if (CPU_AL & 0x80) {
 #if defined(SUPPORT_IDEIO_48BIT)
-		if(sxsi->totals > 0xfffffff){
+		if(sxsi->totals > 65535*16*255){
 			if (CPU_CX >= sxsi->totals / 255 / 255) {
 				ret = 0xd0;
 			}
@@ -398,7 +398,7 @@ static REG8 sasibios_sense(UINT type, SXSIDEV sxsi) {
 	else {
 		if (CPU_AH == 0x84) {
 #if defined(SUPPORT_IDEIO_48BIT)
-			if(sxsi->totals > 0xfffffff){
+			if(sxsi->totals > 65535*16*255){
 				FILELEN tmpCyl = (UINT32)(sxsi->totals / 255 / 255);
 				CPU_BX = sxsi->size;
 				CPU_CX = (UINT16)(tmpCyl < 0xffff ? tmpCyl : 0xffff);

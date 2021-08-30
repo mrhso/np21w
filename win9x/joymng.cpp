@@ -55,7 +55,6 @@ REG8 joymng_getstat(void) {
 	JOYINFOEX		ji;
 	static DWORD nojoy_time = 0;
 
-	joyavailable = 0;
 	if (np2oscfg.JOYPAD1 == 1){
 		if(nojoy_time == 0 || GetTickCount() - nojoy_time > 5000){
 			ji.dwSize = sizeof(JOYINFOEX);
@@ -91,7 +90,10 @@ REG8 joymng_getstat(void) {
 				nojoy_time = 0;
 			}else{
 				nojoy_time = GetTickCount();
+				joyavailable = 0;
 			}
+		}else{
+			joyavailable = 0;
 		}
 	}
 	return(joyflag);

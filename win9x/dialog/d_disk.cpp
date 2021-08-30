@@ -464,7 +464,7 @@ protected:
 		m_cmbhddSS.Add(s_hddSStbl, _countof(s_hddSStbl));
 
 		TCHAR work[32];
-		::wsprintf(work, TEXT("(%d-%dMB)"), m_nHddMinSize, m_nHddMaxSize);
+		::wsprintf(work, TEXT("(%u-%uMB)"), m_nHddMinSize, m_nHddMaxSize > NHD_MAXSIZE28 ? NHD_MAXSIZE28 : m_nHddMaxSize); // •\Œü‚«28bit LBA§ŒÀ
 		SetDlgItemText(IDC_HDDLIMIT, work);
 		
 		m_rdbfixsize.SubclassDlgItem(IDC_HDDADVANCED_FIXSIZE, this);
@@ -1040,8 +1040,14 @@ void dialog_newdisk_ex(HWND hWnd, int mode)
 				_mt_diskH = dlg.GetH();
 				_mt_diskS = dlg.GetS();
 				_mt_diskSS = dlg.GetSS();
+				if ((_mt_diskC > 65535 || _mt_diskH > 16 || _mt_diskS > 255) && MessageBoxA(hWnd, "Specified parameters are incompatible with CHS access.\nDo you want to continue anyway?", "New Disk", MB_YESNO | MB_ICONQUESTION) != IDYES) {
+					return;
+				}
 			}else{
 				_mt_diskSize = dlg.GetSize();
+				if (((FILELEN)_mt_diskSize * _mt_diskH * _mt_diskS > 65535*16*255) && MessageBoxA(hWnd, "Specified parameters are incompatible with CHS access.\nDo you want to continue anyway?", "New Disk", MB_YESNO | MB_ICONQUESTION) != IDYES) {
+					return;
+				}
 			}
 			_mt_blank = dlg.IsBlankDisk();
 			_mt_dyndisk = 0;
@@ -1100,8 +1106,14 @@ void dialog_newdisk_ex(HWND hWnd, int mode)
 				_mt_diskH = dlg.GetH();
 				_mt_diskS = dlg.GetS();
 				_mt_diskSS = dlg.GetSS();
+				if ((_mt_diskC > 65535 || _mt_diskH > 16 || _mt_diskS > 255) && MessageBoxA(hWnd, "Specified parameters are incompatible with CHS access.\nDo you want to continue anyway?", "New Disk", MB_YESNO | MB_ICONQUESTION) != IDYES) {
+					return;
+				}
 			}else{
 				_mt_diskSize = dlg.GetSize();
+				if (((FILELEN)_mt_diskSize * _mt_diskH * _mt_diskS > 65535*16*255) && MessageBoxA(hWnd, "Specified parameters are incompatible with CHS access.\nDo you want to continue anyway?", "New Disk", MB_YESNO | MB_ICONQUESTION) != IDYES) {
+					return;
+				}
 			}
 			_mt_blank = dlg.IsBlankDisk();
 			_mt_dyndisk = dlg.IsDynamicDisk();

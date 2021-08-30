@@ -65,7 +65,7 @@ typedef struct {
 	
 #if defined(SUPPORT_IDEIO_48BIT)
 	// 48-bit Address feature set
-	UINT8	lba48mode; // READ/WRITE with 46-bit LBA
+	UINT8	lba48mode; // READ/WRITE with 48-bit LBA
 	UINT8	lba48[8]; // LBA (48-bit)
 	UINT16	lba48sc; // Sector Count (16-bit)
 #endif

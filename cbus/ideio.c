@@ -125,7 +125,7 @@ static BRESULT setidentify(IDEDRV drv) {
 		tmp[63] = 0x0000;		// no support multiword DMA
 		
 #if defined(SUPPORT_IDEIO_48BIT)
-		if(sxsi->totals > 0xfffffff){
+		if(sxsi->totals > 65535*16*255){
 			// 48-bit LBA
 			FILELEN tmpCyl = (UINT32)(sxsi->totals / 255 / 255);
 			tmp[80] = 0x007e;		// support ATA-1 to 6
@@ -137,8 +137,13 @@ static BRESULT setidentify(IDEDRV drv) {
 			tmp[101] = (UINT16)(sxsi->totals >> 16);	// Maximum user LBA for 48-bit Address feature set 2
 			tmp[102] = (UINT16)(sxsi->totals >> 32);	// Maximum user LBA for 48-bit Address feature set 3
 			tmp[103] = (UINT16)(sxsi->totals >> 48);	// Maximum user LBA for 48-bit Address feature set 4
-			tmp[60] = (UINT16)0xffff;
-			tmp[61] = (UINT16)0xfff;
+			if(tmp[102] || tmp[103] || (tmp[101] & 0xf000)){
+				tmp[60] = (UINT16)0xffff;
+				tmp[61] = (UINT16)0xfff;
+			}else{
+				tmp[60] = tmp[100];
+				tmp[61] = tmp[101];
+			}
 			tmp[54] = (UINT16)(tmpCyl < 0xffff ? tmpCyl : 0xffff);
 			tmp[55] = 255;
 			tmp[56] = 255;
@@ -744,7 +749,7 @@ static void IOOUTCALL ideio_o64c(UINT port, REG8 dat) {
 //#if defined(SUPPORT_IDEIO_48BIT)
 //	{
 //		SXSIDEV sxsi = sxsi_getptr(dev->drv[drvnum].sxsidrv);
-//		if(sxsi->totals > 0xfffffff){
+//		if(sxsi->totals > 65535*16*255){
 //			dev->drv[drvnum].dr |= IDEDEV_LBA;
 //		}
 //	}
@@ -1764,7 +1769,7 @@ static void devinit(IDEDRV drv, REG8 sxsidrv) {
 		drv->device = IDETYPE_NONE;
 	}
 //#if defined(SUPPORT_IDEIO_48BIT)
-//	if(sxsi->totals > 0xfffffff){
+//	if(sxsi->totals > 65535*16*255){
 //		drv->dr |= IDEDEV_LBA;
 //	}
 //#endif

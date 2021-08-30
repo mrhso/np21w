@@ -578,7 +578,6 @@ void pcidev_bind(void) {
 		pcidev_updateRoutingTable();
 	}
 }
-
 void pcidev_updateRoutingTable(){
 	UINT16 i;
 	UINT16 allpciirq = (1<<12)|(1<<6)|(1<<5)|(1<<3);

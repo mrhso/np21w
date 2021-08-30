@@ -114,8 +114,8 @@ struct tagNP2Config
 	
 #if defined(SUPPORT_ASYNC_CPU)
 	UINT8	asynccpu; // 非同期CPUモード有効
-	UINT8	consttsc; // RDTSCをAsyncクロック変更によらず一定間隔にする
 #endif
+	UINT8	consttsc; // RDTSCをAsyncクロック変更によらず一定間隔にする
 #if defined(SUPPORT_IDEIO)
 	UINT8	idebaddr; // IDE BIOS アドレス（デフォルト：D8h(D8000h)）
 #endif

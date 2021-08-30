@@ -39,6 +39,9 @@
 #define HAX_IOCTL_VCPU_DEBUG \
         CTL_CODE(HAX_DEVICE_TYPE, 0x916, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+#define HAX_VCPU_IOCTL_SET_CPUID \
+        CTL_CODE(HAX_DEVICE_TYPE, 0x917, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 
 // hax_capabilityinfo wstatus用
 #define HAX_CAP_STATUS_WORKING     (1 << 0)
@@ -434,6 +437,30 @@ typedef struct hax_debug_t {
     UINT64 dr[8];
 } HAX_DEBUG;
 
+#define HAX_MAX_CPUID_ENTRIES 0x40
+
+typedef struct hax_cpuid_entry_t {
+    UINT32 function;
+    UINT32 index;
+    UINT32 flags;
+    UINT32 eax;
+    UINT32 ebx;
+    UINT32 ecx;
+    UINT32 edx;
+    UINT32 pad[3];
+} HAX_CPUID_ENTRY;
+
+// `HAX_CPUID` is a variable-length type. The size of `HAX_CPUID` itself is only
+// 8 bytes. `entries` is just a body placeholder, which will not actually occupy
+// memory. The accessible memory of `entries` is decided by the allocation from
+// user space, and the array length is specified by `total`.
+
+typedef struct hax_cpuid_t {
+    UINT32 total;
+    UINT32 pad;
+    HAX_CPUID_ENTRY entries[HAX_MAX_CPUID_ENTRIES];
+} HAX_CPUID;
+
 #pragma pack()
 #endif
 
@@ -470,6 +497,7 @@ UINT8 i386haxfunc_vcpu_getREGs(HAX_VCPU_STATE *outbuf); // レジスタを取得
 UINT8 i386haxfunc_vcpu_interrupt(UINT32 vector); // 指定したベクタの割り込みを発生させる
 UINT8 i386haxfunc_vcpu_kickoff(); // 謎
 UINT8 i386haxfunc_vcpu_debug(HAX_DEBUG *inbuf); // デバッグの有効/無効やデバッグ方法を設定する
+UINT8 i386haxfunc_vcpu_setCPUID(HAX_CPUID *inbuf); // CPUIDを設定する
 
 #endif
 

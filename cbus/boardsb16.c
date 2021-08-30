@@ -243,17 +243,24 @@ static REG8 IOINPCALL sb16_i2800(UINT port) {
 /*********** Sound Blaster 16 Gameport I/O ***********/
 #define GAMEPORT_JOYCOUNTER_MGN2	(gameport_clkmax/100)
 //#define GAMEPORT_JOYCOUNTER_MGN	(gameport_clkmax/100)
-#define GAMEPORT_JOYCOUNTER_TMPCLK	10000000
+#define GAMEPORT_JOYCOUNTER_TMPCLK	100000000
 #if defined(SUPPORT_IA32_HAXM)
 static LARGE_INTEGER gameport_qpf;
 static int gameport_useqpc = 0;
 #endif
+extern int gameport_tsccounter;
 static UINT64 gameport_tsc;
-static UINT32 gameport_clkmax;
 static REG8 gameport_joyflag_base = 0x00;
 static REG8 gameport_joyflag = 0x00;
+#if defined(SUPPORT_IA32_HAXM)
+static UINT64 gameport_clkmax;
+static UINT64 gameport_threshold_x = 0;
+static UINT64 gameport_threshold_y = 0;
+#else
+static UINT32 gameport_clkmax;
 static UINT32 gameport_threshold_x = 0;
 static UINT32 gameport_threshold_y = 0;
+#endif
 //UINT32 gameport_timeoutcounter = 0;
 //UINT32 gameport_timeoutinterval = 0;
 // joyflag	bit:0		up
@@ -267,7 +274,12 @@ static UINT32 gameport_threshold_y = 0;
 //void gameport_timeoutproc(NEVENTITEM item);
 static void IOOUTCALL gameport_o4d2(UINT port, REG8 dat)
 {
-	REG8 joyflag = joymng_getstat();
+	REG8 joyflag;
+#if defined(SUPPORT_IA32_HAXM)
+	LARGE_INTEGER li = {0};
+	QueryPerformanceCounter(&li);
+#endif
+	joyflag = joymng_getstat();
 	if(!joymng_available()){
 		return;
 	}
@@ -275,10 +287,10 @@ static void IOOUTCALL gameport_o4d2(UINT port, REG8 dat)
 	gameport_joyflag = ((joyflag >> 2) & 0x30)  | ((joyflag << 2) & 0xc0) | 0x0f;
 #if defined(SUPPORT_IA32_HAXM)
 	{
-		LARGE_INTEGER li = {0};
+		//LARGE_INTEGER li = {0};
 		if (QueryPerformanceFrequency(&gameport_qpf)) {
-			QueryPerformanceCounter(&li);
-			li.QuadPart = li.QuadPart * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
+			//QueryPerformanceCounter(&li);
+			//li.QuadPart = li.QuadPart;
 			gameport_tsc = li.QuadPart;
 			gameport_useqpc = 1;
 		}else{
@@ -289,10 +301,11 @@ static void IOOUTCALL gameport_o4d2(UINT port, REG8 dat)
 #else
 #if defined(USE_TSC)
 	if(CPU_REMCLOCK > 0){
-		gameport_tsc = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
+		gameport_tsc = CPU_MSR_TSC - (UINT64)CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple;
 	}else{
 		gameport_tsc = CPU_MSR_TSC;
 	}
+	gameport_tsccounter = 0;
 #else
 	gameport_tsc = 0;
 #endif
@@ -311,29 +324,40 @@ static void IOOUTCALL gameport_o4d2(UINT port, REG8 dat)
 //}
 static REG8 IOINPCALL gameport_i4d2(UINT port)
 {
+	REG8 retval = 0xff;
 	UINT64 clockdiff;
+#if defined(SUPPORT_IA32_HAXM)
+	LARGE_INTEGER li = {0};
+	QueryPerformanceCounter(&li);
+#endif
 	if(!joymng_available()){
-		return 0xff;
+		REG8 joyflag = joymng_getstat();
+		if(!joymng_available()){
+			return 0xff;
+		}
 	}
 #if defined(SUPPORT_IA32_HAXM)
 	if(gameport_useqpc){
-		LARGE_INTEGER li = {0};
-		QueryPerformanceCounter(&li);
-		li.QuadPart = li.QuadPart * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
-		clockdiff = (unsigned long long)li.QuadPart - gameport_tsc;
-		gameport_clkmax = GAMEPORT_JOYCOUNTER_TMPCLK/2000; // ‚Æ‚è‚ ‚¦‚¸0.5ms‚Å¥¥¥
+		//li.QuadPart = li.QuadPart * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
+		clockdiff = (unsigned long long)(li.QuadPart - gameport_tsc);// * GAMEPORT_JOYCOUNTER_TMPCLK / gameport_qpf.QuadPart;
+		gameport_clkmax = gameport_qpf.QuadPart / 1300; // ‚Æ‚è‚ ‚¦‚¸0.7ms‚Å¥¥¥
 	}else{
 		clockdiff = CPU_MSR_TSC - gameport_tsc;
-		gameport_clkmax = pccore.realclock/2000; // ‚Æ‚è‚ ‚¦‚¸0.5ms‚Å¥¥¥
+		gameport_clkmax = pccore.realclock / 1430; // ‚Æ‚è‚ ‚¦‚¸0.7ms‚Å¥¥¥
 	}
 #else
 #if defined(USE_TSC)
 	if(CPU_REMCLOCK > 0){
-		clockdiff = CPU_MSR_TSC - CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple - gameport_tsc;
+		clockdiff = CPU_MSR_TSC - (UINT64)CPU_REMCLOCK * pccore.maxmultiple / pccore.multiple - gameport_tsc;
 	}else{
 		clockdiff = CPU_MSR_TSC - gameport_tsc;
 	}
-	gameport_clkmax = pccore.baseclock * pccore.maxmultiple / 2000; // ‚Æ‚è‚ ‚¦‚¸0.5ms‚Å¥¥¥
+	gameport_clkmax = pccore.baseclock * pccore.maxmultiple / 1430; // ‚Æ‚è‚ ‚¦‚¸0.7ms‚Å¥¥¥
+#if !defined(SUPPORT_IA32_HAXM)
+	if(gameport_tsccounter == 0 || !np2cfg.consttsc){
+		gameport_clkmax = gameport_clkmax * pccore.maxmultiple / pccore.multiple; // CPUƒNƒƒbƒNˆË‘¶‚Ìê‡‚Ìfix
+	}
+#endif
 #else
 	gameport_clkmax = 32;
 	clockdiff = gameport_tsc;
@@ -346,21 +370,22 @@ static REG8 IOINPCALL gameport_i4d2(UINT port)
 		gameport_threshold_y = GAMEPORT_JOYCOUNTER_MGN2;
 	}
 	if(~gameport_joyflag_base & 0x2){
-		gameport_threshold_y = GAMEPORT_JOYCOUNTER_MGN2 + gameport_clkmax;
+		gameport_threshold_y = gameport_clkmax - GAMEPORT_JOYCOUNTER_MGN2;
 	}
 	if(~gameport_joyflag_base & 0x4){
 		gameport_threshold_x = GAMEPORT_JOYCOUNTER_MGN2;
 	}
 	if(~gameport_joyflag_base & 0x8){
-		gameport_threshold_x = GAMEPORT_JOYCOUNTER_MGN2 + gameport_clkmax;
+		gameport_threshold_x = gameport_clkmax - GAMEPORT_JOYCOUNTER_MGN2;
 	}
+	retval = gameport_joyflag;
 	if(clockdiff >= (UINT64)gameport_threshold_x){
 		gameport_joyflag &= ~0x01;
 	}
 	if(clockdiff >= (UINT64)gameport_threshold_y){
 		gameport_joyflag &= ~0x02;
 	}
-	return gameport_joyflag;
+	return retval;
 }
 #endif
 

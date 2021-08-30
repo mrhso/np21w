@@ -191,7 +191,7 @@ const SDRAWFN	*sdrawfn;
 			bit |= 4;
 		}
 		else if (gdc.mode1 & 2) {
-			bit = 0;
+			//bit = 0; // nothing to do
 		}
 	}
 	bit |= 0x80;

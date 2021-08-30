@@ -206,7 +206,7 @@ void atapicmd_a0(IDEDRV drv) {
 				if(mediachangeflag==MEDIA_CHANGE_WAIT){
 					nevent_set(NEVENT_CDWAIT, 1, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS‘¤‚ªCD‚ğÃ‘£‚µ‚Ä‚¢‚é‚æ‚¤‚È‚Ì‚ÅX‚É‹}‚¢‚ÅŒğŠ·
 				}else if(mediachangeflag==0){
-					nevent_setbyms(NEVENT_CDWAIT, 100, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS‘¤‚ªCD‚ª–³‚¢‚Æ”F¯‚µ‚½‚æ‚¤‚È‚Ì‚Å‹}‚¢‚ÅŒğŠ·
+					nevent_setbyms(NEVENT_CDWAIT, 1000, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS‘¤‚ªCD‚ª–³‚¢‚Æ”F¯‚µ‚½‚æ‚¤‚È‚Ì‚Å‹}‚¢‚ÅŒğŠ·
 				}
 			}
 			if(mediachangeflag < MEDIA_CHANGE_WAIT) mediachangeflag++;
