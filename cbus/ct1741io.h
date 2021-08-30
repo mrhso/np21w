@@ -28,7 +28,7 @@ typedef enum {
 #define SB_SH	14
 
 #define DMA_BUFSIZE  1024
-#define DMA_BUFMASK  1023
+#define DMA_BUFMASK  (DMA_BUFSIZE - 1)
 #define DSP_BUFSIZE 64
 
 
