@@ -26,7 +26,10 @@ typedef struct {
 	UINT8	data;
 	UINT8	send;
 	UINT8	pad;
-	UINT	pos;
+	UINT8	pos;
+	UINT8	cmd;
+	UINT8	cmdvalid;
+	UINT8	reserved;
 	UINT	dummyinst;
 	UINT	mul;
 	UINT8	rawmode;

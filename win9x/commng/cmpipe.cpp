@@ -237,11 +237,19 @@ UINT8 CComPipe::GetStat()
  */
 INTPTR CComPipe::Message(UINT nMessage, INTPTR nParam)
 {
-	//switch (nMessage)
-	//{
-	//	default:
-	//		break;
-	//}
+	switch (nMessage)
+	{
+		case COMMSG_PURGE:
+			{
+				m_lastdatafail = 0;
+				m_lastdata = 0;
+				m_lastdatatime = 0;
+			}
+			break;
+
+		default:
+			break;
+	}
 	return 0;
 }
 

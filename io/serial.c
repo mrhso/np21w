@@ -211,6 +211,10 @@ void rs232c_callback(void) {
 	if(bufused == 0){
 		rs232c_removecounter = 0;
 	}
+	
+	if(!(rs232c.cmd & 0x04) && bufused==0) {
+		return; // 受信禁止なら抜ける
+	}
 
 	rs232c_writeretry();
 
@@ -237,7 +241,7 @@ void rs232c_callback(void) {
 	if (bufused > 0 && rs232c_removecounter==0 || bufused == RS232C_BUFFER-1){
 		rs232c_buf_rpos = (rs232c_buf_rpos+1) & RS232C_BUFFER_MASK; // 一番古いものを捨てる
 	}
-	if ((cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
+	if ((rs232c.cmd & 0x04) && (cm_rs232c) && (cm_rs232c->read(cm_rs232c, &rs232c_buf[rs232c_buf_wpos]))) {
 		rs232c_buf_wpos = (rs232c_buf_wpos+1) & RS232C_BUFFER_MASK;
 	}
 	if (rs232c_buf_rpos != rs232c_buf_wpos) {
@@ -294,6 +298,7 @@ void rs232c_midipanic(void) {
 static void IOOUTCALL rs232c_o30(UINT port, REG8 dat) {
 
 	int ret;
+	if(!(rs232c.cmd & 0x01)) return; // 送信禁止なら抜ける
 	if (cm_rs232c) {
 		rs232c_writeretry();
 		cm_rs232c->write(cm_rs232c, (UINT8)dat);
@@ -371,9 +376,20 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 			break;
 
 		case 0x02:			// cmd
-			sysport.c &= ~7;
-			sysport.c |= (dat & 7);
-			rs232c.pos++;
+			//sysport.c &= ~7;
+			//sysport.c |= (dat & 7);
+			//rs232c.pos++;
+			if(dat & 0x40){
+				// reset
+				rs232c.pos = 1;
+			}
+			if(!(rs232c.cmd & 0x04) && (dat & 0x04)){
+				cm_rs232c->msg(cm_rs232c, COMMSG_PURGE, (INTPTR)&rs232c.cmd);
+			}
+			rs232c.cmd = dat;
+			if (cm_rs232c) {
+				cm_rs232c->msg(cm_rs232c, COMMSG_SETCOMMAND, (INTPTR)&rs232c.cmd);
+			}
 			break;
 	}
 	(void)port;
@@ -593,6 +609,9 @@ void rs232c_reset(const NP2CFG *pConfig) {
 	rs232c.data = 0xff;
 	rs232c.send = 1;
 	rs232c.pos = 0;
+	rs232c.cmd = 0x27; // デフォルトで送受信許可
+	rs232c.cmdvalid = 1; // ステートセーブ互換性維持用
+	rs232c.reserved = 0;
 	rs232c.dummyinst = 0;
 	rs232c.mul = 10 * 16;
 	rs232c.rawmode = 0;
@@ -623,5 +642,10 @@ void rs232c_bind(void) {
 	iocore_attachout(0x13a, rs232c_o13a);
 	iocore_attachinp(0x13a, rs232c_i13a);
 #endif
+
+	if(!rs232c.cmdvalid){
+		rs232c.cmd = 0x27; // デフォルトで送受信許可
+		rs232c.cmdvalid = 1;
+	}
 }
 

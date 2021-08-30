@@ -226,9 +226,9 @@ UINT CComSerial::LastWriteSuccess()
  */
 UINT8 CComSerial::GetStat()
 {
+	UINT8 ret = 0;
 	DWORD modemStat;
 	if(::GetCommModemStatus(m_hSerial, &modemStat)){
-		UINT8 ret = 0;
 		if(!(modemStat & MS_DSR_ON)){
 			ret |= 0x01;
 		}
@@ -248,12 +248,17 @@ UINT8 CComSerial::GetStat()
 		::ClearCommError(m_hSerial, &err, &ct);
 		if (ct.fDsrHold)
 		{
-			return 0x01;
+			ret |= 0x01;
 		}
-		else
+		if (ct.fCtsHold)
 		{
-			return 0x00;
+			ret |= 0x40;
 		}
+		if (ct.fRlsdHold)
+		{
+			ret |= 0x20;
+		}
+		return ret;
 	}
 }
 
@@ -311,7 +316,29 @@ INTPTR CComSerial::Message(UINT nMessage, INTPTR nParam)
 					::PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 					::SetCommState(m_hSerial, &dcb);
 				}
-				break;
+			}
+			break;
+
+		case COMMSG_SETCOMMAND:
+			{
+				UINT8 cmd = *(reinterpret_cast<UINT8*>(nParam)); // I/O 32h コマンドセットのデータ
+				::PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+				if(cmd & 0x20){ // RTS
+					::EscapeCommFunction(m_hSerial, SETRTS);
+				}else{
+					::EscapeCommFunction(m_hSerial, CLRRTS);
+				}
+				if(cmd & 0x02){ // DTR
+					::EscapeCommFunction(m_hSerial, SETDTR);
+				}else{
+					::EscapeCommFunction(m_hSerial, CLRDTR);
+				}
+			}
+			break;
+
+		case COMMSG_PURGE:
+			{
+				::PurgeComm(m_hSerial, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 			}
 			break;
 			

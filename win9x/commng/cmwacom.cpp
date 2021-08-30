@@ -878,6 +878,12 @@ INTPTR CComWacom::Message(UINT nMessage, INTPTR nParam)
 {
 	switch (nMessage)
 	{
+		case COMMSG_PURGE:
+			{
+				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
+			}
+			break;
+
 		case COMMSG_SETFLAG:
 			{
 				COMFLAG flag = reinterpret_cast<COMFLAG>(nParam);
