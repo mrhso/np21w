@@ -72,7 +72,7 @@ void pcm86_setpcmrate(REG8 val)
 	pcm86->rateval = rate = pcm86rate8[val & 7];
 	pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 	pcm86->stepclock /= rate;
-	pcm86->stepclock *= (pccore.multiple << 5) * (1 << (pccore.multiple >> 5)); // XXX: クロック数が大きいときに特別加算
+	pcm86->stepclock *= (pccore.multiple << 3); // XXX: クロック数が大きいときに特別加算
 	if (pcm86cfg.rate)
 	{
 		pcm86->div = (rate << (PCM86_DIVBIT - 3)) / pcm86cfg.rate;
@@ -145,7 +145,7 @@ void pcm86_changeclock(void)
 		if(pcm86->rateval){
 			pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			pcm86->stepclock /= pcm86->rateval;
-			pcm86->stepclock *= (pccore.multiple << 5) * (1 << (pccore.multiple >> 5)); // XXX: クロック数が大きいときに特別加算
+			pcm86->stepclock *= (pccore.multiple << 3); // XXX: クロック数が大きいときに特別加算
 		}else{
 			//pcm86->stepclock = ((UINT64)pccore.baseclock << 6);
 			//pcm86->stepclock /= 44100;
@@ -161,6 +161,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	UINT64	past;
 	static SINT32 lastvirbuf = 0;
 	static UINT32 lastvirbufcnt = 0;
+	static UINT32 reqirqwait = 0;
 
 	past = CPU_CLOCK + CPU_BASECLOCK - CPU_REMCLOCK;
 	past <<= 6;
@@ -194,18 +195,20 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 	{
 		bufs &= ~3;
 		pcm86->virbuf += bufs;
-		if (pcm86->virbuf <= pcm86->fifosize)
+		if (pcm86->virbuf <= pcm86->fifosize / 8 && reqirqwait==0)
 		{
 			pcm86->reqirq = 0;
 			pcm86->irqflag = 1;
 			if (pcm86->irq != 0xff)
 			{
 				pic_setirq(pcm86->irq);
+				reqirqwait = 16;
 			}
 		}
 		else
 		{
 			pcm86_setnextintr();
+			if(reqirqwait > 0) reqirqwait--;
 		}
 	}
 	else
@@ -217,6 +220,7 @@ void SOUNDCALL pcm86gen_checkbuf(PCM86 pcm86)
 			pcm86->realbuf -= bufs;
 			pcm86->readpos += bufs;
 		}
+		if(reqirqwait > 0) reqirqwait--;
 	}
 }
 
@@ -231,7 +235,7 @@ BOOL pcm86gen_intrq(void)
 	if (pcm86->fifo & 0x20)
 	{
 		sound_sync();
-		if ((pcm86->reqirq) && (pcm86->virbuf <= pcm86->fifosize))
+		if ((pcm86->reqirq) && (pcm86->virbuf <= pcm86->fifosize / 2))
 		{
 			pcm86->reqirq = 0;
 			pcm86->irqflag = 1;
