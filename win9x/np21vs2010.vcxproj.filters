@@ -2426,6 +2426,9 @@
     <ClInclude Include="..\wab\tgui9680_wrapper.h">
       <Filter>ヘッダー ファイル\wab</Filter>
     </ClInclude>
+    <ClInclude Include="np2mt.h">
+      <Filter>ヘッダー ファイル\win9x</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <NASM Include="x86\cputype.x86">

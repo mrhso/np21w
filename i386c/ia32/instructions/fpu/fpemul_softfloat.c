@@ -914,7 +914,7 @@ void SF_FPU_FXSAVERSTOR(void){
 	UINT idx, sub;
 	UINT32 maddr;
 
-	CPU_WORKCLOCK(FPU_WORKCLOCK*2);
+	CPU_WORKCLOCK(FPU_WORKCLOCK);
 	GET_PCBYTE((op));
 	idx = (op >> 3) & 7;
 	sub = (op & 7);

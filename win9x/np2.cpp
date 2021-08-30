@@ -108,28 +108,6 @@
 
 #include	<process.h>
 
-#if 1
-#undef	TRACEOUT
-#define USE_TRACEOUT_VS
-//#define MEM_BDA_TRACEOUT
-//#define MEM_D8_TRACEOUT
-#ifdef USE_TRACEOUT_VS
-static void trace_fmt_ex(const char *fmt, ...)
-{
-	char stmp[2048];
-	va_list ap;
-	va_start(ap, fmt);
-	vsprintf(stmp, fmt, ap);
-	strcat(stmp, "\n");
-	va_end(ap);
-	OutputDebugStringA(stmp);
-}
-#define	TRACEOUT(s)	trace_fmt_ex s
-#else
-#define	TRACEOUT(s)	(void)(s)
-#endif
-#endif	/* 1 */
-
 #ifdef SUPPORT_WACOM_TABLET
 void cmwacom_setNCControl(bool enable);
 #endif
@@ -4123,11 +4101,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 #if defined(SUPPORT_VSTi)
 					CVstEditWnd::OnIdle();
 #endif	// defined(SUPPORT_VSTi)
-#ifdef SUPPORT_WAB
-					if(np2wab.relay & 0x3){
-						np2wab_drawframeUIthread(); 
-					}
-#endif
 				}
 				TranslateMessage(&msg);
 			}
