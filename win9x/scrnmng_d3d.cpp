@@ -1361,6 +1361,10 @@ const SCRNSURF *scrnmngD3D_surflock(void) {
 
 	D3DLOCKED_RECT	destrect;
 	HRESULT			r;
+	
+	if(devicelostflag){
+		restoresurfaces();
+	}
 
 	ZeroMemory(&destrect, sizeof(destrect));
 	if (d3d.backsurf == NULL) {
