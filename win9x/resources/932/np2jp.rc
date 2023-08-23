@@ -1020,7 +1020,7 @@ BEGIN
         MENUITEM "CPUクロック安定化(&C)",       IDM_CPUSTABILIZER
         MENUITEM "CPUクロック可変[実験中](&A)", IDM_ASYNCCPU
         MENUITEM SEPARATOR
-        MENUITEM "自動フレームスキップ(&A)",    IDM_AUTOFPS
+        //MENUITEM "自動フレームスキップ(&A)",    IDM_AUTOFPS
         MENUITEM "フレームスキップ無し(&U)",    IDM_60FPS
         MENUITEM "1/&2フレーム",                IDM_30FPS
         MENUITEM "1/&3フレーム",                IDM_20FPS

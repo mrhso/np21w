@@ -108,6 +108,11 @@
 
 #include	<process.h>
 
+#if defined(CPUCORE_IA32)
+extern "C" UINT8 cpu_drawskip;
+extern "C" UINT8 cpu_nowait;
+#endif
+
 #ifdef SUPPORT_WACOM_TABLET
 void cmwacom_setNCControl(bool enable);
 #endif
@@ -3687,12 +3692,17 @@ void loadNP2INI(const OEMCHAR *fname){
 static unsigned int __stdcall np2_multithread_EmulatorThreadMain(LPVOID vdParam){
 	while (!np2_multithread_hThread_requestexit) {
 		if (!np2stopemulate && !np2_multithread_pauseemulation && !np2userpause) {
+			UINT8 drawskip = (np2oscfg.DRAW_SKIP == 0 ? 1 : np2oscfg.DRAW_SKIP);
+#if defined(CPUCORE_IA32)
+			cpu_drawskip = drawskip;
+			cpu_nowait = np2oscfg.NOWAIT;
+#endif
 			np2_multithread_pausing = false;
 			if (np2oscfg.NOWAIT) {
 				ExecuteOneFrame_MT_EmulateThread(framecnt == 0);
-				if (np2oscfg.DRAW_SKIP) {		// nowait frame skip
+				if (drawskip) {		// nowait frame skip
 					framecnt++;
-					if (framecnt >= np2oscfg.DRAW_SKIP) {
+					if (framecnt >= drawskip) {
 						processwait(0);
 						soundmng_sync();
 					}
@@ -3705,13 +3715,13 @@ static unsigned int __stdcall np2_multithread_EmulatorThreadMain(LPVOID vdParam)
 					}
 				}
 			}
-			else if (np2oscfg.DRAW_SKIP) {		// frame skip
-				if (framecnt < np2oscfg.DRAW_SKIP) {
+			else if (drawskip) {		// frame skip
+				if (framecnt < drawskip) {
 					ExecuteOneFrame_MT_EmulateThread(framecnt == 0);
 					framecnt++;
 				}
 				else {
-					processwait(np2oscfg.DRAW_SKIP);
+					processwait(drawskip);
 					soundmng_sync();
 				}
 			}
@@ -4185,11 +4195,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 					DispatchMessage(&msg);
 				}
 				else {
+					UINT8 drawskip = (np2oscfg.DRAW_SKIP == 0 ? 1 : np2oscfg.DRAW_SKIP);
+#if defined(CPUCORE_IA32)
+					cpu_drawskip = drawskip;
+					cpu_nowait = np2oscfg.NOWAIT;
+#endif
 					if (np2oscfg.NOWAIT) {
 						ExecuteOneFrame(framecnt == 0);
-						if (np2oscfg.DRAW_SKIP) {		// nowait frame skip
+						if (drawskip) {		// nowait frame skip
 							framecnt++;
-							if (framecnt >= np2oscfg.DRAW_SKIP) {
+							if (framecnt >= drawskip) {
 								processwait(0);
 								soundmng_sync();
 							}
@@ -4202,13 +4217,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 							}
 						}
 					}
-					else if (np2oscfg.DRAW_SKIP) {		// frame skip
-						if (framecnt < np2oscfg.DRAW_SKIP) {
+					else if (drawskip) {		// frame skip
+						if (framecnt < drawskip) {
 							ExecuteOneFrame(framecnt == 0);
 							framecnt++;
 						}
 						else {
-							processwait(np2oscfg.DRAW_SKIP);
+							processwait(drawskip);
 							soundmng_sync();
 						}
 					}

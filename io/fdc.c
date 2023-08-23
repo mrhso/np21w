@@ -18,6 +18,7 @@
 #define	TRACEOUT(s)	(void)(s)
 #endif	/* 0 */
 
+static int fdc_lasttreg[4] = {0}; // 暫定：Win用　Seek後にはtregをfdc.Cで更新　本当はfdc構造体の中に入れるべき
 
 enum {
 	FDC_DMACH2HD	= 2,
@@ -337,7 +338,9 @@ static void FDC_WriteData(void) {						// cmd: 05
 			get_chrn();
 			get_eotgsldtl();
 			fdc.stat[fdc.us] = (fdc.hd << 2) | fdc.us;
-			fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
+			if(fdc_lasttreg[fdc.us] != fdc.treg[fdc.us]){
+				fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
+			}
 			if (FDC_DriveCheck(TRUE)) {
 				fdc.event = FDCEVENT_BUFRECV;
 				fdc.bufcnt = 128 << fdc.N;
@@ -441,7 +444,9 @@ static void FDC_ReadData(void) {						// cmd: 06
 			get_hdus();
 			get_chrn();
 			get_eotgsldtl();
-			fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
+			if(fdc_lasttreg[fdc.us] != fdc.treg[fdc.us]){
+				fdc.treg[fdc.us] = fdc.C;	/* 170101 ST modified to work on Windows 9x/2000 */
+			}
 			readsector();
 			break;
 
@@ -731,6 +736,7 @@ static void FDC_Seek(void) {							// cmd: 0f
 					if(np2cfg.MOTOR) soundmng_pcmplay(SOUND_PCMSEEK1, FALSE);
 #endif
 				//}
+				fdc_lasttreg[fdc.us] = fdc.treg[fdc.us];
 				/* 170107 for Windows95 ... to */
 			}
 			fdc.int_timer[fdc.us] = FDC_INT_DELAY;

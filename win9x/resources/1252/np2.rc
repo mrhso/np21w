@@ -1027,7 +1027,7 @@ BEGIN
         MENUITEM "&CPU clock stabilizer",       IDM_CPUSTABILIZER
         MENUITEM "&Async CPU (experimental)",   IDM_ASYNCCPU
         MENUITEM SEPARATOR
-        MENUITEM "&Auto frame",                 IDM_AUTOFPS
+        //MENUITEM "&Auto frame",                 IDM_AUTOFPS
         MENUITEM "F&ull frame",                 IDM_60FPS
         MENUITEM "1/&2 frame",                  IDM_30FPS
         MENUITEM "1/&3 frame",                  IDM_20FPS
