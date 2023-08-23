@@ -43,6 +43,8 @@
 //! 8BPP パレット数
 #define PALLETES_8BPP	NP2PAL_TEXT3
 
+#define FILLSURF_SIZE	32
+
 static int req_enter_criticalsection = 0;
 
 extern WINLOCEX np2_winlocexallwin(HWND base);
@@ -52,6 +54,7 @@ typedef struct {
 	LPDIRECTDRAW2		ddraw2;
 	LPDIRECTDRAWSURFACE	primsurf;
 	LPDIRECTDRAWSURFACE	backsurf;
+	LPDIRECTDRAWSURFACE	fillsurf;
 #if defined(SUPPORT_DCLOCK)
 	LPDIRECTDRAWSURFACE	clocksurf;
 #endif
@@ -103,29 +106,18 @@ static void dd_leave_criticalsection(void){
 }
 
 // プライマリサーフェイスのDirectDraw DDBLT_COLORFILLで例外が出る環境があるようなので代替
-//#define DDBLT_COLORFILL_FIX
+#define DDBLT_COLORFILL_FIX
 
 #ifdef DDBLT_COLORFILL_FIX
 static void DDBlt_ColorFill(LPDIRECTDRAWSURFACE lpDst, LPRECT lpDstRect, LPDDBLTFX lpDDBltFx, LPDIRECTDRAWSURFACE lpOffScrBuf)
 {
 	HDC hDC = NULL;
 	RECT	src;
-
-	src.left = src.top = 0;
-	src.right = 4;
-	src.bottom = 4;
-
-	if(lpOffScrBuf->GetDC(&hDC)==DD_OK){
-		HBRUSH hBrs = CreateSolidBrush(lpDDBltFx->dwFillColor);
-		FillRect(hDC, &src, hBrs);
-		DeleteObject(hBrs);
-		lpOffScrBuf->ReleaseDC(hDC);
-		src.left += 1;
-		src.top += 1;
-		src.right -= 1;
-		src.bottom -= 1;
-		lpDst->Blt(lpDstRect, lpOffScrBuf, &src, DDBLT_WAIT, NULL);
-	}
+	src.left = 1;
+	src.top = 1;
+	src.right = FILLSURF_SIZE - 1;
+	src.bottom = FILLSURF_SIZE - 1;
+	lpDst->Blt(lpDstRect, lpOffScrBuf, &src, DDBLT_WAIT, NULL);
 }
 #else
 static void DDBlt_ColorFill(LPDIRECTDRAWSURFACE lpDst, LPRECT lpRect, LPDDBLTFX lpDDBltFx, LPDIRECTDRAWSURFACE lpOffScrBuf)
@@ -320,13 +312,13 @@ static void clearoutofrect(const RECT *target, const RECT *base) {
 	rect.bottom = target->top;
 	if (rect.top < rect.bottom) {
 		//primsurf->Blt(&rect, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
-		DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.backsurf);
+		DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.fillsurf);
 	}
 	rect.top = target->bottom;
 	rect.bottom = base->bottom;
 	if (rect.top < rect.bottom) {
 		//primsurf->Blt(&rect, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
-		DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.backsurf);
+		DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.fillsurf);
 	}
 
 	rect.top = max(base->top, target->top);
@@ -336,13 +328,13 @@ static void clearoutofrect(const RECT *target, const RECT *base) {
 		rect.right = target->left;
 		if (rect.left < rect.right) {
 			//primsurf->Blt(&rect, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
-			DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.backsurf);
+			DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.fillsurf);
 		}
 		rect.left = target->right;
 		rect.right = base->right;
 		if (rect.left < rect.right) {
 			//primsurf->Blt(&rect, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
-			DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.backsurf);
+			DDBlt_ColorFill(primsurf, &rect, &ddbf, ddraw.fillsurf);
 		}
 	}
 
@@ -469,6 +461,7 @@ static void restoresurfaces() {
 	dd_enter_criticalsection();
 	ddraw.backsurf->Restore();
 	ddraw.primsurf->Restore();
+	ddraw.fillsurf->Restore();
 #if defined(SUPPORT_WAB)
 	ddraw.wabsurf->Restore();
 #endif
@@ -733,6 +726,22 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 			ddraw.wabsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
 		}
 #endif
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+		ddsd.dwWidth = FILLSURF_SIZE;
+		ddsd.dwHeight = FILLSURF_SIZE;
+		if (ddraw2->CreateSurface(&ddsd, &ddraw.fillsurf, NULL) != DD_OK) {
+			goto scre_err;
+		}
+		{
+			DDBLTFX	ddbf = {0};
+			ddbf.dwSize = sizeof(ddbf);
+			ddbf.dwFillColor = 0;
+			ddraw.fillsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		}
+
 		if (bitcolor == 8) {
 			paletteinit();
 		}
@@ -826,6 +835,21 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 			goto scre_err;
 		}
 #endif
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+		ddsd.dwWidth = FILLSURF_SIZE;
+		ddsd.dwHeight = FILLSURF_SIZE;
+		if (ddraw2->CreateSurface(&ddsd, &ddraw.fillsurf, NULL) != DD_OK) {
+			goto scre_err;
+		}
+		{
+			DDBLTFX	ddbf = {0};
+			ddbf.dwSize = sizeof(ddbf);
+			ddbf.dwFillColor = 0;
+			ddraw.fillsurf->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbf);
+		}
 		bitcolor = ddpf.dwRGBBitCount;
 		if (bitcolor == 8) {
 			paletteinit();
@@ -875,6 +899,10 @@ void scrnmngDD_destroy(void) {
 		ddraw.clocksurf = NULL;
 	}
 #endif
+	if (ddraw.fillsurf) {
+		ddraw.fillsurf->Release();
+		ddraw.fillsurf = NULL;
+	}
 #if defined(SUPPORT_WAB)
 	if (ddraw.wabsurf) {
 		mt_wabpausedrawing = 1; // MultiThread対策

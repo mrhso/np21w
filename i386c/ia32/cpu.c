@@ -553,7 +553,7 @@ cpucontinue:
 					if(!asynccpu_fastflag && !asynccpu_lateflag){
 						if(remclock_mul < 100000) {
 							latecount++;
-							if(latecount > +LATECOUNTER_THRESHOLD){
+							if(latecount > +LATECOUNTER_THRESHOLD * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)){
 								if(pccore.multiple > 4){
 									UINT32 oldmultiple = pccore.multiple;
 									if(pccore.multiple > 40){

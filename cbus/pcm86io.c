@@ -215,7 +215,7 @@ static REG8 IOINPCALL pcm86_ia468(UINT port) {
 	
 	ret = g_pcm86.fifo & (~0x10);
 #if 1
-	if (pcm86gen_intrq() || g_pcm86.irqflag) {
+	if (g_pcm86.irqflag || pcm86gen_intrq()) {
 		ret |= 0x10;
 	}
 #elif 1		// ÇﬁÇµÇÎÇ±Ç§ÅH
