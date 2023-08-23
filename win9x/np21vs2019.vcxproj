@@ -349,9 +349,7 @@
     <ClCompile Include="..\bios\sxsibios.c" />
     <ClCompile Include="..\calendar.c" />
     <ClCompile Include="..\cbus\amd98.c" />
-    <ClCompile Include="..\cbus\atapicmd.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\cbus\atapicmd.c" />
     <ClCompile Include="..\cbus\board118.c" />
     <ClCompile Include="..\cbus\board14.c" />
     <ClCompile Include="..\cbus\board26k.c" />
@@ -367,9 +365,7 @@
     <ClCompile Include="..\cbus\ct1745io.c" />
     <ClCompile Include="..\cbus\gpibio.c" />
     <ClCompile Include="..\cbus\ideio.c" />
-    <ClCompile Include="..\cbus\mpu98ii.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\cbus\mpu98ii.c" />
     <ClCompile Include="..\cbus\pc9861k.c" />
     <ClCompile Include="..\cbus\pcm86io.c" />
     <ClCompile Include="..\cbus\sasiio.c" />
@@ -633,9 +629,7 @@
     <ClCompile Include="..\zlib\zutil.c" />
     <ClCompile Include="commng.cpp" />
     <ClCompile Include="commng\cmbase.cpp" />
-    <ClCompile Include="commng\cmmidi.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="commng\cmmidi.cpp" />
     <ClCompile Include="commng\cmmidiin32.cpp" />
     <ClCompile Include="commng\cmmidiout32.cpp" />
     <ClCompile Include="commng\cmmidioutmt32sound.cpp" />

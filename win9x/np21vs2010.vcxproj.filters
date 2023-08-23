@@ -1374,6 +1374,9 @@
     <ClCompile Include="..\wab\tgui9680.c">
       <Filter>ソース ファイル\wab</Filter>
     </ClCompile>
+    <ClCompile Include="..\codecnv\sjisucs2.c">
+      <Filter>ソース ファイル\codecnv</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\calendar.h">

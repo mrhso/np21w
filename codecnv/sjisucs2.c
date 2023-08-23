@@ -1209,6 +1209,7 @@ static UINT sjis2ucs2(UINT16 *lpOutput, UINT cchOutput, const char *lpInput, UIN
 	UINT nRemain;
 	UINT c;
 	UINT r;
+	UINT32 idx;
 
 	nRemain = cchOutput;
 	while ((cchInput > 0) && (nRemain > 0))
@@ -1227,7 +1228,8 @@ static UINT sjis2ucs2(UINT16 *lpOutput, UINT cchOutput, const char *lpInput, UIN
 			c = ((*lpInput++) - r) & 0xff;
 			if (c < ((r >> 8) & 0xff))
 			{
-				r = s_level2[((r >> 16) & 0xffff) + c];
+				idx = ((r >> 16) & 0xffff) + c;
+				r = idx < NELEMENTS(s_level2) ? s_level2[idx] : UDCODE;
 			}
 			else
 			{
@@ -1296,6 +1298,7 @@ static UINT sjis2utf8(char *lpOutput, UINT cchOutput, const char *lpInput, UINT 
 	UINT nRemain;
 	UINT c;
 	UINT r;
+	UINT32 idx;
 
 	nRemain = cchOutput;
 	while ((cchInput > 0) && (nRemain > 0))
@@ -1314,7 +1317,8 @@ static UINT sjis2utf8(char *lpOutput, UINT cchOutput, const char *lpInput, UINT 
 			c = ((*lpInput++) - r) & 0xff;
 			if (c < ((r >> 8) & 0xff))
 			{
-				r = s_level2[((r >> 16) & 0xffff) + c];
+				idx = ((r >> 16) & 0xffff) + c;
+				r = idx < NELEMENTS(s_level2) ? s_level2[idx] : UDCODE;
 			}
 			else
 			{

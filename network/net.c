@@ -207,6 +207,7 @@ static unsigned int __stdcall np2net_ThreadFuncW(LPVOID vdParam) {
 	// OVERLAPPED”ñ“¯Šú‘‚«‚İ€”õ
 	memset(&ovl, 0, sizeof(OVERLAPPED));
 	ovl.hEvent = hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (hEvent == NULL) return 0;
 	ovl.Offset = 0;
 	ovl.OffsetHigh = 0;
 
@@ -237,11 +238,18 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
 	int nodatacount = 0;
 	int sleepcount = 0;
 	int timediff = 0;
-	CHAR np2net_Buf[NET_BUFLEN];
+	CHAR* np2net_Buf = (CHAR*)malloc(NET_BUFLEN);
+	if (!np2net_Buf) {
+		return 0;
+	}
 
 	// OVERLAPPED”ñ“¯Šú“Ç‚İæ‚è€”õ
 	memset(&ovl, 0, sizeof(OVERLAPPED));
 	ovl.hEvent = hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (hEvent == NULL) {
+		free(np2net_Buf);
+		return 0;
+	}
 	ovl.Offset = 0;
 	ovl.OffsetHigh = 0;
  
@@ -301,6 +309,7 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
 	}
 	CloseHandle(hEvent);
 	hEvent = NULL;
+	free(np2net_Buf);
 	return 0;
 }
 

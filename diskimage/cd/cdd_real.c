@@ -59,131 +59,62 @@ REG8 sec2048_read_SPTI(SXSIDEV sxsi, FILEPOS pos, UINT8 *buf, UINT size) {
 
 	size /= 2048;
 
-	if(1 || size!=2048) {
-		DWORD sptisize=0;
-		struct sptdinfo sptd = {0};
+	if (1 || size != 2048) {
+		DWORD sptisize = 0;
+		struct sptdinfo* psptd = (struct sptdinfo*)malloc(sizeof(struct sptdinfo));
+		if (!psptd) {
+			return(0x60);
+		}
+		memset(psptd, 0, sizeof(struct sptdinfo));
 		//UCHAR ucDataBuf[2048*8];
 
 		// READ command
-		sptd.info.Cdb[0] = 0x28;//0xBE;//0x3C;//0xBE;
+		psptd->info.Cdb[0] = 0x28;//0xBE;//0x3C;//0xBE;
 		// Don't care about sector type.
-		//sptd.info.Cdb[1] = 0;
-		//sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
-		//sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
-		//sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
-		//sptd.info.Cdb[5] = pos & 0xFF;
-		//sptd.info.Cdb[6] = (size >> 16) & 0xFF;
-		//sptd.info.Cdb[7] = (size >> 8) & 0xFF;
-		//sptd.info.Cdb[8] = size & 0xFF;
+		//psptd->info.Cdb[1] = 0;
+		//psptd->info.Cdb[2] = (pos >> 24) & 0xFF;
+		//psptd->info.Cdb[3] = (pos >> 16) & 0xFF;
+		//psptd->info.Cdb[4] = (pos >> 8) & 0xFF;
+		//psptd->info.Cdb[5] = pos & 0xFF;
+		//psptd->info.Cdb[6] = (size >> 16) & 0xFF;
+		//psptd->info.Cdb[7] = (size >> 8) & 0xFF;
+		//psptd->info.Cdb[8] = size & 0xFF;
 		//// Sync + all headers + user data + EDC/ECC. Excludes C2 + subchannel
-		sptd.info.Cdb[1] = 2;                         // Data mode
-		sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
-		sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
-		sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
-		sptd.info.Cdb[5] = pos & 0xFF;
-		sptd.info.Cdb[6] = (size >> 16) & 0xFF;
-		sptd.info.Cdb[7] = (size >> 8) & 0xFF;
-		sptd.info.Cdb[8] = size & 0xFF;
-		sptd.info.Cdb[9] = 0xF8;
-		sptd.info.Cdb[10] = 0;
-		sptd.info.Cdb[11] = 0;
+		psptd->info.Cdb[1] = 2;                         // Data mode
+		psptd->info.Cdb[2] = (pos >> 24) & 0xFF;
+		psptd->info.Cdb[3] = (pos >> 16) & 0xFF;
+		psptd->info.Cdb[4] = (pos >> 8) & 0xFF;
+		psptd->info.Cdb[5] = pos & 0xFF;
+		psptd->info.Cdb[6] = (size >> 16) & 0xFF;
+		psptd->info.Cdb[7] = (size >> 8) & 0xFF;
+		psptd->info.Cdb[8] = size & 0xFF;
+		psptd->info.Cdb[9] = 0xF8;
+		psptd->info.Cdb[10] = 0;
+		psptd->info.Cdb[11] = 0;
 
-		sptd.info.CdbLength = 12;
-		sptd.info.Length = sizeof(SCSI_PASS_THROUGH);
-		sptd.info.DataIn = SCSI_IOCTL_DATA_IN;
-		sptd.info.DataTransferLength = 2048 * size;
-		sptd.info.DataBufferOffset = offsetof(struct sptdinfo, ucDataBuf);
-		//sptd.info.DataBuffer = ucDataBuf;
-		sptd.info.SenseInfoLength = sizeof(sptd.sense_buffer);
-		sptd.info.SenseInfoOffset = offsetof(struct sptdinfo, sense_buffer);
-		sptd.info.TimeOutValue = 5;
-		
-		if(sptd.info.DataTransferLength > sizeof(sptd.ucDataBuf)) return 0xd0;
+		psptd->info.CdbLength = 12;
+		psptd->info.Length = sizeof(SCSI_PASS_THROUGH);
+		psptd->info.DataIn = SCSI_IOCTL_DATA_IN;
+		psptd->info.DataTransferLength = 2048 * size;
+		psptd->info.DataBufferOffset = offsetof(struct sptdinfo, ucDataBuf);
+		//psptd->info.DataBuffer = ucDataBuf;
+		psptd->info.SenseInfoLength = sizeof(psptd->sense_buffer);
+		psptd->info.SenseInfoOffset = offsetof(struct sptdinfo, sense_buffer);
+		psptd->info.TimeOutValue = 5;
 
-		//memset(buf, 0, 2048 * size);
-		//memset(ucDataBuf, 0, 16384);
-		//SetLastError(0);
-		if (DeviceIoControl(fh, IOCTL_SCSI_PASS_THROUGH, &sptd, offsetof(struct sptdinfo, sense_buffer)+sizeof(sptd.sense_buffer), &sptd, offsetof(struct sptdinfo, ucDataBuf)+2048 * size, &sptisize, FALSE))
+		if (psptd->info.DataTransferLength > sizeof(psptd->ucDataBuf)) return 0xd0;
+
+		if (DeviceIoControl(fh, IOCTL_SCSI_PASS_THROUGH, psptd, offsetof(struct sptdinfo, sense_buffer) + sizeof(psptd->sense_buffer), psptd, offsetof(struct sptdinfo, ucDataBuf) + 2048 * size, &sptisize, FALSE))
 		{
-			if (sptd.info.DataTransferLength != 0){
-				memcpy(buf, sptd.ucDataBuf, sptd.info.DataTransferLength);
+			if (psptd->info.DataTransferLength != 0) {
+				memcpy(buf, psptd->ucDataBuf, psptd->info.DataTransferLength);
+				free(psptd);
 				return(0x00);
 			}
 		}
+		free(psptd);
 	}
-	
-	//{
-	//	DWORD sptisize=0;
-	//	struct sptdinfo sptd = {0};
-	//	//UCHAR ucDataBuf[2048*8];
 
-	//	//size /= 2048;
-	//	// READ CD command
-	//	sptd.info.Cdb[0] = 0xBE;//0x3C;//0xBE;
-	//	// Don't care about sector type.
-	//	//sptd.info.Cdb[1] = 0;
-	//	//sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
-	//	//sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
-	//	//sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
-	//	//sptd.info.Cdb[5] = pos & 0xFF;
-	//	//sptd.info.Cdb[6] = (size >> 16) & 0xFF;
-	//	//sptd.info.Cdb[7] = (size >> 8) & 0xFF;
-	//	//sptd.info.Cdb[8] = size & 0xFF;
-	//	//// Sync + all headers + user data + EDC/ECC. Excludes C2 + subchannel
-	//	sptd.info.Cdb[1] = 2;                         // Data mode
-	//	sptd.info.Cdb[2] = (pos >> 24) & 0xFF;
-	//	sptd.info.Cdb[3] = (pos >> 16) & 0xFF;
-	//	sptd.info.Cdb[4] = (pos >> 8) & 0xFF;
-	//	sptd.info.Cdb[5] = pos & 0xFF;
-	//	sptd.info.Cdb[6] = (size >> 16) & 0xFF;
-	//	sptd.info.Cdb[7] = (size >> 8) & 0xFF;
-	//	sptd.info.Cdb[8] = size & 0xFF;
-	//	sptd.info.Cdb[9] = 0xF8;
-	//	sptd.info.Cdb[10] = 0;
-	//	sptd.info.Cdb[11] = 0;
-
-	//	sptd.info.CdbLength = 12;
-	//	sptd.info.Length = sizeof(SCSI_PASS_THROUGH);
-	//	sptd.info.DataIn = SCSI_IOCTL_DATA_IN;
-	//	sptd.info.DataTransferLength = 2352;
-	//	sptd.info.DataBufferOffset = offsetof(struct sptdinfo, ucDataBuf);
-	//	//sptd.info.DataBuffer = ucDataBuf;
-	//	sptd.info.SenseInfoLength = sizeof(sptd.sense_buffer);
-	//	sptd.info.SenseInfoOffset = offsetof(struct sptdinfo, sense_buffer);
-	//	sptd.info.TimeOutValue = 5;
-	//	
-	//	if(sptd.info.DataTransferLength > sizeof(sptd.ucDataBuf)) return 0xd0;
-
-	//	//memset(buf, 0, 2048 * size);
-	//	//memset(ucDataBuf, 0, 16384);
-	//	//SetLastError(0);
-	//	if (DeviceIoControl(fh, IOCTL_SCSI_PASS_THROUGH, &sptd, offsetof(struct sptdinfo, sense_buffer)+sizeof(sptd.sense_buffer), &sptd, offsetof(struct sptdinfo, ucDataBuf)+2352, &sptisize, FALSE))
-	//	{
-	//		//if (sptd.info.DataTransferLength != 0){
-	//			//memcpy(buf, sptd.ucDataBuf + 16, sptd.info.DataTransferLength);
-	//			sxsi->cdflag_ecc = 2;
-	//			return(0xd0);
-	//			//return(0x00);
-	//		//}
-	//	}
-	//}
-
-
-	//if (file_seek(fh, pos, FSEEK_SET) != pos) {
-	//	return(0xd0);
-	//}
-
-	//while(size) {
-	//	rsize = min(size, 2048);
-	//	CPU_REMCLOCK -= rsize;
-	//	if (file_read(fh, buf, rsize) != rsize) {
-	//		return(0xd0);
-	//	}
-	//	buf += rsize;
-	//	size -= rsize;
-	//}
-	//
-	//rsize = GetLastError();
 	return(0xd0);
 }
 
@@ -456,7 +387,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 	}
 	
 	sector_size = (UINT16)dgCDROM.BytesPerSector;
-	totals = dgCDROM.SectorsPerTrack*dgCDROM.TracksPerCylinder*dgCDROM.Cylinders.QuadPart;
+	totals = (FILELEN)dgCDROM.SectorsPerTrack*dgCDROM.TracksPerCylinder*dgCDROM.Cylinders.QuadPart;
 	switch(sector_size){
 	case 2048:
 		if(readcapacity_SPTI(fh) == 2048){
@@ -481,6 +412,7 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 				&dwNotUsed, NULL);
 
 	trks = tocCDROM.LastTrack - tocCDROM.FirstTrack + 1;
+	if (trks <= 0) goto openiso_err2;
 	for(i=0;i<trks;i++){
 		if((tocCDROM.TrackData[i].Control & 0xC) == 0x4){
 			trk[i].adr_ctl		= TRACKTYPE_DATA;
@@ -512,9 +444,9 @@ BRESULT openrealcdd(SXSIDEV sxsi, const OEMCHAR *path) {
 		trk[i].end_sec		= trk[i].end_sector;
 		trk[i].sectors		= trk[i].track_sectors;
 		
-		trk[i].pregap_offset	= trk[i].start_sector * trk[i].sector_size;
-		trk[i].start_offset		= trk[i].start_sector * trk[i].sector_size;
-		trk[i].end_offset		= trk[i].end_sector * trk[i].sector_size;
+		trk[i].pregap_offset	= (UINT64)trk[i].start_sector * trk[i].sector_size;
+		trk[i].start_offset		= (UINT64)trk[i].start_sector * trk[i].sector_size;
+		trk[i].end_offset		= (UINT64)trk[i].end_sector * trk[i].sector_size;
 	}
 
 	//trk[0].adr_ctl			= TRACKTYPE_DATA;

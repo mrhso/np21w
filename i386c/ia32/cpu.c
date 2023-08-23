@@ -284,13 +284,7 @@ exec_allstep(void)
 	UINT32 op;
 	void (*func)(void);
 #if defined(SUPPORT_ASYNC_CPU)
-	int firstflag = 1;
-	UINT timing;
-	UINT lcflag = 0;
-	SINT32 oldremclock = CPU_REMCLOCK;
-	static int remclock_mul = 1000;
-	int remclockb = 0;
-	int remclkcnt = 0x100;
+	int remclkcnt = INT_MAX;
 	static int latecount = 0;
 	static int latecount2 = 0;
 	static unsigned int hltflag = 0;
@@ -538,67 +532,60 @@ cpucontinue:
 #if defined(SUPPORT_ASYNC_CPU)
 		// ”ñ“¯ŠúCPUˆ—
 		if(np2cfg.asynccpu && !cpu_nowait){
-			UINT8 drawskip = cpu_drawskip;
 #define LATECOUNTER_THRESHOLD	6
 #define LATECOUNTER_THRESHOLDM	2
-			int realclock = 0;
 			if(CPU_STAT_HLT){
 				hltflag = pccore.multiple;
 			}
-			if(CPU_REMCLOCK >= 0 && !realclock && (remclkcnt > 0x7)){
+			if(CPU_REMCLOCK >= 0 && (remclkcnt >= 256)){
 				remclkcnt = 0;
-				firstflag = 0;
-				timing = timing_getcount_baseclock();
-				if(timing>=drawskip){
-					if(!asynccpu_fastflag && !asynccpu_lateflag){
-						if(remclock_mul < 100000) {
-							latecount++;
-							if(latecount > +LATECOUNTER_THRESHOLD * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)){
-								if(pccore.multiple > 4){
-									UINT32 oldmultiple = pccore.multiple;
-									if(pccore.multiple > 40){
-										pccore.multiple-=3;
-									}else if(pccore.multiple > 20){
-										pccore.multiple-=2;
-									}else{
-										pccore.multiple-=1;
-									}
-									pccore.realclock = pccore.baseclock * pccore.multiple;
-									nevent_changeclock(oldmultiple, pccore.multiple);
-		
-									sound_changeclock();
-									pcm86_changeclock(oldmultiple);
-									beep_changeclock();
-									mpu98ii_changeclock();
-#if defined(SUPPORT_SMPU98)
-									smpu98_changeclock();
-#endif
-									keyboard_changeclock();
-									mouseif_changeclock();
-									gdc_updateclock();
+				if (!asynccpu_fastflag && !asynccpu_lateflag) {
+					if (timing_getcount_baseclock() >= cpu_drawskip) {
+						latecount++;
+						if (latecount > +LATECOUNTER_THRESHOLD * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)) {
+							if (pccore.multiple > 4) {
+								UINT32 oldmultiple = pccore.multiple;
+								if (pccore.multiple > 40) {
+									pccore.multiple -= 3;
 								}
+								else if (pccore.multiple > 20) {
+									pccore.multiple -= 2;
+								}
+								else {
+									pccore.multiple -= 1;
+								}
+								pccore.realclock = pccore.baseclock * pccore.multiple;
+								nevent_changeclock(oldmultiple, pccore.multiple);
 
-								latecount = 0;
+								sound_changeclock();
+								pcm86_changeclock(oldmultiple);
+								beep_changeclock();
+								mpu98ii_changeclock();
+#if defined(SUPPORT_SMPU98)
+								smpu98_changeclock();
+#endif
+								keyboard_changeclock();
+								mouseif_changeclock();
+								gdc_updateclock();
 							}
+
+							latecount = 0;
 						}
 						asynccpu_lateflag = 1;
 
 						CPU_REMCLOCK = 0;
 						break;
 					}
-				}else{
-					if(!hltflag && !asynccpu_lateflag && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock >= CPU_BASECLOCK){
-						//CPU_REMCLOCK = 10000;
-						//oldremclock = CPU_REMCLOCK;
-						if(!asynccpu_fastflag){
+					else {
+						if (!hltflag && g_nevent.item[NEVENT_FLAMES].proc == screendisp && g_nevent.item[NEVENT_FLAMES].clock >= CPU_BASECLOCK) {
 							latecount--;
-							if(latecount < -LATECOUNTER_THRESHOLDM * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)){
-								if(pccore.multiple < pccore.maxmultiple){
+							if (latecount < -LATECOUNTER_THRESHOLDM * ((g_pcm86.fifo & 0x80) || nevent_iswork(NEVENT_CS4231) || nevent_iswork(NEVENT_CT1741) ? 10 : 1)) {
+								if (pccore.multiple < pccore.maxmultiple) {
 									UINT32 oldmultiple = pccore.multiple;
-									pccore.multiple+=1;
+									pccore.multiple += 1;
 									pccore.realclock = pccore.baseclock * pccore.multiple;
 									nevent_changeclock(oldmultiple, pccore.multiple);
-		
+
 									sound_changeclock();
 									pcm86_changeclock(oldmultiple);
 									beep_changeclock();
@@ -615,7 +602,6 @@ cpucontinue:
 							asynccpu_fastflag = 1;
 						}
 					}
-					firstflag = 1;
 				}
 			}
 			remclkcnt++;

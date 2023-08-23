@@ -173,6 +173,8 @@ static void atapi_cmd_start_stop_unit(IDEDRV drv);
 static void atapi_cmd_prevent_allow_medium_removal(IDEDRV drv);
 static void atapi_cmd_read_capacity(IDEDRV drv);
 static void atapi_cmd_read(IDEDRV drv, UINT32 lba, UINT32 leng);
+static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 leng);
+static void atapi_cmd_read_cd_msf(IDEDRV drv);
 static void atapi_cmd_mode_select(IDEDRV drv);
 static void atapi_cmd_mode_sense(IDEDRV drv);
 static void atapi_cmd_readsubch(IDEDRV drv);
@@ -305,11 +307,21 @@ void atapicmd_a0(IDEDRV drv) {
 		atapi_cmd_read(drv, lba, leng);
 		break;
 		
+	case 0xbe:		// read cd
+		lba = (drv->buf[2] << 24) + (drv->buf[3] << 16) + (drv->buf[4] << 8) + drv->buf[5];
+		leng = (drv->buf[6] << 16) + (drv->buf[7] << 8) + drv->buf[8];
+		atapi_cmd_read_cd(drv, lba, leng);
+		break;
+		
+	case 0xb9:		// read cd msf
+		atapi_cmd_read_cd_msf(drv);
+		break;
+		
 	case 0x2b:		// Seek
 		lba = (drv->buf[2] << 24) + (drv->buf[3] << 16) + (drv->buf[4] << 8) + drv->buf[5];
 		atapi_cmd_seek(drv, lba);
 		break;
-
+		
 	case 0x55:		// mode select
 		TRACEOUT(("atapicmd: mode select"));
 		atapi_cmd_mode_select(drv);
@@ -717,6 +729,172 @@ static void atapi_cmd_read(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 	drv->nsectors = nsec;
 	atapi_dataread(drv);
 }
+static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 nsec) {
+	
+	int i;
+	SXSIDEV	sxsi;
+	CDTRK	trk;
+	UINT	tracks;
+	UINT8 *bufptr;
+	UINT bufsize;
+
+	UINT8 rawdata[2352];
+
+	UINT8 hassync;
+	UINT8 hashead;
+	UINT8 hassubhead;
+	UINT8 hasdata;
+	UINT8 hasedcecc;
+
+	UINT16 isCDDA = 1;
+
+	atapi_thread_drv = drv;
+	sxsi = sxsi_getptr(drv->sxsidrv);
+
+	hassync = (drv->buf[9] & 0x80) ? 1 : 0;
+	hassubhead = (drv->buf[9] & 0x40) ? 1 : 0;
+	hashead = (drv->buf[9] & 0x20) ? 1 : 0;
+	hasdata = (drv->buf[9] & 0x10) ? 1 : 0;
+	hasedcecc = (drv->buf[9] & 0x08) ? 1 : 0;
+
+	drv->sector = lba;
+	drv->nsectors = nsec;
+	
+	// エラー処理目茶苦茶～
+	if (drv->nsectors == 0) {
+		cmddone(drv);
+		return;
+	}
+
+	sxsi->cdflag_ecc = (sxsi->cdflag_ecc & ~CD_ECC_BITMASK) | CD_ECC_NOERROR;
+	
+	trk = sxsicd_gettrk(sxsi, &tracks);
+	for (i = 0; i < tracks; i++) {
+		if (trk[i].str_sec <= (UINT32)drv->sector && (UINT32)drv->sector <= trk[i].end_sec) {
+			isCDDA = (trk[i].adr_ctl == TRACKTYPE_AUDIO);
+			break;
+		}
+	}
+	
+	if(isCDDA){
+		// Audio
+		if (sxsicd_readraw(sxsi, drv->sector, drv->buf) != SUCCESS) {
+			atapi_dataread_error = 1;
+			atapi_dataread_asyncwait(0);
+			return;
+		}
+		bufsize = 2352;
+	}else{
+		// 条件がかなり複雑。
+		// ATAPI CD-ROM Specificationの
+		// Table 99 - Number of Bytes Returned Based on Data Selection Field
+		// を参照
+
+		// MODE1決め打ち
+		if (sxsicd_readraw(sxsi, drv->sector, rawdata) != SUCCESS) {
+			atapi_dataread_error = 1;
+			atapi_dataread_asyncwait(0);
+			return;
+		}
+
+		bufsize = 0;
+		bufptr = drv->buf;
+		if (hassync){
+			if(hashead){
+				// Headerがいるときだけ有効
+				memcpy(bufptr, rawdata, 12);
+				bufptr += 12;
+				bufsize += 12;
+			}
+		}
+		if (hashead){
+			memcpy(bufptr, rawdata + 12, 4);
+			bufptr += 4;
+			bufsize += 4;
+		}
+		if (hassubhead){
+			// MODE1（本来ないが、User Dataが無いときだけ特例で書く）
+			if(!hasdata){
+				memset(bufptr, 0, 8);
+				bufptr += 8;
+				bufsize += 8;
+
+			}
+
+			//// XA
+			//memcpy(bufptr, rawdata + 12 + 4, 8);
+
+			//bufptr += 8;
+			//bufsize += 8;
+		}
+		if (hasdata){
+			memcpy(bufptr, rawdata + 12 + 4 + 8, 2048);
+			bufptr += 2048;
+			bufsize += 2048;
+		}
+		if (hasedcecc){
+			//// MODE1
+			//memcpy(bufptr, rawdata + 12 + 4 + 8 + 2048, 4);
+			//memcpy(bufptr + 4, rawdata + 12 + 4 + 8 + 2048 + 12, 276);
+
+			////// XA
+			////memcpy(bufptr, rawdata + 12 + 4 + 8 + 2048, 280);
+			
+			//bufptr += 280;
+			//bufsize += 280;
+
+			memcpy(bufptr, rawdata + 12 + 4 + 8 + 2048, 288);
+			bufptr += 288;
+			bufsize += 288;
+		}
+	}
+	
+	atapi_dataread_error = 0;
+	atapi_dataread_asyncwait(0);
+	
+	drv->bufsize = bufsize;
+	drv->cy = bufsize;
+}
+
+static void atapi_cmd_read_cd_msf(IDEDRV drv) {
+
+	UINT32	pos;
+	UINT32	leng;
+
+	int M, S, F;
+	if(drv->damsfbcd){
+		M = BCD2HEX(drv->buf[3]);
+		S = BCD2HEX(drv->buf[4]);
+		F = BCD2HEX(drv->buf[5]);
+		pos = (((M * 60) + S) * 75) + F;
+		M = BCD2HEX(drv->buf[6]);
+		S = BCD2HEX(drv->buf[7]);
+		F = BCD2HEX(drv->buf[8]);
+		leng = (((M * 60) + S) * 75) + F;
+	}else{
+		M = drv->buf[3];
+		S = drv->buf[4];
+		F = drv->buf[5];
+		pos = (((M * 60) + S) * 75) + F;
+		M = drv->buf[6];
+		S = drv->buf[7];
+		F = drv->buf[8];
+		leng = (((M * 60) + S) * 75) + F;
+	}
+	if (leng > pos) {
+		leng -= pos;
+	}
+	else {
+		leng = 0;
+	}
+	if (pos >= 150) {
+		pos -= 150;
+	}
+	else {
+		pos = 0;
+	}
+	atapi_cmd_read_cd(drv, pos, leng);
+}
 
 // -- MODE SELECT/SENSE
 #define	PC_01_SIZE	8
@@ -796,7 +974,7 @@ static void atapi_cmd_mode_select(IDEDRV drv) {
 		senderror(drv);
 		return;
 	}
-	
+
 #if 1
 	cmddone(drv);	/* workaround */
 #else
@@ -1190,7 +1368,10 @@ static void atapi_cmd_readtoc(IDEDRV drv) {
 		drv->buf[5] = 0x14;
 		drv->buf[6] = 0x01;
 		//drv->buf[10] = 0x02;
-		drv->buf[10] = time ? 0x02 : 0;
+		if (time)
+			storemsf(drv->buf + 8, (UINT32)(150), drv->damsfbcd);
+		else
+			storelba(drv->buf + 8, (UINT32)(0));
 		senddata(drv, 12, leng);
 		drv->media &= ~IDEIO_MEDIA_CHANGED;
 		break;
