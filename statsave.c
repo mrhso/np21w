@@ -983,12 +983,14 @@ static int flagsave_fm(STFLAGH sfh, const SFENTRY *tbl)
 		}
 #endif
 	}
+#if defined(SUPPORT_SOUND_SB16)
 	if (nSaveFlags & FLAG_SB16)
 	{
 		datalen = sizeof(g_sb16);
 		ret |= statflag_write(sfh, &datalen, sizeof(datalen));
 		ret |= statflag_write(sfh, &g_sb16, sizeof(g_sb16));
 	}
+#endif
 	return ret;
 }
 
@@ -1081,6 +1083,7 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 			}
 #endif
 		}
+#if defined(SUPPORT_SOUND_SB16)
 		if (nSaveFlags & FLAG_SB16)
 		{
 			ret |= statflag_read(sfh, &datalen, sizeof(datalen));
@@ -1092,6 +1095,7 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 				memset((UINT8*)(&g_sb16) + datalen, 0, sizeof(g_sb16) - datalen); // ない部分は0埋め
 			}
 		}
+#endif
 	}else{
 		// old statsave
 		nSaveFlags = GetSoundFlags(g_nSoundID);
@@ -1158,6 +1162,7 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 			}
 #endif
 		}
+#if defined(SUPPORT_SOUND_SB16)
 		if (nSaveFlags & FLAG_SB16)
 		{
 			ret |= statflag_read(sfh, &g_sb16, sizeof(SB16_OLD));
@@ -1165,6 +1170,7 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 				memset((UINT8*)(&g_sb16) + sizeof(SB16_OLD), 0, sizeof(g_sb16) - sizeof(SB16_OLD)); // ない部分は0埋め
 			}
 		}
+#endif
 	}
 
 	// 復元。 これ移動すること！
@@ -1177,10 +1183,12 @@ static int flagload_fm(STFLAGH sfh, const SFENTRY *tbl)
 	{
 		fmboard_extenable((REG8)(cs4231.extfunc & 1));
 	}
+#if defined(SUPPORT_SOUND_SB16)
 	if (nSaveFlags & FLAG_SB16)
 	{
 		g_sb16.dsp_info.dma.chan = dmac.dmach + g_sb16.dmach; // DMAチャネル復元
 	}
+#endif
 	return(ret);
 }
 #endif
