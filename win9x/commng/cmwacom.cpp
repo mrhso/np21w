@@ -502,10 +502,13 @@ bool CComWacom::HandlePacketMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 					tablet_resX = m_config.screen_w;
 					tablet_resY = m_config.screen_h;
 				}
-				pktXtmp = ((m_rawX - pt.x) * tablet_resX / (rectClient.right - rectClient.left));
-				pktYtmp = (((m_maxY - m_rawY) - pt.y) * tablet_resY / (rectClient.bottom - rectClient.top));
-				//pktXtmp = m_rawX - pt.x;
-				//pktYtmp = m_rawY - pt.y;
+				if(rectClient.right - rectClient.left != 0 && rectClient.bottom - rectClient.top != 0){
+					pktXtmp = ((m_rawX - pt.x) * tablet_resX / (rectClient.right - rectClient.left));
+					pktYtmp = (((m_maxY - m_rawY) - pt.y) * tablet_resY / (rectClient.bottom - rectClient.top));
+				}else{
+					pktXtmp = m_rawX - pt.x;
+					pktYtmp = m_rawY - pt.y;
+				}
 				if(pktXtmp < 0 || pktYtmp < 0 || pktXtmp > tablet_resX || pktYtmp > tablet_resY){
 					// ”ÍˆÍŠO‚ÍˆÚ“®‚Ì‚Ý‰Â
 					m_rawButtons = m_rawButtons & 0x4;
