@@ -691,6 +691,7 @@ static const PFTBL s_IniItems[] =
 #endif
 	PFVAL("USEMOVCS", PFRO_BOOL,		&np2cfg.allowMOVCS),
 	PFVAL("USETHOOK", PFRO_BOOL,		&np2cfg.usetexthook),
+	PFVAL("RASCSI92", PFRO_BOOL,		&np2cfg.rascsi92),
 
 	
 

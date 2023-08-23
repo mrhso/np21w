@@ -236,7 +236,11 @@ const OEMCHAR	*ext;
 		headersize = 0;
 		size = 512;
 		surfaces = 8;
-		sectors = 25;
+		if(np2cfg.rascsi92){
+			sectors = 32;
+		}else{
+			sectors = 25;
+		}
 		cylinders = (UINT32)(fsize / (sectors * surfaces * size));
 		totals = fsize / size;
 		// totals = (FILEPOS)cylinders * sectors * surfaces;
