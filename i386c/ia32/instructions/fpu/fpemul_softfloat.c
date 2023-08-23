@@ -189,8 +189,8 @@ static void FPU_FBLD(UINT32 addr, UINT reg)
 	// 0`8byte–Ú‚Ìˆ— BCD
 	for (i = 8; i >= 0; i--) {
 		in = bcdbuf.b[i];
-		tmp = ((in >> 4) & 0x4) * 10 + (in & 0x4);
-		val = val * 10 + tmp;
+		tmp = ((in >> 4) & 0xf) * 10 + (in & 0xf);
+		val = val * 100 + tmp;
 	}
 
 	// 9byte–Ú‚Í•„†‚Ì‚İˆÓ–¡‚ª‚ ‚é
@@ -277,7 +277,7 @@ static void FPU_FBST(UINT32 addr)
 	}
 
 	// 80bit‚Ü‚Æ‚ß‚Ä‘‚«‚İ
-	fpu_memorywrite_f(addr + i, &bcdbuf);
+	fpu_memorywrite_f(addr, &bcdbuf);
 
 	float_rounding_mode = oldrnd;
 	FPU_STATUSWORD |= float_exception_flags;
