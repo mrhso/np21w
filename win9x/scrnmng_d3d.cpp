@@ -1607,10 +1607,17 @@ void scrnmngD3D_update(void) {
 				*scrn = lastscrn;
 			}
 			else {
+				RECT	rectbuf = {0};
+				int bufwidth, bufheight;
+				D3DSURFACE_DESC d3dsdesc;
+
 				if (scrnmng.allflash) {
 					scrnmng.allflash = 0;
 					clearoutscreen();
 				}
+				d3d.d3dbacksurf->GetDesc(&d3dsdesc);
+				bufwidth = d3dsdesc.Width;
+				bufheight = d3dsdesc.Height;
 				clip.x = 0;
 				clip.y = 0;
 				//ClientToScreen(g_hWndMain, &clip);
@@ -1618,7 +1625,12 @@ void scrnmngD3D_update(void) {
 				dst.top = clip.y + d3d.scrn.top;
 				dst.right = clip.x + d3d.scrn.right;
 				dst.bottom = clip.y + d3d.scrn.bottom;
-				r = d3d.d3ddev->StretchRect(d3d.backsurf, &d3d.rect, d3d.d3dbacksurf, &dst, d3dtexf);
+				rectbuf = d3d.rect;
+				if(dst.bottom > bufheight){
+					rectbuf.bottom -= (dst.bottom - bufheight) * (rectbuf.right - rectbuf.left) / (dst.right - dst.left);
+					dst.bottom -= dst.bottom - bufheight;
+				}
+				r = d3d.d3ddev->StretchRect(d3d.backsurf, &rectbuf, d3d.d3dbacksurf, &dst, d3dtexf);
 			}
 			//if((d3d.scrnmode & SCRNMODE_FULLSCREEN) && d3d.menudisp){
 			//	DrawMenuBar(g_hWndMain);
