@@ -352,9 +352,16 @@ UINT CComMidi::Write(UINT8 cData)
 		case MIDI_TIMING:
 		case MIDI_START:
 		case MIDI_CONTINUE:
-		case MIDI_STOP:
 		case MIDI_ACTIVESENSE:
+			m_cLastData = cData;
+			return 1;
+		case MIDI_STOP:
+			midiallnoteoff();
+			m_cLastData = cData;
+			return 1;
 		case MIDI_SYSTEMRESET:
+			midireset();
+			m_cLastData = cData;
 			return 1;
 	}
 	if (m_nMidiCtrl == MIDICTRL_READY)
@@ -384,24 +391,29 @@ UINT CComMidi::Write(UINT8 cData)
 					{
 						case MIDI_EXCLUSIVE:
 							m_nMidiCtrl = MIDICTRL_EXCLUSIVE;
+							m_cLastData = cData;
 							break;
 
 						case MIDI_TIMECODE:
 							m_nMidiCtrl = MIDICTRL_TIMECODE;
+							m_cLastData = cData;
 							break;
 
 						case MIDI_SONGPOS:
 							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_cLastData = cData;
 							m_nRecvSize = 3;
 							break;
 
 						case MIDI_SONGSELECT:
 							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_cLastData = cData;
 							m_nRecvSize = 2;
 							break;
 
 						case MIDI_CABLESELECT:
 							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_cLastData = cData;
 							m_nRecvSize = 1;
 							break;
 
@@ -433,7 +445,37 @@ UINT CComMidi::Write(UINT8 cData)
 					m_nMidiCtrl = MIDICTRL_3BYTES;
 					break;
 				default:
-					return 1;
+					switch (m_cLastData)
+					{
+						case MIDI_EXCLUSIVE:
+							m_nMidiCtrl = MIDICTRL_EXCLUSIVE;
+							break;
+
+						case MIDI_TIMECODE:
+							m_nMidiCtrl = MIDICTRL_TIMECODE;
+							break;
+
+						case MIDI_SONGPOS:
+							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_nRecvSize = 3;
+							break;
+
+						case MIDI_SONGSELECT:
+							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_nRecvSize = 2;
+							break;
+
+						case MIDI_CABLESELECT:
+							m_nMidiCtrl = MIDICTRL_SYSTEM;
+							m_nRecvSize = 1;
+							break;
+
+//						case MIDI_TUNEREQUEST:
+//						case MIDI_EOX:
+						default:
+							return 1;
+					}
+					break;
 			}
 		}
 	}

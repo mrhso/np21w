@@ -1811,7 +1811,7 @@ STRINGTABLE
 BEGIN
     IDS_SCSITITLE           "SCSIイメージ選択"
     IDS_SCSIEXT             "hdd"
-    IDS_SCSIFILTER          "Virtual98ハードディスクイメージ(*.hdd)|*.hdd|RaSCSIハードディスクイメージ(*.hdn)|*.hdn|対応しているすべての形式|*.hdd;*.hdn|すべてのファイル(*.*)|*.*|"
+    IDS_SCSIFILTER          "Virtual98ハードディスクイメージ(*.hdd)|*.hdd|RaSCSIハードディスクイメージ(*.hdn;*.hds)|*.hdn;*.hds|対応しているすべての形式|*.hdd;*.hdn;*.hds|すべてのファイル(*.*)|*.*|"
     IDS_NEWDISKTITLE        "Create disk image"
 END
 
