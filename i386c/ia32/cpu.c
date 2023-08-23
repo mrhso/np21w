@@ -587,7 +587,7 @@ cpucontinue:
 						break;
 					}
 				}else{
-					if(!hltflag && !asynccpu_lateflag && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock <= CPU_BASECLOCK){
+					if(!hltflag && !asynccpu_lateflag && g_nevent.item[NEVENT_FLAMES].proc==screendisp && g_nevent.item[NEVENT_FLAMES].clock >= CPU_BASECLOCK){
 						//CPU_REMCLOCK = 10000;
 						//oldremclock = CPU_REMCLOCK;
 						if(!asynccpu_fastflag){
