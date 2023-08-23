@@ -990,6 +990,15 @@ BEGIN
         MENUITEM "&Pause",                      IDM_PAUSE
         MENUITEM SEPARATOR
         MENUITEM "&Configure...",               IDM_CONFIG
+        POPUP "Change CPU &Speed"
+        BEGIN
+            MENUITEM "&x2",      IDM_CHANGECLK_X2
+            MENUITEM "&x8",      IDM_CHANGECLK_X8
+            MENUITEM "&x16",     IDM_CHANGECLK_X16
+            MENUITEM "&x30",     IDM_CHANGECLK_X30
+            MENUITEM "&x42",     IDM_CHANGECLK_X42
+            MENUITEM "&Restore", IDM_CHANGECLK_RESTORE
+        END
         POPUP "&New disk"
         BEGIN
             MENUITEM "&Floppy disk image...",   IDM_NEWDISKFD

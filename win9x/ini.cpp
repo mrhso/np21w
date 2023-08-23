@@ -690,6 +690,7 @@ static const PFTBL s_IniItems[] =
 	PFVAL("GAMEPORT", PFTYPE_BOOL,		&np2cfg.gameport),
 #endif
 	PFVAL("USEMOVCS", PFRO_BOOL,		&np2cfg.allowMOVCS),
+	PFVAL("USETHOOK", PFRO_BOOL,		&np2cfg.usetexthook),
 
 	
 

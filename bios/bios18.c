@@ -6,6 +6,9 @@
 #include	"bios.h"
 #include	"biosmem.h"
 #include	"font/font.h"
+#if defined(SUPPORT_TEXTHOOK)
+#include	"codecnv/codecnv.h"
+#endif
 
 
 typedef struct {
@@ -266,6 +269,20 @@ const UINT8	*p;
 			break;
 
 		default:
+#if defined(SUPPORT_TEXTHOOK)
+			if(np2cfg.usetexthook){
+				UINT16 SJis;
+				UINT8 th[3];
+				UINT16 thw[2];
+				thw[1]='\0';
+				SJis = font_Jis2Sjis(code);
+				if(SJis){
+					th[0] = SJis >> 8; th[1] = SJis & 0x00ff; th[2] = '\0';
+					codecnv_sjistoucs2(thw, 1, (const char*)th, 2);
+					font_outhooktest((wchar_t*)thw);
+				}
+			}
+#endif
 			size = 0x0202;
 			p = fontrom;
 			p += (code & 0x7f) << 12;

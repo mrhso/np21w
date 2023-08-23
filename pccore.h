@@ -307,6 +307,7 @@ struct tagNP2Config
 	UINT8	gameport; // 118音源のゲームポートを使用する
 #endif
 	UINT8	allowMOVCS; // mov cs,xx命令の実行を許可する（8086）
+	UINT8	usetexthook; // Text Hookを有効にする（海外向け）
 };
 typedef struct tagNP2Config  NP2CFG;		/*!< The define of config */
 

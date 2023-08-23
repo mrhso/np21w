@@ -230,6 +230,26 @@ static void np2_SetUserPause(UINT8 pause){
 	np2userpause = pause;
 }
 
+static void np2_DynamicChangeClockMul(int newClockMul) {
+	UINT8 oldclockmul = pccore.maxmultiple;
+	UINT8 oldclockmult = pccore.multiple;
+
+	pccore.multiple = newClockMul;
+	pccore.maxmultiple = newClockMul;
+	pccore.realclock = pccore.baseclock * pccore.multiple;
+		
+	pcm86_changeclock(oldclockmult);
+	sound_changeclock();
+	beep_changeclock();
+	mpu98ii_changeclock();
+#if defined(SUPPORT_SMPU98)
+	smpu98_changeclock();
+#endif
+	keyboard_changeclock();
+	mouseif_changeclock();
+	gdc_updateclock();
+}
+
 static const OEMCHAR np2help[] = OEMTEXT("np2.chm");
 static const OEMCHAR np2flagext[] = OEMTEXT("S%02d");
 #if defined(_WIN64)
@@ -961,6 +981,25 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			winuileave();
 			break;
 
+		case IDM_CHANGECLK_X2:
+			np2_DynamicChangeClockMul(2);
+			break;
+		case IDM_CHANGECLK_X8:
+			np2_DynamicChangeClockMul(8);
+			break;
+		case IDM_CHANGECLK_X16:
+			np2_DynamicChangeClockMul(16);
+			break;
+		case IDM_CHANGECLK_X30:
+			np2_DynamicChangeClockMul(30);
+			break;
+		case IDM_CHANGECLK_X42:
+			np2_DynamicChangeClockMul(42);
+			break;
+		case IDM_CHANGECLK_RESTORE:
+			np2_DynamicChangeClockMul(np2cfg.multiple);
+			break;
+
 		case IDM_NEWDISK:
 			winuienter();
 			dialog_newdisk(hWnd);
@@ -1059,7 +1098,6 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 			break;
 
 		case IDM_IDE1OPEN:
-			winuienter();
 			winuienter();
 			dialog_changehdd(hWnd, 0x01);
 			winuileave();
