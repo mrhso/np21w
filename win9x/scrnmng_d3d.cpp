@@ -1554,13 +1554,17 @@ void scrnmngD3D_update(void) {
 						rectdstbuf.bottom -= ((1 << (d3d.backsurf2mul-1)) >> 1);
 					}
 					r = d3d.d3ddev->StretchRect(d3d.backsurf, &rectsrcbuf, d3d.backsurf2, &rectdstbuf, D3DTEXF_POINT);
-					rectbuf.bottom -= (dst.bottom - bufheight) * (rectbuf.right - rectbuf.left) / (dst.right - dst.left);
-					dst.bottom -= dst.bottom - bufheight;
+					if(dst.bottom > bufheight){
+						rectbuf.bottom -= (dst.bottom - bufheight) * (rectbuf.right - rectbuf.left) / (dst.right - dst.left);
+						dst.bottom -= dst.bottom - bufheight;
+					}
 					r = d3d.d3ddev->StretchRect(d3d.backsurf2, &rectbuf, d3d.d3dbacksurf, &dst, D3DTEXF_LINEAR);
 				}else{
 					rectbuf = d3d.rect;
-					rectbuf.bottom -= (dst.bottom - bufheight) * (rectbuf.right - rectbuf.left) / (dst.right - dst.left);
-					dst.bottom -= dst.bottom - bufheight;
+					if(dst.bottom > bufheight){
+						rectbuf.bottom -= (dst.bottom - bufheight) * (rectbuf.right - rectbuf.left) / (dst.right - dst.left);
+						dst.bottom -= dst.bottom - bufheight;
+					}
 					r = d3d.d3ddev->StretchRect(d3d.backsurf, &rectbuf, d3d.d3dbacksurf, &dst, D3DTEXF_LINEAR);
 				}
 			}
