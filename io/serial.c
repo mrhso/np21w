@@ -598,7 +598,9 @@ static void IOOUTCALL rs232c_o32(UINT port, REG8 dat) {
 				rs232c_clearerror();
 			}
 			if(!(rs232c.cmd & 0x04) && (dat & 0x04)){
-				cm_rs232c->msg(cm_rs232c, COMMSG_PURGE, (INTPTR)&rs232c.cmd);
+				if (cm_rs232c) {
+					cm_rs232c->msg(cm_rs232c, COMMSG_PURGE, (INTPTR)&rs232c.cmd);
+				}
 			}
 			rs232c.cmd = dat;
 			if (cm_rs232c) {
