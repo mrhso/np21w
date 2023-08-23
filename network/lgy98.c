@@ -473,7 +473,7 @@ static void IOOUTCALL lgy98_ob000(UINT addr, REG8 dat) {
         }
     } else {
         page = s->cmd >> 6;
-        offset = (int)addr | (page << 4);
+        offset = addr | (page << 4);
         switch(offset) {
         case EN0_STARTPG:
             s->start = val << 8;
@@ -561,7 +561,7 @@ static REG8 IOINPCALL lgy98_ib000(UINT addr) {
         ret = s->cmd;
     } else {
         page = s->cmd >> 6;
-        offset = (int)addr | (page << 4);
+        offset = addr | (page << 4);
         switch(offset) {
         case EN0_TSR:
             ret = s->tsr;
@@ -983,9 +983,6 @@ VLANClientState *np2net_new_vlan_client(VLANState *vlan,
 {
     VLANClientState *vc, **pvc;
     vc = (VLANClientState*)calloc(1, sizeof(VLANClientState));
-	if (!vc) {
-		return NULL;
-	}
     vc->model = strdup(model);
     //if (name)
         vc->name = strdup(name);

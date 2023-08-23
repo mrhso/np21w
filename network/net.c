@@ -255,7 +255,7 @@ static unsigned int __stdcall np2net_ThreadFuncR(LPVOID vdParam) {
  
 	while (!np2net_hThreadexit) {
 		np2net_cs_EnterCriticalSection();
-		if (!ReadFile(np2net_hTap, np2net_Buf, sizeof(np2net_Buf), &dwLen, &ovl)) {
+		if (!ReadFile(np2net_hTap, np2net_Buf, NET_BUFLEN, &dwLen, &ovl)) {
 			DWORD err = GetLastError();
 			np2net_cs_LeaveCriticalSection();
 			if (err == ERROR_IO_PENDING) {
