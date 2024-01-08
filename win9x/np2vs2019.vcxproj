@@ -103,12 +103,15 @@
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VST3_SDK;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np2x64w</TargetName>
+    <IncludePath>C:\VST3_SDK;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -130,6 +133,7 @@
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <IncludePath>C:\VST3_SDK;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np2x64w</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseHAXM|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -137,6 +141,7 @@
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <IncludePath>C:\VST3_SDK;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np2x64w</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -144,12 +149,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_GPIB;SUPPORT_SCRN_DIRECT3D;SUPPORT_FAST_MEMORYCHECK;SUPPORT_ASYNC_CPU;SUPPORT_SMPU98;SUPPORT_WACOM_TABLET;SUPPORT_RS232C_FIFO;SUPPORT_NAMED_PIPE;SUPPORT_MULTITHREAD;SUPPORT_TEXTHOOK;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;.\x86;..\;..\common;..\i286x;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i286x\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>
@@ -161,13 +167,14 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_GPIB;SUPPORT_SCRN_DIRECT3D;SUPPORT_FAST_MEMORYCHECK;SUPPORT_ASYNC_CPU;SUPPORT_SMPU98;SUPPORT_WACOM_TABLET;SUPPORT_RS232C_FIFO;SUPPORT_NAMED_PIPE;SUPPORT_MULTITHREAD;SUPPORT_TEXTHOOK;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;.\x64;..\;..\common;..\i286c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <LargeAddressAware>false</LargeAddressAware>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i286x\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>
@@ -1110,6 +1117,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources\932\np2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\932\np2.rc2" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

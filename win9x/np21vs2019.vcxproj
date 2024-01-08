@@ -103,13 +103,15 @@
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VST3_SDK;H:\WinDDK\7600.16385.1\inc;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
     <IntDir>..\obj\$(SolutionName)\$(PlatformName)\$(Configuration)\$(ProjectName)\</IntDir>
-    <IncludePath>H:\WinDDK\7600.16385.1\inc;C:\VST3 SDK;$(IncludePath)</IncludePath>
+    <IncludePath>C:\VST3_SDK;H:\WinDDK\7600.16385.1\inc;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np21x64w</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -132,6 +134,7 @@
     <LinkIncremental>false</LinkIncremental>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np21x64w</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseHAXM|x64'">
     <OutDir>..\bin\$(SolutionName)\$(PlatformName)\$(Configuration)\</OutDir>
@@ -140,6 +143,7 @@
     <LinkIncremental>false</LinkIncremental>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <LibraryPath>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>np21x64w</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -147,15 +151,19 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_WIN2000HOST;SUPPORT_KAI_IMAGES;HOOK_SYSKEY;ALLOW_MULTIRUN;TRACE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_LARGE_MEMORY;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_FPU_DOSBOX;SUPPORT_FPU_DOSBOX2;SUPPORT_FPU_SOFTFLOAT;SUPPORT_GPIB;SUPPORT_PCI;SUPPORT_SCRN_DIRECT3D;SUPPORT_FAST_MEMORYCHECK;SUPPORT_PEGC;SUPPORT_ASYNC_CPU;SUPPORT_SMPU98;SUPPORT_WACOM_TABLET;SUPPORT_RS232C_FIFO;SUPPORT_NAMED_PIPE;SUPPORT_VGA_MODEX;SUPPORT_GAMEPORT;SUPPORT_IDEIO_48BIT;SUPPORT_MULTITHREAD;SUPPORT_TEXTHOOK;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MMX;USE_3DNOW;USE_SSE;USE_SSE2;USE_SSE3;USE_TSC;USE_MAME;USE_FASTPAGING;USE_VME;BIOS_IO_EMULATION;TRACE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;.\x86;..\;..\common;..\i386c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i386c\x86\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>
@@ -170,14 +178,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;SUPPORT_PC9821;SUPPORT_IDEIO;SUPPORT_LARGE_HDD;SUPPORT_LARGE_MEMORY;SUPPORT_NET;SUPPORT_LGY98;SUPPORT_WAB;SUPPORT_CL_GD5430;SUPPORT_HRTIMER;SUPPORT_VPCVHD;SUPPORT_KAI_IMAGES;SUPPORT_NVL_IMAGES;SUPPORT_PHYSICAL_CDDRV;SUPPORT_FMGEN;SUPPORT_SOUND_SB16;SUPPORT_FPU_DOSBOX;SUPPORT_FPU_DOSBOX2;SUPPORT_FPU_SOFTFLOAT;SUPPORT_GPIB;SUPPORT_PCI;SUPPORT_SCRN_DIRECT3D;SUPPORT_FAST_MEMORYCHECK;SUPPORT_PEGC;SUPPORT_ASYNC_CPU;SUPPORT_SMPU98;SUPPORT_WACOM_TABLET;SUPPORT_RS232C_FIFO;SUPPORT_NAMED_PIPE;SUPPORT_VGA_MODEX;SUPPORT_GAMEPORT;SUPPORT_IDEIO_48BIT;SUPPORT_MULTITHREAD;SUPPORT_TEXTHOOK;HOOK_SYSKEY;ALLOW_MULTIRUN;USE_FPU;USE_MMX;USE_3DNOW;USE_SSE;USE_SSE2;USE_SSE3;USE_TSC;USE_MAME;USE_FASTPAGING;USE_VME;BIOS_IO_EMULATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.\;.\x64;..\;..\common;..\i386c;..\mem;..\io;..\cbus;..\vram;..\sound;..\generic;..\zlib</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <LargeAddressAware>false</LargeAddressAware>
+      <DelayLoadDLLs>d3d9.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
     <NASM>
       <AdditionalOptions>-I.\x86\ -I..\i386c\x86\ -I..\io\x86\ %(AdditionalOptions)</AdditionalOptions>
@@ -457,7 +469,7 @@
     <ClCompile Include="..\i386c\ia32\instructions\flag_ctrl.c" />
     <ClCompile Include="..\i386c\ia32\instructions\fpu.c" />
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpdummy.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\i386c\ia32\instructions\fpu\fpemul_dosbox.c">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Precise</FloatingPointModel>
@@ -571,6 +583,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseHAXM|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseHAXM|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\sound\oplgenc.c" />
     <ClCompile Include="..\sound\oplgeng.c" />
@@ -586,7 +599,9 @@
     <ClCompile Include="..\sound\pcmmix.c" />
     <ClCompile Include="..\sound\psggenc.c" />
     <ClCompile Include="..\sound\psggeng.c" />
-    <ClCompile Include="..\sound\rhythmc.c" />
+    <ClCompile Include="..\sound\rhythmc.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="..\sound\s98.c" />
     <ClCompile Include="..\sound\sndcsec.c" />
     <ClCompile Include="..\sound\sound.c" />
@@ -1124,6 +1139,17 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources\932\np2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\i386c\ia32\cpu_mem.mcr" />
+    <None Include="..\i386c\ia32\ia32.mcr" />
+    <None Include="..\i386c\ia32\ia32xc.mcr" />
+    <None Include="..\i386c\ia32\ia32xc_msc.mcr" />
+    <None Include="..\i386c\ia32\instructions\arith.mcr" />
+    <None Include="..\i386c\ia32\instructions\shift_rotate.mcr" />
+    <None Include="..\i386c\ia32\instructions\shift_rotatexc.mcr" />
+    <None Include="..\i386c\ia32\instructions\shift_rotatexc_msc.mcr" />
+    <None Include="resources\932\np2.rc2" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

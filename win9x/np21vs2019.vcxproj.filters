@@ -2460,4 +2460,33 @@
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\i386c\ia32\cpu_mem.mcr">
+      <Filter>ソース ファイル\i386c\ia32</Filter>
+    </None>
+    <None Include="..\i386c\ia32\ia32.mcr">
+      <Filter>ソース ファイル\i386c\ia32</Filter>
+    </None>
+    <None Include="..\i386c\ia32\ia32xc.mcr">
+      <Filter>ソース ファイル\i386c\ia32</Filter>
+    </None>
+    <None Include="..\i386c\ia32\ia32xc_msc.mcr">
+      <Filter>ソース ファイル\i386c\ia32</Filter>
+    </None>
+    <None Include="..\i386c\ia32\instructions\arith.mcr">
+      <Filter>ソース ファイル\i386c\ia32\instructions</Filter>
+    </None>
+    <None Include="..\i386c\ia32\instructions\shift_rotate.mcr">
+      <Filter>ソース ファイル\i386c\ia32\instructions</Filter>
+    </None>
+    <None Include="..\i386c\ia32\instructions\shift_rotatexc.mcr">
+      <Filter>ソース ファイル\i386c\ia32\instructions</Filter>
+    </None>
+    <None Include="..\i386c\ia32\instructions\shift_rotatexc_msc.mcr">
+      <Filter>ソース ファイル\i386c\ia32\instructions</Filter>
+    </None>
+    <None Include="resources\932\np2.rc2">
+      <Filter>リソース ファイル</Filter>
+    </None>
+  </ItemGroup>
 </Project>

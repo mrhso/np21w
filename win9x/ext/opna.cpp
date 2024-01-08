@@ -382,6 +382,10 @@ void opna_bind(POPNA opna)
 		{
 			sound_streamregist(opna->fmgen, (SOUNDCB)OPNA_Mix);
 		}
+		if (cCaps & OPNA_HAS_RHYTHM)
+		{
+			rhythm_bind(&opna->rhythm);
+		}
 	} else {
 #endif	/* SUPPORT_FMGEN */
 		if (pExt)

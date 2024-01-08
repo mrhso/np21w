@@ -208,7 +208,7 @@ void atapicmd_a0(IDEDRV drv) {
 				if(mediachangeflag==MEDIA_CHANGE_WAIT){
 					nevent_set(NEVENT_CDWAIT, 1, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS側がCDを催促しているようなので更に急いで交換
 				}else if(mediachangeflag==0){
-					nevent_setbyms(NEVENT_CDWAIT, 1000, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS側がCDが無いと認識したようなので急いで交換
+					//nevent_setbyms(NEVENT_CDWAIT, 1000, cdchange_timeoutproc, NEVENT_ABSOLUTE); // OS側がCDが無いと認識したようなので急いで交換
 				}
 			}
 			if(mediachangeflag < MEDIA_CHANGE_WAIT) mediachangeflag++;
@@ -665,6 +665,9 @@ void atapi_dataread(IDEDRV drv) {
 #else
 void atapi_dataread(IDEDRV drv) {
 
+	SXSIDEV	sxsi;
+	sxsi = sxsi_getptr(drv->sxsidrv);
+
 	// エラー処理目茶苦茶～
 	if (drv->nsectors == 0) {
 		sendabort(drv);
@@ -723,6 +726,58 @@ void atapi_dataread(IDEDRV drv) {
 }
 #endif
 
+void atapi_dataread_end(IDEDRV drv) {
+	SXSIDEV	sxsi;
+	sxsi = sxsi_getptr(drv->sxsidrv);
+
+	drv->sector++;
+	drv->nsectors--;
+
+	drv->sc = IDEINTR_IO;
+	drv->cy = 2048;
+	drv->status &= ~(IDESTAT_DMRD|IDESTAT_SERV|IDESTAT_CHK);
+	drv->status |= IDESTAT_DRQ;
+	drv->error = 0;
+	ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_NO_SENSE);
+	drv->asc = ATAPI_ASC_NO_ADDITIONAL_SENSE_INFORMATION;
+	drv->bufdir = IDEDIR_IN;
+	drv->buftc = (drv->nsectors)?IDETC_ATAPIREAD:IDETC_TRANSFEREND;
+	drv->bufpos = 0;
+	drv->bufsize = 2048;
+	
+	if(np2cfg.usecdecc && (sxsi->cdflag_ecc & CD_ECC_BITMASK)==CD_ECC_RECOVERED){
+		drv->status |= IDESTAT_CORR;
+		ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_RECOVERED_ERROR);
+		drv->asc = 0x18;
+	}
+	sxsi->cdflag_ecc = (sxsi->cdflag_ecc & ~CD_ECC_BITMASK) | CD_ECC_NOERROR;
+
+	drv->status &= ~(IDESTAT_BSY); // 念のため直前で解除
+	if (!(drv->ctrl & IDECTRL_NIEN)) {
+		//TRACEOUT(("atapicmd: senddata()"));
+		ideio.bank[0] = ideio.bank[1] | 0x80;			// ????
+		pic_setirq(IDE_IRQ);
+	}
+#if defined(_WINDOWS)
+	atapi_dataread_error = -1;
+#endif
+}
+void atapi_dataread_errorend(IDEDRV drv) {
+	SXSIDEV	sxsi;
+	sxsi = sxsi_getptr(drv->sxsidrv);
+	
+	drv->status &= ~(IDESTAT_DRQ);
+
+	ATAPI_SET_SENSE_KEY(drv, ATAPI_SK_ILLEGAL_REQUEST);
+	drv->asc = 0x21;
+	sxsi->cdflag_ecc = (sxsi->cdflag_ecc & ~CD_ECC_BITMASK) | CD_ECC_NOERROR;
+	senderror(drv);
+	TRACEOUT(("atapicmd: read error at sector %d", drv->sector));
+#if defined(_WINDOWS)
+	atapi_dataread_error = -1;
+#endif
+}
+
 static void atapi_cmd_read(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 
 	drv->sector = lba;
@@ -747,8 +802,10 @@ static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 	UINT8 hasedcecc;
 
 	UINT16 isCDDA = 1;
-
+	
+#if defined(_WINDOWS)
 	atapi_thread_drv = drv;
+#endif
 	sxsi = sxsi_getptr(drv->sxsidrv);
 
 	hassync = (drv->buf[9] & 0x80) ? 1 : 0;
@@ -779,8 +836,7 @@ static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 	if(isCDDA){
 		// Audio
 		if (sxsicd_readraw(sxsi, drv->sector, drv->buf) != SUCCESS) {
-			atapi_dataread_error = 1;
-			atapi_dataread_asyncwait(0);
+			atapi_dataread_errorend(0);
 			return;
 		}
 		bufsize = 2352;
@@ -792,8 +848,7 @@ static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 
 		// MODE1決め打ち
 		if (sxsicd_readraw(sxsi, drv->sector, rawdata) != SUCCESS) {
-			atapi_dataread_error = 1;
-			atapi_dataread_asyncwait(0);
+			atapi_dataread_errorend(0);
 			return;
 		}
 
@@ -849,8 +904,7 @@ static void atapi_cmd_read_cd(IDEDRV drv, UINT32 lba, UINT32 nsec) {
 		}
 	}
 	
-	atapi_dataread_error = 0;
-	atapi_dataread_asyncwait(0);
+	atapi_dataread_end(drv);
 	
 	drv->bufsize = bufsize;
 	drv->cy = bufsize;
