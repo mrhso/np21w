@@ -1118,6 +1118,7 @@ BEGIN
             MENUITEM "マウスキャプチャ(&M)",        IDM_MOUSE
             MENUITEM "高解像度マウス(&R)",          IDM_MOUSERAW
             MENUITEM "キャプチャ無し操作(&N)",      IDM_MOUSENC
+            MENUITEM "マウスホイールで音量設定(&C)",   IDM_MOUSEWHEELCTL
             MENUITEM SEPARATOR
             MENUITEM "x3.0",                        IDM_MOUSE30X
             MENUITEM "x2.0",                        IDM_MOUSE20X

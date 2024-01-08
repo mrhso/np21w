@@ -1121,6 +1121,7 @@ BEGIN
             MENUITEM "&Mouse Capture",              IDM_MOUSE
             MENUITEM "&Raw Input Mode",             IDM_MOUSERAW
             MENUITEM "&Non-capture Control",        IDM_MOUSENC
+            MENUITEM "&Change Sound Volume by Wheel",   IDM_MOUSEWHEELCTL
             MENUITEM SEPARATOR
             MENUITEM "x3.0",                        IDM_MOUSE30X
             MENUITEM "x2.0",                        IDM_MOUSE20X

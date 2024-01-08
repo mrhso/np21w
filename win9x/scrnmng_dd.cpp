@@ -47,6 +47,8 @@
 
 static int req_enter_criticalsection = 0;
 
+extern bool scrnmng_restore_pending;
+
 extern WINLOCEX np2_winlocexallwin(HWND base);
 
 typedef struct {
@@ -457,13 +459,19 @@ static void make16mask(DWORD bmask, DWORD rmask, DWORD gmask) {
 	dd_leave_criticalsection();
 }
 
-static void restoresurfaces() {
+void scrnmngDD_restoresurfaces() {
 	dd_enter_criticalsection();
 	ddraw.backsurf->Restore();
 	ddraw.primsurf->Restore();
 	ddraw.fillsurf->Restore();
 #if defined(SUPPORT_WAB)
 	ddraw.wabsurf->Restore();
+#endif
+#if defined(SUPPORT_DCLOCK)
+	if (ddraw.clocksurf)
+	{
+		ddraw.clocksurf->Restore();
+	}
 #endif
 	scrndraw_updateallline();
 	dd_leave_criticalsection();
@@ -659,11 +667,17 @@ BRESULT scrnmngDD_create(UINT8 scrnmode) {
 			bitcolor = 16;
 #endif
 		}
-		if (ddraw2->SetDisplayMode(width, height, bitcolor, 0, 0) != DD_OK) {
-			width = 640;
-			height = 480;
-			if (ddraw2->SetDisplayMode(width, height, bitcolor, 0, 0) != DD_OK) {
-				goto scre_err;
+		if (!((fscrnmod & FSCRNMOD_SAMERES) || np2_multithread_Enabled()))
+		{
+			// 解像度変えるモードなら帰る
+			if (ddraw2->SetDisplayMode(width, height, bitcolor, 0, 0) != DD_OK)
+			{
+				width = 640;
+				height = 480;
+				if (ddraw2->SetDisplayMode(width, height, bitcolor, 0, 0) != DD_OK)
+				{
+					goto scre_err;
+				}
 			}
 		}
 		ddraw2->CreateClipper(0, &ddraw.clipper, NULL);
@@ -1086,7 +1100,7 @@ const SCRNSURF *scrnmngDD_surflock(void) {
 	dd_enter_criticalsection();
 	r = ddraw.backsurf->Lock(NULL, &destscrn, DDLOCK_WAIT, NULL);
 	if (r == DDERR_SURFACELOST) {
-		restoresurfaces();
+		scrnmng_restore_pending = true;
 		dd_leave_criticalsection();
 		return(NULL);
 		//r = ddraw.backsurf->Lock(NULL, &destscrn, DDLOCK_WAIT, NULL);
@@ -1158,7 +1172,7 @@ void scrnmngDD_update(void) {
 			r = ddraw.primsurf->Blt(scrn, ddraw.backsurf, rect,
 															DDBLT_WAIT, NULL);
 			if (r == DDERR_SURFACELOST) {
-				restoresurfaces();
+				scrnmng_restore_pending = true;
 				dd_leave_criticalsection();
 				return;
 				//ddraw.primsurf->Blt(scrn, ddraw.backsurf, rect,
@@ -1180,7 +1194,7 @@ void scrnmngDD_update(void) {
 			r = ddraw.primsurf->Blt(&dst, ddraw.backsurf, &ddraw.rect,
 									DDBLT_WAIT, NULL);
 			if (r == DDERR_SURFACELOST) {
-				restoresurfaces();
+				scrnmng_restore_pending = true;
 				dd_leave_criticalsection();
 				return;
 				//ddraw.primsurf->Blt(&dst, ddraw.backsurf, &ddraw.rect,
@@ -1266,8 +1280,7 @@ void scrnmngDD_dispclock(void)
 									ddraw.clocksurf, (RECT *)&rectclk,
 									DDBLTFAST_WAIT) == DDERR_SURFACELOST)
 	{
-		restoresurfaces();
-		ddraw.clocksurf->Restore();
+		scrnmng_restore_pending = true;
 	}
 	DispClock::GetInstance()->CountDown(np2oscfg.DRAW_SKIP);
 	dd_leave_criticalsection();
@@ -1548,7 +1561,7 @@ void scrnmngDD_bltwab() {
 		dd_enter_criticalsection();
 		r = ddraw.backsurf->Blt(&dstmp, ddraw.wabsurf, &src, DDBLT_WAIT, NULL);
 		if (r == DDERR_SURFACELOST) {
-			restoresurfaces();
+			scrnmng_restore_pending = true;
 		}
 		dd_leave_criticalsection();
 	}

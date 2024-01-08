@@ -827,12 +827,12 @@ UINT CComWacom::Write(UINT8 cData)
 				m_sBuffer_rpos = m_sBuffer_wpos; //バッファ消す
 				SendDataToReadBuffer(cmwacom_ModelData, sizeof(cmwacom_ModelData));
 				//if(m_wait < WACOM_BUFFER) m_wait += sizeof(cmwacom_ModelData)*2;
-#if defined(SUPPORT_RS232C_FIFO)
-				if(rs232cfifo.port138 & 0x1){
-					// FIFOモードではウェイトなし
-					m_wait = 0;
-				}else
-#endif
+//#if defined(SUPPORT_RS232C_FIFO)
+//				if(rs232cfifo.port138 & 0x1){
+//					// FIFOモードではウェイトなし
+//					m_wait = 0;
+//				}else
+//#endif
 				{
 					m_wait = 4;
 				}
@@ -840,12 +840,12 @@ UINT CComWacom::Write(UINT8 cData)
 				m_config.enable = true;
 			}
 		}
-#if defined(SUPPORT_RS232C_FIFO)
-		if(rs232cfifo.port138 & 0x1){
-			// FIFOモードではウェイトなし
-			m_wait = 0;
-		}
-#endif
+//#if defined(SUPPORT_RS232C_FIFO)
+//		if(rs232cfifo.port138 & 0x1){
+//			// FIFOモードではウェイトなし
+//			m_wait = 0;
+//		}
+//#endif
 	}
 	return 1;
 }

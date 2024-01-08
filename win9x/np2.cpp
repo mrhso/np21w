@@ -140,7 +140,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						OEMTEXT(PROJECTNAME) OEMTEXT(PROJECTSUBNAME),
 						OEMTEXT("NP2"),
 						CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, 0, 0, 0, 1, 0, 1,
-						0, 0, KEY_UNKNOWN, 0, 0,
+						0, 1, KEY_UNKNOWN, 0, 0,
 						0, 0, 0, {1, 2, 2, 1}, {1, 2, 2, 1}, 0, 1,
 						{5, 0, 0x3e, 19200,
 						 OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), OEMTEXT(""), 0, 1,
@@ -202,7 +202,7 @@ static	TCHAR		szClassName[] = _T("NP2-MainWindow");
 						0, 0, 1, 0, 1, 1, 
 						0, 0, 
 						0, 8, 
-						0, 0, 0, 0, TCMODE_DEFAULT, 0, 100,
+						1, 0, 0, 0, TCMODE_DEFAULT, 0, 100,
 						0,
 #if defined(SUPPORT_WACOM_TABLET)
 						0,
@@ -1734,6 +1734,10 @@ static void OnCommand(HWND hWnd, WPARAM wParam)
 #ifdef SUPPORT_WACOM_TABLET
 			cmwacom_setNCControl(!!np2oscfg.mouse_nc);
 #endif
+			break;
+
+		case IDM_MOUSEWHEELCTL:
+			np2oscfg.usewheel = !np2oscfg.usewheel;
 			break;
 
 		case IDM_MOUSERAW:
@@ -4216,6 +4220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 			}
 			DispatchMessage(&msg);
 			mousemng_UIThreadSync();
+			scrnmng_UIThreadProc();
 		}
 		KillTimer(hWnd, tmrID);
 	}else
@@ -4303,6 +4308,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 						autoSendKey(); // é©ìÆÉLÅ[ëóêM
 				}
 				scrnmng_delaychangemode();
+				mousemng_UIThreadSync();
+				scrnmng_UIThreadProc();
 			}
 			else if ((np2stopemulate == 1 || np2userpause) ||				// background sleep
 					(PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE))) {
