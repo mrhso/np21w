@@ -4215,6 +4215,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
 				TranslateMessage(&msg);
 			}
 			DispatchMessage(&msg);
+			mousemng_UIThreadSync();
 		}
 		KillTimer(hWnd, tmrID);
 	}else

@@ -599,9 +599,7 @@
     <ClCompile Include="..\sound\pcmmix.c" />
     <ClCompile Include="..\sound\psggenc.c" />
     <ClCompile Include="..\sound\psggeng.c" />
-    <ClCompile Include="..\sound\rhythmc.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-    </ClCompile>
+    <ClCompile Include="..\sound\rhythmc.c" />
     <ClCompile Include="..\sound\s98.c" />
     <ClCompile Include="..\sound\sndcsec.c" />
     <ClCompile Include="..\sound\sound.c" />
